@@ -1,23 +1,38 @@
 # Shared Tooling
 
-Reusable development tools, CI building blocks, workflow conventions, and
-documentation for Dragginz Game repositories.
+Reusable engineering principles, development tools, and CI building blocks for
+Dragginz Game repositories.
 
 The repository keeps shared behavior in one place without making individual
 projects copy large scripts or encode repository-specific assumptions. Tools
 should be deterministic, explicit about their dependencies, and safe to run
-from any supported checkout.
+from any supported checkout. Shared baselines remain separate from each
+consumer's product architecture, release policy, and deployment authority.
+
+## Shared principles
+
+The [`docs/principles/`](docs/principles/README.md) directory contains common
+decision guidance for simplicity, canonical authority, decision artifacts,
+reviewable changes, and Rust code hygiene. A principle becomes binding only
+when a consuming repository adopts a reviewed revision and applies any local
+overlay.
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the inclusion boundary and
+[`docs/provenance.md`](docs/provenance.md) for the initial Canic and IcyDB
+contributions.
 
 ## Current tools
 
 ### Cargo workspace LOC report
 
-`scripts/dev/cloc.sh` reports Rust runtime and test lines, test-function counts,
-inline-test counts, and workspace totals for every member of a Cargo workspace.
+`scripts/dev/cloc.sh` reports Rust lines in runtime-named and test-named files,
+test-attribute counts, inline-test counts, and workspace totals for every member
+of a Cargo workspace. Path classification follows `tests/` directories and
+files ending in `tests.rs`; inline test code remains part of runtime-file LOC.
 
 Requirements:
 
-- Bash;
+- Bash 3.2 or newer;
 - Cargo;
 - `cloc`;
 - `jq`; and
@@ -43,10 +58,12 @@ names and directory layouts do not need to follow a shared prefix.
 `scripts/ci/run-validation-targets.sh` runs one or more Make targets in order,
 records their durations, highlights live failures with an `[ERR:<target>]`
 prefix, retains complete and condensed failure logs, and writes a GitHub step
-summary when one is available.
+summary when one is available. Pass `--fail-fast` to stop after the first
+failed target.
 
 ```bash
 scripts/ci/run-validation-targets.sh fmt-check shellcheck test
+scripts/ci/run-validation-targets.sh --fail-fast preflight test
 ```
 
 The script defaults to the repository containing its vendored copy. Set
@@ -86,11 +103,20 @@ scripts/dev/gh-ci.sh --failed --logs
 
 ### Focused self-test
 
-Run the portable scripts' offline regression tests with:
+Run the portable scripts' offline regression tests with the dependencies from
+the support matrix installed:
 
 ```bash
 bash scripts/ci/test-portable-tools.sh
 ```
+
+### Snapshot distribution
+
+`scripts/distribution/refresh-consumer.sh` copies a declared file set from a
+clean Shared Tooling checkout and records its exact revision, content digests,
+and executable modes. A vendored
+`scripts/ci/verify-shared-tooling-snapshot.sh` checks consumer drift offline.
+See [`docs/consuming-snapshots.md`](docs/consuming-snapshots.md).
 
 ## Consuming repositories
 
@@ -100,15 +126,19 @@ snapshots so builds do not depend on a mutable external checkout or network
 availability. Keep Shared Tooling as the source of truth, record the source
 commit in the consumer, and review the normal repository diff after refreshing.
 
-Do not replace consumer copies with symlinks. A future refresh command should
-copy a declared file set from one exact Shared Tooling commit, update the
-recorded revision, and make no other repository changes.
+Do not replace consumer copies with symlinks. The snapshot refresh and offline
+drift-verification flow is documented in
+[`docs/consuming-snapshots.md`](docs/consuming-snapshots.md).
+
+Supported hosts and tool dependencies are defined in
+[`docs/supported-hosts.md`](docs/supported-hosts.md).
 
 ## Intended layout
 
 - `scripts/dev/` — interactive, read-only developer utilities;
 - `scripts/ci/` — reusable non-interactive validation building blocks;
-- `docs/` — shared conventions and integration guidance; and
+- `docs/` — shared principles and integration guidance;
+- `scripts/distribution/` — source-side snapshot refresh tools; and
 - `.github/workflows/` — workflows owned by this repository.
 
 Project-specific policy remains in each consuming repository. Shared tooling

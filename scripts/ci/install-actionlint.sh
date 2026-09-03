@@ -47,6 +47,10 @@ if [ -z "$VERSION" ] || [ -z "$CHECKSUM" ]; then
 fi
 
 VERSION="${VERSION#v}"
+if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
+    echo "invalid actionlint version: $VERSION" >&2
+    exit 1
+fi
 if [[ ! "$CHECKSUM" =~ ^[0-9a-f]{64}$ ]]; then
     echo "invalid SHA-256 digest" >&2
     exit 1
@@ -79,27 +83,28 @@ main() {
     local url="https://github.com/rhysd/actionlint/releases/download/v${version_no_v}/${archive}"
     local installed
     local candidate
+    local reported_version
     local version_output
 
     TMP_DIR="$(mktemp -d)"
     trap 'rm -rf "$TMP_DIR"' EXIT
     mkdir -p "$INSTALL_DIR"
     curl --proto '=https' --proto-redir '=https' --tlsv1.2 -fsSL \
+        --retry 5 --retry-all-errors --retry-delay 2 \
+        --connect-timeout 15 --max-time 120 \
         -o "$TMP_DIR/$archive" "$url"
     bash "$SCRIPT_DIR/verify-file-checksum.sh" sha256 "$CHECKSUM" "$TMP_DIR/$archive"
     tar -xzf "$TMP_DIR/$archive" -C "$TMP_DIR" actionlint
     candidate="$TMP_DIR/actionlint"
     chmod +x "$candidate"
     version_output="$("$candidate" -version 2>&1)"
-    case "$version_output" in
-    *"$VERSION"*) ;;
-    *)
+    reported_version="${version_output%%$'\n'*}"
+    if [ "$reported_version" != "$VERSION" ]; then
         echo "installed actionlint does not report the pinned version" >&2
         echo "expected: $VERSION" >&2
         echo "actual:   $version_output" >&2
         exit 1
-        ;;
-    esac
+    fi
 
     installed="$INSTALL_DIR/actionlint"
     mv "$candidate" "$installed"

@@ -5,7 +5,10 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-test.XXXXXX")"
 trap 'rm -rf "$FIXTURE"' EXIT
 
-for script in "$ROOT"/scripts/ci/*.sh "$ROOT"/scripts/dev/*.sh; do
+for script in \
+    "$ROOT"/scripts/ci/*.sh \
+    "$ROOT"/scripts/dev/*.sh \
+    "$ROOT"/scripts/distribution/*.sh; do
     bash -n "$script"
 done
 
@@ -24,6 +27,9 @@ if bash "$ROOT/scripts/ci/verify-file-checksum.sh" \
 fi
 
 bash "$ROOT/scripts/ci/test-validation-target-runner.sh"
+bash "$ROOT/scripts/ci/test-installers.sh"
+bash "$ROOT/scripts/ci/test-cloc.sh"
+bash "$ROOT/scripts/ci/test-snapshot-distribution.sh"
 
 mkdir -p "$FIXTURE/repository" "$FIXTURE/result"
 cat >"$FIXTURE/fake-sccache" <<'SCRIPT'

@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install pinned validation tools
+        shell: bash
+        run: |
+          source ci/tool-versions.env
+          tool_dir="$RUNNER_TEMP/shared-tooling-bin"
+          actionlint_bin="$(bash scripts/ci/install-actionlint.sh \
+            --version "$SHARED_TOOLING_ACTIONLINT_VERSION" \
+            --sha256 "$SHARED_TOOLING_ACTIONLINT_SHA256_LINUX_AMD64" \
+            --install-dir "$tool_dir")"
+          shellcheck_bin="$(bash scripts/ci/install-shellcheck.sh \
+            --version "$SHARED_TOOLING_SHELLCHECK_VERSION" \
+            --sha256 "$SHARED_TOOLING_SHELLCHECK_SHA256_LINUX_X86_64" \
+            --install-dir "$tool_dir")"
+          gitleaks_bin="$(bash scripts/ci/install-gitleaks.sh \
+            --version "$SHARED_TOOLING_GITLEAKS_VERSION" \
+            --sha256 "$SHARED_TOOLING_GITLEAKS_SHA256_LINUX_X64" \
+            --install-dir "$tool_dir")"
+          {
+            echo "ACTIONLINT_BIN=$actionlint_bin"
+            echo "SHELLCHECK_BIN=$shellcheck_bin"
+            echo "GITLEAKS_BIN=$gitleaks_bin"
+          } >>"$GITHUB_ENV"
+      - name: Check shell and workflow sources
+        shell: bash
+        run: |
+          "$SHELLCHECK_BIN" scripts/ci/*.sh scripts/dev/*.sh scripts/distribution/*.sh
+          "$ACTIONLINT_BIN" .github/workflows/*.yml
+      - name: Scan repository history for secrets
+        shell: bash
+        run: |
+          "$GITLEAKS_BIN" git \
+            --redact=100 \
+            --no-banner \
+            --no-color \
+            --log-level error \
+            "$GITHUB_WORKSPACE"
+
+  portable-regression:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-24.04
+          - macos-15
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+      - name: Install fixture dependencies on Linux
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cloc jq ripgrep xz-utils
+      - name: Install fixture dependencies on macOS
+        if: runner.os == 'macOS'
+        shell: bash
+        run: brew install cloc jq ripgrep
+      - name: Run portable regression set
+        shell: bash
+        run: |
+          bash --version | head -n 1
+          bash scripts/ci/test-portable-tools.sh

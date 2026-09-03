@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -eq 0 ]]; then
-    echo "usage: run-validation-targets.sh <make-target>..." >&2
-    exit 2
-fi
+usage() {
+    echo "usage: run-validation-targets.sh [--fail-fast] <make-target>..." >&2
+}
 
 RUNNER_SOURCE="${BASH_SOURCE[0]}"
 REPOSITORY_ROOT="${VALIDATION_REPOSITORY_ROOT:-$(cd "$(dirname "$RUNNER_SOURCE")/../.." && pwd)}"
@@ -19,6 +18,17 @@ if [[ "${VALIDATION_RUNNER_SNAPSHOT_PATH:-}" != "$RUNNER_SOURCE" ]]; then
         VALIDATION_RUNNER_SNAPSHOT_PATH="$RUNNER_SNAPSHOT" \
         bash "$RUNNER_SNAPSHOT" "$@" || snapshot_status=$?
     exit "$snapshot_status"
+fi
+
+FAIL_FAST=false
+if [[ "${1:-}" == "--fail-fast" ]]; then
+    FAIL_FAST=true
+    shift
+fi
+
+if [[ $# -eq 0 ]]; then
+    usage
+    exit 2
 fi
 
 LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/validation.XXXXXX")"
@@ -111,7 +121,11 @@ print_failure_detail() {
     # matching remains deterministic while the live output stays colored.
     LC_ALL=C sed $'s/\033\[[0-9;]*[[:alpha:]]//g' "$log" >"$clean_log"
 
-    inherited="$(rg '^\[ERR:[^]]+\]' "$clean_log" || true)"
+    if command -v rg >/dev/null 2>&1; then
+        inherited="$(rg '^\[ERR:[^]]+\]' "$clean_log" || true)"
+    else
+        inherited="$(grep -E '^\[ERR:[^]]+\]' "$clean_log" || true)"
+    fi
     if [[ -n "$inherited" ]]; then
         while IFS= read -r line; do
             print_retained_error_line "$line"
@@ -124,7 +138,11 @@ print_failure_detail() {
     fi
 
     print_error_line "$target" "Target failed"
-    details="$(rg --color never --no-heading -C 4 -- "$FAILURE_PATTERN" "$clean_log" || true)"
+    if command -v rg >/dev/null 2>&1; then
+        details="$(rg --color never --no-heading -C 4 -- "$FAILURE_PATTERN" "$clean_log" || true)"
+    else
+        details="$(grep -E -C 4 -- "$FAILURE_PATTERN" "$clean_log" || true)"
+    fi
     if [[ -z "$details" ]]; then
         details="$(tail -n 80 "$clean_log")"
     fi
@@ -218,6 +236,10 @@ for target in "$@"; do
     retained_logs+=("$retained_log")
     if [[ "${GITHUB_ACTIONS:-}" == "true" && "$RUNNER_DEPTH" == "0" ]]; then
         printf '::endgroup::\n'
+    fi
+
+    if [[ "$result" == "FAIL" && "$FAIL_FAST" == "true" ]]; then
+        break
     fi
 done
 

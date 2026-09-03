@@ -47,6 +47,10 @@ if [ -z "$VERSION" ] || [ -z "$CHECKSUM" ]; then
 fi
 
 VERSION="${VERSION#v}"
+if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
+    echo "invalid gitleaks version: $VERSION" >&2
+    exit 1
+fi
 if [[ ! "$CHECKSUM" =~ ^[0-9a-f]{64}$ ]]; then
     echo "invalid SHA-256 digest" >&2
     exit 1
@@ -85,6 +89,8 @@ main() {
     trap 'rm -rf "$TMP_DIR"' EXIT
     mkdir -p "$INSTALL_DIR"
     curl --proto '=https' --proto-redir '=https' --tlsv1.2 -fsSL \
+        --retry 5 --retry-all-errors --retry-delay 2 \
+        --connect-timeout 15 --max-time 120 \
         -o "$TMP_DIR/$archive" "$url"
     bash "$SCRIPT_DIR/verify-file-checksum.sh" sha256 "$CHECKSUM" "$TMP_DIR/$archive"
     tar -xzf "$TMP_DIR/$archive" -C "$TMP_DIR" gitleaks

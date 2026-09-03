@@ -34,6 +34,25 @@ printf '%s\n' \
     $'\t@echo "test actual-test ... FAILED"' \
     $'\t@exit 11' >"$FIXTURE/Makefile"
 
+fail_fast_status=0
+VALIDATION_FAILURE_LOG_DIR="$FIXTURE/failure-logs" \
+    VALIDATION_REPOSITORY_ROOT="$FIXTURE" \
+    VALIDATION_RUNNER_DEPTH=0 \
+    VALIDATION_RUNNER_SNAPSHOT_PATH='' \
+    bash "$FIXTURE/scripts/ci/run-validation-targets.sh" \
+    --fail-fast fail-one fail-two \
+    >"$FIXTURE/fail-fast.log" 2>&1 || fail_fast_status=$?
+
+[[ "$fail_fast_status" -eq 1 ]] || {
+    echo "validation target runner test failed: fail-fast status was $fail_fast_status" >&2
+    exit 1
+}
+rg -F 'first-failure-marker' "$FIXTURE/fail-fast.log" >/dev/null
+if rg -F 'second-failure-marker' "$FIXTURE/fail-fast.log" >/dev/null; then
+    echo "validation target runner test failed: fail-fast ran the second target" >&2
+    exit 1
+fi
+
 status=0
 VALIDATION_FAILURE_LOG_DIR="$FIXTURE/failure-logs" \
     VALIDATION_REPOSITORY_ROOT="$FIXTURE" \

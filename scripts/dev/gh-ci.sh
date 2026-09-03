@@ -35,7 +35,7 @@ require_command() {
 
 require_gh_auth() {
     if ! gh auth status >/dev/null 2>&1; then
-        echo "gh is not authenticated; run: gh auth login -h github.com --git-protocol https --web --scopes repo,workflow" >&2
+        echo "gh is not authenticated; run: gh auth login -h github.com --git-protocol https --web" >&2
         exit 1
     fi
 }

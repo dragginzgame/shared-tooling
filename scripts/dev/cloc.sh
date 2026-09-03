@@ -71,10 +71,13 @@ if [[ -z "${crate_rows}" ]]; then
     exit 1
 fi
 
-mapfile -t crates < <(printf '%s\n' "${crate_rows}" | sort)
+crates=()
+while IFS= read -r crate_row; do
+    crates[${#crates[@]}]="${crate_row}"
+done < <(printf '%s\n' "${crate_rows}" | sort)
 
 tests_pattern='(^|/)(tests/|[^/]*tests\.rs$)'
-test_attr_pattern='^[[:space:]]*#\[(tokio::)?test'
+test_attr_pattern='^[[:space:]]*#\[(tokio::)?test([[:space:]]|\(|\])'
 crate_column_width=24
 total_runtime_loc=0
 total_test_loc=0
@@ -180,7 +183,6 @@ else
     total_test_pct="0.0"
 fi
 
-printf "\n"
 print_divider
 printf "%-*s %12d %12d %9s%% %9d %10d\n" \
     "${crate_column_width}" \
