@@ -35,6 +35,8 @@ contributions.
 test-attribute counts, inline-test counts, and workspace totals for every member
 of a Cargo workspace. Path classification follows `tests/` directories and
 files ending in `tests.rs`; inline test code remains part of runtime-file LOC.
+Classification uses paths relative to each package, and nested workspace
+members are excluded from their parent package's counts.
 
 Requirements:
 

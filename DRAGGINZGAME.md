@@ -23,6 +23,11 @@ Consumer choices described in those guides remain subject to this baseline.
   Read the current handoff for accepted work and implementation status. Treat
   historical documents as evidence, not current authority. Verify documentation
   against implementation; distinguish supported behavior from unfinished plans.
+- Every repository must have a concise, accurate GitHub description of its
+  current purpose and scope, consistent with its README and implementation.
+  Review it during baseline adoption and whenever the repository's purpose,
+  scope or maintenance status changes. Correct missing, stale or misleading
+  descriptions; do not present retired behavior or planned features as current.
 
 ## Scope and authorization
 

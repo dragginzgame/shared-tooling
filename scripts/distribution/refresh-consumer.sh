@@ -265,6 +265,9 @@ staged_manifest="$STAGING_DIR/manifest"
     done
 } >"$staged_manifest"
 
+# Prepare a custom manifest's parent before replacing any consumer files.
+mkdir -p "$(dirname "$manifest")" || fail "cannot create consumer manifest directory"
+
 for path in "${files[@]}"; do
     mkdir -p "$CONSUMER_ROOT/$(dirname "$path")"
     cp -p "$staged_files/$path" "$CONSUMER_ROOT/$path"

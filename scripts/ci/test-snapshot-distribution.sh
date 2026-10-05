@@ -162,4 +162,38 @@ if SNAPSHOT_TEST_DIRTY=true PATH="$FIXTURE/bin:$PATH" \
     exit 1
 fi
 
+# A custom manifest can create its own parent directories on the first refresh.
+nested_consumer="$FIXTURE/nested consumer"
+mkdir -p "$nested_consumer"
+PATH="$FIXTURE/bin:$PATH" \
+    bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$nested_consumer" \
+    --manifest 'config/shared tools/snapshot' \
+    --file scripts/ci/verify-file-checksum.sh \
+    --file scripts/ci/verify-shared-tooling-snapshot.sh >/dev/null
+PATH="$FIXTURE/bin:$PATH" \
+    bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$nested_consumer" \
+    --manifest 'config/shared tools/snapshot' >/dev/null
+bash "$nested_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
+    --consumer "$nested_consumer" --manifest 'config/shared tools/snapshot' >/dev/null
+
+# Failure to create that parent must precede any snapshot file replacement.
+blocked_consumer="$FIXTURE/blocked-consumer"
+mkdir -p "$blocked_consumer/scripts/ci"
+printf 'consumer-owned contents\n' >"$blocked_consumer/scripts/ci/verify-file-checksum.sh"
+cp "$blocked_consumer/scripts/ci/verify-file-checksum.sh" "$FIXTURE/original-checksum.sh"
+printf 'not a directory\n' >"$blocked_consumer/config"
+if PATH="$FIXTURE/bin:$PATH" \
+    bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$blocked_consumer" \
+    --manifest config/shared.snapshot \
+    --file scripts/ci/verify-file-checksum.sh \
+    --file scripts/ci/verify-shared-tooling-snapshot.sh >/dev/null 2>&1; then
+    echo "snapshot distribution test failed: a blocked manifest parent was accepted" >&2
+    exit 1
+fi
+cmp "$FIXTURE/original-checksum.sh" "$blocked_consumer/scripts/ci/verify-file-checksum.sh"
+[[ ! -e "$blocked_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" ]]
+
 echo "snapshot distribution test passed"
