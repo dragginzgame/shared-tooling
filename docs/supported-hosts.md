@@ -3,7 +3,7 @@
 ## Required macOS support
 
 Every `dragginzgame` package must work on macOS under the
-[engineering baseline](../AGENTS.md#host-support). This covers dependency setup,
+[engineering baseline](../DRAGGINZGAME.md#host-support). This covers dependency setup,
 native tools and the applicable build, test and deployment workflows. Canister
 and frontend packages retain their product runtime targets while supporting
 their host workflows on macOS.
@@ -52,7 +52,9 @@ The table describes the intended CI contract. Passing qualification for a
 revision requires its matching workflow run; adding a matrix entry does not
 establish that the run passed.
 
-Windows and non-Bash shells are not supported.
+Shared Tooling's portable scripts do not support Windows or non-Bash shells.
+This does not prohibit a consumer from supporting additional hosts or shells
+through its own qualified tooling.
 
 ## Tool-specific dependencies
 

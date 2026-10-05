@@ -20,9 +20,12 @@ the common baseline.
 
 ## Baseline and overlay
 
-Shared Tooling owns the mandatory common baseline. Every consumer adopts a
-reviewed revision and identifies its local overlay for stricter or product-specific
-rules. A conflict requires a maintainer-approved exception with scope and reason.
+Shared Tooling owns the mandatory common baseline in
+[`DRAGGINZGAME.md`](DRAGGINZGAME.md). Every consumer adopts a reviewed revision
+and identifies its local overlay in `AGENTS.md`. Additional product-specific
+rules stay within the baseline's delegated scope. A change to an explicit common
+rule requires a maintainer-approved exception with scope and reason, including
+when the proposed rule is stricter.
 When valid product choices differ, share their invariant and decision criteria
 and keep those choices in the local overlays.
 
@@ -38,9 +41,8 @@ feedback ledgers, project-prefixed issue IDs or parallel tracking queues.
 Handoffs link to issues without duplicating triage or issue status. Supporting
 evidence stays with its existing owner. Reuse a matching issue and include the
 reviewed revision, dirty-source identity when relevant, affected owner/callers/hosts,
-symptom, focused evidence,
-smallest proposal and disposition. Issue submission and sibling changes retain
-their explicit authorization requirements.
+symptom, focused evidence, smallest proposal and disposition. Issue submission
+and sibling changes retain their explicit authorization requirements.
 
 Upstream acceptance and verified consumer adoption are separate outcomes. An
 accepted shared fix does not prove that a consumer refreshed its rules or tools,

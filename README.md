@@ -15,9 +15,13 @@ Differences from the common baseline require maintainer-approved exceptions.
 The [`docs/principles/`](docs/principles/README.md) directory contains common
 decision guidance for simplicity, canonical authority, decision artifacts,
 reviewable changes, and Rust code hygiene. Every consumer must adopt a reviewed
-revision of the [engineering baseline](AGENTS.md) and identify its local overlay.
+revision of the [engineering baseline](DRAGGINZGAME.md) and identify its local overlay.
 These guides explain the baseline; they do not grant consumers permission to
 override its common rules.
+
+`DRAGGINZGAME.md` is the reusable baseline. Each repository's `AGENTS.md` is its
+local entry point and overlay; Shared Tooling's own validation commands stay in
+its [local instructions](AGENTS.md).
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the inclusion boundary and
 [`docs/provenance.md`](docs/provenance.md) for the initial Canic and IcyDB
@@ -123,7 +127,7 @@ See [`docs/consuming-snapshots.md`](docs/consuming-snapshots.md).
 ## Consuming repositories
 
 Interactive read-only tools can be run directly from a sibling checkout.
-CI and release tools should be copied into the consuming repository as reviewed
+CI and release tools must be copied into the consuming repository as reviewed
 snapshots so builds do not depend on a mutable external checkout or network
 availability. Keep Shared Tooling as the source of truth, record the source
 commit in the consumer, and review the normal repository diff after refreshing.

@@ -196,6 +196,7 @@ fi
 
 checksum_tool_declared=false
 snapshot_verifier_declared=false
+source_modes=()
 for index in "${!files[@]}"; do
     path="${files[$index]}"
     validate_relative_path "$path"
@@ -208,6 +209,18 @@ for index in "${!files[@]}"; do
     "$SOURCE_ROOT/"*) ;;
     *) fail "source file escapes the source checkout: $path" ;;
     esac
+    source_mode=""
+    while IFS= read -r -d '' tree_entry; do
+        # NUL records preserve literal paths, including spaces and Git quoting.
+        [[ "${tree_entry#*$'\t'}" == "$path" ]] || continue
+        tree_metadata="${tree_entry%%$'\t'*}"
+        read -r entry_mode entry_type _ <<<"$tree_metadata"
+        [[ "$entry_type" == "blob" && "$entry_mode" =~ ^100(644|755)$ ]] ||
+            fail "source revision does not contain a regular file: $path"
+        source_mode="$entry_mode"
+    done < <(git -C "$SOURCE_ROOT" ls-tree -z "$source_revision" -- "$path")
+    [[ -n "$source_mode" ]] || fail "source file is not recorded in revision $source_revision: $path"
+    source_modes[index]="$source_mode"
     check_consumer_parent "$path"
     destination="$CONSUMER_ROOT/$path"
     [[ ! -L "$destination" ]] || fail "consumer destination is a symlink: $path"
@@ -227,9 +240,12 @@ STAGING_DIR="$(mktemp -d "$CONSUMER_ROOT/.shared-tooling-refresh.XXXXXX")"
 staged_files="$STAGING_DIR/files"
 mkdir -p "$staged_files"
 
-for path in "${files[@]}"; do
+for index in "${!files[@]}"; do
+    path="${files[$index]}"
     mkdir -p "$staged_files/$(dirname "$path")"
-    cp -p "$SOURCE_ROOT/$path" "$staged_files/$path"
+    git -C "$SOURCE_ROOT" cat-file blob "$source_revision:$path" >"$staged_files/$path" ||
+        fail "cannot export committed source file: $path"
+    chmod "${source_modes[$index]#100}" "$staged_files/$path"
 done
 
 staged_manifest="$STAGING_DIR/manifest"
@@ -255,7 +271,7 @@ for path in "${files[@]}"; do
 done
 mv "$staged_manifest" "$manifest"
 
-bash "$SOURCE_ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" \
+bash "$staged_files/scripts/ci/verify-shared-tooling-snapshot.sh" \
     --consumer "$CONSUMER_ROOT" \
     --manifest "$MANIFEST_PATH"
 
