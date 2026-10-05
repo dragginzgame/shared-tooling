@@ -123,6 +123,15 @@ fi
 bash "$consumer_root/scripts/ci/verify-shared-tooling-snapshot.sh" \
     --consumer "$consumer_root" >/dev/null
 
+cp "$consumer_root/.shared-tooling.snapshot" "$consumer_root/duplicate.snapshot"
+awk '$1 == "file" { print; exit }' "$consumer_root/.shared-tooling.snapshot" \
+    >>"$consumer_root/duplicate.snapshot"
+if bash "$consumer_root/scripts/ci/verify-shared-tooling-snapshot.sh" \
+    --consumer "$consumer_root" --manifest duplicate.snapshot \
+    >"$FIXTURE/duplicate.log" 2>&1; then
+    echo "snapshot distribution test failed: duplicate file record was accepted" >&2
+    exit 1
+fi
 printf '# drift\n' >>"$consumer_root/scripts/ci/sample.sh"
 if bash "$consumer_root/scripts/ci/verify-shared-tooling-snapshot.sh" \
     --consumer "$consumer_root" >/dev/null 2>&1; then
