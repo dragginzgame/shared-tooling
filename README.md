@@ -1,21 +1,23 @@
 # Shared Tooling
 
-Reusable engineering principles, development tools, and CI building blocks for
-Dragginz Game repositories.
+The authoritative source of mandatory common engineering rules, development
+tools, and CI building blocks for all `dragginzgame` repositories.
 
 The repository keeps shared behavior in one place without making individual
 projects copy large scripts or encode repository-specific assumptions. Tools
 should be deterministic, explicit about their dependencies, and safe to run
-from any supported checkout. Shared baselines remain separate from each
-consumer's product architecture, release policy, and deployment authority.
+from any supported checkout. Each consumer keeps its product architecture,
+exact commands, release targets and deployment identities in a local overlay.
+Differences from the common baseline require maintainer-approved exceptions.
 
 ## Shared principles
 
 The [`docs/principles/`](docs/principles/README.md) directory contains common
 decision guidance for simplicity, canonical authority, decision artifacts,
-reviewable changes, and Rust code hygiene. A principle becomes binding only
-when a consuming repository adopts a reviewed revision and applies any local
-overlay.
+reviewable changes, and Rust code hygiene. Every consumer must adopt a reviewed
+revision of the [engineering baseline](AGENTS.md) and identify its local overlay.
+These guides explain the baseline; they do not grant consumers permission to
+override its common rules.
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the inclusion boundary and
 [`docs/provenance.md`](docs/provenance.md) for the initial Canic and IcyDB

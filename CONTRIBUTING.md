@@ -14,19 +14,37 @@ A contribution belongs here when it satisfies at least one of these tests:
    policy with the consumer.
 
 Code, prose, and automation do not belong here merely because they could be
-reused. Keep product architecture, deployment identity, release cadence,
-version policy, network authority, and repository-specific commands local.
+reused. Keep product architecture, deployment identity, accepted release plans,
+release targets, network identity, and repository-specific commands local within
+the common baseline.
 
 ## Baseline and overlay
 
-Shared documents define a baseline. A consumer adopts a reviewed revision and
-adds a local overlay for stricter or product-specific rules. If two consumers
-make different valid choices, share the invariant and decision criteria—not
-one consumer's choice.
+Shared Tooling owns the mandatory common baseline. Every consumer adopts a
+reviewed revision and identifies its local overlay for stricter or product-specific
+rules. A conflict requires a maintainer-approved exception with scope and reason.
+When valid product choices differ, share their invariant and decision criteria
+and keep those choices in the local overlays.
 
 Avoid template systems with hidden inheritance. A contributor should be able
 to understand the effective rules by reading the consumer repository and its
 recorded Shared Tooling snapshot.
+
+## Feedback and adoption
+
+GitHub issues in the owning repository are the sole tracker for reusable gaps
+and adoption work. Do not create or maintain local upstream issue files,
+feedback ledgers, project-prefixed issue IDs or parallel tracking queues.
+Handoffs link to issues without duplicating triage or issue status. Supporting
+evidence stays with its existing owner. Reuse a matching issue and include the
+reviewed revision, dirty-source identity when relevant, affected owner/callers/hosts,
+symptom, focused evidence,
+smallest proposal and disposition. Issue submission and sibling changes retain
+their explicit authorization requirements.
+
+Upstream acceptance and verified consumer adoption are separate outcomes. An
+accepted shared fix does not prove that a consumer refreshed its rules or tools,
+resolved conflicts or ran the relevant checks.
 
 ## Documentation contributions
 
@@ -61,6 +79,8 @@ file set.
 
 ## Validation
 
-Run the portable regression test and ShellCheck described in `AGENTS.md`.
+For script changes, run the portable regression test and ShellCheck described
+in `AGENTS.md`. For documentation-only changes, check links, instruction
+consistency and the diff.
 When changing a platform branch, report which host exercised it and which
 branches remain install-capable but unverified.
