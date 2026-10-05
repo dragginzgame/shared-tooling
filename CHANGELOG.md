@@ -1,6 +1,34 @@
 # Changelog
 
-## [Draft]
+## [0.1.2]
+
+### Added
+
+- Standard Rust pre-commit formatting and safe repository-local installation.
+  Format the staged snapshot and refresh only selected files; reject partial
+  staging and preserve unrelated edits, including when formatting fails.
+- Require Cargo.toml ordering through `cargo sort --workspace`, following IcyDB
+  and Canic, with matching non-mutating checks in CI and release validation.
+  Cover root, member and separately maintained workspace manifests.
+
+### Changed
+
+- Maintain the next version at the top of the changelog automatically. Compatible
+  pre-1.0 changes share the next patch; a breaking hard cut raises the complete
+  pending batch to the next minor without requiring a separate version request.
+- Require every child Cargo manifest to inherit direct dependencies from root
+  `[workspace.dependencies]`, including development, build and target-specific
+  dependencies, so their versions and sources have one visible owner.
+
+### Fixed
+
+- Allow ordinary release targets to retry after preflight or validation failures
+  against corrected source, preserving failed evidence and running fresh gates.
+  Save durable intent immediately before preparation, retain existing early plans
+  on restart and require exact resume from preparation onward, including when
+  bumped metadata would otherwise select another version.
+
+## [0.1.1] - 2026-10-05
 
 ### Added
 

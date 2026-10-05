@@ -25,9 +25,13 @@ override its common rules.
 local entry point and overlay; Shared Tooling's own validation commands stay in
 its [local instructions](AGENTS.md).
 
-The baseline's focused mandatory policies live in `rules/`, starting with the
-[changelog rules](rules/changelogs.md). They cover concise release summaries,
-GitHub issue links, current drafts, breaking changes and minor-line detail files.
+The baseline's focused mandatory policies live in `rules/`. The
+[changelog rules](rules/changelogs.md) cover automatic next-version selection,
+concise release summaries, GitHub issue links, breaking changes and minor-line
+detail files. The [Cargo dependency rules](rules/cargo-dependencies.md) require
+one root dependency catalog inherited by every child manifest. The
+[Git hook rules](rules/git-hooks.md) standardize Rust pre-commit formatting and
+safe repository-local installation.
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the inclusion boundary and
 [`docs/provenance.md`](docs/provenance.md) for the initial Canic and IcyDB
@@ -91,6 +95,20 @@ an invocation-owned temporary directory that will later be deleted. It defaults
 to `.tmp/sccache-runtime` in the consuming repository. Override discovery with
 `SCCACHE_BIN`, `SCCACHE_REPOSITORY_ROOT`, or `SCCACHE_RUNTIME_DIR`.
 
+### Rust pre-commit formatting
+
+The executable `.githooks/pre-commit` formats an isolated copy of the index with
+the consumer's `make fmt`, then refreshes only the selected files. It rejects
+partial staging and preserves unselected files and unrelated working edits.
+The installer refuses to replace an existing hook setup.
+Following IcyDB and Canic, `fmt` runs `cargo sort --workspace` to order Cargo.toml
+files before `cargo fmt --all`; `fmt-check` checks both without modifying files.
+
+Rust consumers vendor both the hook and `scripts/dev/install-git-hooks.sh`, expose
+`make install-hooks`, and include `fmt-check` in CI. See the
+[hook contract and adoption steps](rules/git-hooks.md). Shared Tooling has no
+Cargo workspace and does not activate the Rust hook in its own checkout.
+
 ### Checksum-verified tool installers
 
 The actionlint, Gitleaks, and ShellCheck installers require the consuming
@@ -152,7 +170,8 @@ own macOS versions and architectures.
 
 ## Intended layout
 
-- `scripts/dev/` — interactive, read-only developer utilities;
+- `scripts/dev/` — developer utilities and explicit repository-local setup;
+- `.githooks/` — reviewed hooks for consuming repositories;
 - `scripts/ci/` — reusable non-interactive validation building blocks;
 - `rules/` — focused mandatory policies linked from the engineering baseline;
 - `docs/` — shared principles and integration guidance;

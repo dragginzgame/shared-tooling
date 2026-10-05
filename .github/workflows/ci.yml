@@ -51,7 +51,7 @@ jobs:
       - name: Check shell and workflow sources
         shell: bash
         run: |
-          "$SHELLCHECK_BIN" scripts/ci/*.sh scripts/dev/*.sh scripts/distribution/*.sh scripts/release/*.sh
+          "$SHELLCHECK_BIN" scripts/ci/*.sh scripts/dev/*.sh scripts/distribution/*.sh scripts/release/*.sh .githooks/pre-commit
           "$ACTIONLINT_BIN" .github/workflows/*.yml
       - name: Scan repository history for secrets
         shell: bash
@@ -89,7 +89,14 @@ jobs:
         run: |
           brew install cloc jq ripgrep
           echo /bin >> "$GITHUB_PATH"
-      - name: Run portable regression set
+      - name: Install pinned Cargo manifest formatter
+        shell: bash
+        run: |
+          source ci/tool-versions.env
+          cargo install cargo-sort --version "$SHARED_TOOLING_CARGO_SORT_VERSION" \
+            --locked --root "$RUNNER_TEMP/shared-tooling-cargo"
+          echo "$RUNNER_TEMP/shared-tooling-cargo/bin" >> "$GITHUB_PATH"
+      - name: Run portable regression set with prepared tools
         shell: bash
         run: |
           bash --version | head -n 1

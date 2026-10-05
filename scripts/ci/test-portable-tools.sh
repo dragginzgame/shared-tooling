@@ -12,6 +12,7 @@ for script in \
     "$ROOT"/scripts/release/*.sh; do
     bash -n "$script"
 done
+bash -n "$ROOT/.githooks/pre-commit"
 
 printf 'portable checksum fixture\n' >"$FIXTURE/input.txt"
 bash "$ROOT/scripts/ci/verify-file-checksum.sh" \
@@ -29,6 +30,7 @@ fi
 
 bash "$ROOT/scripts/ci/test-validation-target-runner.sh"
 bash "$ROOT/scripts/ci/test-installers.sh"
+bash "$ROOT/scripts/ci/test-git-hooks.sh"
 bash "$ROOT/scripts/ci/test-cloc.sh"
 bash "$ROOT/scripts/ci/test-snapshot-distribution.sh"
 bash "$ROOT/scripts/ci/test-release-runner.sh"

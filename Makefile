@@ -20,7 +20,7 @@ help:
 	@echo "Recovery: release-resume VERSION=X.Y.Z (inspect retained .git release-state first)"
 
 check-shell:
-	$(SHELLCHECK) scripts/ci/*.sh scripts/dev/*.sh scripts/distribution/*.sh scripts/release/*.sh
+	$(SHELLCHECK) scripts/ci/*.sh scripts/dev/*.sh scripts/distribution/*.sh scripts/release/*.sh .githooks/pre-commit
 
 test-portable:
 	bash scripts/ci/test-portable-tools.sh
