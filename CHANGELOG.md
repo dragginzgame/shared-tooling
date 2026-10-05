@@ -1,6 +1,20 @@
 # Changelog
 
-## [0.1.2]
+## [0.1.3]
+
+### Fixed
+
+- Install Rust formatting hooks through physical repository paths, including
+  macOS temporary-directory aliases, without rejecting the correct checkout.
+  [#1](https://github.com/dragginzgame/shared-tooling/issues/1).
+- Rerunning `make release-patch`, `make release-minor` or `make release-major`
+  now automatically reconciles an unfinished release of the same kind at its
+  saved version. Avoid another increment, duplicate release commits or tags,
+  and replaying an uncertain push. Preserve evidence and existing source,
+  payload, destination and concurrency checks; publication and cleanup remain
+  separate. Explicit `release-resume` is still available.
+
+## [0.1.2] - 2026-10-05
 
 ### Added
 

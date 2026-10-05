@@ -141,6 +141,15 @@ bash scripts/dev/install-git-hooks.sh > output
 [[ "$(git config --local --get core.hooksPath)" == .githooks ]]
 bash scripts/dev/install-git-hooks.sh > output
 
+# Logical aliases such as macOS /var versus /private/var name the same root.
+new_fixture installer-path-alias
+ln -s "$PWD" "$FIXTURE/installer-alias"
+(
+    cd "$FIXTURE/installer-alias"
+    bash scripts/dev/install-git-hooks.sh > output
+)
+[[ "$(git config --local --get core.hooksPath)" == .githooks ]]
+
 new_fixture installer-configured
 git config --local core.hooksPath custom-hooks
 expect_failure bash scripts/dev/install-git-hooks.sh
