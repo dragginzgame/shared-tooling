@@ -8,7 +8,8 @@ trap 'rm -rf "$FIXTURE"' EXIT
 for script in \
     "$ROOT"/scripts/ci/*.sh \
     "$ROOT"/scripts/dev/*.sh \
-    "$ROOT"/scripts/distribution/*.sh; do
+    "$ROOT"/scripts/distribution/*.sh \
+    "$ROOT"/scripts/release/*.sh; do
     bash -n "$script"
 done
 
@@ -30,6 +31,7 @@ bash "$ROOT/scripts/ci/test-validation-target-runner.sh"
 bash "$ROOT/scripts/ci/test-installers.sh"
 bash "$ROOT/scripts/ci/test-cloc.sh"
 bash "$ROOT/scripts/ci/test-snapshot-distribution.sh"
+bash "$ROOT/scripts/ci/test-release-runner.sh"
 
 mkdir -p "$FIXTURE/repository" "$FIXTURE/result"
 cat >"$FIXTURE/fake-sccache" <<'SCRIPT'

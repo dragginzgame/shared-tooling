@@ -1,5 +1,23 @@
 # Changelog
 
+## [Draft]
+
+### Added
+
+- Common release contract and Makefile example requiring `release-patch`,
+  `release-minor` and `release-major` in every repository. All three share one
+  maintainer-owned preflight, validation, version/changelog preparation,
+  staging, commit/tag and push workflow, with explicit repository inputs and
+  interruption recovery.
+- Implement the canonical release runner, bounded version arithmetic and
+  changelog finalization. Retain exact release plans, reject concurrent runs,
+  reconcile interrupted commit/tag/push effects and push only the selected
+  branch and annotated tag atomically. Shared Tooling now provides the three
+  standard targets and explicit resume command.
+- Exercise release phases, rejection, artifact preservation and interrupted
+  replies with offline command stubs; configure the portable regression set
+  on Linux and both macOS 15 architectures under Apple's Bash 3.2.
+
 ## [0.1.0] - 2026-10-05
 
 Initial release of the shared engineering baseline, developer tools and CI

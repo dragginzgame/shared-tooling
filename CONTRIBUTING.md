@@ -15,8 +15,9 @@ A contribution belongs here when it satisfies at least one of these tests:
 
 Code, prose, and automation do not belong here merely because they could be
 reused. Keep product architecture, deployment identity, accepted release plans,
-release targets, network identity, and repository-specific commands local within
-the common baseline.
+release validation gates, network identity, and repository-specific inputs local
+within the common baseline. Release command names and sequencing follow the
+[common release contract](docs/releases.md).
 
 ## Baseline and overlay
 
@@ -60,6 +61,11 @@ A shared principle should state:
 
 Prefer short, durable rules over exhaustive catalogs. Examples must be generic
 or clearly marked as examples rather than required repository shape.
+
+Focused mandatory policies belong in `rules/` and must be linked from the
+baseline. Keep each policy's rules in one place and include new linked files in
+the governance snapshot instructions. Follow the [changelog rules](rules/changelogs.md)
+when preparing release notes; consumer audience and presentation choices stay local.
 
 ## Script contributions
 

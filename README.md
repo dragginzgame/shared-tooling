@@ -7,7 +7,9 @@ The repository keeps shared behavior in one place without making individual
 projects copy large scripts or encode repository-specific assumptions. Tools
 should be deterministic, explicit about their dependencies, and safe to run
 from any supported checkout. Each consumer keeps its product architecture,
-exact commands, release targets and deployment identities in a local overlay.
+validation gates, release metadata and deployment identities in a local overlay.
+Every repository provides the same three release commands and workflow under
+the [release contract](docs/releases.md), which includes a Makefile example.
 Differences from the common baseline require maintainer-approved exceptions.
 
 ## Shared principles
@@ -22,6 +24,10 @@ override its common rules.
 `DRAGGINZGAME.md` is the reusable baseline. Each repository's `AGENTS.md` is its
 local entry point and overlay; Shared Tooling's own validation commands stay in
 its [local instructions](AGENTS.md).
+
+The baseline's focused mandatory policies live in `rules/`, starting with the
+[changelog rules](rules/changelogs.md). They cover concise release summaries,
+GitHub issue links, current drafts, breaking changes and minor-line detail files.
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the inclusion boundary and
 [`docs/provenance.md`](docs/provenance.md) for the initial Canic and IcyDB
@@ -148,6 +154,7 @@ own macOS versions and architectures.
 
 - `scripts/dev/` — interactive, read-only developer utilities;
 - `scripts/ci/` — reusable non-interactive validation building blocks;
+- `rules/` — focused mandatory policies linked from the engineering baseline;
 - `docs/` — shared principles and integration guidance;
 - `scripts/distribution/` — source-side snapshot refresh tools; and
 - `.github/workflows/` — workflows owned by this repository.
