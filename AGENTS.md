@@ -160,8 +160,27 @@ Consumer choices described in those guides remain subject to this baseline.
   the support matrix is deliberately changed. Downloaded executables need exact
   consumer-owned versions, pinned digests, HTTPS, verification before extraction
   and a version check before installation. No implicit credentials or targets.
-- Align host-support claims with [the support matrix](docs/supported-hosts.md) and
-  actual CI evidence. An installer branch alone is not a support claim.
+
+## Host support
+
+- Every `dragginzgame` package must work on macOS. This includes its applicable
+  dependency setup, native tools, build, test, CI and deployment workflows.
+  For canister and frontend packages, support includes running their host
+  workflows on macOS; product runtime targets remain locally owned.
+- Consumers declare supported macOS versions and architectures in their local
+  host matrix. Missing coverage or a macOS failure is a support gap to fix,
+  not permission to classify macOS as unsupported. Exceptions require explicit
+  maintainer approval with scope and reason.
+- Host-specific dependency installation, CI setup and deployment commands may
+  differ while preserving the same product contracts, validation obligations,
+  authorization, recovery and artifact preservation. Document prerequisites and
+  isolate host differences at their owning boundary; do not assume Linux tools,
+  paths, package managers or GNU behavior are available on macOS.
+- Qualify supported hosts through native CI or recorded native execution of the
+  relevant workflows. Linux passes, cross-compilation and installer branches
+  alone do not prove macOS behavior. Align evidence with
+  [the host guidance](docs/supported-hosts.md) and the consumer's matrix; report
+  outstanding qualification without weakening the support requirement.
 
 ## Feedback and handoff
 

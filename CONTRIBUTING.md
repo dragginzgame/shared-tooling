@@ -77,6 +77,12 @@ CI and release scripts must remain usable as reviewed vendored snapshots. A
 new helper dependency must be included in the consumer's declared snapshot
 file set.
 
+Contributions must preserve required macOS support. Document host-specific
+dependency setup, CI and deployment prerequisites, and qualify the affected
+behavior on the declared native hosts. Follow the
+[host guidance](docs/supported-hosts.md); a Linux-only pass does not qualify
+macOS behavior.
+
 ## Validation
 
 For script changes, run the portable regression test and ShellCheck described

@@ -133,7 +133,10 @@ drift-verification flow is documented in
 [`docs/consuming-snapshots.md`](docs/consuming-snapshots.md).
 
 Supported hosts and tool dependencies are defined in
-[`docs/supported-hosts.md`](docs/supported-hosts.md).
+[`docs/supported-hosts.md`](docs/supported-hosts.md). Every `dragginzgame` package
+must support macOS, including its applicable dependency, build, test and
+deployment workflows. Consumers document host-specific setup and qualify their
+own macOS versions and architectures.
 
 ## Intended layout
 
