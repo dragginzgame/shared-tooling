@@ -89,6 +89,8 @@ scripts/ci/run-validation-targets.sh --fail-fast preflight test
 The script defaults to the repository containing its vendored copy. Set
 `VALIDATION_REPOSITORY_ROOT` and `VALIDATION_FAILURE_LOG_DIR` when invoking it
 from another location.
+If retaining a failed log in the selected directory fails, the runner keeps its
+temporary log directory and prints its location instead of deleting the evidence.
 
 ### Stable sccache launcher
 

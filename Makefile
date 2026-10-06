@@ -42,7 +42,8 @@ release-preflight:
 	@bash scripts/release/metadata.sh preflight
 
 release-verify:
-	+$(MAKE) --no-print-directory ci
+	+VALIDATION_FAILURE_LOG_DIR="$$(git rev-parse --git-path release-state)/validation-failures" \
+		bash scripts/ci/run-validation-targets.sh ci
 
 release-prepare-version:
 	@bash scripts/release/metadata.sh prepare

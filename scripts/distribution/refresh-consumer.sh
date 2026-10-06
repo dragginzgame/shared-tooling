@@ -265,6 +265,22 @@ staged_manifest="$STAGING_DIR/manifest"
     done
 } >"$staged_manifest"
 
+# Check every destination before replacing any file. A retry may already have
+# installed these exact bytes; accepting them preserves content and index state.
+for path in "${files[@]}"; do
+    destination="$CONSUMER_ROOT/$path"
+    [[ ! -e "$destination" || -f "$destination" ]] || fail "consumer destination is not a regular file: $path"
+    if [[ -f "$destination" ]] && cmp -s "$staged_files/$path" "$destination" && \
+        { { [[ -x "$destination" ]] && [[ -x "$staged_files/$path" ]]; } || \
+          { [[ ! -x "$destination" ]] && [[ ! -x "$staged_files/$path" ]]; }; }; then
+        continue
+    fi
+    destination_status="$(git -C "$CONSUMER_ROOT" --literal-pathspecs status \
+        --porcelain --untracked-files=all --ignored -- "$path")" ||
+        fail "cannot inspect consumer changes: $path"
+    [[ -z "$destination_status" ]] || fail "consumer destination has local changes; preserve or reconcile them before refreshing: $path"
+done
+
 # Prepare a custom manifest's parent before replacing any consumer files.
 mkdir -p "$(dirname "$manifest")" || fail "cannot create consumer manifest directory"
 

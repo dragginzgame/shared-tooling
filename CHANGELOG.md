@@ -1,6 +1,27 @@
 # Changelog
 
-## [0.1.3]
+## [0.1.4]
+
+### Fixed
+
+- Reject unrelated staged release content even when working files match HEAD,
+  and verify that the index contains the prepared release metadata before commit.
+- Reject conflicting pending changelog versions during preflight, before the
+  validation gate or saved preparation intent can create recovery work.
+- Retain actual failed release-validation logs across retries. If the configured
+  log destination fails, preserve and report the temporary logs instead of
+  deleting the remaining evidence.
+- Protect edited, staged, deleted and untracked or ignored snapshot destinations
+  before refresh replaces any file. Preserve unrelated edits and allow retries
+  when the selected snapshot bytes are already installed.
+
+### Testing
+
+- Exercise real Git index/tree boundaries and the actual release logging adapter
+  alongside interruption stubs, including hidden staged edits and retained logs
+  after failed retries.
+
+## [0.1.3] - 2026-10-06
 
 ### Added
 

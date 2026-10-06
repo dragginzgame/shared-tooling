@@ -4,6 +4,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-snapshot-test.XXXXXX")"
 trap 'rm -rf "$FIXTURE"' EXIT
+REAL_GIT="$(command -v git)"
+export REAL_GIT
 
 source_root="$FIXTURE/source"
 consumer_root="$FIXTURE/consumer"
@@ -12,6 +14,7 @@ mkdir -p \
     "$source_root/scripts/distribution" \
     "$consumer_root" \
     "$FIXTURE/bin"
+git init -q "$consumer_root"
 
 cp "$ROOT/scripts/ci/verify-file-checksum.sh" "$source_root/scripts/ci/"
 cp "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" "$source_root/scripts/ci/"
@@ -33,6 +36,10 @@ if [[ "$1" != "-C" || "$#" -lt 4 ]]; then
 fi
 
 repository="$2"
+if [[ "$repository" != "$SNAPSHOT_TEST_SOURCE_ROOT" ]]; then
+    if [[ "${SNAPSHOT_TEST_STATUS_FAIL:-}" == true && "$3" == --literal-pathspecs ]]; then exit 9; fi
+    exec "$REAL_GIT" "$@"
+fi
 shift 2
 
 case "$1:$2" in
@@ -74,6 +81,7 @@ esac
 SCRIPT
 chmod +x "$FIXTURE/bin/git"
 export SNAPSHOT_TEST_REVISION_ROOT="$revision_root"
+export SNAPSHOT_TEST_SOURCE_ROOT="$source_root"
 
 printf 'ignored working-tree content\n' >"$source_root/ignored.txt"
 if PATH="$FIXTURE/bin:$PATH" \
@@ -139,6 +147,21 @@ if bash "$consumer_root/scripts/ci/verify-shared-tooling-snapshot.sh" \
     exit 1
 fi
 
+cp "$consumer_root/scripts/ci/sample.sh" "$FIXTURE/dirty-sample"
+cp "$consumer_root/.shared-tooling.snapshot" "$FIXTURE/saved-manifest"
+if PATH="$FIXTURE/bin:$PATH" \
+    bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" \
+    --consumer "$consumer_root" >"$FIXTURE/dirty-consumer.log" 2>&1; then
+    echo 'snapshot distribution test failed: untracked consumer edits were overwritten' >&2
+    exit 1
+fi
+cmp "$FIXTURE/dirty-sample" "$consumer_root/scripts/ci/sample.sh"
+cmp "$FIXTURE/saved-manifest" "$consumer_root/.shared-tooling.snapshot"
+rg -F 'consumer destination has local changes' "$FIXTURE/dirty-consumer.log" >/dev/null
+cp -p "$revision_root/scripts/ci/sample.sh" "$consumer_root/scripts/ci/sample.sh"
+# Unrelated edits and a retry of the exact already-installed bytes are allowed.
+printf 'unrelated work\n' > "$consumer_root/unrelated.txt"
 PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" \
@@ -152,7 +175,27 @@ if bash "$consumer_root/scripts/ci/verify-shared-tooling-snapshot.sh" \
     echo "snapshot distribution test failed: executable-mode drift was accepted" >&2
     exit 1
 fi
+if PATH="$FIXTURE/bin:$PATH" \
+    bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$consumer_root" >/dev/null 2>&1; then
+    echo 'snapshot distribution test failed: local executable-mode change was overwritten' >&2
+    exit 1
+fi
+[[ ! -x "$consumer_root/scripts/ci/sample.sh" ]]
 chmod +x "$consumer_root/scripts/ci/sample.sh"
+
+# Ignored destinations are still local work, not disposable output.
+printf 'scripts/ci/sample.sh\n' > "$consumer_root/.git/info/exclude"
+printf '# ignored local edit\n' >> "$consumer_root/scripts/ci/sample.sh"
+cp "$consumer_root/scripts/ci/sample.sh" "$FIXTURE/ignored-sample"
+if PATH="$FIXTURE/bin:$PATH" \
+    bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$consumer_root" >/dev/null 2>&1; then
+    echo 'snapshot distribution test failed: ignored consumer file was overwritten' >&2
+    exit 1
+fi
+cmp "$FIXTURE/ignored-sample" "$consumer_root/scripts/ci/sample.sh"
+cp -p "$revision_root/scripts/ci/sample.sh" "$consumer_root/scripts/ci/sample.sh"
 
 if SNAPSHOT_TEST_DIRTY=true PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
@@ -165,6 +208,7 @@ fi
 # A custom manifest can create its own parent directories on the first refresh.
 nested_consumer="$FIXTURE/nested consumer"
 mkdir -p "$nested_consumer"
+git init -q "$nested_consumer"
 PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$nested_consumer" \
@@ -181,9 +225,12 @@ bash "$nested_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
 # Failure to create that parent must precede any snapshot file replacement.
 blocked_consumer="$FIXTURE/blocked-consumer"
 mkdir -p "$blocked_consumer/scripts/ci"
-printf 'consumer-owned contents\n' >"$blocked_consumer/scripts/ci/verify-file-checksum.sh"
-cp "$blocked_consumer/scripts/ci/verify-file-checksum.sh" "$FIXTURE/original-checksum.sh"
+git init -q "$blocked_consumer"
 printf 'not a directory\n' >"$blocked_consumer/config"
+# Match the selected payload so the destination-change guard cannot mask the
+# parent-directory failure this fixture is intended to test.
+cp -p "$revision_root/scripts/ci/verify-file-checksum.sh" "$blocked_consumer/scripts/ci/verify-file-checksum.sh"
+cp "$blocked_consumer/scripts/ci/verify-file-checksum.sh" "$FIXTURE/original-checksum.sh"
 if PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$blocked_consumer" \
@@ -195,5 +242,64 @@ if PATH="$FIXTURE/bin:$PATH" \
 fi
 cmp "$FIXTURE/original-checksum.sh" "$blocked_consumer/scripts/ci/verify-file-checksum.sh"
 [[ ! -e "$blocked_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" ]]
+
+# Real Git status must distinguish index changes from working-tree changes.
+# Clone existing history; these fixtures never create commits or touch its index.
+tracked_consumer="$FIXTURE/tracked consumer"
+git clone --quiet --shared "$ROOT" "$tracked_consumer"
+checksum_path=scripts/ci/verify-file-checksum.sh
+verifier_path=scripts/ci/verify-shared-tooling-snapshot.sh
+cp "$tracked_consumer/$checksum_path" "$FIXTURE/original-tracked-checksum"
+for path in "$checksum_path" "$verifier_path"; do
+    printf '\n# Upstream fixture update.\n' >> "$revision_root/$path"
+done
+for state in staged unstaged deleted unavailable; do
+    case "$state" in
+        staged)
+            replacement="$(git -C "$tracked_consumer" rev-parse HEAD:README.md)"
+            git -C "$tracked_consumer" update-index --cacheinfo "100755,$replacement,$verifier_path"
+            git -C "$tracked_consumer" diff --quiet HEAD -- "$verifier_path"
+            if git -C "$tracked_consumer" diff --cached --quiet HEAD -- "$verifier_path"; then
+                echo 'snapshot distribution test failed: hidden staged-change fixture is invalid' >&2
+                exit 1
+            fi
+            ;;
+        unstaged) printf '\n# Consumer edit.\n' >> "$tracked_consumer/$verifier_path" ;;
+        deleted) rm "$tracked_consumer/$verifier_path" ;;
+        unavailable) export SNAPSHOT_TEST_STATUS_FAIL=true ;;
+    esac
+    index_before="$(git -C "$tracked_consumer" write-tree)"
+    if [[ -e "$tracked_consumer/$verifier_path" ]]; then
+        cp "$tracked_consumer/$verifier_path" "$FIXTURE/before-verifier"
+    fi
+    if PATH="$FIXTURE/bin:$PATH" \
+        bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+        --source "$source_root" --consumer "$tracked_consumer" \
+        --file "$checksum_path" --file "$verifier_path" > "$FIXTURE/$state.log" 2>&1; then
+        echo "snapshot distribution test failed: $state consumer state was overwritten" >&2
+        exit 1
+    fi
+    unset SNAPSHOT_TEST_STATUS_FAIL
+    cmp "$FIXTURE/original-tracked-checksum" "$tracked_consumer/$checksum_path"
+    [[ "$(git -C "$tracked_consumer" write-tree)" == "$index_before" ]]
+    [[ ! -e "$tracked_consumer/.shared-tooling.snapshot" ]]
+    if [[ "$state" == deleted ]]; then
+        [[ ! -e "$tracked_consumer/$verifier_path" ]]
+    else
+        cmp "$FIXTURE/before-verifier" "$tracked_consumer/$verifier_path"
+    fi
+    git -C "$tracked_consumer" read-tree HEAD
+    git -C "$tracked_consumer" checkout-index --force -- "$verifier_path"
+done
+# A clean selected file can update while unrelated tracked edits survive.
+printf '\nUnrelated consumer edit.\n' >> "$tracked_consumer/README.md"
+cp "$tracked_consumer/README.md" "$FIXTURE/consumer-readme"
+PATH="$FIXTURE/bin:$PATH" \
+    bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$tracked_consumer" \
+    --file "$checksum_path" --file "$verifier_path" >/dev/null
+cmp "$FIXTURE/consumer-readme" "$tracked_consumer/README.md"
+cmp "$revision_root/$checksum_path" "$tracked_consumer/$checksum_path"
+cmp "$revision_root/$verifier_path" "$tracked_consumer/$verifier_path"
 
 echo "snapshot distribution test passed"

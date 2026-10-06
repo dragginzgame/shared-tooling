@@ -34,6 +34,7 @@ bash "$ROOT/scripts/ci/test-git-hooks.sh"
 bash "$ROOT/scripts/ci/test-cloc.sh"
 bash "$ROOT/scripts/ci/test-snapshot-distribution.sh"
 bash "$ROOT/scripts/ci/test-release-runner.sh"
+bash "$ROOT/scripts/ci/test-release-metadata.sh"
 
 mkdir -p "$FIXTURE/repository" "$FIXTURE/result"
 cat >"$FIXTURE/fake-sccache" <<'SCRIPT'

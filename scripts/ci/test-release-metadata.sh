@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
+FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/release-metadata-test.XXXXXX")"
+trap 'rm -rf "$FIXTURE"' EXIT
+
+# Reuse existing history; exercise real indexes and trees without new commits.
+git clone --quiet --shared --no-checkout "$ROOT" "$FIXTURE/repository"
+cd "$FIXTURE/repository"
+git read-tree HEAD
+git checkout-index --all
+export RELEASE_PREVIOUS=0.1.0 RELEASE_VERSION=0.1.1 RELEASE_DATE=2026-10-06
+export RELEASE_COMMIT=''
+cat > CHANGELOG.md <<'NOTES'
+# Changelog
+
+## [0.1.1]
+
+- Pending change.
+
+## [0.1.0] - 2026-10-05
+
+- Preserved history.
+NOTES
+cp CHANGELOG.md "$FIXTURE/pending-notes"
+bash "$ROOT/scripts/release/metadata.sh" preflight
+cmp CHANGELOG.md "$FIXTURE/pending-notes"
+
+# Staged content can differ while the working file still matches HEAD exactly.
+original_tree="$(git write-tree)"
+replacement="$(git rev-parse HEAD:README.md)"
+git update-index --cacheinfo "100644,$replacement,AGENTS.md"
+[[ "$(git write-tree)" != "$original_tree" ]]
+git diff --quiet HEAD -- AGENTS.md
+if git diff --cached --quiet HEAD -- AGENTS.md; then
+    echo 'release metadata test failed: hidden staged-change fixture is invalid' >&2
+    exit 1
+fi
+if bash "$ROOT/scripts/release/metadata.sh" preflight > "$FIXTURE/staged.log" 2>&1; then
+    echo 'release metadata test failed: hidden staged change passed preflight' >&2
+    exit 1
+fi
+rg -F AGENTS.md "$FIXTURE/staged.log" >/dev/null
+git read-tree HEAD
+
+# Ordinary working edits and untracked files must also remain excluded.
+for state in unstaged untracked; do
+    if [[ "$state" == unstaged ]]; then
+        printf '\nUnrelated working edit.\n' >> AGENTS.md
+    else
+        printf 'Unrelated untracked file.\n' > unrelated.txt
+    fi
+    if bash "$ROOT/scripts/release/metadata.sh" preflight > "$FIXTURE/$state.log" 2>&1; then
+        echo "release metadata test failed: $state work passed preflight" >&2
+        exit 1
+    fi
+    git checkout-index --force -- AGENTS.md
+    rm -f unrelated.txt
+done
+
+# A selection mismatch must fail without modifying notes or needing a plan.
+if RELEASE_VERSION=0.2.0 bash "$ROOT/scripts/release/metadata.sh" preflight \
+    > "$FIXTURE/candidate.log" 2>&1; then
+    echo 'release metadata test failed: conflicting candidate passed preflight' >&2
+    exit 1
+fi
+cmp CHANGELOG.md "$FIXTURE/pending-notes"
+[[ ! -e .git/release-state ]]
+bash "$ROOT/scripts/release/metadata.sh" preflight
+bash "$ROOT/scripts/release/metadata.sh" prepare
+git add -- CHANGELOG.md
+bash "$ROOT/scripts/release/metadata.sh" commit-check
+[[ "$(git diff --cached --name-only HEAD)" == CHANGELOG.md ]]
+
+# The final boundary must reject both unrelated index entries and stale staging.
+git update-index --cacheinfo "100644,$replacement,AGENTS.md"
+if bash "$ROOT/scripts/release/metadata.sh" commit-check > "$FIXTURE/commit.log" 2>&1; then
+    echo 'release metadata test failed: hidden staged change passed commit check' >&2
+    exit 1
+fi
+git read-tree HEAD
+if bash "$ROOT/scripts/release/metadata.sh" commit-check > "$FIXTURE/stale-index.log" 2>&1; then
+    echo 'release metadata test failed: unstaged prepared metadata passed commit check' >&2
+    exit 1
+fi
+git add -- CHANGELOG.md
+bash "$ROOT/scripts/release/metadata.sh" commit-check
+
+# Use the actual Makefile adapter and logger, replacing only the expensive gate.
+logging_root="$FIXTURE/logging"
+mkdir -p "$logging_root/scripts/ci"
+git init -q "$logging_root"
+cp "$ROOT/scripts/ci/run-validation-targets.sh" "$logging_root/scripts/ci/"
+cp "$ROOT/Makefile" "$logging_root/Makefile"
+cat >> "$logging_root/Makefile" <<'MAKE'
+ci:
+	@echo release-gate-failure-marker
+	@exit 7
+MAKE
+for attempt in first second; do
+    if make --no-print-directory -C "$logging_root" release-verify \
+        > "$FIXTURE/$attempt-gate.log" 2>&1; then
+        echo 'release metadata test failed: failing release gate passed' >&2
+        exit 1
+    fi
+    rg -F release-gate-failure-marker \
+        "$logging_root/.git/release-state/validation-failures/latest.log" >/dev/null
+    if [[ "$attempt" == first ]]; then
+        retained_logs=("$logging_root"/.git/release-state/validation-failures/*-0-ci.log)
+        retained_log="${retained_logs[0]}"
+        cp "$retained_log" "$FIXTURE/first-retained.log"
+    fi
+done
+cmp "$retained_log" "$FIXTURE/first-retained.log"
+retained_logs=("$logging_root"/.git/release-state/validation-failures/*-0-ci.log)
+[[ "${#retained_logs[@]}" == 2 ]]
+
+echo 'release metadata real-Git and validation-retention tests passed'
