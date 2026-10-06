@@ -42,8 +42,11 @@ feedback ledgers, project-prefixed issue IDs or parallel tracking queues.
 Handoffs link to issues without duplicating triage or issue status. Supporting
 evidence stays with its existing owner. Reuse a matching issue and include the
 reviewed revision, dirty-source identity when relevant, affected owner/callers/hosts,
-symptom, focused evidence, smallest proposal and disposition. Issue submission
-and sibling changes retain their explicit authorization requirements.
+symptom, focused evidence, smallest proposal and disposition. Owning-repository
+finding reports and matching comments have the baseline's standing authorization;
+apply authorized local repairs directly. Follow the
+[maintenance rules](rules/agent-maintenance.md) for the reporting workflow and
+its separate boundaries for sibling edits, issue closure and release effects.
 
 Upstream acceptance and verified consumer adoption are separate outcomes. An
 accepted shared fix does not prove that a consumer refreshed its rules or tools,

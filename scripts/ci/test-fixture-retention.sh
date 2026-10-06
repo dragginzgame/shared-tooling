@@ -9,15 +9,12 @@ cat > "$fixture/bin/cloc" <<'SCRIPT'
 #!/usr/bin/env bash
 exit 23
 SCRIPT
-cat > "$fixture/bin/bash" <<'SCRIPT'
-#!/usr/bin/env bash
+# Write the absolute interpreter directly: BSD sed replacement can join lines.
+printf '#!%s\n' "$BASH" > "$fixture/bin/bash"
+cat >> "$fixture/bin/bash" <<'SCRIPT'
 case "${1:-}" in */verify-file-checksum.sh) exit 24 ;; esac
 exec "$RETENTION_REAL_BASH" "$@"
 SCRIPT
-# Avoid an env-bash shebang cycle in the substitute launcher itself.
-sed "1c\\
-#!$BASH" "$fixture/bin/bash" > "$fixture/bin/bash.tmp"
-mv "$fixture/bin/bash.tmp" "$fixture/bin/bash"
 chmod +x "$fixture/bin/"*
 status=0
 TMPDIR="$fixture/cloc" PATH="$fixture/bin:$PATH" CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0 \

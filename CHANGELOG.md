@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.1.11]
+
+### Changed
+
+- Apply authorized local fixes directly and report findings to their owning
+  repositories under standing issue-reporting authorization. Consumers adopt
+  the shared rule through a reviewed governance snapshot.
+  [#24](https://github.com/dragginzgame/shared-tooling/issues/24).
+
+### Fixed
+
+- Keep pending changelog notes distinct from undated history when version
+  components exceed floating-point integer precision.
+  [#23](https://github.com/dragginzgame/shared-tooling/issues/23).
+- Keep successful and ignored Rust tests with `error::` names unlabelled in
+  validation output. Highlight real diagnostics and failed tests, and retain
+  surrounding failure context with a neutral target label.
+  [#22](https://github.com/dragginzgame/shared-tooling/issues/22).
+- Generate failure-injection launchers portably on macOS and Linux so retention
+  checks reach the intended failure and verify preserved evidence.
+  [#21](https://github.com/dragginzgame/shared-tooling/issues/21).
+
 ## [0.1.10]
 
 ### Added
