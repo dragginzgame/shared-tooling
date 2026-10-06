@@ -57,6 +57,7 @@ jobs:
           "$SHELLCHECK_BIN" scripts/ci/*.sh scripts/dev/*.sh scripts/distribution/*.sh scripts/release/*.sh .githooks/pre-commit
           "$ACTIONLINT_BIN" .github/workflows/*.yml
           bash scripts/ci/check-dependency-pins.sh
+          make check-doc-links
       - name: Scan repository history for secrets
         shell: bash
         run: |

@@ -12,6 +12,11 @@ Every repository provides the same three release commands and workflow under
 the [release contract](docs/releases.md), which includes a Makefile example.
 Differences from the common baseline require maintainer-approved exceptions.
 
+`make version` reads the current local version from [`VERSION`](VERSION).
+The top undated changelog entry describes the next proposed release. Standard
+release preparation updates both files; Git tags establish published release
+identity independently.
+
 ## Shared principles
 
 The [`docs/principles/`](docs/principles/README.md) directory contains common
@@ -63,6 +68,18 @@ PATH setup, native host coverage and consumer adoption.
 
 ### Focused verification helpers
 
+- `scripts/ci/verify-file-checksum.sh --print <sha256|sha512> <file>` generates
+  portable digests through the same backend as checksum verification, IC tool
+  receipts and snapshot manifests.
+- `scripts/ci/prepare-rustsec-db.sh <online|local> <source> <new-destination>`
+  isolates an advisory database, records its commit and retains preparation
+  diagnostics. Consumers own audit invocation and security policy. See the
+  [helper contracts](docs/verification-helpers.md).
+- `make check-doc-links` checks local Markdown targets in the selected shared
+  documents; `make check-release-commands` tests Make entry points using a
+  substitute runner. The read-only `scripts/ci/check-crates-io-version.sh` reports
+  present, absent or unavailable for one exact stable crates.io version. See
+  [verification helper contracts and adoption](docs/verification-helpers.md).
 - `scripts/ci/verify-evidence-checksums.sh <manifest> [...]` verifies nonempty
   SHA-256 manifests using the shared portable checksum backend. Paths in each
   manifest resolve from the caller's working directory; manifests use ordinary

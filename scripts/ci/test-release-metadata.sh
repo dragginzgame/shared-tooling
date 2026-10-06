@@ -16,6 +16,7 @@ git read-tree HEAD
 git checkout-index --all
 export RELEASE_PREVIOUS=0.1.0 RELEASE_VERSION=0.1.1 RELEASE_DATE=2026-10-06
 export RELEASE_COMMIT=''
+printf '0.1.0\n' > VERSION
 cat > CHANGELOG.md <<'NOTES'
 # Changelog
 
@@ -23,13 +24,27 @@ cat > CHANGELOG.md <<'NOTES'
 
 - Pending change.
 
-## [0.1.0] - 2026-10-05
+## [0.1.0]
 
 - Preserved history.
 NOTES
 cp CHANGELOG.md "$FIXTURE/pending-notes"
 bash "$ROOT/scripts/release/metadata.sh" preflight
 cmp CHANGELOG.md "$FIXTURE/pending-notes"
+
+# A read failure must not turn a partial, version-shaped value into an identity.
+mkdir "$FIXTURE/read-failure-bin"
+cat > "$FIXTURE/read-failure-bin/cat" <<'STUB'
+#!/usr/bin/env bash
+printf '0.1.0\n'
+exit 9
+STUB
+chmod +x "$FIXTURE/read-failure-bin/cat"
+if PATH="$FIXTURE/read-failure-bin:$PATH" bash "$ROOT/scripts/release/metadata.sh" preflight \
+    > "$FIXTURE/read-failure.log" 2>&1; then
+    echo 'release metadata test failed: partial version read passed preflight' >&2
+    exit 1
+fi
 
 # Staged content can differ while the working file still matches HEAD exactly.
 original_tree="$(git write-tree)"
@@ -73,9 +88,25 @@ cmp CHANGELOG.md "$FIXTURE/pending-notes"
 [[ ! -e .git/release-state ]]
 bash "$ROOT/scripts/release/metadata.sh" preflight
 bash "$ROOT/scripts/release/metadata.sh" prepare
-git add -- CHANGELOG.md
+[[ "$(bash "$ROOT/scripts/release/metadata.sh" version)" == 0.1.1 ]]
+cp CHANGELOG.md "$FIXTURE/prepared-notes"
+# Simulate interruption after notes replacement, before VERSION replacement.
+printf '0.1.0\n' > VERSION
+bash "$ROOT/scripts/release/metadata.sh" preflight
+bash "$ROOT/scripts/release/metadata.sh" prepare
+cmp CHANGELOG.md "$FIXTURE/prepared-notes"
+[[ "$(cat VERSION)" == 0.1.1 ]]
+rg -x '## \[0.1.0\]' CHANGELOG.md >/dev/null
+git add -- CHANGELOG.md VERSION
 bash "$ROOT/scripts/release/metadata.sh" commit-check
-[[ "$(git diff --cached --name-only HEAD)" == CHANGELOG.md ]]
+[[ "$(git diff --cached --name-only HEAD)" == $'CHANGELOG.md\nVERSION' ]]
+
+# Versions must be canonical and both metadata index entries must match.
+for bad in '01.1.1' '0.1.1-beta' '0.1.2'; do
+    printf '%s\n' "$bad" > VERSION
+    if bash "$ROOT/scripts/release/metadata.sh" commit-check > "$FIXTURE/version.log" 2>&1; then exit 1; fi
+done
+printf '0.1.1\n' > VERSION
 
 # The final boundary must reject both unrelated index entries and stale staging.
 git update-index --cacheinfo "100644,$replacement,AGENTS.md"
@@ -88,8 +119,21 @@ if bash "$ROOT/scripts/release/metadata.sh" commit-check > "$FIXTURE/stale-index
     echo 'release metadata test failed: unstaged prepared metadata passed commit check' >&2
     exit 1
 fi
-git add -- CHANGELOG.md
+git add -- CHANGELOG.md VERSION
 bash "$ROOT/scripts/release/metadata.sh" commit-check
+
+# Late checks select the saved commit's two metadata blobs, not current files.
+# Use an immutable existing Git tree as the selected object; no commit is created.
+selected_tree="$(git write-tree)"
+printf '0.1.2\n' > VERSION
+printf '\nLater working notes.\n' >> CHANGELOG.md
+RELEASE_COMMIT="$selected_tree" bash "$ROOT/scripts/release/metadata.sh" check
+if RELEASE_COMMIT=HEAD bash "$ROOT/scripts/release/metadata.sh" check > "$FIXTURE/old-commit.log" 2>&1; then exit 1; fi
+
+# Already-finalized notes for a different date are an identity conflict.
+printf '0.1.0\n' > VERSION
+cp "$FIXTURE/prepared-notes" CHANGELOG.md
+if RELEASE_DATE=2026-10-07 bash "$ROOT/scripts/release/metadata.sh" preflight > "$FIXTURE/date.log" 2>&1; then exit 1; fi
 
 # Use the actual Makefile adapter and logger, replacing only the expensive gate.
 logging_root="$FIXTURE/logging"

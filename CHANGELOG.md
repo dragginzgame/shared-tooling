@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.1.7]
+
+### Added
+
+- Explicit version tracking in `VERSION`, with `make version` and coordinated
+  version/changelog preparation through the standard release commands.
+- Portable file-digest generation shares the checksum verifier's backend with
+  tool receipts and snapshot manifests, handles unusual filenames, and rejects
+  failed or malformed hash output. Explicit online/local RustSec preparation
+  isolates database objects and retains the selected commit and failure logs;
+  consumers retain audit policy. [#12](https://github.com/dragginzgame/shared-tooling/issues/12),
+  [#13](https://github.com/dragginzgame/shared-tooling/issues/13).
+- Shared local documentation-link and release-command adoption checks, with
+  retained release-check failure diagnostics. Exact crates.io version observation
+  distinguishes an absent version from an unavailable registry without publishing
+  or retrying. [#8](https://github.com/dragginzgame/shared-tooling/issues/8),
+  [#9](https://github.com/dragginzgame/shared-tooling/issues/9),
+  [#10](https://github.com/dragginzgame/shared-tooling/issues/10).
+
 ## [0.1.6]
 
 ### Added

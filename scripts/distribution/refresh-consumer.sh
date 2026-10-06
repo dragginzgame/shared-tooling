@@ -42,21 +42,6 @@ validate_relative_path() {
     esac
 }
 
-checksum_sha256() {
-    local file="$1"
-    local output
-
-    if command -v sha256sum >/dev/null 2>&1; then
-        output="$(sha256sum "$file")"
-    elif command -v shasum >/dev/null 2>&1; then
-        output="$(shasum -a 256 "$file")"
-    else
-        fail "no SHA-256 implementation is available"
-    fi
-
-    printf '%s\n' "${output%% *}"
-}
-
 check_consumer_parent() {
     local relative_path="$1"
     local parent="${relative_path%/*}"
@@ -255,7 +240,7 @@ staged_manifest="$STAGING_DIR/manifest"
     printf 'source\t%s\n' "$source_remote"
     printf 'revision\t%s\n' "$source_revision"
     for path in "${files[@]}"; do
-        digest="$(checksum_sha256 "$staged_files/$path")"
+        digest="$(bash "$SCRIPT_ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$staged_files/$path")"
         if [[ -x "$staged_files/$path" ]]; then
             executable="x"
         else

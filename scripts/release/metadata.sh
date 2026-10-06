@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
+SCRIPT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 
 operation="${1:-}"
 [[ $# -eq 1 ]] || exit 2
 version() {
-    awk '/^## \[[0-9]+\.[0-9]+\.[0-9]+\] - [0-9]+-[0-9]+-[0-9]+$/ {
-        print substr($2, 2, length($2)-2); found=1; exit
-    } END { if (!found) exit 2 }' "${1:-CHANGELOG.md}"
+    local file="${1:-VERSION}" value
+    [[ -f "$file" && ! -L "$file" ]] || { echo "missing regular version file: $file" >&2; return 1; }
+    value="$(cat "$file")" || return 1
+    [[ "$value" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || {
+        echo "invalid version file: $file" >&2; return 1;
+    }
+    printf '%s\n' "$value"
 }
-admit_files() {
+admit_files() (
     paths="$(mktemp "${TMPDIR:-/tmp}/shared-release-paths.XXXXXX")"
     trap 'rm -f "$paths"' EXIT
     # HEAD-to-worktree alone hides staged edits reverted only in the worktree.
@@ -16,48 +21,60 @@ admit_files() {
     git diff --name-only -z -- >> "$paths"
     git ls-files --others --exclude-standard -z >> "$paths"
     while IFS= read -r -d '' path; do
-        [[ "$path" == CHANGELOG.md ]] || { printf 'uncommitted non-release path: %q\n' "$path" >&2; exit 1; }
+        [[ "$path" == CHANGELOG.md || "$path" == VERSION ]] || {
+            printf 'uncommitted non-release path: %q\n' "$path" >&2; exit 1;
+        }
     done < "$paths"
-    rm -f "$paths"
-    trap - EXIT
+)
+finalize_notes() {
+    awk -v version="${RELEASE_VERSION:?}" -v previous="${RELEASE_PREVIOUS:?}" \
+        -v date="${RELEASE_DATE:?}" -v allow_finalized=1 \
+        -f "$SCRIPT_ROOT/scripts/ci/finalize-release-changelog.awk" "$1"
 }
 case "$operation" in
     version) version ;;
-    preflight)
+    preflight|prepare)
         [[ "$(version)" == "${RELEASE_PREVIOUS:?}" ]]
         admit_files
         [[ -f CHANGELOG.md && ! -L CHANGELOG.md ]]
-        # Exercise the same selection check before validation or saved intent.
-        awk -v version="${RELEASE_VERSION:?}" -v date="${RELEASE_DATE:?}" \
-            -f scripts/ci/finalize-release-changelog.awk CHANGELOG.md > /dev/null
-        ;;
-    prepare)
-        [[ "$(version)" == "${RELEASE_PREVIOUS:?}" ]]
-        [[ -f CHANGELOG.md && ! -L CHANGELOG.md ]]
-        temporary="$(mktemp CHANGELOG.md.release.XXXXXX)"
-        trap 'rm -f "$temporary"' EXIT
-        cp -p CHANGELOG.md "$temporary"
-        awk -v version="${RELEASE_VERSION:?}" -v date="${RELEASE_DATE:?}" \
-            -f scripts/ci/finalize-release-changelog.awk CHANGELOG.md > "$temporary"
-        mv "$temporary" CHANGELOG.md
-        trap - EXIT
+        # Git-owned scratch cannot become an unrelated untracked release input
+        # if the process is killed before cleanup. VERSION is replaced last.
+        temporary="$(mktemp -d "$(git rev-parse --git-dir)/release-metadata.XXXXXX")"
+        trap 'rm -rf "$temporary"' EXIT
+        cp -p CHANGELOG.md "$temporary/CHANGELOG.md"
+        finalize_notes CHANGELOG.md > "$temporary/CHANGELOG.md"
+        if [[ "$operation" == prepare ]]; then
+            cp -p VERSION "$temporary/VERSION"
+            printf '%s\n' "${RELEASE_VERSION:?}" > "$temporary/VERSION"
+            version "$temporary/VERSION" > /dev/null
+            mv "$temporary/CHANGELOG.md" CHANGELOG.md
+            # If interrupted here, the saved attempt can safely repeat preparation:
+            # finalization accepts only these exact already-prepared notes.
+            mv "$temporary/VERSION" VERSION
+        fi
         ;;
     check|commit-check)
-        notes=CHANGELOG.md
-        if [[ -n "${RELEASE_COMMIT:-}" ]]; then
-            notes="$(mktemp "${TMPDIR:-/tmp}/shared-release-notes.XXXXXX")"
-            trap 'rm -f "$notes"' EXIT
-            git show "$RELEASE_COMMIT:CHANGELOG.md" > "$notes"
-        fi
-        checked_version="$(version "$notes")"
-        [[ "$checked_version" == "${RELEASE_VERSION:?}" ]]
-        awk -v heading="## [$RELEASE_VERSION] - ${RELEASE_DATE:?}" \
-            '$0 == heading { count++ } END { if (count != 1) exit 1 }' "$notes"
-        if [[ "$notes" != CHANGELOG.md ]]; then rm -f "$notes"; trap - EXIT; fi
         admit_files
+        temporary="$(mktemp -d "${TMPDIR:-/tmp}/shared-release-metadata.XXXXXX")"
+        trap 'rm -rf "$temporary"' EXIT
+        notes=CHANGELOG.md
+        selected_version=VERSION
+        if [[ -n "${RELEASE_COMMIT:-}" ]]; then
+            notes="$temporary/CHANGELOG.md"
+            selected_version="$temporary/VERSION"
+            git show "$RELEASE_COMMIT:CHANGELOG.md" > "$notes"
+            git show "$RELEASE_COMMIT:VERSION" > "$selected_version"
+        fi
+        [[ -f "$notes" && ! -L "$notes" ]]
+        [[ "$(version "$selected_version")" == "${RELEASE_VERSION:?}" ]]
+        finalize_notes "$notes" > "$temporary/finalized"
+        cmp -s "$notes" "$temporary/finalized"
         if [[ "$operation" == commit-check ]]; then
-            # Staging must contain the exact prepared metadata that was checked.
-            git diff --quiet -- CHANGELOG.md
+            # Both index entries must contain the exact prepared metadata.
+            git diff --quiet -- CHANGELOG.md VERSION
+            for path in CHANGELOG.md VERSION; do
+                git cat-file -e ":$path"
+            done
         fi
         ;;
     *) echo 'usage: metadata.sh version|preflight|prepare|check|commit-check' >&2; exit 2 ;;

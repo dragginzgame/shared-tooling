@@ -7,7 +7,7 @@ IC_TOOL_PINS ?= ci/ic-tools.tsv
 HOST_TOOL_VERSIONS ?= ci/tool-versions.env
 export PATH := $(CURDIR)/.tools/host/bin:$(CURDIR)/.tools/ic/bin:$(PATH)
 
-.PHONY: help check-shell check-pins test-portable ci release-patch release-minor release-major \
+.PHONY: help version check-shell check-pins check-doc-links check-release-commands test-portable ci release-patch release-minor release-major \
         install-tools tools-check install-host-tools host-tools-check install-ic-tools ic-tools-check \
         release-resume release-version release-preflight release-verify \
         release-prepare-version release-prepared-check release-files \
@@ -18,7 +18,8 @@ $(error Select exactly one release target)
 endif
 
 help:
-	@echo "Focused: check-shell, check-pins, test-portable"
+	@echo "Current local version: make version"
+	@echo "Focused: check-shell, check-pins, check-doc-links, check-release-commands, test-portable"
 	@echo "Local IC executables: install-ic-tools; offline verification: ic-tools-check"
 	@echo "All local executables (including jq/yq): install-tools; offline verification: tools-check"
 	@echo "Full gate: ci (explicit request or configured CI)"
@@ -33,6 +34,12 @@ test-portable:
 
 check-pins:
 	bash scripts/ci/check-dependency-pins.sh
+
+check-doc-links:
+	perl scripts/ci/check-documentation-links.pl --root . *.md audits/*.md rules/*.md docs/*.md docs/principles/*.md
+
+check-release-commands:
+	bash scripts/ci/check-release-commands.sh .
 
 install-tools:
 	+$(MAKE) --no-print-directory install-host-tools
@@ -57,6 +64,7 @@ ic-tools-check:
 ci:
 	+$(MAKE) --no-print-directory check-shell
 	+$(MAKE) --no-print-directory check-pins
+	+$(MAKE) --no-print-directory check-doc-links
 	+$(MAKE) --no-print-directory test-portable
 
 release-patch release-minor release-major:
@@ -65,7 +73,7 @@ release-patch release-minor release-major:
 release-resume:
 	+@bash scripts/ci/run-release.sh resume "$(VERSION)" "$(RELEASE_REMOTE)" "$(RELEASE_BRANCH)"
 
-release-version:
+version release-version:
 	@bash scripts/release/metadata.sh version
 
 release-preflight:
@@ -82,7 +90,7 @@ release-prepared-check:
 	@bash scripts/release/metadata.sh check
 
 release-files:
-	@printf 'CHANGELOG.md\0'
+	@printf 'VERSION\0CHANGELOG.md\0'
 
 release-commit-check:
 	@bash scripts/release/metadata.sh commit-check
