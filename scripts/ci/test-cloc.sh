@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-cloc-test.XXXXXX")"
-trap 'rm -rf "$FIXTURE"' EXIT
+trap 'if [[ $? == 0 ]]; then rm -rf "$FIXTURE"; else printf "Failed cloc fixture retained: %s\n" "$FIXTURE" >&2; fi' EXIT
 
 for command in cargo cloc jq; do
     command -v "$command" >/dev/null 2>&1 || {

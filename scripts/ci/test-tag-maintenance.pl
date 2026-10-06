@@ -193,6 +193,30 @@ is(scalar(keys %{state()->{local}}), 101, 'all local copies retained after parti
 is(scalar(keys %{state()->{remote}}), 51, 'only completed batch disappeared');
 is(invoke('', @delete), 0, 'retry reconciles partial batch completion');
 is(state()->{pushes}, 4, 'retry pushes only two outstanding batches');
+# File::Temp may generate underscores. Bind retries to that same safe basename,
+# without admitting path components outside the retained attempt directory.
+setup('underscore-attempt', 'v0.1.0');
+isnt(invoke('reject', @delete), 0, 'save interrupted operation for underscore retry');
+my $pending_path = "$repo/.git/tag-maintenance/pending.json";
+my $saved = $json->decode(read_file($pending_path));
+rename "$repo/.git/tag-maintenance/$saved->{attempt}", "$repo/.git/tag-maintenance/attempt.a_bC12" or die $!;
+$saved->{attempt} = 'attempt.a_bC12';
+write_file($pending_path, $json->encode($saved));
+is(invoke('', @delete), 0, 'retry accepts retained File::Temp underscore name');
+is(state()->{pushes}, 2, 'retry dispatches only the outstanding deletion');
+
+my $unsafe_case = 0;
+for my $name ('../outside', 'attempt.safe/child', 'attempt.../outside') {
+    setup('unsafe-attempt-' . ++$unsafe_case, 'v0.1.0');
+    isnt(invoke('reject', @delete), 0, 'save interrupted operation before unsafe-name check');
+    $pending_path = "$repo/.git/tag-maintenance/pending.json";
+    $saved = $json->decode(read_file($pending_path));
+    $saved->{attempt} = $name;
+    write_file($pending_path, $json->encode($saved));
+    isnt(invoke('', @delete), 0, 'saved evidence path traversal rejected');
+    is(state()->{pushes}, 1, 'unsafe evidence path never causes another push');
+}
+
 setup('remote-only', 'v0.1.0');
 is(invoke('', '--cutoff', '0.1', '--remote', 'origin', '--delete-remote', '--yes'), 0, 'remote-only deletion succeeds');
 ok(exists state()->{local}{'v0.1.0'}, 'remote-only leaves local tags intact');

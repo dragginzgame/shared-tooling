@@ -107,6 +107,11 @@ installer-download CI are install-capable, not support claims.
 
 Consumers own the exact tool versions and platform digests they admit.
 
+The sccache CI installer preserves Canic's Linux x86-64 binary scope. Its
+consumer-supplied pin selects the official musl archive. Other hosts continue
+to use consumer-owned explicit setup (such as a pinned Cargo install); this
+entry point does not claim a macOS or Linux ARM64 binary installation path.
+
 The IC toolset additionally provisions and checks native executables on all
 three CI hosts above. Offline fixtures exercise digest/version refusals, retained
 failed and interrupted setup, and atomic activation using substituted payloads;

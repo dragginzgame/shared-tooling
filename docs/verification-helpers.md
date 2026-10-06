@@ -43,7 +43,7 @@ of working versus committed sources and their release/preparation transactions.
 
 ## CI binary installers
 
-The actionlint, ShellCheck and gitleaks entry points delegate to
+The actionlint, ShellCheck, gitleaks and sccache entry points delegate to
 `scripts/ci/install-ci-tool.sh`. Their existing version, SHA-256 and installation
 directory arguments are unchanged. The implementation shares host selection,
 HTTPS download, checksum admission, extraction, exact version admission and
@@ -52,7 +52,38 @@ Staging lives on the destination filesystem; failures retain the candidate and
 leave the installed executable intact. Successful installation removes its own
 staging files. This does not merge repository-local host/IC bundle activation
 or change any consumer's pins. Include the internal helper and checksum verifier
-in snapshots with any of these three entry points.
+in snapshots with any of these entry points.
+
+`install-sccache.sh` uses the same explicit version, SHA-256 and installation
+directory arguments. Its reviewed asset scope is Linux x86-64, using the
+`sccache-vVERSION-x86_64-unknown-linux-musl.tar.gz` release asset. Other hosts
+are rejected before installation or download; consumers retain their explicit
+Cargo/native setup on those hosts. Extending binary asset selection requires
+reviewed pins and corresponding qualification, not guessed download names.
+The installer prints the selected executable path; callers own `GITHUB_PATH`,
+`RUSTC_WRAPPER`, cache configuration and any server startup. Include this entry
+point, `install-ci-tool.sh` and `verify-file-checksum.sh` in the same snapshot.
+
+## Compiler-cache launcher adoption
+
+`scripts/ci/run-sccache.sh` owns stable, repository-scoped temporary files and
+socket selection for a cache server that outlives one validation invocation.
+It forwards the exact arguments, diagnostics and exit status to `SCCACHE_BIN`;
+it does not select Cargo's compiler wrapper or retry compiler failures.
+
+Consumers with an existing cache-failure adapter can select that executable as
+`SCCACHE_BIN`, keeping the actual cache executable under a separate local
+selection. The shared launcher establishes the runtime before executing the
+adapter, which inherits `TMPDIR` and `SCCACHE_SERVER_UDS`. The adapter must not
+call the launcher recursively or reselect/delete its stable runtime directory.
+Keep fallback classification and diagnostic policy local until independently
+qualified for the selected cache version; text resembling a cache diagnostic
+does not by itself establish that a compiler has not already run.
+
+During adoption, replace duplicated directory/socket setup and retain focused
+checks for exact argv, compiler failure without replay, cache-management calls,
+adapter failure status and runtime survival after invocation scratch cleanup.
+Snapshot adoption does not change consumer toolchain or compiler-wrapper policy.
 
 ## Local documentation links
 

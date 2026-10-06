@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-snapshot-test.XXXXXX")"
-trap 'rm -rf "$FIXTURE"' EXIT
+trap 'if [[ $? == 0 ]]; then rm -rf "$FIXTURE"; else printf "Failed snapshot-distribution fixture retained: %s\n" "$FIXTURE" >&2; fi' EXIT
 # Match refresh-consumer physical paths when TMPDIR contains a host alias.
 FIXTURE="$(cd "$FIXTURE" && pwd -P)"
 REAL_GIT="$(command -v git)"

@@ -94,6 +94,20 @@ checksum contracts are unchanged; the shared implementation stages on the
 destination filesystem and retains failed candidates. Consumers must review
 the expanded snapshot dependency set before refreshing the entry points.
 
+## Compiler-cache setup
+
+The sccache installer extracts Canic's `scripts/ci/install-sccache-ci.sh` at
+`d815abfc661d791ecf72afc5b1e4b6a990f37a91` (source file clean), preserving its
+Linux x86-64 musl archive mapping. Shared Tooling adds it to the existing CI
+installer owner so failure retention and same-filesystem replacement converge.
+Canic's reviewed 0.17.0 archive digest was checked against official release
+metadata; consumers still own their version and digest selections.
+
+Launcher adoption retains Canic's compiler-fallback policy in its own adapter
+while reusing the already-shared runtime-directory/socket owner. Neither
+extraction nor these instructions establish a committed consumer migration or
+qualify fallback behavior against a real cache failure.
+
 ## Formatter prerequisites and changelog convergence
 
 The formatter prerequisite checker extracts IC Testkit's

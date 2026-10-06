@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.1.10]
+
+### Added
+
+- Add a checksum-verified sccache CI installer for Linux x86-64, retaining failed
+  candidates and preserving the installed executable on rejection. Consumers
+  continue to select the version, digest and compiler-cache configuration.
+  [#20](https://github.com/dragginzgame/shared-tooling/issues/20).
+
+### Fixed
+
+- Preserve failed portable regression fixtures for inspection and CI artifact
+  upload, while continuing to remove successful temporary fixtures.
+  [#21](https://github.com/dragginzgame/shared-tooling/issues/21).
+- Allow tag-maintenance retries to reuse retained evidence directories whose
+  generated names contain underscores, while still rejecting unsafe paths.
+  [#11](https://github.com/dragginzgame/shared-tooling/issues/11).
+
 ## [0.1.9]
 
 ### Added

@@ -173,6 +173,8 @@ temporary log directory and prints its location instead of deleting the evidence
 an invocation-owned temporary directory that will later be deleted. It defaults
 to `.tmp/sccache-runtime` in the consuming repository. Override discovery with
 `SCCACHE_BIN`, `SCCACHE_REPOSITORY_ROOT`, or `SCCACHE_RUNTIME_DIR`.
+Consumers retain cache-failure policy in an explicit adapter; see
+[launcher adoption](docs/verification-helpers.md#compiler-cache-launcher-adoption).
 
 ### Rust pre-commit formatting
 
@@ -192,10 +194,14 @@ Cargo workspace and does not activate the Rust hook in its own checkout.
 
 ### Checksum-verified tool installers
 
-The actionlint, Gitleaks, ShellCheck and yq installers require the consuming
+The actionlint, Gitleaks, ShellCheck, sccache and yq installers require the consuming
 repository to supply an exact version and the SHA-256 digest for the detected
 platform. Shared Tooling owns secure download and verification mechanics; each
 consumer continues to own version policy.
+
+The sccache binary installer currently selects only the reviewed Linux x86-64
+asset. It retains failed candidates and uses the same shared installation
+implementation as actionlint, Gitleaks and ShellCheck.
 
 ```bash
 scripts/ci/install-actionlint.sh \

@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-test.XXXXXX")"
-trap 'rm -rf "$FIXTURE"' EXIT
+trap 'if [[ $? == 0 ]]; then rm -rf "$FIXTURE"; else printf "Failed portable-tools fixture retained: %s\n" "$FIXTURE" >&2; fi' EXIT
 
 for script in \
     "$ROOT"/scripts/ci/*.sh \
@@ -46,6 +46,7 @@ bash "$ROOT/scripts/ci/test-cargo-metadata.sh"
 bash "$ROOT/scripts/ci/test-format-tools.sh"
 bash "$ROOT/scripts/ci/test-git-hooks.sh"
 bash "$ROOT/scripts/ci/test-cloc.sh"
+bash "$ROOT/scripts/ci/test-fixture-retention.sh"
 bash "$ROOT/scripts/ci/test-snapshot-distribution.sh"
 bash "$ROOT/scripts/ci/test-release-runner.sh"
 bash "$ROOT/scripts/ci/test-release-metadata.sh"
@@ -70,7 +71,7 @@ expected_runtime="$FIXTURE/repository/.tmp/sccache-runtime"
 [[ "$(<"$FIXTURE/result/tmpdir")" == "$expected_runtime/tmp" ]]
 [[ "$(<"$FIXTURE/result/arguments")" == "rustc --version" ]]
 
-for installer in install-actionlint.sh install-gitleaks.sh install-shellcheck.sh install-yq.sh; do
+for installer in install-actionlint.sh install-gitleaks.sh install-shellcheck.sh install-sccache.sh install-yq.sh; do
     bash "$ROOT/scripts/ci/$installer" --help >/dev/null 2>&1
     if bash "$ROOT/scripts/ci/$installer" \
         --version 1.0.0 --sha256 invalid >/dev/null 2>&1; then

@@ -45,6 +45,18 @@ chmod +x "$payloads/shellcheck/shellcheck-v0.11.0/shellcheck"
 tar -cJf "$archives/shellcheck-v0.11.0.linux.x86_64.tar.xz" \
     -C "$payloads/shellcheck" shellcheck-v0.11.0
 
+sccache_package=sccache-v0.17.0-x86_64-unknown-linux-musl
+mkdir -p "$payloads/sccache/$sccache_package"
+cat > "$payloads/sccache/$sccache_package/sccache" <<'SCRIPT'
+#!/usr/bin/env bash
+echo executed >> "$INSTALLER_SCCACHE_EXECUTIONS"
+printf 'sccache %s\n' "${INSTALLER_SCCACHE_VERSION:-0.17.0}"
+exit "${INSTALLER_SCCACHE_STATUS:-0}"
+SCRIPT
+chmod +x "$payloads/sccache/$sccache_package/sccache"
+tar -czf "$archives/$sccache_package.tar.gz" -C "$payloads/sccache" "$sccache_package"
+export INSTALLER_SCCACHE_EXECUTIONS="$FIXTURE/sccache-executions"
+
 for platform in linux_amd64 linux_arm64 darwin_amd64 darwin_arm64; do
     cat > "$archives/yq_$platform" <<'SCRIPT'
 #!/usr/bin/env bash
@@ -107,6 +119,13 @@ checksum_sha256() {
 actionlint_checksum="$(checksum_sha256 "$archives/actionlint_1.7.12_linux_amd64.tar.gz")"
 gitleaks_checksum="$(checksum_sha256 "$archives/gitleaks_8.30.1_linux_x64.tar.gz")"
 shellcheck_checksum="$(checksum_sha256 "$archives/shellcheck-v0.11.0.linux.x86_64.tar.xz")"
+sccache_checksum="$(checksum_sha256 "$archives/$sccache_package.tar.gz")"
+
+PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+    bash "$ROOT/scripts/ci/install-sccache.sh" --version 0.17.0 \
+    --sha256 "$sccache_checksum" --install-dir "$FIXTURE/installed" >/dev/null
+[[ "$("$FIXTURE/installed/sccache" --version)" == 'sccache 0.17.0' ]]
+
 
 PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     bash "$ROOT/scripts/ci/install-actionlint.sh" \
@@ -169,19 +188,22 @@ if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     exit 1
 fi
 
-# All three public entry points exercise the same preservation boundary.
-for tool in actionlint gitleaks shellcheck; do
+# All shared public entry points exercise the same preservation boundary.
+for tool in actionlint gitleaks shellcheck sccache; do
     case "$tool" in
         actionlint) version=1.7.12; digest="$actionlint_checksum"; archive=actionlint_1.7.12_linux_amd64.tar.gz ;;
         gitleaks) version=8.30.1; digest="$gitleaks_checksum"; archive=gitleaks_8.30.1_linux_x64.tar.gz ;;
         shellcheck) version=0.11.0; digest="$shellcheck_checksum"; archive=shellcheck-v0.11.0.linux.x86_64.tar.xz ;;
+        sccache) version=0.17.0; digest="$sccache_checksum"; archive="$sccache_package.tar.gz" ;;
     esac
     cp "$FIXTURE/installed/$tool" "$FIXTURE/original"
+    : > "$INSTALLER_SCCACHE_EXECUTIONS"
     if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
         bash "$ROOT/scripts/ci/install-$tool.sh" --version "$version" \
         --sha256 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff \
         --install-dir "$FIXTURE/installed" > "$FIXTURE/rejected" 2>&1; then exit 1; fi
     cmp "$FIXTURE/original" "$FIXTURE/installed/$tool"
+    [[ ! -s "$INSTALLER_SCCACHE_EXECUTIONS" ]] || exit 1
     retained=0
     for attempt in "$FIXTURE/installed/.$tool-install."*; do
         [[ -f "$attempt/$archive" ]] || continue
@@ -198,11 +220,39 @@ for tool in actionlint gitleaks shellcheck; do
         cp "$FIXTURE/original" "$payloads/shellcheck/shellcheck-v9.9.9/shellcheck"
         tar -cJf "$archives/$wrong_archive" -C "$payloads/shellcheck" shellcheck-v9.9.9
         digest="$(checksum_sha256 "$archives/$wrong_archive")"
+    elif [[ "$tool" == sccache ]]; then
+        wrong_package=sccache-v9.9.9-x86_64-unknown-linux-musl
+        mkdir -p "$payloads/sccache/$wrong_package"
+        cp "$FIXTURE/original" "$payloads/sccache/$wrong_package/sccache"
+        tar -czf "$archives/$wrong_archive" -C "$payloads/sccache" "$wrong_package"
+        digest="$(checksum_sha256 "$archives/$wrong_archive")"
     fi
     if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
         bash "$ROOT/scripts/ci/install-$tool.sh" --version 9.9.9 --sha256 "$digest" \
         --install-dir "$FIXTURE/installed" > "$FIXTURE/rejected" 2>&1; then exit 1; fi
     cmp "$FIXTURE/original" "$FIXTURE/installed/$tool"
+done
+
+# Successful version text does not override a failed probe, and prefix matches
+# must not admit a different sccache version. Neither failure replaces the tool.
+cp "$FIXTURE/installed/sccache" "$FIXTURE/original-sccache"
+for failure in status version; do
+    probe_status=0; reported_version=0.17.0
+    if [[ "$failure" == status ]]; then probe_status=7; else reported_version=0.17.00; fi
+    if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+        INSTALLER_SCCACHE_STATUS="$probe_status" INSTALLER_SCCACHE_VERSION="$reported_version" \
+        bash "$ROOT/scripts/ci/install-sccache.sh" --version 0.17.0 --sha256 "$sccache_checksum" \
+        --install-dir "$FIXTURE/installed" > "$FIXTURE/rejected" 2>&1; then exit 1; fi
+    cmp "$FIXTURE/original-sccache" "$FIXTURE/installed/sccache"
+done
+# Only the reviewed Linux x86-64 asset is selected; reject other hosts before
+# creating an installation destination or attempting a download.
+for host in Linux:aarch64 Darwin:x86_64 Darwin:arm64; do
+    if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+        INSTALLER_TEST_OS="${host%:*}" INSTALLER_TEST_ARCH="${host#*:}" \
+        bash "$ROOT/scripts/ci/install-sccache.sh" --version 0.17.0 --sha256 "$sccache_checksum" \
+        --install-dir "$FIXTURE/unsupported-$host" > "$FIXTURE/rejected" 2>&1; then exit 1; fi
+    [[ ! -e "$FIXTURE/unsupported-$host" ]] || exit 1
 done
 
 # Exercise each native asset spelling using substitutes, not native binaries.
