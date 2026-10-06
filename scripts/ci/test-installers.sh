@@ -61,6 +61,7 @@ for platform in linux_amd64 linux_arm64 darwin_amd64 darwin_arm64; do
     cat > "$archives/yq_$platform" <<'SCRIPT'
 #!/usr/bin/env bash
 echo 'yq (https://github.com/mikefarah/yq/) version v4.47.2'
+exit "${INSTALLER_YQ_STATUS:-0}"
 SCRIPT
 done
 
@@ -168,6 +169,31 @@ for failure in version checksum; do
     fi
     # Failed installation must preserve the previously verified executable.
     [[ "$("$FIXTURE/installed/yq" --version)" == 'yq (https://github.com/mikefarah/yq/) version v4.47.2' ]]
+done
+
+cp "$FIXTURE/installed/yq" "$FIXTURE/original-yq"
+if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" INSTALLER_YQ_STATUS=17 \
+    bash "$ROOT/scripts/ci/install-yq.sh" --version 4.47.2 --sha256 "$yq_checksum" \
+    --install-dir "$FIXTURE/installed" > "$FIXTURE/yq-status.log" 2>&1; then exit 1; fi
+cmp "$FIXTURE/original-yq" "$FIXTURE/installed/yq"
+retained=0
+for attempt in "$FIXTURE/installed/.yq-install."*; do
+    [[ -f "$attempt/yq_linux_amd64" ]] || exit 1
+    cmp "$archives/yq_linux_amd64" "$attempt/yq_linux_amd64"
+    retained=$((retained + 1))
+done
+[[ "$retained" == 3 ]] || exit 1
+mkdir -p "$FIXTURE/yq-directory/yq"
+printf 'keep directory contents\n' > "$FIXTURE/yq-directory/yq/existing"
+if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+    bash "$ROOT/scripts/ci/install-yq.sh" --version 4.47.2 --sha256 "$yq_checksum" \
+    --install-dir "$FIXTURE/yq-directory" > "$FIXTURE/yq-directory.log" 2>&1; then exit 1; fi
+[[ ! -e "$FIXTURE/yq-directory/yq/yq" && "$(cat "$FIXTURE/yq-directory/yq/existing")" == 'keep directory contents' ]]
+for version in 3.4.5 4.47.2-rc.1; do
+    if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+        bash "$ROOT/scripts/ci/install-yq.sh" --version "$version" --sha256 "$yq_checksum" \
+        --install-dir "$FIXTURE/yq-unsupported" > "$FIXTURE/yq-version.log" 2>&1; then exit 1; fi
+    [[ ! -e "$FIXTURE/yq-unsupported" ]]
 done
 
 if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \

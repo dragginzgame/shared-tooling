@@ -133,6 +133,61 @@ fi
 bash "$consumer_root/scripts/ci/verify-shared-tooling-snapshot.sh" \
     --consumer "$consumer_root" >/dev/null
 
+# The checksum helper is inspected data, never verification authority. Neither
+# helper-only corruption nor corruption of both helper and payload may pass.
+export SNAPSHOT_HELPER_EXECUTED="$FIXTURE/helper-executed"
+for corruption in helper both; do
+    cat > "$consumer_root/scripts/ci/verify-file-checksum.sh" <<'SCRIPT'
+#!/usr/bin/env bash
+: > "$SNAPSHOT_HELPER_EXECUTED"
+exit 0
+SCRIPT
+    if [[ "$corruption" == both ]]; then
+        printf '# changed payload\n' >> "$consumer_root/scripts/ci/sample.sh"
+    fi
+    if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer_root" \
+        > "$FIXTURE/corrupt-$corruption.log" 2>&1; then exit 1; fi
+    [[ ! -e "$SNAPSHOT_HELPER_EXECUTED" ]]
+    cp -p "$revision_root/scripts/ci/verify-file-checksum.sh" "$consumer_root/scripts/ci/"
+    cp -p "$revision_root/scripts/ci/sample.sh" "$consumer_root/scripts/ci/"
+done
+
+# Exercise the independent bootstrap on both backends; output that looks valid
+# must not hide failure, and a failed selected backend must not fall back.
+hash_bin="$FIXTURE/hash-bin"
+mkdir "$hash_bin"
+ln -s "$(command -v dirname)" "$hash_bin/dirname"
+export SNAPSHOT_REAL_SHASUM
+SNAPSHOT_REAL_SHASUM="$(command -v shasum)"
+export SNAPSHOT_FALLBACK_USED="$FIXTURE/fallback-used"
+printf '#!%s\n' "$BASH" > "$hash_bin/shasum"
+cat >> "$hash_bin/shasum" <<'SCRIPT'
+: > "$SNAPSHOT_FALLBACK_USED"
+exec "$SNAPSHOT_REAL_SHASUM" "$@"
+SCRIPT
+chmod +x "$hash_bin/shasum"
+PATH="$hash_bin" "$BASH" "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" \
+    --consumer "$consumer_root" > "$FIXTURE/shasum.log"
+[[ -f "$SNAPSHOT_FALLBACK_USED" ]]
+rm "$SNAPSHOT_FALLBACK_USED"
+printf '#!%s\n' "$BASH" > "$hash_bin/sha256sum"
+cat >> "$hash_bin/sha256sum" <<'SCRIPT'
+case "${SNAPSHOT_HASH_MODE:-valid}" in
+    malformed) printf 'invalid digest\n' ;;
+    failed) "$SNAPSHOT_REAL_SHASUM" -a 256; exit 17 ;;
+    *) exec "$SNAPSHOT_REAL_SHASUM" -a 256 ;;
+esac
+SCRIPT
+chmod +x "$hash_bin/sha256sum"
+PATH="$hash_bin" "$BASH" "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" \
+    --consumer "$consumer_root" > "$FIXTURE/sha256sum.log"
+for failure in malformed failed; do
+    if SNAPSHOT_HASH_MODE="$failure" PATH="$hash_bin" "$BASH" \
+        "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer_root" \
+        > "$FIXTURE/hash-$failure.log" 2>&1; then exit 1; fi
+done
+[[ ! -e "$SNAPSHOT_FALLBACK_USED" ]]
+
 cp "$consumer_root/.shared-tooling.snapshot" "$consumer_root/duplicate.snapshot"
 awk '$1 == "file" { print; exit }' "$consumer_root/.shared-tooling.snapshot" \
     >>"$consumer_root/duplicate.snapshot"
@@ -303,5 +358,30 @@ PATH="$FIXTURE/bin:$PATH" \
 cmp "$FIXTURE/consumer-readme" "$tracked_consumer/README.md"
 cmp "$revision_root/$checksum_path" "$tracked_consumer/$checksum_path"
 cmp "$revision_root/$verifier_path" "$tracked_consumer/$verifier_path"
+
+# Export the documented governance selection, then check links in that export.
+# This proves closure of the consumer file set, not merely the source checkout.
+governance_consumer="$FIXTURE/governance"
+mkdir "$governance_consumer"
+git init -q "$governance_consumer"
+governance_args=()
+governance_docs=()
+while IFS= read -r path; do
+    [[ -n "$path" ]] || exit 1
+    mkdir -p "$source_root/$(dirname "$path")" "$revision_root/$(dirname "$path")"
+    cp -p "$ROOT/$path" "$source_root/$path"
+    cp -p "$ROOT/$path" "$revision_root/$path"
+    governance_args+=(--file "$path")
+    case "$path" in *.md) governance_docs+=("$path") ;; esac
+done < "$ROOT/scripts/distribution/governance-files.txt"
+PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$governance_consumer" "${governance_args[@]}" \
+    > "$FIXTURE/governance-refresh.log"
+perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$governance_consumer" \
+    "${governance_docs[@]}" > "$FIXTURE/governance-links.log"
+# Ensure the checker actually inspects exported targets, not the source files.
+rm "$governance_consumer/docs/tag-maintenance.md"
+if perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$governance_consumer" \
+    "${governance_docs[@]}" > "$FIXTURE/governance-missing.log" 2>&1; then exit 1; fi
 
 echo "snapshot distribution test passed"

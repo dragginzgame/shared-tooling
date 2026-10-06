@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.1.12]
+
+### Added
+
+- Inspect GitHub Actions runs for an exact local commit across workflows, with
+  explicit listing limits and clearly labelled historical failure searches.
+- Check portable-test tools and formatter prerequisites before starting
+  fixtures, reporting missing commands together with setup instructions.
+
+### Fixed
+
+- Keep release observation and atomic push bound to the recorded destination,
+  refusing remote changes during validation or before dispatch.
+  [#25](https://github.com/dragginzgame/shared-tooling/issues/25).
+- Use the common installer for standalone yq, rejecting failed version probes
+  and directory destinations while preserving installed tools and failed inputs.
+  Consumers also include the common installer in their selected snapshot.
+  [#26](https://github.com/dragginzgame/shared-tooling/issues/26).
+- Verify snapshot contents independently of the inspected checksum helper,
+  preventing a changed helper from approving changed files.
+  [#27](https://github.com/dragginzgame/shared-tooling/issues/27).
+- Keep the governance snapshot's linked guides complete through one maintained
+  file list checked as an isolated consumer export.
+  [#28](https://github.com/dragginzgame/shared-tooling/issues/28).
+- Collect CI failure evidence after native tool qualification, including retained
+  installer candidates and diagnostics. Use pinned local ripgrep without a
+  duplicate package-manager installation.
+  [#29](https://github.com/dragginzgame/shared-tooling/issues/29).
+
 ## [0.1.11]
 
 ### Changed

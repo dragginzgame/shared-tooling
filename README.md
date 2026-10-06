@@ -201,7 +201,10 @@ consumer continues to own version policy.
 
 The sccache binary installer currently selects only the reviewed Linux x86-64
 asset. It retains failed candidates and uses the same shared installation
-implementation as actionlint, Gitleaks and ShellCheck.
+implementation as actionlint, Gitleaks, ShellCheck and standalone yq. Each entry
+point requires `scripts/ci/install-ci-tool.sh` in its snapshot. All reject failed
+version probes and directory destinations, retain failed candidates and replace
+the executable with a rename on the destination filesystem.
 
 ```bash
 scripts/ci/install-actionlint.sh \
@@ -218,7 +221,18 @@ authenticated GitHub CLI session.
 
 ```bash
 scripts/dev/gh-ci.sh --failed --logs
+scripts/dev/gh-ci.sh --commit HEAD --all-workflows --limit 100
 ```
+
+`--commit` resolves a local revision to its full commit identity and avoids an
+implicit branch filter; add `--branch` explicitly to narrow it. `--all-workflows`
+lists runs without the default `CI` workflow filter. The list is bounded by
+`--limit`, includes pending and failed runs, and is not a complete CI verdict.
+Increase the limit when necessary and inspect listed runs with `--run ID --logs`.
+`--failed` deliberately searches historical failures, which may have been
+superseded by later successes. Existing branch/workflow defaults remain unchanged.
+Select another repository through the GitHub CLI's `GH_REPO` environment variable;
+commit revisions still resolve in the current local checkout.
 
 Agents also recognize `check CI`, `check issues` and `check for work` through the
 [maintenance rules](rules/agent-maintenance.md). To enable automatic checks during
@@ -239,6 +253,11 @@ the support matrix installed:
 ```bash
 bash scripts/ci/test-portable-tools.sh
 ```
+
+The suite first checks its prepared tools and formatter prerequisites, reporting
+missing commands together before creating fixtures. Run only that offline check
+with `bash scripts/ci/check-portable-prerequisites.sh`; see
+[local setup](docs/local-setup.md) for explicit installation instructions.
 
 ### Snapshot distribution
 

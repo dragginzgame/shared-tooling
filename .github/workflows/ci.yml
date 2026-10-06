@@ -87,12 +87,12 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y cloc ripgrep xz-utils
+          sudo apt-get install -y cloc xz-utils
       - name: Install fixture dependencies on macOS
         if: runner.os == 'macOS'
         shell: bash
         run: |
-          brew install cloc ripgrep
+          brew install cloc
           echo /bin >> "$GITHUB_PATH"
       - name: Install pinned Cargo manifest formatter
         shell: bash
@@ -104,8 +104,8 @@ jobs:
       - name: Install pinned parsers and ripgrep with PCRE2
         shell: bash
         run: |
-          bash scripts/dev/install-host-tools.sh --with-ripgrep
-          bash scripts/dev/install-host-tools.sh --with-ripgrep --check
+          bash scripts/dev/install-host-tools.sh --with-ripgrep 2>&1 | tee "$RUNNER_TEMP/host-tools-install.log"
+          bash scripts/dev/install-host-tools.sh --with-ripgrep --check 2>&1 | tee "$RUNNER_TEMP/host-tools-check.log"
           echo "$GITHUB_WORKSPACE/.tools/host/bin" >> "$GITHUB_PATH"
       - name: Run portable regression set with prepared tools
         shell: bash
@@ -115,7 +115,12 @@ jobs:
           mkdir -p "$TMPDIR"
           bash --version | head -n 1
           bash scripts/ci/test-portable-tools.sh 2>&1 | tee "$RUNNER_TEMP/portable-regression.log"
-      - name: Retain failed portable fixtures and diagnostics
+      - name: Qualify pinned native IC executables
+        shell: bash
+        run: |
+          bash scripts/dev/install-ic-tools.sh 2>&1 | tee "$RUNNER_TEMP/ic-tools-install.log"
+          bash scripts/dev/install-ic-tools.sh --check 2>&1 | tee "$RUNNER_TEMP/ic-tools-check.log"
+      - name: Retain failed validation and installer evidence
         if: failure()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
@@ -123,11 +128,10 @@ jobs:
           path: |
             ${{ runner.temp }}/portable-regression.log
             ${{ runner.temp }}/portable-fixtures
+            ${{ runner.temp }}/host-tools-*.log
+            ${{ runner.temp }}/ic-tools-*.log
+            ${{ github.workspace }}/.tools/host-set.*
+            ${{ github.workspace }}/.tools/ic-set.*
           include-hidden-files: true
           retention-days: 14
           if-no-files-found: ignore
-      - name: Qualify pinned native IC executables
-        shell: bash
-        run: |
-          bash scripts/dev/install-ic-tools.sh
-          bash scripts/dev/install-ic-tools.sh --check

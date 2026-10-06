@@ -42,11 +42,11 @@ feedback ledgers, project-prefixed issue IDs or parallel tracking queues.
 Handoffs link to issues without duplicating triage or issue status. Supporting
 evidence stays with its existing owner. Reuse a matching issue and include the
 reviewed revision, dirty-source identity when relevant, affected owner/callers/hosts,
-symptom, focused evidence, smallest proposal and disposition. Owning-repository
-finding reports and matching comments have the baseline's standing authorization;
+symptom, focused evidence, smallest proposal and disposition. Relevant GitHub
+issue work across repositories has the baseline's standing authorization;
 apply authorized local repairs directly. Follow the
 [maintenance rules](rules/agent-maintenance.md) for the reporting workflow and
-its separate boundaries for sibling edits, issue closure and release effects.
+its separate boundaries for sibling file edits and release effects.
 
 Upstream acceptance and verified consumer adoption are separate outcomes. An
 accepted shared fix does not prove that a consumer refreshed its rules or tools,
@@ -84,7 +84,7 @@ Portable scripts must:
 - validate arguments before mutation or download;
 - document non-standard dependencies;
 - avoid hidden network, credential, deployment, or release effects;
-- use temporary files safely and clean them on exit;
+- use temporary files safely, clean disposable scratch and retain failed evidence;
 - fail with a non-zero status and actionable diagnostics;
 - preserve consumer-owned version and policy decisions; and
 - include an offline regression whenever the behavior can be exercised with a

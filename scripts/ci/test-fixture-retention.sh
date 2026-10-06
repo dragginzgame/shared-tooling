@@ -29,4 +29,53 @@ TMPDIR="$fixture/portable" PATH="$fixture/bin:$PATH" \
 [[ "$status" == 24 ]] || exit 1
 set -- "$fixture/portable"/shared-tooling-test.*
 [[ $# == 1 && -f "$1/input.txt" ]] || exit 1
+
+# Exercise the actual workflow's native qualification commands with a failed
+# installer substitute, then check the final collector selects its evidence.
+# This checks local ordering/paths; GitHub's upload service is qualified by CI.
+yq -o json '.' "$ROOT/.github/workflows/ci.yml" > "$fixture/workflow.json"
+jq -e '
+  .jobs["portable-regression"].steps | to_entries |
+  map(select(.value.run? | strings | contains("bash scripts/dev/install-ic-tools.sh")))[0].key as $native |
+  map(select(.value.uses? | strings | startswith("actions/upload-artifact@"))) |
+  length == 1 and .[0].key > $native and .[0].value.if == "failure()" and
+  .[0].value.with["include-hidden-files"] == true
+' "$fixture/workflow.json" > /dev/null
+jq -r '.jobs["portable-regression"].steps[] | select(.run? | strings |
+  contains("bash scripts/dev/install-ic-tools.sh")) | .run' "$fixture/workflow.json" > "$fixture/native-step.sh"
+jq -r '.jobs["portable-regression"].steps[] | select(.uses? | strings |
+  startswith("actions/upload-artifact@")) | .with.path' "$fixture/workflow.json" > "$fixture/upload-paths"
+for phase in install check; do
+    native="$fixture/native-$phase"
+    mkdir -p "$native/scripts/dev" "$native/temp"
+    cat > "$native/scripts/dev/install-ic-tools.sh" <<'SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+mkdir -p .tools/ic-set.fixture
+printf 'retained installed input\n' > .tools/ic-set.fixture/payload
+selected=install
+[[ "${1:-}" != --check ]] || selected=check
+echo "native fixture: $selected"
+[[ "$selected" != "$RETENTION_FAIL_IC_PHASE" ]] || exit 23
+SCRIPT
+    status=0
+    (cd "$native"; RUNNER_TEMP="$native/temp" RETENTION_FAIL_IC_PHASE="$phase" \
+        "$BASH" --noprofile --norc -e -o pipefail "$fixture/native-step.sh") \
+        > "$native/command.log" 2>&1 || status=$?
+    [[ "$status" == 23 && -f "$native/.tools/ic-set.fixture/payload" ]] || exit 1
+    : > "$native/collected"
+    # shellcheck disable=SC2016 # Replace literal GitHub expressions, not shell variables.
+    while IFS= read -r pattern; do
+        [[ -n "$pattern" ]] || continue
+        case "$pattern" in
+            '${{ runner.temp }}/'*) pattern="$native/temp/${pattern#*/}" ;;
+            '${{ github.workspace }}/'*) pattern="$native/${pattern#*/}" ;;
+            *) echo "unhandled artifact location: $pattern" >&2; exit 1 ;;
+        esac
+        compgen -G "$pattern" >> "$native/collected" || true
+    done < "$fixture/upload-paths"
+    grep -Fx "$native/.tools/ic-set.fixture" "$native/collected" > /dev/null
+    grep -Fx "$native/temp/ic-tools-$phase.log" "$native/collected" > /dev/null
+    grep -Fx "native fixture: $phase" "$native/temp/ic-tools-$phase.log" > /dev/null
+done
 echo 'Failed fixture status and input retention checks passed'
