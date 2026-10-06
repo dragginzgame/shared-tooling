@@ -1,6 +1,35 @@
 # Changelog
 
-## [0.1.4]
+## [0.1.5]
+
+### Added
+
+- Shared dependency-pinning rules and an offline CI checker for immutable Git and
+  Action references, Cargo version constraints, tracked workspace lockfiles and
+  explicit exceptions for sibling or moving inputs. Include a checksum-verified
+  YAML/TOML parser installer and run the checker in Shared Tooling's release gate.
+
+### Changed
+
+- Require authorized dependency changes to prepare and verify every affected
+  independent workspace lockfile, including path-dependent test harnesses,
+  before release validation. Keep release fetching locked.
+  [#6](https://github.com/dragginzgame/shared-tooling/issues/6).
+
+### Fixed
+
+- Keep nested validation in its intended checkout by limiting logger snapshot
+  identity to its own invocation. Isolate independent fixtures' Make selections
+  and exercise adoption under inherited release settings while preserving normal
+  nested validation and failed logs.
+  [#7](https://github.com/dragginzgame/shared-tooling/issues/7).
+
+### Testing
+
+- Keep snapshot fixture identities consistent through temporary-directory aliases,
+  including macOS physical-path normalization.
+
+## [0.1.4] - 2026-10-06
 
 ### Fixed
 

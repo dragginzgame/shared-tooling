@@ -30,6 +30,7 @@ fi
 
 bash "$ROOT/scripts/ci/test-validation-target-runner.sh"
 bash "$ROOT/scripts/ci/test-installers.sh"
+bash "$ROOT/scripts/ci/test-dependency-pins.sh"
 bash "$ROOT/scripts/ci/test-git-hooks.sh"
 bash "$ROOT/scripts/ci/test-cloc.sh"
 bash "$ROOT/scripts/ci/test-snapshot-distribution.sh"
@@ -56,7 +57,7 @@ expected_runtime="$FIXTURE/repository/.tmp/sccache-runtime"
 [[ "$(<"$FIXTURE/result/tmpdir")" == "$expected_runtime/tmp" ]]
 [[ "$(<"$FIXTURE/result/arguments")" == "rustc --version" ]]
 
-for installer in install-actionlint.sh install-gitleaks.sh install-shellcheck.sh; do
+for installer in install-actionlint.sh install-gitleaks.sh install-shellcheck.sh install-yq.sh; do
     bash "$ROOT/scripts/ci/$installer" --help >/dev/null 2>&1
     if bash "$ROOT/scripts/ci/$installer" \
         --version 1.0.0 --sha256 invalid >/dev/null 2>&1; then

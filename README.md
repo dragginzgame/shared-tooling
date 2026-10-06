@@ -30,6 +30,8 @@ The baseline's focused mandatory policies live in `rules/`. The
 concise release summaries, GitHub issue links, breaking changes and minor-line
 detail files. The [Cargo dependency rules](rules/cargo-dependencies.md) require
 one root dependency catalog inherited by every child manifest. The
+[dependency pinning rules](rules/dependency-pinning.md) define immutable source
+identities, compatible registry requirements, locked builds and scoped exceptions. The
 [Git hook rules](rules/git-hooks.md) standardize Rust pre-commit formatting and
 safe repository-local installation. The
 [agent maintenance rules](rules/agent-maintenance.md) define user-triggered CI
@@ -40,6 +42,16 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the inclusion boundary and
 contributions.
 
 ## Current tools
+
+### Dependency pin checks
+
+`make check-pins` checks parsed Cargo and GitHub Actions declarations and tracked
+workspace lockfiles. `scripts/ci/check-dependency-pins.sh --consumer /path/to/repo`
+supports read-only consumer inspection. Prepare Mike Farah yq v4.47.2+, jq and Git
+first; Cargo is needed for Cargo workspaces. `YQ` can select an installed parser
+path. The shared installer requires an explicit reviewed version and checksum.
+See the [pinning policy](rules/dependency-pinning.md) for exact constraints,
+external inputs, exception records and the checks still owned by consumer gates.
 
 ### Cargo workspace LOC report
 
@@ -115,7 +127,7 @@ Cargo workspace and does not activate the Rust hook in its own checkout.
 
 ### Checksum-verified tool installers
 
-The actionlint, Gitleaks, and ShellCheck installers require the consuming
+The actionlint, Gitleaks, ShellCheck and yq installers require the consuming
 repository to supply an exact version and the SHA-256 digest for the detected
 platform. Shared Tooling owns secure download and verification mechanics; each
 consumer continues to own version policy.

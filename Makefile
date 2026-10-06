@@ -4,7 +4,7 @@ RELEASE_REMOTE ?= origin
 RELEASE_BRANCH ?= main
 SHELLCHECK ?= shellcheck
 
-.PHONY: help check-shell test-portable ci release-patch release-minor release-major \
+.PHONY: help check-shell check-pins test-portable ci release-patch release-minor release-major \
         release-resume release-version release-preflight release-verify \
         release-prepare-version release-prepared-check release-files \
         release-commit-check release-committed-check release-tagged-check release-push-check
@@ -14,7 +14,7 @@ $(error Select exactly one release target)
 endif
 
 help:
-	@echo "Focused: check-shell, test-portable"
+	@echo "Focused: check-shell, check-pins, test-portable"
 	@echo "Full gate: ci (explicit request or configured CI)"
 	@echo "Maintainer releases: release-patch, release-minor, release-major"
 	@echo "Recovery: rerun the normal release target; saved releases reconcile automatically"
@@ -25,8 +25,12 @@ check-shell:
 test-portable:
 	bash scripts/ci/test-portable-tools.sh
 
+check-pins:
+	bash scripts/ci/check-dependency-pins.sh
+
 ci:
 	+$(MAKE) --no-print-directory check-shell
+	+$(MAKE) --no-print-directory check-pins
 	+$(MAKE) --no-print-directory test-portable
 
 release-patch release-minor release-major:

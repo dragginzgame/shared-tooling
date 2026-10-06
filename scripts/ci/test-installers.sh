@@ -40,11 +40,18 @@ chmod +x "$payloads/shellcheck/shellcheck-v0.11.0/shellcheck"
 tar -cJf "$archives/shellcheck-v0.11.0.linux.x86_64.tar.xz" \
     -C "$payloads/shellcheck" shellcheck-v0.11.0
 
+for platform in linux_amd64 linux_arm64 darwin_amd64 darwin_arm64; do
+    cat > "$archives/yq_$platform" <<'SCRIPT'
+#!/usr/bin/env bash
+echo 'yq (https://github.com/mikefarah/yq/) version v4.47.2'
+SCRIPT
+done
+
 cat >"$FIXTURE/bin/uname" <<'SCRIPT'
 #!/usr/bin/env bash
 case "$1" in
--s) printf 'Linux\n' ;;
--m) printf 'x86_64\n' ;;
+-s) printf '%s\n' "${INSTALLER_TEST_OS:-Linux}" ;;
+-m) printf '%s\n' "${INSTALLER_TEST_ARCH:-x86_64}" ;;
 *) exit 2 ;;
 esac
 SCRIPT
@@ -117,6 +124,28 @@ PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     --install-dir "$FIXTURE/installed" >/dev/null
 "$FIXTURE/installed/shellcheck" --version | grep -F 'version: 0.11.0' >/dev/null
 
+yq_checksum="$(checksum_sha256 "$archives/yq_linux_amd64")"
+for platform in Linux:x86_64 Linux:aarch64 Darwin:x86_64 Darwin:arm64; do
+    PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+        INSTALLER_TEST_OS="${platform%:*}" INSTALLER_TEST_ARCH="${platform#*:}" \
+        bash "$ROOT/scripts/ci/install-yq.sh" --version 4.47.2 --sha256 "$yq_checksum" \
+        --install-dir "$FIXTURE/installed" >/dev/null
+    [[ "$("$FIXTURE/installed/yq" --version)" == 'yq (https://github.com/mikefarah/yq/) version v4.47.2' ]]
+done
+for failure in version checksum; do
+    version=4.47.2
+    digest="$yq_checksum"
+    if [[ "$failure" == version ]]; then version=4.47.1; else digest=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff; fi
+    if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+        bash "$ROOT/scripts/ci/install-yq.sh" --version "$version" --sha256 "$digest" \
+        --install-dir "$FIXTURE/installed" >/dev/null 2>&1; then
+        echo "installer test failed: yq accepted a $failure mismatch" >&2
+        exit 1
+    fi
+    # Failed installation must preserve the previously verified executable.
+    [[ "$("$FIXTURE/installed/yq" --version)" == 'yq (https://github.com/mikefarah/yq/) version v4.47.2' ]]
+done
+
 if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     bash "$ROOT/scripts/ci/install-actionlint.sh" \
     --version 1.7.1 \
@@ -136,4 +165,3 @@ if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
 fi
 
 echo "installer tests passed"
-

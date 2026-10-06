@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# This independent fixture owns its Make selections and logger checkout.
+unset MAKEFLAGS MFLAGS MAKEOVERRIDES
+unset VALIDATION_REPOSITORY_ROOT VALIDATION_RUNNER_SNAPSHOT_PATH
+
 ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/release-metadata-test.XXXXXX")"
 trap 'rm -rf "$FIXTURE"' EXIT
@@ -95,6 +99,8 @@ cp "$ROOT/scripts/ci/run-validation-targets.sh" "$logging_root/scripts/ci/"
 cp "$ROOT/Makefile" "$logging_root/Makefile"
 cat >> "$logging_root/Makefile" <<'MAKE'
 ci:
+	@test "$(RELEASE_VERSION)" = 0.1.1
+	@test -z "$(RELEASE_COMMIT)"
 	@echo release-gate-failure-marker
 	@exit 7
 MAKE
@@ -105,7 +111,11 @@ for attempt in first second; do
         exit 1
     fi
     rg -F release-gate-failure-marker \
-        "$logging_root/.git/release-state/validation-failures/latest.log" >/dev/null
+        "$logging_root/.git/release-state/validation-failures/latest.log" >/dev/null || {
+        cat "$FIXTURE/$attempt-gate.log" >&2
+        echo 'release metadata test failed: wrong gate or inherited release selection' >&2
+        exit 1
+    }
     if [[ "$attempt" == first ]]; then
         retained_logs=("$logging_root"/.git/release-state/validation-failures/*-0-ci.log)
         retained_log="${retained_logs[0]}"
