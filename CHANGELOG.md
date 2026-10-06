@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.1.9]
+
+### Added
+
+- Share offline formatter prerequisite checks so consumers use their reviewed
+  cargo-sort pin and prepared rustfmt consistently, without implicit installs.
+  [#19](https://github.com/dragginzgame/shared-tooling/issues/19).
+
+### Fixed
+
+- Restore exact authenticated archive bytes in host-tool recovery fixtures,
+  avoiding failures caused by regenerated archive headers. Retain failed CI
+  fixtures and diagnostics for native-host investigation.
+  [#17](https://github.com/dragginzgame/shared-tooling/issues/17).
+
 ## [0.1.8] - 2026-10-06
 
 ### Added

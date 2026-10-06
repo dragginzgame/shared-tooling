@@ -182,6 +182,8 @@ partial staging and preserves unselected files and unrelated working edits.
 The installer refuses to replace an existing hook setup.
 Following IcyDB and Canic, `fmt` runs `cargo sort --workspace` to order Cargo.toml
 files before `cargo fmt --all`; `fmt-check` checks both without modifying files.
+The shared `scripts/ci/check-format-tools.sh` admits the consumer's pinned
+cargo-sort and prepared rustfmt before either target, without installing tools.
 
 Rust consumers vendor both the hook and `scripts/dev/install-git-hooks.sh`, expose
 `make install-hooks`, and include `fmt-check` in CI. See the

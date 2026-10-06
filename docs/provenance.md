@@ -94,6 +94,23 @@ checksum contracts are unchanged; the shared implementation stages on the
 destination filesystem and retains failed candidates. Consumers must review
 the expanded snapshot dependency set before refreshing the entry points.
 
+## Formatter prerequisites and changelog convergence
+
+The formatter prerequisite checker extracts IC Testkit's
+`scripts/ci/check-format-tools.sh` at
+`827157434eb8b2d6c13c4b8e47493bd6a38678b9` (source script clean; Makefile dirty).
+It adds explicit consumer version/executable inputs and preserves offline,
+prepared-tool checks. Repeated Makefile guards in IC Host Tools, IC Memory,
+IC Backup and IC Blob Storage motivated one shared admission owner; workspace
+rosters, toolchains and extra formatters stay local.
+
+The finalizer adoption guidance traces IC Backup's `release-data.pl` at
+`52532cca4d5276bb67810ffb346aba464d5a719a` and IC Blob Storage's at
+`c3e271449753f782a0193314f4ed3d4db21c453f` plus uncommitted release adapter edits.
+Both retain local changelog selectors while already vendoring the shared AWK
+finalizer. This batch documents convergence on that existing owner; it does not
+claim their metadata transactions or snapshots have been migrated.
+
 ## Documentation, release entry points and registry observation
 
 The local documentation-link checker and exact crates.io observation derive

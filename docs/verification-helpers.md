@@ -281,6 +281,33 @@ the input file, invoke dependency resolution online, or use this to repair an
 already inconsistent graph. The upstream fixture includes independent real-Cargo
 locked/offline validation with local-only dependencies.
 
+## Formatter prerequisites
+
+```bash
+source ci/tool-versions.env
+bash scripts/ci/check-format-tools.sh "$SHARED_TOOLING_CARGO_SORT_VERSION"
+# An independent workspace can select its prepared toolchain explicitly:
+RUSTUP_TOOLCHAIN="$VALIDATION_TOOLCHAIN" \
+  bash scripts/ci/check-format-tools.sh "$SHARED_TOOLING_CARGO_SORT_VERSION" /path/to/cargo
+```
+
+The helper requires an explicit exact cargo-sort version and accepts an optional
+Cargo executable path, defaulting to `cargo` on PATH. It requires successful
+`sort --version` with the exact expected output and successful `fmt --version`.
+It forces Cargo offline and disables rustup automatic installation for these
+probes; it never installs tools, formats files, resolves dependencies or builds.
+A command that prints the expected version but exits unsuccessfully is rejected.
+An executable path is one argument, not a shell command; use `RUSTUP_TOOLCHAIN`
+for a selected rustup toolchain instead of embedding `cargo +toolchain` in it.
+
+Vendor this file in the reviewed snapshot and call it from a prerequisite shared
+by `fmt` and `fmt-check`. Keep the pin in the consumer's reviewed versions file;
+setup and CI must use that same value. Retire the replaced local version checks.
+Consumers retain workspace discovery, nested manifests, rustfmt configuration,
+frontend adapters and additional formatting steps. Probe every independently
+selected toolchain. This check establishes availability, not that formatting
+covers the right files; the adoption checker below supplies that separate proof.
+
 ## Consumer formatting-hook adoption
 
 ```sh

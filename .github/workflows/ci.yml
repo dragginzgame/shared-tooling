@@ -109,9 +109,23 @@ jobs:
           echo "$GITHUB_WORKSPACE/.tools/host/bin" >> "$GITHUB_PATH"
       - name: Run portable regression set with prepared tools
         shell: bash
+        env:
+          TMPDIR: ${{ runner.temp }}/portable-fixtures
         run: |
+          mkdir -p "$TMPDIR"
           bash --version | head -n 1
-          bash scripts/ci/test-portable-tools.sh
+          bash scripts/ci/test-portable-tools.sh 2>&1 | tee "$RUNNER_TEMP/portable-regression.log"
+      - name: Retain failed portable fixtures and diagnostics
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: portable-failure-${{ matrix.os }}
+          path: |
+            ${{ runner.temp }}/portable-regression.log
+            ${{ runner.temp }}/portable-fixtures
+          include-hidden-files: true
+          retention-days: 14
+          if-no-files-found: ignore
       - name: Qualify pinned native IC executables
         shell: bash
         run: |

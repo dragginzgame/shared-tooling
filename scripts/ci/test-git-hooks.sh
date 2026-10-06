@@ -4,10 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=/dev/null
 source "$ROOT/ci/tool-versions.env"
-[[ "$(cargo sort --version)" == "cargo-sort $SHARED_TOOLING_CARGO_SORT_VERSION" ]] || {
-    echo "hook tests require prepared cargo-sort $SHARED_TOOLING_CARGO_SORT_VERSION" >&2
-    exit 1
-}
+bash "$ROOT/scripts/ci/check-format-tools.sh" "$SHARED_TOOLING_CARGO_SORT_VERSION"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/git-hooks-test.XXXXXX")"
 trap 'if [[ $? == 0 ]]; then rm -rf -- "$FIXTURE"; else printf "Failed hook fixture retained: %s\n" "$FIXTURE" >&2; fi' EXIT
 # Reuse an existing source commit read-only, without creating fixture commits.
