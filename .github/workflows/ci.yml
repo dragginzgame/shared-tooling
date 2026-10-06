@@ -43,15 +43,13 @@ jobs:
             --version "$SHARED_TOOLING_GITLEAKS_VERSION" \
             --sha256 "$SHARED_TOOLING_GITLEAKS_SHA256_LINUX_X64" \
             --install-dir "$tool_dir")"
-          yq_bin="$(bash scripts/ci/install-yq.sh \
-            --version "$SHARED_TOOLING_YQ_VERSION" \
-            --sha256 "$SHARED_TOOLING_YQ_SHA256_LINUX_AMD64" \
-            --install-dir "$tool_dir")"
+          bash scripts/dev/install-host-tools.sh
+          bash scripts/dev/install-host-tools.sh --check
+          echo "$GITHUB_WORKSPACE/.tools/host/bin" >> "$GITHUB_PATH"
           {
             echo "ACTIONLINT_BIN=$actionlint_bin"
             echo "SHELLCHECK_BIN=$shellcheck_bin"
             echo "GITLEAKS_BIN=$gitleaks_bin"
-            echo "YQ=$yq_bin"
           } >>"$GITHUB_ENV"
       - name: Check shell and workflow sources
         shell: bash
@@ -88,12 +86,12 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y cloc jq ripgrep xz-utils
+          sudo apt-get install -y cloc ripgrep xz-utils
       - name: Install fixture dependencies on macOS
         if: runner.os == 'macOS'
         shell: bash
         run: |
-          brew install cloc jq ripgrep
+          brew install cloc ripgrep
           echo /bin >> "$GITHUB_PATH"
       - name: Install pinned Cargo manifest formatter
         shell: bash
@@ -102,22 +100,19 @@ jobs:
           cargo install cargo-sort --version "$SHARED_TOOLING_CARGO_SORT_VERSION" \
             --locked --root "$RUNNER_TEMP/shared-tooling-cargo"
           echo "$RUNNER_TEMP/shared-tooling-cargo/bin" >> "$GITHUB_PATH"
-      - name: Install pinned YAML and TOML parser
+      - name: Install pinned JSON, YAML and TOML parsers
         shell: bash
         run: |
-          source ci/tool-versions.env
-          case "$(uname -s):$(uname -m)" in
-            Linux:x86_64) digest="$SHARED_TOOLING_YQ_SHA256_LINUX_AMD64" ;;
-            Darwin:arm64) digest="$SHARED_TOOLING_YQ_SHA256_DARWIN_ARM64" ;;
-            Darwin:x86_64) digest="$SHARED_TOOLING_YQ_SHA256_DARWIN_AMD64" ;;
-            *) echo 'unsupported fixture host' >&2; exit 1 ;;
-          esac
-          yq_bin="$(bash scripts/ci/install-yq.sh \
-            --version "$SHARED_TOOLING_YQ_VERSION" --sha256 "$digest" \
-            --install-dir "$RUNNER_TEMP/shared-tooling-bin")"
-          echo "YQ=$yq_bin" >> "$GITHUB_ENV"
+          bash scripts/dev/install-host-tools.sh
+          bash scripts/dev/install-host-tools.sh --check
+          echo "$GITHUB_WORKSPACE/.tools/host/bin" >> "$GITHUB_PATH"
       - name: Run portable regression set with prepared tools
         shell: bash
         run: |
           bash --version | head -n 1
           bash scripts/ci/test-portable-tools.sh
+      - name: Qualify pinned native IC executables
+        shell: bash
+        run: |
+          bash scripts/dev/install-ic-tools.sh
+          bash scripts/dev/install-ic-tools.sh --check

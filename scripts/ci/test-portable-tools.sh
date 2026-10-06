@@ -30,6 +30,10 @@ fi
 
 bash "$ROOT/scripts/ci/test-validation-target-runner.sh"
 bash "$ROOT/scripts/ci/test-installers.sh"
+bash "$ROOT/scripts/ci/test-ic-tools.sh"
+bash "$ROOT/scripts/ci/test-host-tools.sh"
+bash "$ROOT/scripts/ci/test-evidence-checksums.sh"
+bash "$ROOT/scripts/ci/test-verification-helpers.sh"
 bash "$ROOT/scripts/ci/test-dependency-pins.sh"
 bash "$ROOT/scripts/ci/test-git-hooks.sh"
 bash "$ROOT/scripts/ci/test-cloc.sh"

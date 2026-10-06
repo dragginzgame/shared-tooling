@@ -67,6 +67,12 @@ baseline. Keep each policy's rules in one place and include new linked files in
 the governance snapshot instructions. Follow the [changelog rules](rules/changelogs.md)
 when preparing release notes; consumer audience and presentation choices stay local.
 
+Reusable audit methods live in `audits/`. Share the review questions and proof
+requirements; keep product-specific paths, invariants, metrics and execution
+commands in consumer overlays. Follow the [common audit contract](audits/README.md)
+and preserve old report evidence when consolidating definitions. A new method
+needs a distinct review question that an existing method cannot already answer.
+
 ## Script contributions
 
 Portable scripts must:

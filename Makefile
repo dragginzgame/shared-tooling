@@ -3,8 +3,12 @@
 RELEASE_REMOTE ?= origin
 RELEASE_BRANCH ?= main
 SHELLCHECK ?= shellcheck
+IC_TOOL_PINS ?= ci/ic-tools.tsv
+HOST_TOOL_VERSIONS ?= ci/tool-versions.env
+export PATH := $(CURDIR)/.tools/host/bin:$(CURDIR)/.tools/ic/bin:$(PATH)
 
 .PHONY: help check-shell check-pins test-portable ci release-patch release-minor release-major \
+        install-tools tools-check install-host-tools host-tools-check install-ic-tools ic-tools-check \
         release-resume release-version release-preflight release-verify \
         release-prepare-version release-prepared-check release-files \
         release-commit-check release-committed-check release-tagged-check release-push-check
@@ -15,6 +19,8 @@ endif
 
 help:
 	@echo "Focused: check-shell, check-pins, test-portable"
+	@echo "Local IC executables: install-ic-tools; offline verification: ic-tools-check"
+	@echo "All local executables (including jq/yq): install-tools; offline verification: tools-check"
 	@echo "Full gate: ci (explicit request or configured CI)"
 	@echo "Maintainer releases: release-patch, release-minor, release-major"
 	@echo "Recovery: rerun the normal release target; saved releases reconcile automatically"
@@ -27,6 +33,26 @@ test-portable:
 
 check-pins:
 	bash scripts/ci/check-dependency-pins.sh
+
+install-tools:
+	+$(MAKE) --no-print-directory install-host-tools
+	+$(MAKE) --no-print-directory install-ic-tools
+
+tools-check:
+	+$(MAKE) --no-print-directory host-tools-check
+	+$(MAKE) --no-print-directory ic-tools-check
+
+install-host-tools:
+	bash scripts/dev/install-host-tools.sh --versions "$(HOST_TOOL_VERSIONS)"
+
+host-tools-check:
+	bash scripts/dev/install-host-tools.sh --versions "$(HOST_TOOL_VERSIONS)" --check
+
+install-ic-tools:
+	bash scripts/dev/install-ic-tools.sh --pins "$(IC_TOOL_PINS)"
+
+ic-tools-check:
+	bash scripts/dev/install-ic-tools.sh --pins "$(IC_TOOL_PINS)" --check
 
 ci:
 	+$(MAKE) --no-print-directory check-shell

@@ -37,11 +37,44 @@ safe repository-local installation. The
 [agent maintenance rules](rules/agent-maintenance.md) define user-triggered CI
 inspection, issue review and scoped repair requests.
 
+The [shared audit methods](audits/README.md) cover code hygiene, flow convergence,
+complexity, module surface review and authorized cleanup. Consumers keep product
+invariants, commands and historical reports locally, and adopt the common methods
+through the same reviewed snapshot mechanism as the baseline.
+
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the inclusion boundary and
 [`docs/provenance.md`](docs/provenance.md) for the initial Canic and IcyDB
 contributions.
 
 ## Current tools
+
+### Local IC executables
+
+Use `make install-tools` for the common local setup, including pinned jq and
+Mike Farah yq, and `make tools-check` for offline verification. See
+[local setup](docs/local-setup.md) for Linux Mint/macOS bootstrap packages and
+shell PATH configuration. Make targets select the local binaries automatically.
+
+`make install-ic-tools` installs the reviewed Quill, ICP CLI, didc, ic-wasm,
+PocketIC and Binaryen set beneath `.tools/ic/bin`. `make ic-tools-check` verifies
+it offline. Setup activates only a complete verified set and preserves prior
+sets and failed candidates. See [local IC tools](docs/ic-tools.md) for pins,
+PATH setup, native host coverage and consumer adoption.
+
+### Focused verification helpers
+
+- `scripts/ci/verify-evidence-checksums.sh <manifest> [...]` verifies nonempty
+  SHA-256 manifests using the shared portable checksum backend. Paths in each
+  manifest resolve from the caller's working directory; manifests use ordinary
+  unescaped sha256sum text/binary records, including filenames with spaces.
+- `scripts/ci/run-nonempty-cargo-test.sh <cargo-test-args...>` runs Cargo in the
+  caller's workspace, rejects zero passing tests and retains failed output.
+  It requires the normal libtest summary format and preserves Cargo arguments
+  and network policy. Cargo and logging failures remain failures.
+- `scripts/ci/check-release-tag.sh <exact-commit> <version>` checks an annotated
+  `vX.Y.Z` tag against the selected full commit, without Git mutations. Consumer
+  publication adapters select the version/commit; the release runner keeps its
+  existing reconciliation checks.
 
 ### Dependency pin checks
 

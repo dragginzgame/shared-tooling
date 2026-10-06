@@ -1,6 +1,22 @@
 # Changelog
 
-## [0.1.5]
+## [0.1.6]
+
+### Added
+
+- Common `install-tools` and offline `tools-check` targets include pinned local
+  jq and Mike Farah yq, with Linux Mint/macOS bootstrap instructions and matching
+  local/CI parser selection.
+- Common repository-local IC tool setup for Quill, ICP CLI, didc, ic-wasm,
+  PocketIC and Binaryen, with reviewed platform checksums, offline verification,
+  complete-set activation and retained failed installations. Add portable
+  evidence-manifest, nonempty Cargo test and exact release-tag checks.
+- Consolidated audit methods for code hygiene, flow convergence, complexity and
+  module surface review, with a shared evidence contract and authorized cleanup
+  procedure. Consumers retain product-specific obligations and historical reports
+  while adopting the methods through reviewed snapshots.
+
+## [0.1.5] - 2026-10-06
 
 ### Added
 
