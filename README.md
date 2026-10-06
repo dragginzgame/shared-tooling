@@ -31,7 +31,9 @@ concise release summaries, GitHub issue links, breaking changes and minor-line
 detail files. The [Cargo dependency rules](rules/cargo-dependencies.md) require
 one root dependency catalog inherited by every child manifest. The
 [Git hook rules](rules/git-hooks.md) standardize Rust pre-commit formatting and
-safe repository-local installation.
+safe repository-local installation. The
+[agent maintenance rules](rules/agent-maintenance.md) define user-triggered CI
+inspection, issue review and scoped repair requests.
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the inclusion boundary and
 [`docs/provenance.md`](docs/provenance.md) for the initial Canic and IcyDB
@@ -132,6 +134,17 @@ authenticated GitHub CLI session.
 ```bash
 scripts/dev/gh-ci.sh --failed --logs
 ```
+
+Agents also recognize `check CI`, `check issues` and `check for work` through the
+[maintenance rules](rules/agent-maintenance.md). To enable automatic checks during
+the current session, tell the agent:
+
+> After each task, check CI; when there's nothing else to do, check issues.
+
+The agent completes its current batch, checks the relevant source's latest CI
+runs, and recommends actionable issues. Use `fix CI` or `work on issue #N` to
+authorize a local repair. Consumers include the maintenance rule in their
+reviewed governance snapshot.
 
 ### Focused self-test
 

@@ -96,5 +96,10 @@ macOS behavior.
 For script changes, run the portable regression test and ShellCheck described
 in `AGENTS.md`. For documentation-only changes, check links, instruction
 consistency and the diff.
+Keep scratch and loop variables local to fixture helpers. Construct and assert
+each negative case's intended precondition: a partial-staging case must select
+the intended file before adding its unstaged edit. Do not rely on copied tooling
+already differing from HEAD; fixture setup must remain valid after adoption is
+committed and those files match HEAD.
 When changing a platform branch, report which host exercised it and which
 branches remain install-capable but unverified.

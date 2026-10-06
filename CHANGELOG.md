@@ -2,17 +2,26 @@
 
 ## [0.1.3]
 
+### Added
+
+- User-triggered agent commands for checking current CI, reviewing GitHub issues
+  and recommending work after a task finishes. Enable checks across a session
+  with one instruction; explicit repair requests authorize scoped local fixes.
+
 ### Fixed
 
+- Stop pre-commit formatting when the formatter fails under Bash 3.2,
+  preserving the selected index and working files.
 - Install Rust formatting hooks through physical repository paths, including
   macOS temporary-directory aliases, without rejecting the correct checkout.
   [#1](https://github.com/dragginzgame/shared-tooling/issues/1).
-- Rerunning `make release-patch`, `make release-minor` or `make release-major`
-  now automatically reconciles an unfinished release of the same kind at its
-  saved version. Avoid another increment, duplicate release commits or tags,
-  and replaying an uncertain push. Preserve evidence and existing source,
-  payload, destination and concurrency checks; publication and cleanup remain
-  separate. Explicit `release-resume` is still available.
+- Normal release commands reconcile an interrupted release at its exact saved
+  commit, including after a fix is committed. A different requested increment
+  or newer committed source then receives fresh validation for the next release.
+  Preserve tags, failed evidence, atomic push scope and conflict checks; bind
+  consumer receipt checks to the selected `RELEASE_COMMIT`. Publication and
+  cleanup remain separate.
+  [#5](https://github.com/dragginzgame/shared-tooling/issues/5).
 
 ## [0.1.2] - 2026-10-05
 

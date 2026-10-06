@@ -17,7 +17,7 @@ help:
 	@echo "Focused: check-shell, test-portable"
 	@echo "Full gate: ci (explicit request or configured CI)"
 	@echo "Maintainer releases: release-patch, release-minor, release-major"
-	@echo "Recovery: rerun the same release target; explicit selection: release-resume VERSION=X.Y.Z"
+	@echo "Recovery: rerun the normal release target; saved releases reconcile automatically"
 
 check-shell:
 	$(SHELLCHECK) scripts/ci/*.sh scripts/dev/*.sh scripts/distribution/*.sh scripts/release/*.sh .githooks/pre-commit

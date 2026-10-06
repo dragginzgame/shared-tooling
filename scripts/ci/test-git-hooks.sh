@@ -9,7 +9,7 @@ source "$ROOT/ci/tool-versions.env"
     exit 1
 }
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/git-hooks-test.XXXXXX")"
-trap 'rm -rf -- "$FIXTURE"' EXIT
+trap 'if [[ $? == 0 ]]; then rm -rf -- "$FIXTURE"; else printf "Failed hook fixture retained: %s\n" "$FIXTURE" >&2; fi' EXIT
 # Reuse an existing source commit read-only, without creating fixture commits.
 source_commit="$(git -C "$ROOT" rev-parse HEAD)"
 source_objects="$(git -C "$ROOT" rev-parse --git-path objects)"
@@ -181,8 +181,9 @@ expect_failure bash scripts/dev/install-git-hooks.sh
 
 # Exercise real Cargo/rustfmt on both a root and a standalone nested workspace.
 # No dependencies, builds, Git commits or network access are needed.
-new_fixture cargo
-cat > Makefile <<'MAKE'
+for lockfiles in inherited absent present; do
+    new_fixture "cargo-$lockfiles"
+    cat > Makefile <<'MAKE'
 .PHONY: fmt
 fmt:
 	cargo sort --workspace
@@ -190,21 +191,40 @@ fmt:
 	cargo fmt --all
 	cargo fmt --manifest-path testing/Cargo.toml --all
 MAKE
-cat > Cargo.toml <<'CARGO'
+    cat > Cargo.toml <<'CARGO'
 [workspace]
 [package]
 name = "hook-root-fixture"
 version = "0.0.0"
 edition = "2021"
 CARGO
-mkdir -p src testing/src
-cp Cargo.toml testing/Cargo.toml
-printf 'pub fn fixture( ){}\n' > src/lib.rs
-printf 'pub fn fixture( ){}\n' > testing/src/lib.rs
-git add Makefile Cargo.toml src/lib.rs testing/Cargo.toml testing/src/lib.rs
-CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0 bash .githooks/pre-commit > output
-[[ "$(git show :src/lib.rs)" == 'pub fn fixture() {}' && "$(git show :testing/src/lib.rs)" == 'pub fn fixture() {}' ]]
-[[ ! -e Cargo.lock && ! -e testing/Cargo.lock && ! -e target && ! -e testing/target ]]
+    mkdir -p src testing/src
+    cp Cargo.toml testing/Cargo.toml
+    printf 'pub fn fixture( ){}\n' > src/lib.rs
+    printf 'pub fn fixture( ){}\n' > testing/src/lib.rs
+    case "$lockfiles" in
+        absent) rm -f Cargo.lock testing/Cargo.lock ;;
+        present)
+            for workspace in . testing; do
+                CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0 cargo generate-lockfile --offline --manifest-path "$workspace/Cargo.toml" > output 2>&1
+            done
+            ;;
+    esac
+    for workspace in . testing; do
+        if [[ -f "$workspace/Cargo.lock" ]]; then cp "$workspace/Cargo.lock" "$workspace/selected-lock"; fi
+    done
+    git add Makefile Cargo.toml src/lib.rs testing/Cargo.toml testing/src/lib.rs
+    CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0 bash .githooks/pre-commit > output
+    [[ "$(git show :src/lib.rs)" == 'pub fn fixture() {}' && "$(git show :testing/src/lib.rs)" == 'pub fn fixture() {}' ]]
+    for workspace in . testing; do
+        if [[ -f "$workspace/selected-lock" ]]; then
+            cmp "$workspace/selected-lock" "$workspace/Cargo.lock"
+        else
+            [[ ! -e "$workspace/Cargo.lock" ]]
+        fi
+    done
+    [[ ! -e target && ! -e testing/target ]]
+done
 
 # Sorting must cover inherited member tables and separate workspace catalogs,
 # preserving the effective metadata and already selected lockfiles.
