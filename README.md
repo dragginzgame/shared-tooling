@@ -77,6 +77,10 @@ selection, deletion authorization, retained evidence and interrupted retries.
   changes without resolving external dependencies. `scripts/ci/check-formatting-hooks.sh`
   exercises a consumer's actual formatter in disposable Git exports. See their
   explicit inputs and limits in the [helper contracts](docs/verification-helpers.md).
+- `scripts/ci/check-dependency-pins.sh --cargo-inheritance` also checks dependency
+  catalogs and member version inheritance. `scripts/ci/read-cargo-workspace-version.sh`
+  reads one selected Cargo manifest structurally, with optional stable-only
+  admission. See the [Cargo helper contracts](docs/verification-helpers.md#cargo-inheritance-and-workspace-version).
 - `scripts/ci/verify-file-checksum.sh --print <sha256|sha512> <file>` generates
   portable digests through the same backend as checksum verification, IC tool
   receipts and snapshot manifests.

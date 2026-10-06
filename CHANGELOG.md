@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.1.8] - 2026-10-06
+
+### Added
+
+- Add opt-in Cargo workspace inheritance checks and a shared read-only workspace
+  version reader, covering ordinary dependency tables and valid TOML comments.
+  [#18](https://github.com/dragginzgame/shared-tooling/issues/18).
+- Allow dependency-free consumers to check their formatting hooks without
+  inventing dependencies to test sorting. Rust formatting, manifest preservation
+  and hook installation checks remain active.
+  [#16](https://github.com/dragginzgame/shared-tooling/issues/16).
+
+### Changed
+
+- Consolidate the actionlint, ShellCheck and gitleaks installers, retaining failed
+  candidates and preserving the selected executable on rejection. Snapshot
+  consumers must include the new shared installer implementation when refreshing
+  these entry points; command arguments and pins are unchanged.
+  [#18](https://github.com/dragginzgame/shared-tooling/issues/18).
+
 ## [0.1.7]
 
 ### Added

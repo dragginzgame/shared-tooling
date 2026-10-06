@@ -338,4 +338,8 @@ GIT_INDEX_FILE="$FIXTURE/incorrect-index" MAKEFLAGS='--just-print' \
     VALIDATION_REPOSITORY_ROOT=/incorrect \
     bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$PWD" consumer/src/lib.rs \
     consumer/Cargo.toml "$FIXTURE/unsorted-consumer.toml" "${overlays[@]}"
+# alpha has no dependency tables; qualify the same real formatter without
+# inventing dependencies or weakening manifest/index preservation checks.
+bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$PWD" alpha/src/lib.rs \
+    alpha/Cargo.toml --no-dependency-tables "${overlays[@]}"
 echo 'Git hook preservation, installation, Cargo formatting and manifest sorting tests passed'

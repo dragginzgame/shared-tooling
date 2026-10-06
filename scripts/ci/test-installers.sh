@@ -3,7 +3,12 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-installers-test.XXXXXX")"
-trap 'rm -rf "$FIXTURE"' EXIT
+finish() {
+    local status=$?
+    if [[ "$status" == 0 ]]; then rm -rf "$FIXTURE"
+    else echo "Installer fixtures retained: $FIXTURE" >&2; fi
+}
+trap finish EXIT
 
 archives="$FIXTURE/archives"
 payloads="$FIXTURE/payloads"
@@ -164,4 +169,62 @@ if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     exit 1
 fi
 
+# All three public entry points exercise the same preservation boundary.
+for tool in actionlint gitleaks shellcheck; do
+    case "$tool" in
+        actionlint) version=1.7.12; digest="$actionlint_checksum"; archive=actionlint_1.7.12_linux_amd64.tar.gz ;;
+        gitleaks) version=8.30.1; digest="$gitleaks_checksum"; archive=gitleaks_8.30.1_linux_x64.tar.gz ;;
+        shellcheck) version=0.11.0; digest="$shellcheck_checksum"; archive=shellcheck-v0.11.0.linux.x86_64.tar.xz ;;
+    esac
+    cp "$FIXTURE/installed/$tool" "$FIXTURE/original"
+    if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+        bash "$ROOT/scripts/ci/install-$tool.sh" --version "$version" \
+        --sha256 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff \
+        --install-dir "$FIXTURE/installed" > "$FIXTURE/rejected" 2>&1; then exit 1; fi
+    cmp "$FIXTURE/original" "$FIXTURE/installed/$tool"
+    retained=0
+    for attempt in "$FIXTURE/installed/.$tool-install."*; do
+        [[ -f "$attempt/$archive" ]] || continue
+        cmp "$archives/$archive" "$attempt/$archive"
+        retained=$((retained + 1))
+    done
+    [[ "$retained" == 1 ]] || exit 1
+    # The wrong expected version has authenticated bytes, but may not replace
+    # the already-installed executable. Preserve the rejected candidate too.
+    wrong_archive="${archive/"$version"/9.9.9}"
+    cp "$archives/$archive" "$archives/$wrong_archive"
+    if [[ "$tool" == shellcheck ]]; then
+        mkdir -p "$payloads/shellcheck/shellcheck-v9.9.9"
+        cp "$FIXTURE/original" "$payloads/shellcheck/shellcheck-v9.9.9/shellcheck"
+        tar -cJf "$archives/$wrong_archive" -C "$payloads/shellcheck" shellcheck-v9.9.9
+        digest="$(checksum_sha256 "$archives/$wrong_archive")"
+    fi
+    if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+        bash "$ROOT/scripts/ci/install-$tool.sh" --version 9.9.9 --sha256 "$digest" \
+        --install-dir "$FIXTURE/installed" > "$FIXTURE/rejected" 2>&1; then exit 1; fi
+    cmp "$FIXTURE/original" "$FIXTURE/installed/$tool"
+done
+
+# Exercise each native asset spelling using substitutes, not native binaries.
+for host in Linux:aarch64 Darwin:x86_64 Darwin:arm64; do
+    case "$host" in
+        Linux:aarch64) action_platform=linux_arm64; leaks_platform=linux_arm64; shell_platform=linux.aarch64 ;;
+        Darwin:x86_64) action_platform=darwin_amd64; leaks_platform=darwin_x64; shell_platform=darwin.x86_64 ;;
+        Darwin:arm64) action_platform=darwin_arm64; leaks_platform=darwin_arm64; shell_platform=darwin.aarch64 ;;
+    esac
+    cp "$archives/actionlint_1.7.12_linux_amd64.tar.gz" "$archives/actionlint_1.7.12_$action_platform.tar.gz"
+    cp "$archives/gitleaks_8.30.1_linux_x64.tar.gz" "$archives/gitleaks_8.30.1_$leaks_platform.tar.gz"
+    cp "$archives/shellcheck-v0.11.0.linux.x86_64.tar.xz" "$archives/shellcheck-v0.11.0.$shell_platform.tar.xz"
+    for tool in actionlint gitleaks shellcheck; do
+        case "$tool" in
+            actionlint) version=1.7.12; digest="$actionlint_checksum" ;;
+            gitleaks) version=8.30.1; digest="$gitleaks_checksum" ;;
+            shellcheck) version=0.11.0; digest="$shellcheck_checksum" ;;
+        esac
+        PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+            INSTALLER_TEST_OS="${host%:*}" INSTALLER_TEST_ARCH="${host#*:}" \
+            bash "$ROOT/scripts/ci/install-$tool.sh" --version "$version" --sha256 "$digest" \
+            --install-dir "$FIXTURE/installed" >/dev/null
+    done
+done
 echo "installer tests passed"

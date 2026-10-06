@@ -6,6 +6,54 @@ policy. They require Perl core modules or Bash 3.2+, as noted below, and run on
 Linux and macOS. The portable regression suite includes offline fixtures;
 native CI qualifies each supported host separately.
 
+## Cargo inheritance and workspace version
+
+```bash
+bash scripts/ci/check-dependency-pins.sh --consumer /path/to/repo --cargo-inheritance
+bash scripts/ci/read-cargo-workspace-version.sh --stable /path/to/repo/Cargo.toml
+```
+
+The additive `--cargo-inheritance` check reuses the pin checker's Git inventory,
+TOML parser and offline Cargo workspace discovery. It checks every inventoried
+Cargo manifest against its owning root: member package versions inherit
+`workspace.package.version`; ordinary, development, build and target dependencies
+inherit catalog entries by alias. Root packages also inherit their dependencies.
+Child dependencies may select only `features`, `optional` and `default-features`
+alongside `workspace = true`. Versions, paths, Git/registry sources and renamed
+package identities stay in the root catalog. Both inline and ordinary TOML tables
+are parsed structurally. Existing pin-only callers retain their current scope.
+
+Nested workspace discovery does not approve a governance exception: consumers
+must still document their authorized independent roots. Ignored files are outside
+the Git inventory. Product dependency bans, lock graph constraints and feature
+qualification remain local. Adopt the option in CI/release callers before
+retiring their equivalent inheritance checks.
+
+The version reader requires Cargo, jq and Mike Farah yq v4.47.2+. It accepts one
+explicit `Cargo.toml` path and prints its `workspace.package.version` as canonical
+SemVer, including prerelease/build components unless `--stable` is selected.
+It rejects missing/non-string versions and malformed manifests, with no accepted
+version on failure. Cargo's offline `locate-project --workspace` validates the
+manifest first, including duplicate keys that yq alone accepts. It neither
+resolves dependencies nor builds; the selected Cargo toolchain must be prepared.
+Keep root-package targets available when reading an exported manifest, since
+Cargo also checks package structure. The reader never chooses a Git commit,
+updates a version or lockfile, or finalizes release notes. Consumers own selection
+of working versus committed sources and their release/preparation transactions.
+
+## CI binary installers
+
+The actionlint, ShellCheck and gitleaks entry points delegate to
+`scripts/ci/install-ci-tool.sh`. Their existing version, SHA-256 and installation
+directory arguments are unchanged. The implementation shares host selection,
+HTTPS download, checksum admission, extraction, exact version admission and
+publication. Asset names and version-output formats remain explicit per tool.
+Staging lives on the destination filesystem; failures retain the candidate and
+leave the installed executable intact. Successful installation removes its own
+staging files. This does not merge repository-local host/IC bundle activation
+or change any consumer's pins. Include the internal helper and checksum verifier
+in snapshots with any of these three entry points.
+
 ## Local documentation links
 
 ```sh
@@ -243,7 +291,13 @@ bash scripts/ci/check-formatting-hooks.sh "$PWD" crates/example/src/lib.rs \
 The first two relative paths select an existing Rust module and Cargo manifest.
 The fourth argument is a consumer-prepared unsorted copy of that manifest: change
 only dependency ordering, so the real formatter restores the selected sorted
-bytes exactly. Remaining relative arguments explicitly overlay additional current
+bytes exactly. For a consumer with no dependency tables, pass the explicit
+`--no-dependency-tables` argument instead. This caller-owned assertion omits only
+the dependency-order perturbation; the real `fmt-check` still runs, and manifest
+preservation and partial-staging rejection remain checked. The helper does not
+infer or parse dependency absence, and that mode supplies no sorting-perturbation
+proof. Never add synthetic dependencies to qualify a dependency-free consumer.
+Remaining relative arguments explicitly overlay additional current
 files needed by the consumer's formatter (other manifests, source, lockfiles,
 configuration or Make includes). The checker exports existing HEAD, overlays
 the named inputs plus Makefile/hook/installer, and stages them only in temporary
