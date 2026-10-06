@@ -55,8 +55,8 @@ contributions.
 
 ### Local IC executables
 
-Use `make install-tools` for the common local setup, including pinned jq and
-Mike Farah yq, and `make tools-check` for offline verification. See
+Use `make install-tools` for the common local setup, including pinned jq,
+Mike Farah yq and ripgrep with PCRE2, and `make tools-check` for offline verification. See
 [local setup](docs/local-setup.md) for Linux Mint/macOS bootstrap packages and
 shell PATH configuration. Make targets select the local binaries automatically.
 
@@ -68,6 +68,15 @@ PATH setup, native host coverage and consumer adoption.
 
 ### Focused verification helpers
 
+For separately authorized tag maintenance, use
+`perl scripts/dev/delete-github-tags-up-to.pl --cutoff X.Y.Z` for a read-only
+preview. See [explicit tag maintenance](docs/tag-maintenance.md) for remote
+selection, deletion authorization, retained evidence and interrupted retries.
+
+- `scripts/ci/rewrite-local-lock-versions.pl` emits exact local-package version
+  changes without resolving external dependencies. `scripts/ci/check-formatting-hooks.sh`
+  exercises a consumer's actual formatter in disposable Git exports. See their
+  explicit inputs and limits in the [helper contracts](docs/verification-helpers.md).
 - `scripts/ci/verify-file-checksum.sh --print <sha256|sha512> <file>` generates
   portable digests through the same backend as checksum verification, IC tool
   receipts and snapshot manifests.

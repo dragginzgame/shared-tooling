@@ -301,6 +301,7 @@ CARGO
         jq -S '[.packages[] | .dependencies |= sort_by(.name, .kind, .target)] | sort_by(.name)' > "$workspace/selected-metadata"
 done
 git add Makefile Cargo.toml src alpha zeta consumer testing
+cp consumer/Cargo.toml "$FIXTURE/unsorted-consumer.toml"
 tree="$(git write-tree)"
 expect_failure make --no-print-directory fmt-check
 [[ "$(git write-tree)" == "$tree" ]]
@@ -320,4 +321,21 @@ done
 tree="$(git write-tree)"
 CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0 bash .githooks/pre-commit > output
 [[ "$(git write-tree)" == "$tree" && ! -e target && ! -e testing/target ]]
+# Exercise the adoption helper with this consumer's real Cargo targets, including
+# inherited Make/Git identities that must not redirect the disposable checkout.
+overlays=(Cargo.toml Cargo.lock src/lib.rs)
+for workspace in . testing; do
+    for member in alpha zeta consumer; do
+        prefix="$member"; [[ "$workspace" == . ]] || prefix="$workspace/$member"
+        overlays[${#overlays[@]}]="$prefix/Cargo.toml"
+        overlays[${#overlays[@]}]="$prefix/src/lib.rs"
+    done
+done
+overlays[${#overlays[@]}]=testing/Cargo.toml
+overlays[${#overlays[@]}]=testing/Cargo.lock
+overlays[${#overlays[@]}]=testing/src/lib.rs
+GIT_INDEX_FILE="$FIXTURE/incorrect-index" MAKEFLAGS='--just-print' \
+    VALIDATION_REPOSITORY_ROOT=/incorrect \
+    bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$PWD" consumer/src/lib.rs \
+    consumer/Cargo.toml "$FIXTURE/unsorted-consumer.toml" "${overlays[@]}"
 echo 'Git hook preservation, installation, Cargo formatting and manifest sorting tests passed'

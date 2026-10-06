@@ -21,7 +21,7 @@ help:
 	@echo "Current local version: make version"
 	@echo "Focused: check-shell, check-pins, check-doc-links, check-release-commands, test-portable"
 	@echo "Local IC executables: install-ic-tools; offline verification: ic-tools-check"
-	@echo "All local executables (including jq/yq): install-tools; offline verification: tools-check"
+	@echo "All local executables (including jq/yq/ripgrep): install-tools; offline verification: tools-check"
 	@echo "Full gate: ci (explicit request or configured CI)"
 	@echo "Maintainer releases: release-patch, release-minor, release-major"
 	@echo "Recovery: rerun the normal release target; saved releases reconcile automatically"
@@ -50,10 +50,10 @@ tools-check:
 	+$(MAKE) --no-print-directory ic-tools-check
 
 install-host-tools:
-	bash scripts/dev/install-host-tools.sh --versions "$(HOST_TOOL_VERSIONS)"
+	bash scripts/dev/install-host-tools.sh --versions "$(HOST_TOOL_VERSIONS)" --with-ripgrep
 
 host-tools-check:
-	bash scripts/dev/install-host-tools.sh --versions "$(HOST_TOOL_VERSIONS)" --check
+	bash scripts/dev/install-host-tools.sh --versions "$(HOST_TOOL_VERSIONS)" --with-ripgrep --check
 
 install-ic-tools:
 	bash scripts/dev/install-ic-tools.sh --pins "$(IC_TOOL_PINS)"

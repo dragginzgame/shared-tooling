@@ -51,7 +51,7 @@ log="$destination/prepare.log"
     if [[ "$mode" == local ]]; then
         # Observe before copying; dirty/untracked files are never the selected source.
         revision="$(git -C "$source" rev-parse --verify 'HEAD^{commit}')"
-        [[ "$revision" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]]
+        [[ "$revision" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]] || exit 1
         git clone --local --no-hardlinks --dissociate --no-checkout --no-recurse-submodules \
             -- "$source" "$destination/db"
         git -C "$destination/db" checkout --detach "$revision" --
@@ -60,11 +60,12 @@ log="$destination/prepare.log"
             clone --depth 1 --single-branch --no-tags --no-recurse-submodules \
             -- "$source" "$destination/db"
         revision="$(git -C "$destination/db" rev-parse --verify 'HEAD^{commit}')"
-        [[ "$revision" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]]
+        [[ "$revision" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]] || exit 1
     fi
-    [[ "$(git -C "$destination/db" rev-parse --verify 'HEAD^{commit}')" == "$revision" ]]
+    selected_revision="$(git -C "$destination/db" rev-parse --verify 'HEAD^{commit}')" || exit 1
+    [[ "$selected_revision" == "$revision" ]] || exit 1
     # An isolated clone must not borrow source objects through an alternates file.
-    [[ ! -s "$destination/db/.git/objects/info/alternates" ]]
+    [[ ! -s "$destination/db/.git/objects/info/alternates" ]] || exit 1
     printf 'revision: %s\n' "$revision"
     printf '%s\n' "$revision" > "$destination/revision"
 ) > "$log" 2>&1

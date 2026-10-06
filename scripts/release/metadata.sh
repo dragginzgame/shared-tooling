@@ -34,9 +34,10 @@ finalize_notes() {
 case "$operation" in
     version) version ;;
     preflight|prepare)
-        [[ "$(version)" == "${RELEASE_PREVIOUS:?}" ]]
+        observed_version="$(version)" || exit 1
+        [[ "$observed_version" == "${RELEASE_PREVIOUS:?}" ]] || exit 1
         admit_files
-        [[ -f CHANGELOG.md && ! -L CHANGELOG.md ]]
+        [[ -f CHANGELOG.md && ! -L CHANGELOG.md ]] || exit 1
         # Git-owned scratch cannot become an unrelated untracked release input
         # if the process is killed before cleanup. VERSION is replaced last.
         temporary="$(mktemp -d "$(git rev-parse --git-dir)/release-metadata.XXXXXX")"
@@ -65,8 +66,9 @@ case "$operation" in
             git show "$RELEASE_COMMIT:CHANGELOG.md" > "$notes"
             git show "$RELEASE_COMMIT:VERSION" > "$selected_version"
         fi
-        [[ -f "$notes" && ! -L "$notes" ]]
-        [[ "$(version "$selected_version")" == "${RELEASE_VERSION:?}" ]]
+        [[ -f "$notes" && ! -L "$notes" ]] || exit 1
+        observed_version="$(version "$selected_version")" || exit 1
+        [[ "$observed_version" == "${RELEASE_VERSION:?}" ]] || exit 1
         finalize_notes "$notes" > "$temporary/finalized"
         cmp -s "$notes" "$temporary/finalized"
         if [[ "$operation" == commit-check ]]; then

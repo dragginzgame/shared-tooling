@@ -43,8 +43,8 @@ jobs:
             --version "$SHARED_TOOLING_GITLEAKS_VERSION" \
             --sha256 "$SHARED_TOOLING_GITLEAKS_SHA256_LINUX_X64" \
             --install-dir "$tool_dir")"
-          bash scripts/dev/install-host-tools.sh
-          bash scripts/dev/install-host-tools.sh --check
+          bash scripts/dev/install-host-tools.sh --with-ripgrep
+          bash scripts/dev/install-host-tools.sh --with-ripgrep --check
           echo "$GITHUB_WORKSPACE/.tools/host/bin" >> "$GITHUB_PATH"
           {
             echo "ACTIONLINT_BIN=$actionlint_bin"
@@ -101,11 +101,11 @@ jobs:
           cargo install cargo-sort --version "$SHARED_TOOLING_CARGO_SORT_VERSION" \
             --locked --root "$RUNNER_TEMP/shared-tooling-cargo"
           echo "$RUNNER_TEMP/shared-tooling-cargo/bin" >> "$GITHUB_PATH"
-      - name: Install pinned JSON, YAML and TOML parsers
+      - name: Install pinned parsers and ripgrep with PCRE2
         shell: bash
         run: |
-          bash scripts/dev/install-host-tools.sh
-          bash scripts/dev/install-host-tools.sh --check
+          bash scripts/dev/install-host-tools.sh --with-ripgrep
+          bash scripts/dev/install-host-tools.sh --with-ripgrep --check
           echo "$GITHUB_WORKSPACE/.tools/host/bin" >> "$GITHUB_PATH"
       - name: Run portable regression set with prepared tools
         shell: bash

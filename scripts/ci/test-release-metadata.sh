@@ -7,7 +7,12 @@ unset VALIDATION_REPOSITORY_ROOT VALIDATION_RUNNER_SNAPSHOT_PATH
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/release-metadata-test.XXXXXX")"
-trap 'rm -rf "$FIXTURE"' EXIT
+finish() {
+    local status=$?
+    if [[ "$status" == 0 ]]; then rm -rf "$FIXTURE";
+    else echo "Release metadata fixtures retained: $FIXTURE" >&2; fi
+}
+trap finish EXIT
 
 # Reuse existing history; exercise real indexes and trees without new commits.
 git clone --quiet --shared --no-checkout "$ROOT" "$FIXTURE/repository"
@@ -32,6 +37,19 @@ cp CHANGELOG.md "$FIXTURE/pending-notes"
 bash "$ROOT/scripts/release/metadata.sh" preflight
 cmp CHANGELOG.md "$FIXTURE/pending-notes"
 
+# Invalid identity must stop every preparation path before changing either file.
+for bad in invalid-version 01.1.0 0.1.0-beta; do
+    printf '%s\n' "$bad" > VERSION
+    for operation in preflight prepare; do
+        if bash "$ROOT/scripts/release/metadata.sh" "$operation" > "$FIXTURE/invalid-$operation.log" 2>&1; then
+            echo 'release metadata test failed: invalid version accepted' >&2; exit 1
+        fi
+        [[ "$(cat VERSION)" == "$bad" ]] || exit 1
+        cmp CHANGELOG.md "$FIXTURE/pending-notes"
+    done
+done
+printf '0.1.0\n' > VERSION
+
 # A read failure must not turn a partial, version-shaped value into an identity.
 mkdir "$FIXTURE/read-failure-bin"
 cat > "$FIXTURE/read-failure-bin/cat" <<'STUB'
@@ -50,7 +68,7 @@ fi
 original_tree="$(git write-tree)"
 replacement="$(git rev-parse HEAD:README.md)"
 git update-index --cacheinfo "100644,$replacement,AGENTS.md"
-[[ "$(git write-tree)" != "$original_tree" ]]
+[[ "$(git write-tree)" != "$original_tree" ]] || exit 1
 git diff --quiet HEAD -- AGENTS.md
 if git diff --cached --quiet HEAD -- AGENTS.md; then
     echo 'release metadata test failed: hidden staged-change fixture is invalid' >&2
@@ -85,25 +103,26 @@ if RELEASE_VERSION=0.2.0 bash "$ROOT/scripts/release/metadata.sh" preflight \
     exit 1
 fi
 cmp CHANGELOG.md "$FIXTURE/pending-notes"
-[[ ! -e .git/release-state ]]
+[[ ! -e .git/release-state ]] || exit 1
 bash "$ROOT/scripts/release/metadata.sh" preflight
 bash "$ROOT/scripts/release/metadata.sh" prepare
-[[ "$(bash "$ROOT/scripts/release/metadata.sh" version)" == 0.1.1 ]]
+[[ "$(bash "$ROOT/scripts/release/metadata.sh" version)" == 0.1.1 ]] || exit 1
 cp CHANGELOG.md "$FIXTURE/prepared-notes"
 # Simulate interruption after notes replacement, before VERSION replacement.
 printf '0.1.0\n' > VERSION
 bash "$ROOT/scripts/release/metadata.sh" preflight
 bash "$ROOT/scripts/release/metadata.sh" prepare
 cmp CHANGELOG.md "$FIXTURE/prepared-notes"
-[[ "$(cat VERSION)" == 0.1.1 ]]
+[[ "$(cat VERSION)" == 0.1.1 ]] || exit 1
 rg -x '## \[0.1.0\]' CHANGELOG.md >/dev/null
 git add -- CHANGELOG.md VERSION
 bash "$ROOT/scripts/release/metadata.sh" commit-check
-[[ "$(git diff --cached --name-only HEAD)" == $'CHANGELOG.md\nVERSION' ]]
+[[ "$(git diff --cached --name-only HEAD)" == $'CHANGELOG.md\nVERSION' ]] || exit 1
 
 # Versions must be canonical and both metadata index entries must match.
 for bad in '01.1.1' '0.1.1-beta' '0.1.2'; do
     printf '%s\n' "$bad" > VERSION
+    if bash "$ROOT/scripts/release/metadata.sh" check > "$FIXTURE/version-check.log" 2>&1; then exit 1; fi
     if bash "$ROOT/scripts/release/metadata.sh" commit-check > "$FIXTURE/version.log" 2>&1; then exit 1; fi
 done
 printf '0.1.1\n' > VERSION
@@ -168,6 +187,6 @@ for attempt in first second; do
 done
 cmp "$retained_log" "$FIXTURE/first-retained.log"
 retained_logs=("$logging_root"/.git/release-state/validation-failures/*-0-ci.log)
-[[ "${#retained_logs[@]}" == 2 ]]
+[[ "${#retained_logs[@]}" == 2 ]] || exit 1
 
 echo 'release metadata real-Git and validation-retention tests passed'

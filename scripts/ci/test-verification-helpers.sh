@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/verification-helpers.XXXXXX")"
-trap 'rm -rf "$fixture"' EXIT
+trap 'if [[ $? == 0 ]]; then rm -rf "$fixture"; else echo "Verification fixtures retained: $fixture" >&2; fi' EXIT
 mkdir "$fixture/bin" "$fixture/workspace" "$fixture/logs"
 export VERIFY_HELPER_FIXTURE="$fixture"
 cat > "$fixture/bin/cargo" <<'SCRIPT'
@@ -22,16 +22,20 @@ cat > "$fixture/bin/git" <<'SCRIPT'
 set -euo pipefail
 commit=1111111111111111111111111111111111111111
 case "$*" in
-    "rev-parse --verify $commit^{commit}") echo "$commit" ;;
+    "rev-parse --verify $commit^{commit}")
+        if [[ "${VERIFY_TAG_MODE:-valid}" == invalid-commit ]]; then echo invalid;
+        else echo "$commit"; fi
+        [[ "${VERIFY_TAG_MODE:-valid}" != commit-read-fail ]] || exit 9 ;;
     'cat-file -t refs/tags/v0.1.2')
         case "${VERIFY_TAG_MODE:-valid}" in
             missing) exit 128 ;;
             lightweight) echo commit ;;
-            *) echo tag ;;
+            *) echo tag; [[ "${VERIFY_TAG_MODE:-valid}" != type-read-fail ]] || exit 9 ;;
         esac ;;
     'rev-parse --verify refs/tags/v0.1.2^{commit}')
         if [[ "${VERIFY_TAG_MODE:-valid}" == wrong ]]; then echo 2222222222222222222222222222222222222222;
-        else echo "$commit"; fi ;;
+        else echo "$commit"; fi
+        [[ "${VERIFY_TAG_MODE:-valid}" != tag-read-fail ]] || exit 9 ;;
     *) echo "unexpected Git operation: $*" >&2; exit 99 ;;
 esac
 SCRIPT
@@ -65,7 +69,7 @@ bash "$ROOT/scripts/ci/run-nonempty-cargo-test.sh" --lib > /dev/null 2>&1 || sta
 
 commit=1111111111111111111111111111111111111111
 bash "$ROOT/scripts/ci/check-release-tag.sh" "$commit" 0.1.2
-for mode in missing lightweight wrong; do
+for mode in missing lightweight wrong invalid-commit commit-read-fail type-read-fail tag-read-fail; do
     if VERIFY_TAG_MODE="$mode" bash "$ROOT/scripts/ci/check-release-tag.sh" "$commit" 0.1.2 > /dev/null 2>&1; then
         echo "tag verification accepted $mode" >&2; exit 1
     fi

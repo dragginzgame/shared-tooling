@@ -20,7 +20,7 @@ cat > "$fixture/bin/git" <<'STUB'
 set -euo pipefail
 printf '%s\0' "$@" >> "$RUSTSEC_FIXTURE/arguments"
 printf '%s\n' "$GIT_ALLOW_PROTOCOL" >> "$RUSTSEC_FIXTURE/protocols"
-[[ "$GIT_TERMINAL_PROMPT" == 0 ]]
+[[ "$GIT_TERMINAL_PROMPT" == 0 ]] || exit 1
 if [[ "$1" == -C ]]; then
     case "$3" in
         rev-parse)
@@ -50,11 +50,11 @@ for mode in online local; do
     : > "$fixture/arguments"
     : > "$fixture/protocols"
     prepare "$mode" "$source" "$fixture/$mode result" > "$fixture/output"
-    [[ "$(cat "$fixture/output")" == "$revision" ]]
-    [[ "$(cat "$fixture/$mode result/revision")" == "$revision" ]]
+    [[ "$(cat "$fixture/output")" == "$revision" ]] || exit 1
+    [[ "$(cat "$fixture/$mode result/revision")" == "$revision" ]] || exit 1
     rg 'clone diagnostic' "$fixture/$mode result/prepare.log" >/dev/null
     protocol=https; [[ "$mode" != local ]] || protocol='file'
-    [[ "$(sort -u "$fixture/protocols")" == "$protocol" ]]
+    [[ "$(sort -u "$fixture/protocols")" == "$protocol" ]] || exit 1
     if [[ "$mode" == local ]]; then
         printf '%s\0' -C "$source" rev-parse --verify 'HEAD^{commit}' \
             clone --local --no-hardlinks --dissociate --no-checkout --no-recurse-submodules -- "$source" "$fixture/local result/db" \
@@ -74,14 +74,14 @@ for failure in observe-fail malformed wrong-head clone-fail checkout-fail borrow
     if RUSTSEC_MODE="$failure" prepare local "$fixture/local source" "$destination" > "$fixture/output" 2> "$fixture/error"; then
         touch "$fixture/audit-invoked"
     fi
-    [[ ! -e "$fixture/audit-invoked" && ! -e "$destination/revision" && ! -s "$fixture/output" ]]
-    [[ -f "$destination/prepare.log" ]]
+    [[ ! -e "$fixture/audit-invoked" && ! -e "$destination/revision" && ! -s "$fixture/output" ]] || exit 1
+    [[ -f "$destination/prepare.log" ]] || exit 1
     rg -F "$destination" "$fixture/error" >/dev/null
 done
 # An online acquisition failure is retained, with no retry/fallback.
 : > "$fixture/arguments"
 if RUSTSEC_MODE=clone-fail prepare online https://github.com/RustSec/advisory-db.git "$fixture/online failure" > "$fixture/output" 2> "$fixture/error"; then exit 1; fi
-[[ -f "$fixture/online failure/prepare.log" && ! -e "$fixture/online failure/revision" ]]
+[[ -f "$fixture/online failure/prepare.log" && ! -e "$fixture/online failure/revision" ]] || exit 1
 printf '%s\0' -c http.lowSpeedLimit=1024 -c http.lowSpeedTime=30 \
     clone --depth 1 --single-branch --no-tags --no-recurse-submodules -- \
     https://github.com/RustSec/advisory-db.git "$fixture/online failure/db" > "$fixture/expected"
@@ -99,21 +99,29 @@ ln -s "$fixture/nonexistent" "$fixture/occupied-link"
 for destination in "$fixture/occupied" "$fixture/occupied-link"; do
     if prepare local "$fixture/local source" "$destination" > /dev/null 2>&1; then exit 1; fi
 done
-[[ ! -s "$fixture/arguments" && "$(cat "$fixture/occupied/evidence")" == preserve ]]
+[[ ! -s "$fixture/arguments" && "$(cat "$fixture/occupied/evidence")" == preserve ]] || exit 1
 
 # Real local Git proves dissociation even when the selected source borrows objects.
 # Reuse existing history; never create a commit or contact a remote.
-git clone --quiet --shared --no-checkout "$root" "$fixture/borrowed source"
-[[ -s "$fixture/borrowed source/.git/objects/info/alternates" ]]
+git init --quiet "$fixture/borrowed source"
+objects="$(git -C "$root" rev-parse --git-path objects)"
+case "$objects" in /*) ;; *) objects="$root/$objects" ;; esac
+printf '%s\n' "$objects" > "$fixture/borrowed source/.git/objects/info/alternates"
+# Explicitly construct the borrowing precondition, including shallow CI history.
+shallow="$(git -C "$root" rev-parse --git-path shallow)"
+case "$shallow" in /*) ;; *) shallow="$root/$shallow" ;; esac
+if [[ -f "$shallow" ]]; then cp "$shallow" "$fixture/borrowed source/.git/shallow"; fi
+git -C "$fixture/borrowed source" update-ref HEAD "$(git -C "$root" rev-parse HEAD)"
+[[ -s "$fixture/borrowed source/.git/objects/info/alternates" ]] || exit 1
 printf 'local source evidence\n' > "$fixture/borrowed source/untracked-evidence"
 selected="$(git -C "$fixture/borrowed source" rev-parse HEAD)"
 GIT_DIR="$fixture/wrong-git-dir" GIT_WORK_TREE="$fixture/wrong-worktree" \
     GIT_INDEX_FILE="$fixture/wrong-index" bash "$checker" local \
     "$fixture/borrowed source" "$fixture/isolated result" > "$fixture/output"
-[[ "$(cat "$fixture/output")" == "$selected" ]]
-[[ ! -s "$fixture/isolated result/db/.git/objects/info/alternates" ]]
-[[ ! -e "$fixture/isolated result/db/untracked-evidence" ]]
-[[ -f "$fixture/borrowed source/untracked-evidence" && ! -e "$fixture/wrong-index" ]]
+[[ "$(cat "$fixture/output")" == "$selected" ]] || exit 1
+[[ ! -s "$fixture/isolated result/db/.git/objects/info/alternates" ]] || exit 1
+[[ ! -e "$fixture/isolated result/db/untracked-evidence" ]] || exit 1
+[[ -f "$fixture/borrowed source/untracked-evidence" && ! -e "$fixture/wrong-index" ]] || exit 1
 # Pack and loose objects must have one hardlink; the database can outlive its source.
 perl -MFile::Find -e 'find(sub { -f $_ && (stat($_))[3] != 1 and die "shared object: $File::Find::name\n" }, $ARGV[0])' \
     "$fixture/isolated result/db/.git/objects"
