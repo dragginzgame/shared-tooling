@@ -12,7 +12,7 @@ mkdir "$fixture/consumer" "$fixture/logs"
 export TMPDIR="$fixture/logs"
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 unset VALIDATION_REPOSITORY_ROOT VALIDATION_RUNNER_SNAPSHOT_PATH
-bash "$root/scripts/ci/check-release-commands.sh" "$root"
+bash "$root/scripts/ci/check-release-commands.sh" "$root" make/tools.mk
 cat > "$fixture/consumer/Makefile" <<'MAKE'
 include tool-versions.env
 ifneq ($(word 2,$(filter release-patch release-minor release-major release-resume,$(MAKECMDGOALS))),)

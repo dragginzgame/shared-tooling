@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.1.15]
+
+### Added
+
+- Inventory sibling CI and tooling with `make cloc-tooling`, separating local
+  code from checksum-matching shared snapshots and supporting data. JSON output
+  includes file counts and hashes to guide consolidation reviews.
+- Summarize sibling repositories' Rust runtime/test LOC and test counts with
+  `make cloc`, or `scripts/dev/cloc-siblings.sh` for an explicit parent directory.
+  Counts reuse the existing workspace report with locked, offline metadata;
+  unavailable or failed reports remain visible alongside successful rows. A
+  final total sums successful reports with a combined test percentage and is
+  marked partial if any repository fails.
+- Install checksum-pinned cloc through `make install-host-tools`. LOC reports
+  automatically use prepared local tools and report missing prerequisites once
+  before scanning sibling workspaces.
+- Supply common setup, offline verification and LOC commands through one shared
+  Make include. Consumers adopt it with the reviewed snapshot; Make and CI use
+  the same complete tool selection without maintaining copied recipes.
+
+### Documentation
+
+- Define the common required tool inventory and complete consumer setup example,
+  including ripgrep and cloc in both installation and offline checks. Explain
+  how repository-local installation differs from interactive shell PATH setup.
+- Explicitly approve IcyDB's existing `crates/`, `canisters/`, `schema/` and
+  `testing/` layout without package moves. Workspace inheritance and full member
+  coverage still apply; future layout redesigns require separate approval.
+  [#34](https://github.com/dragginzgame/shared-tooling/issues/34),
+  [IcyDB #310](https://github.com/dragginzgame/icydb/issues/310).
+
 ## [0.1.14]
 
 ### Fixed

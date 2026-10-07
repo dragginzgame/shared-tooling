@@ -36,7 +36,9 @@ concise release summaries, GitHub issue links, breaking changes and minor-line
 detail files. The [Rust workspace rules](rules/rust-workspaces.md) require a
 virtual root with packages under `crates/<package-name>/` or application-owned
 `apps/<app-name>/` trees. Both use the same workspace inheritance; independent
-workspaces and other layouts require explicit exceptions. The
+workspaces and other layouts require explicit exceptions. The rule explicitly
+approves IcyDB's existing `crates/`, `canisters/`, `schema/` and `testing/` trees,
+with no required package moves. The
 [Cargo dependency rules](rules/cargo-dependencies.md) require one root dependency
 catalog inherited by every child manifest. The
 [dependency pinning rules](rules/dependency-pinning.md) define immutable source
@@ -60,9 +62,15 @@ contributions.
 ### Local IC executables
 
 Use `make install-tools` for the common local setup, including pinned jq,
-Mike Farah yq and ripgrep with PCRE2, and `make tools-check` for offline verification. See
-[local setup](docs/local-setup.md) for Linux Mint/macOS bootstrap packages and
-shell PATH configuration. Make targets select the local binaries automatically.
+Mike Farah yq, ripgrep with PCRE2 and cloc, and `make tools-check` for offline
+verification. The [required tool inventory](docs/local-setup.md#required-tool-inventory)
+is the shared setup list for every repository. See [local setup](docs/local-setup.md)
+for Linux Mint/macOS bootstrap packages and shell PATH configuration. Make targets
+select the local binaries automatically; direct shell commands need the documented
+PATH export in each checkout. Consumers include the reviewed snapshot's
+[`make/tools.mk`](make/tools.mk) for setup, offline verification and `make cloc`;
+the [adoption guide](docs/consuming-snapshots.md#local-ic-tool-adoption) lists its
+companion files and replaces copied Make recipes.
 
 `make install-ic-tools` installs the reviewed Quill, ICP CLI, didc, ic-wasm,
 PocketIC and Binaryen set beneath `.tools/ic/bin`. `make ic-tools-check` verifies
@@ -152,7 +160,73 @@ Or pass an explicit checkout path:
 ```
 
 The report discovers Cargo workspace members from `cargo metadata`; package
-names and directory layouts do not need to follow a shared prefix.
+names and directory layouts do not need to follow a shared prefix. Metadata
+inspection is locked and offline; it does not update the selected dependency
+graph or fetch missing inputs.
+
+For one line per sibling repository with the same Rust columns, run from Shared
+Tooling:
+
+```bash
+make install-host-tools  # Explicit setup, including pinned cloc and jq
+make cloc
+make cloc CLOC_PARENT=/path/to/projects
+```
+
+The report prefers this checkout's `.tools/host/bin` automatically, including
+when invoked directly. `cloc.sh --check-tools` checks prerequisites without
+counting or installing. The sibling report checks once before printing any
+rows when a Cargo workspace is present, reporting missing tools together with
+the setup command.
+
+Or invoke `scripts/dev/cloc-siblings.sh [parent-directory]` directly from any
+directory. By default it scans the parent of the checkout containing the script.
+It visits immediate Git checkouts, including linked worktrees and hidden
+directories, in name order; symlink aliases and non-repository directories are
+skipped. Each row reuses the root Cargo workspace's totals, including members
+under `apps/` and `crates/`. Separate excluded workspaces are outside this scope.
+Repositories without a root `Cargo.toml` show `N/A`. Failed counts show `ERROR`
+with diagnostics on stderr; other repositories are still reported and the command
+exits nonzero. No sibling Make targets, builds or setup commands are run.
+The final `TOTAL` row sums successful reports and calculates `test_%` from their
+combined LOC. `N/A` rows are excluded; failures label the total `TOTAL (partial)`.
+If no workspace was successfully counted, the total shows `N/A`.
+
+### CI and tooling inventory
+
+Use `make cloc-tooling [CLOC_PARENT=/path/to/projects]` to find where sibling
+repositories maintain the most CI and tooling code. For per-file evidence:
+
+```bash
+perl scripts/dev/cloc-tooling.pl --json /path/to/projects > tooling-inventory.json
+```
+
+The table separates CI (`.github/`, `scripts/ci/`, `ci/`) from other tooling,
+including other scripts, hooks, Make files, `.cargo/`, `tools/`, `xtask/` and
+Cargo package `build.rs` files. It reads tracked and nonignored untracked working
+files, captures their bytes in temporary files and counts all copies with cloc.
+Product source, documentation, caches, build output and symlinks are outside
+this inventory; product runtime functions named `build.rs` are not build scripts.
+This is a tooling inventory, not a whole-repository or semantic-duplication scan.
+
+`total_loc` is CI plus other tooling code, excluding blank lines and comments.
+`shared_loc` matches both the SHA-256 and executable mode in the repository's
+`.shared-tooling*.snapshot` manifests, including nested snapshots whose paths
+resolve beside their manifest; the rest is `local_loc`. Modified snapshot files
+produce a warning and remain local in these counts. This comparison is not a
+complete snapshot-integrity or adoption check. Supporting JSON, patches and
+CSV/TSV tables appear separately as physical `data_lines`, so frozen baselines
+and ablation patches do not inflate executable-tooling LOC.
+
+JSON output records source commits, dirty state, snapshot revisions, per-file
+hashes, ownership, counts and any files cloc skipped. Shell `.env` files and jq
+source filters are counted too. Errors leave other repository rows visible,
+mark totals partial, exit nonzero and retain captured inputs. Healthy shared
+copies already have a common owner; high local LOC or matching hashes only
+identify candidates for a contract review, not promised removable lines.
+
+The [2026-10-07 inventory and findings](docs/reports/audits/2026/10/07/sibling-tooling/01/report.md)
+record the initial measurements and concrete consolidation candidates.
 
 ### Validation target runner
 

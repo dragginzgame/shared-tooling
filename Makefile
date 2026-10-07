@@ -3,12 +3,11 @@
 RELEASE_REMOTE ?= origin
 RELEASE_BRANCH ?= main
 SHELLCHECK ?= shellcheck
-IC_TOOL_PINS ?= ci/ic-tools.tsv
-HOST_TOOL_VERSIONS ?= ci/tool-versions.env
-export PATH := $(CURDIR)/.tools/host/bin:$(CURDIR)/.tools/ic/bin:$(PATH)
+CLOC_REPORT := $(CURDIR)/scripts/dev/cloc-siblings.sh
+CLOC_ROOT = $(CLOC_PARENT)
+include make/tools.mk
 
 .PHONY: help version check-shell check-pins check-doc-links check-release-commands test-portable ci release-patch release-minor release-major \
-        install-tools tools-check install-host-tools host-tools-check install-ic-tools ic-tools-check \
         release-resume release-version release-preflight release-verify \
         release-prepare-version release-prepared-check release-files \
         release-commit-check release-committed-check release-tagged-check release-push-check
@@ -19,9 +18,11 @@ endif
 
 help:
 	@echo "Current local version: make version"
+	@echo "Sibling Rust LOC summaries: make cloc [CLOC_PARENT=/path/to/projects]"
+	@echo "Sibling CI/tooling inventory: make cloc-tooling [CLOC_PARENT=/path/to/projects]"
 	@echo "Focused: check-shell, check-pins, check-doc-links, check-release-commands, test-portable"
 	@echo "Local IC executables: install-ic-tools; offline verification: ic-tools-check"
-	@echo "All local executables (including jq/yq/ripgrep): install-tools; offline verification: tools-check"
+	@echo "All local executables (including jq/yq/ripgrep/cloc): install-tools; offline verification: tools-check"
 	@echo "Full gate: ci (explicit request or configured CI)"
 	@echo "Maintainer releases: release-patch, release-minor, release-major"
 	@echo "Recovery: rerun the normal release target; saved releases reconcile automatically"
@@ -39,27 +40,7 @@ check-doc-links:
 	perl scripts/ci/check-documentation-links.pl --root . *.md audits/*.md rules/*.md docs/*.md docs/principles/*.md
 
 check-release-commands:
-	bash scripts/ci/check-release-commands.sh .
-
-install-tools:
-	+$(MAKE) --no-print-directory install-host-tools
-	+$(MAKE) --no-print-directory install-ic-tools
-
-tools-check:
-	+$(MAKE) --no-print-directory host-tools-check
-	+$(MAKE) --no-print-directory ic-tools-check
-
-install-host-tools:
-	bash scripts/dev/install-host-tools.sh --versions "$(HOST_TOOL_VERSIONS)" --with-ripgrep
-
-host-tools-check:
-	bash scripts/dev/install-host-tools.sh --versions "$(HOST_TOOL_VERSIONS)" --with-ripgrep --check
-
-install-ic-tools:
-	bash scripts/dev/install-ic-tools.sh --pins "$(IC_TOOL_PINS)"
-
-ic-tools-check:
-	bash scripts/dev/install-ic-tools.sh --pins "$(IC_TOOL_PINS)" --check
+	bash scripts/ci/check-release-commands.sh . make/tools.mk
 
 ci:
 	+$(MAKE) --no-print-directory check-shell

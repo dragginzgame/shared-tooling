@@ -16,9 +16,14 @@ case "${1:-}" in */verify-file-checksum.sh) exit 24 ;; esac
 exec "$RETENTION_REAL_BASH" "$@"
 SCRIPT
 chmod +x "$fixture/bin/"*
+# Isolate the report from this checkout's prepared host set so the failing
+# cloc substitute exercises retention even when local tools take precedence.
+mkdir -p "$fixture/source/scripts/ci" "$fixture/source/scripts/dev"
+cp "$ROOT/scripts/ci/test-cloc.sh" "$fixture/source/scripts/ci/"
+cp "$ROOT/scripts/dev/cloc.sh" "$fixture/source/scripts/dev/"
 status=0
 TMPDIR="$fixture/cloc" PATH="$fixture/bin:$PATH" CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0 \
-    "$BASH" "$ROOT/scripts/ci/test-cloc.sh" > "$fixture/cloc.log" 2>&1 || status=$?
+    "$BASH" "$fixture/source/scripts/ci/test-cloc.sh" > "$fixture/cloc.log" 2>&1 || status=$?
 [[ "$status" == 23 ]] || exit 1
 set -- "$fixture/cloc"/shared-tooling-cloc-test.*
 [[ $# == 1 && -f "$1/Cargo.toml" && -f "$1/crates/alpha/src/lib.rs" ]] || exit 1
@@ -36,25 +41,30 @@ set -- "$fixture/portable"/shared-tooling-test.*
 yq -o json '.' "$ROOT/.github/workflows/ci.yml" > "$fixture/workflow.json"
 jq -e '
   .jobs["portable-regression"].steps | to_entries |
-  map(select(.value.run? | strings | contains("bash scripts/dev/install-ic-tools.sh")))[0].key as $native |
-  map(select(.value.uses? | strings | startswith("actions/upload-artifact@"))) |
-  length == 1 and .[0].key > $native and .[0].value.if == "failure()" and
-  .[0].value.with["include-hidden-files"] == true
+  map(select(.value.run? | strings | contains("make --no-print-directory install-ic-tools"))) as $native |
+  map(select(.value.uses? | strings | startswith("actions/upload-artifact@"))) as $uploads |
+  ($native | length) == 1 and ($uploads | length) == 1 and
+  $uploads[0].key > $native[0].key and $uploads[0].value.if == "failure()" and
+  $uploads[0].value.with["include-hidden-files"] == true
 ' "$fixture/workflow.json" > /dev/null
 jq -r '.jobs["portable-regression"].steps[] | select(.run? | strings |
-  contains("bash scripts/dev/install-ic-tools.sh")) | .run' "$fixture/workflow.json" > "$fixture/native-step.sh"
+  contains("make --no-print-directory install-ic-tools")) | .run' "$fixture/workflow.json" > "$fixture/native-step.sh"
 jq -r '.jobs["portable-regression"].steps[] | select(.uses? | strings |
   startswith("actions/upload-artifact@")) | .with.path' "$fixture/workflow.json" > "$fixture/upload-paths"
 for phase in install check; do
     native="$fixture/native-$phase"
-    mkdir -p "$native/scripts/dev" "$native/temp"
+    mkdir -p "$native/scripts/dev" "$native/temp" "$native/make"
+    cp "$ROOT/make/tools.mk" "$native/make/"
+    printf 'include make/tools.mk\n' > "$native/Makefile"
     cat > "$native/scripts/dev/install-ic-tools.sh" <<'SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
 mkdir -p .tools/ic-set.fixture
 printf 'retained installed input\n' > .tools/ic-set.fixture/payload
 selected=install
-[[ "${1:-}" != --check ]] || selected=check
+for arg in "$@"; do
+    [[ "$arg" != --check ]] || selected=check
+done
 echo "native fixture: $selected"
 [[ "$selected" != "$RETENTION_FAIL_IC_PHASE" ]] || exit 23
 SCRIPT
@@ -62,7 +72,8 @@ SCRIPT
     (cd "$native"; RUNNER_TEMP="$native/temp" RETENTION_FAIL_IC_PHASE="$phase" \
         "$BASH" --noprofile --norc -e -o pipefail "$fixture/native-step.sh") \
         > "$native/command.log" 2>&1 || status=$?
-    [[ "$status" == 23 && -f "$native/.tools/ic-set.fixture/payload" ]] || exit 1
+    # GNU Make reports a failed recipe as status 2; the installer evidence stays.
+    [[ "$status" == 2 && -f "$native/.tools/ic-set.fixture/payload" ]] || exit 1
     : > "$native/collected"
     # shellcheck disable=SC2016 # Replace literal GitHub expressions, not shell variables.
     while IFS= read -r pattern; do

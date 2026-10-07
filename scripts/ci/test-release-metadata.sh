@@ -161,6 +161,8 @@ git init -q "$logging_root"
 cp "$ROOT/scripts/ci/run-validation-targets.sh" "$logging_root/scripts/ci/"
 cp "$ROOT/scripts/ci/check-make-execution.sh" "$logging_root/scripts/ci/"
 cp "$ROOT/Makefile" "$logging_root/Makefile"
+mkdir -p "$logging_root/make"
+cp "$ROOT/make/tools.mk" "$logging_root/make/"
 cat >> "$logging_root/Makefile" <<'MAKE'
 ci:
 	@test "$(RELEASE_VERSION)" = 0.1.1
