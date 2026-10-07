@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.22]
+
+### Fixed
+
+- Prevent false sibling LOC test failures when temporary paths have trailing
+  slashes or directory aliases, preserving report and failure-retention checks.
+  [#57](https://github.com/dragginzgame/shared-tooling/issues/57).
+- Give native CI enough time for the expanded release tests, with a separate
+  test-step limit that leaves room for failure-artifact collection.
+  [#42](https://github.com/dragginzgame/shared-tooling/issues/42).
+
 ## [0.1.21]
 
 ### Added
