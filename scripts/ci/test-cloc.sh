@@ -2,6 +2,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
+# The independent fixture owns its default output selection. Individual cases
+# below still select explicit targets; an enclosing consumer must not select it.
+unset CARGO_TARGET_DIR
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-cloc-test.XXXXXX")"
 trap 'if [[ $? == 0 ]]; then rm -rf "$FIXTURE"; else printf "Failed cloc fixture retained: %s\n" "$FIXTURE" >&2; fi' EXIT
 
@@ -62,7 +65,7 @@ cat >"$FIXTURE/crates/beta/src/lib.rs" <<'RUST'
 async fn async_test() {}
 RUST
 
-output="$(bash "$ROOT/scripts/dev/cloc.sh" "$FIXTURE")"
+output="$(bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")"
 
 alpha_row="$(printf '%s\n' "$output" | awk '$1 == "alpha" { print $0 }')"
 beta_row="$(printf '%s\n' "$output" | awk '$1 == "beta" { print $0 }')"
@@ -85,14 +88,14 @@ generated_rust() {
     printf '#[test]\nfn generated_integration_test() {}\n' > "$1/tests/generated.rs"
 }
 generated_rust "$FIXTURE/target"
-[[ "$(bash "$ROOT/scripts/dev/cloc.sh" "$FIXTURE")" == "$output" ]]
+[[ "$(bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$output" ]]
 custom_target="$FIXTURE/crates/alpha/build [generated]*?"
 generated_rust "$custom_target"
-[[ "$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" "$FIXTURE")" == "$output" ]]
+[[ "$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$output" ]]
 # This source directory matches the unescaped target glob and must be counted.
 mkdir -p "$FIXTURE/crates/alpha/build generated-copy"
 printf 'pub fn maintained() {}\n' > "$FIXTURE/crates/alpha/build generated-copy/lib.rs"
-custom_output="$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" "$FIXTURE")"
+custom_output="$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")"
 read -r _ before_runtime _ _ _ _ <<<"$alpha_row"
 read -r _ after_runtime _ _ after_tests _ <<<"$(printf '%s\n' "$custom_output" | awk '$1 == "alpha"')"
 [[ "$after_runtime" == "$((before_runtime + 1))" && "$after_tests" == 2 ]]
@@ -118,7 +121,7 @@ cat >"$FIXTURE/tests/root.rs" <<'RUST'
 fn root_integration_test() {}
 RUST
 
-nested_output="$(bash "$ROOT/scripts/dev/cloc.sh" "$FIXTURE")"
+nested_output="$(bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")"
 root_row="$(printf '%s\n' "$nested_output" | awk '$1 == "root_package" { print $0 }')"
 total_row="$(printf '%s\n' "$nested_output" | awk '$1 == "TOTAL" { print $0 }')"
 read -r _ root_runtime_loc root_test_loc _ root_test_fns root_inline_fns <<<"$root_row"
@@ -129,12 +132,12 @@ read -r _ total_runtime_loc total_test_loc _ total_test_fns total_inline_fns <<<
 [[ "$total_test_loc" -eq $((member_test_loc + 2)) ]]
 [[ "$total_test_fns" -eq 5 && "$total_inline_fns" -eq 3 ]]
 generated_rust "$FIXTURE/target"
-[[ "$(bash "$ROOT/scripts/dev/cloc.sh" "$FIXTURE")" == "$nested_output" ]]
+[[ "$(bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$nested_output" ]]
 custom_target="$FIXTURE/build [generated]*?"
 # Move only fixture-owned output out of the default target before changing its
 # configured identity; Cargo reports one selected target directory at a time.
 mv "$FIXTURE/target" "$custom_target"
-[[ "$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" "$FIXTURE")" == "$nested_output" ]]
+[[ "$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$nested_output" ]]
 rm -r "$custom_target"
 
 # Checkout ancestors must not affect runtime/test classification. Spaces and
@@ -145,7 +148,7 @@ cp "$FIXTURE/Cargo.toml" "$relocated/"
 cp -R "$FIXTURE/src" "$FIXTURE/crates" "$relocated/"
 mkdir -p "$relocated/tests"
 cp "$FIXTURE/tests/root.rs" "$relocated/tests/"
-relocated_output="$(bash "$ROOT/scripts/dev/cloc.sh" "$relocated")"
+relocated_output="$(bash "$ROOT/scripts/dev/cloc.sh" --manifest "$relocated/Cargo.toml" "$relocated")"
 [[ "$relocated_output" == "$nested_output" ]]
 
 # Explicit independent-workspace selection keeps graphs and build output separate.

@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.17]
+
+### Fixed
+
+- Keep LOC fixtures on their own Cargo manifests when temporary files live
+  inside a consumer checkout, and isolate inherited target-directory settings.
+  [#48](https://github.com/dragginzgame/shared-tooling/issues/48),
+  [#47](https://github.com/dragginzgame/shared-tooling/issues/47).
+
 ## [0.1.16]
 
 ### Added
