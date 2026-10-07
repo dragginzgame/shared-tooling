@@ -74,6 +74,7 @@ bash "$ROOT/scripts/ci/test-cloc-fixture-contexts.sh"
 bash "$ROOT/scripts/ci/test-fixture-retention.sh"
 bash "$ROOT/scripts/ci/test-snapshot-distribution.sh"
 bash "$ROOT/scripts/ci/test-release-runner.sh"
+bash "$ROOT/scripts/ci/test-release-pr.sh"
 bash "$ROOT/scripts/ci/test-release-metadata.sh"
 
 mkdir -p "$FIXTURE/repository" "$FIXTURE/result"

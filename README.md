@@ -11,6 +11,9 @@ validation gates, release metadata and deployment identities in a local overlay.
 Every repository provides the same three release commands and workflow under
 the [release contract](docs/releases.md), which includes a Makefile example.
 Differences from the common baseline require maintainer-approved exceptions.
+Direct atomic branch/tag delivery remains the default. Explicit
+[PR delivery](docs/releases.md#pr-delivery) prepares a review branch, waits for
+merge, and validates the exact merged commit again before pushing its tag.
 
 `make version` reads the current local version from [`VERSION`](VERSION).
 The top undated changelog entry describes the next proposed release. Standard

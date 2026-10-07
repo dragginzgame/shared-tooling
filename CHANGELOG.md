@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.21]
+
+### Added
+
+- Support explicitly selected PR-gated releases: prepare one release PR, resume
+  after merge/squash/rebase, and fully validate the exact merged commit before
+  publishing its tag. Preserve the default direct atomic flow and retained
+  recovery evidence. [#42](https://github.com/dragginzgame/shared-tooling/issues/42).
+
 ## [0.1.20]
 
 ### Changed
