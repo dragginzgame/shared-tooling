@@ -73,6 +73,18 @@ for variable in MAKEFLAGS GNUMAKEFLAGS; do
 done
 
 # Namespaced successful and ignored tests must remain ordinary live output.
+# Even a late invalid goal must refuse the whole request before dispatch.
+for invalid in '' --dry-run --version --ignore-errors -n MAKEFLAGS=i 'VALUE=1' $'bad\ttarget' $'bad\ntarget'; do
+    status=0
+    VALIDATION_REPOSITORY_ROOT="$FIXTURE" VALIDATION_LOG_DIR="$FIXTURE/refused-logs" \
+        bash "$FIXTURE/scripts/ci/run-validation-targets.sh" pass "$invalid" \
+        > "$FIXTURE/refused-goal.log" 2>&1 || status=$?
+    [[ "$status" == 2 && ! -e "$FIXTURE/refused-logs" ]]
+    if rg 'pass-marker|VALIDATION PASSED' "$FIXTURE/refused-goal.log" >/dev/null; then
+        echo 'invalid goal list dispatched a target or reported success' >&2; exit 1
+    fi
+done
+
 VALIDATION_FAILURE_LOG_DIR="$FIXTURE/passing-logs" \
     VALIDATION_REPOSITORY_ROOT="$FIXTURE" \
     VALIDATION_RUNNER_DEPTH=0 VALIDATION_RUNNER_SNAPSHOT_PATH='' \

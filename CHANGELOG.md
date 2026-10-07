@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.1.18]
+
+### Fixed
+
+- Isolate LOC fixtures from enclosing Cargo workspaces and target settings,
+  and allow tooling-report tests before committing consumer adoption.
+  [#47](https://github.com/dragginzgame/shared-tooling/issues/47),
+  [#50](https://github.com/dragginzgame/shared-tooling/issues/50),
+  [#53](https://github.com/dragginzgame/shared-tooling/issues/53).
+- Reject Make options and assignments as validation targets before running
+  any gate. [#30](https://github.com/dragginzgame/shared-tooling/issues/30).
+- Reject failed formatter version probes and missing frontend scopes while
+  preserving empty hook selections.
+  [#49](https://github.com/dragginzgame/shared-tooling/issues/49).
+- Exclude Cargo build output from Rust LOC and test totals when its configured
+  path uses symlink aliases.
+  [#31](https://github.com/dragginzgame/shared-tooling/issues/31).
+
+### Added
+
+- Provide shared pins and explicit local setup/check commands for cargo-sort,
+  cargo-sort-derives and candid-extractor. Rust consumers can attach the set
+  to their common setup commands.
+  [#51](https://github.com/dragginzgame/shared-tooling/issues/51).
+
+### Documentation
+
+- Keep IC identity stores outside local reset and fresh-deploy cleanup paths,
+  with home selection and recovery owned by each consumer.
+  [#52](https://github.com/dragginzgame/shared-tooling/issues/52).
+
 ## [0.1.17]
 
 ### Fixed

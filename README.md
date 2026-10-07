@@ -78,6 +78,11 @@ it offline. Setup activates only a complete verified set and preserves prior
 sets and failed candidates. See [local IC tools](docs/ic-tools.md) for pins,
 PATH setup, native host coverage and consumer adoption.
 
+Rust consumers can use `make install-rust-tools` and offline `make rust-tools-check`
+for pinned cargo-sort, cargo-sort-derives and candid-extractor under `.tools/rust/bin`.
+See [Rust setup](docs/local-setup.md#rust-development-tools) for attaching them to
+the common setup commands after preparing the consumer's Rust toolchain.
+
 ### Focused verification helpers
 
 For separately authorized tag maintenance, use
@@ -254,6 +259,9 @@ failed target.
 Vendor `scripts/ci/check-make-execution.sh` alongside the runner. It rejects
 inherited Make ignore-errors, dry-run, question, touch and version-only modes before validation;
 normal Make variables and parallel-job settings remain available to targets.
+The complete argument list is checked before dispatch: arguments must be named
+goals, not Make options, variable assignments or names containing tabs/newlines.
+Pass variable selections through the caller's environment or owning Makefile.
 
 ```bash
 scripts/ci/run-validation-targets.sh fmt-check shellcheck test

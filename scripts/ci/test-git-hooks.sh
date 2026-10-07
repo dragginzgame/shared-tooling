@@ -367,7 +367,8 @@ export PRETTIER_BIN="$FIXTURE/prepared-prettier" PRETTIER_VERSION=99.1.0
 cat > "$PRETTIER_BIN" <<'SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
-if [[ "$1" == --version ]]; then echo 99.1.0; exit 0; fi
+if [[ "$1" == --version ]]; then echo 99.1.0; exit "${PRETTIER_VERSION_STATUS:-0}"; fi
+[[ -z "${PRETTIER_CALL_MARKER:-}" ]] || touch "$PRETTIER_CALL_MARKER"
 [[ "${PRETTIER_FIXTURE_FAIL:-}" != yes ]] || exit 9
 mode="$1"
 [[ "$2" == -- ]]
@@ -405,6 +406,18 @@ PRETTIER_FIXTURE_FAIL=yes expect_failure bash .githooks/pre-commit
 [[ "$(git write-tree)" == "$tree" && "$(cat "$frontend_path")" == unformatted ]]
 PRETTIER_VERSION=wrong expect_failure bash .githooks/pre-commit
 [[ "$(git write-tree)" == "$tree" ]]
+PRETTIER_VERSION_STATUS=23 PRETTIER_CALL_MARKER="$FIXTURE/formatter-called" \
+    expect_failure bash .githooks/pre-commit
+[[ ! -e "$FIXTURE/formatter-called" && "$(git write-tree)" == "$tree" ]]
+[[ "$(cat "$frontend_path")" == unformatted ]]
+for mode in --check --write; do
+    expect_failure bash scripts/dev/format-frontend.sh "$mode" fronted
+done
+# No selected frontend input is legitimate, even when the staged tree has no
+# frontend directory (for example after deleting its final tracked file).
+: > "$FIXTURE/no-frontend-selection"
+SHARED_TOOLING_FORMAT_FILES="$FIXTURE/no-frontend-selection" PRETTIER_BIN=/absent \
+    bash scripts/dev/format-frontend.sh --write absent-frontend
 # The explicit list also demonstrates that an unselected frontend file is never
 # passed to the formatter. Use the helper in a disposable snapshot directory.
 printf '%s\0' "$frontend_path" > "$FIXTURE/frontend-selection"

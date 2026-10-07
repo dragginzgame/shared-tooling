@@ -17,8 +17,14 @@ trap 'rm -f "$list"' EXIT
 if [[ "$mode" == --write && -n "${SHARED_TOOLING_FORMAT_FILES:-}" ]]; then
     cp "$SHARED_TOOLING_FORMAT_FILES" "$list"
 else
+    [[ -d "$scope" ]] || { echo 'frontend scope directory does not exist' >&2; exit 2; }
     git --literal-pathspecs ls-files -z -- "$scope/" > "$list"
 fi
+cursor="$scope"
+while [[ "$cursor" != . ]]; do
+    [[ ! -L "$cursor" ]] || { echo 'frontend scope may not traverse symlinks' >&2; exit 1; }
+    cursor="$(dirname "$cursor")"
+done
 files=()
 count=0
 while IFS= read -r -d '' path; do
@@ -42,8 +48,9 @@ case "${PRETTIER_BIN:-}" in
     /*) [[ -x "$PRETTIER_BIN" ]] || { echo 'prepared Prettier executable is missing' >&2; exit 1; } ;;
     *) echo 'PRETTIER_BIN must select an explicitly prepared absolute executable path' >&2; exit 1 ;;
 esac
-[[ -n "${PRETTIER_VERSION:-}" && "$("$PRETTIER_BIN" --version)" == "$PRETTIER_VERSION" ]] || {
+if ! actual_version="$("$PRETTIER_BIN" --version)" || \
+    [[ -z "${PRETTIER_VERSION:-}" || "$actual_version" != "$PRETTIER_VERSION" ]]; then
     echo 'prepared Prettier does not match the selected lockfile version' >&2
     exit 1
-}
+fi
 "$PRETTIER_BIN" "$mode" -- "${files[@]}"
