@@ -3,6 +3,9 @@ set -euo pipefail
 
 ROOT="${SCCACHE_REPOSITORY_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}"
 SCCACHE_RUNTIME_ROOT="${SCCACHE_RUNTIME_DIR:-$ROOT/.tmp/sccache-runtime}"
+while [[ "$SCCACHE_RUNTIME_ROOT" == */ && "$SCCACHE_RUNTIME_ROOT" != / ]]; do
+    SCCACHE_RUNTIME_ROOT="${SCCACHE_RUNTIME_ROOT%/}"
+done
 SCCACHE_RUNTIME_TMPDIR="$SCCACHE_RUNTIME_ROOT/tmp"
 SCCACHE_BIN="${SCCACHE_BIN:-}"
 
@@ -19,6 +22,15 @@ fi
 
 [[ ! -L "$ROOT/.tmp" ]] ||
     fail "repository scratch parent may not be a symlink"
+case "$SCCACHE_RUNTIME_ROOT" in
+    /|.|..|*/.|*/..) fail "runtime selection must name a dedicated directory" ;;
+esac
+# Admit the owned runtime paths before mkdir can follow them. Ancestors of an
+# explicit override are caller-selected (system /tmp may itself be a symlink).
+for runtime_path in "$SCCACHE_RUNTIME_ROOT" "$SCCACHE_RUNTIME_TMPDIR"; do
+    [[ ! -L "$runtime_path" ]] || fail "compiler-cache runtime path may not be a symlink"
+    [[ ! -e "$runtime_path" || -d "$runtime_path" ]] || fail "compiler-cache runtime path must be a directory"
+done
 mkdir -p "$SCCACHE_RUNTIME_TMPDIR" ||
     fail "cannot create the stable compiler-cache runtime directory"
 [[ -d "$SCCACHE_RUNTIME_ROOT" && ! -L "$SCCACHE_RUNTIME_ROOT" ]] ||

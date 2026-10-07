@@ -92,7 +92,7 @@ VALIDATION_FAILURE_LOG_DIR="$FIXTURE/failure-logs" \
     --fail-fast fail-one fail-two \
     >"$FIXTURE/fail-fast.log" 2>&1 || fail_fast_status=$?
 
-[[ "$fail_fast_status" -eq 1 ]] || {
+[[ "$fail_fast_status" -eq 2 ]] || {
     echo "validation target runner test failed: fail-fast status was $fail_fast_status" >&2
     exit 1
 }
@@ -111,8 +111,8 @@ VALIDATION_FAILURE_LOG_DIR="$FIXTURE/failure-logs" \
     pass mutate-runner fail-one fail-two fail-after-caught-panic fail-with-test-context \
     >"$FIXTURE/output.log" 2>&1 || status=$?
 
-[[ "$status" -eq 1 ]] || {
-    echo "validation target runner test failed: expected status 1, got $status" >&2
+[[ "$status" -eq 2 ]] || {
+    echo "validation target runner test failed: expected Make failure status 2, got $status" >&2
     exit 1
 }
 for expected in \
@@ -216,7 +216,7 @@ for failure in mkdir copy; do
         VALIDATION_RUNNER_DEPTH=0 VALIDATION_RUNNER_SNAPSHOT_PATH='' \
         bash "$FIXTURE/scripts/ci/run-validation-targets.sh" fail-one \
         > "$FIXTURE/fallback-$failure.log" 2>&1 || status=$?
-    [[ "$status" == 1 ]]
+    [[ "$status" == 2 ]]
     fallback_logs=("$fallback_tmp"/validation.*/0.log)
     [[ "${#fallback_logs[@]}" == 1 && -f "${fallback_logs[0]}" ]]
     rg -F first-failure-marker "${fallback_logs[0]}" >/dev/null
@@ -276,4 +276,64 @@ for marker in child-gate-marker nested-selection-marker \
     rg -F "$marker" "$FIXTURE/nested-context.log" >/dev/null
 done
 
+# A retained run includes successes, raw bytes and a timing row per completed
+# target. Literal structured prefixes are shared mechanics, not product policy.
+cp "$ROOT/scripts/ci/run-validation-targets.sh" "$FIXTURE/scripts/ci/"
+cat >> "$FIXTURE/Makefile" <<'MAKE'
+structured:
+	@printf '[CONSUMER:E001] structured-marker\n'
+	@printf 'test error::tests::passing ... ok\n'
+	@printf '\033[32mcolored raw bytes\033[0m\n'
+	@exit 7
+MAKE
+status=0
+VALIDATION_REPOSITORY_ROOT="$FIXTURE" VALIDATION_LOG_DIR="$FIXTURE/runs" \
+    VALIDATION_FAILURE_LOG_DIR="$FIXTURE/failure-logs" VALIDATION_FAILURE_EVENT_PREFIX='[CONSUMER:E' \
+    GITHUB_STEP_SUMMARY="$FIXTURE/summary.md" VALIDATION_RUNNER_DEPTH=0 \
+    bash "$FIXTURE/scripts/ci/run-validation-targets.sh" pass structured \
+    > "$FIXTURE/retained.log" 2>&1 || status=$?
+[[ "$status" == 2 ]]
+run="$(sed -n 's/^Validation logs and timings: //p' "$FIXTURE/retained.log")"
+[[ -d "$run" ]]
+printf 'pass-marker\n' > "$FIXTURE/pass.expected"
+cmp "$FIXTURE/pass.expected" "$run/0.log"
+awk -F '\t' -v run="$run" '
+    NR == 1 { if ($0 != "target\tresult\tseconds\tlog") exit 1 }
+    NR == 2 { if ($1 != "pass" || $2 != "PASS" || $3 !~ /^[0-9]+$/ || $4 != run "/0.log") exit 1 }
+    NR == 3 { if ($1 != "structured" || $2 != "FAIL" || $3 !~ /^[0-9]+$/ || $4 != run "/1.log") exit 1 }
+    END { if (NR != 3) exit 1 }
+' "$run/timings.tsv"
+rg -F '[ERR:structured] [CONSUMER:E001] structured-marker' "$FIXTURE/retained.log" >/dev/null
+rg -F '[ERR:structured] [CONSUMER:E001] structured-marker' "$FIXTURE/failure-logs/latest-errors.log" >/dev/null
+rg -F $'\033[32mcolored raw bytes\033[0m' "$run/1.log" >/dev/null
+if rg -F '[ERR:' "$run/1.log" >/dev/null; then exit 1; fi
+[[ "$(rg -c '^### Validation summary' "$FIXTURE/summary.md")" == 1 ]]
+VALIDATION_REPOSITORY_ROOT="$FIXTURE" VALIDATION_LOG_DIR="$FIXTURE/runs" \
+    GITHUB_STEP_SUMMARY="$FIXTURE/summary.md" VALIDATION_RUNNER_DEPTH=1 \
+    bash "$FIXTURE/scripts/ci/run-validation-targets.sh" pass > "$FIXTURE/retained-pass.log" 2>&1
+pass_run="$(sed -n 's/^Validation logs and timings: //p' "$FIXTURE/retained-pass.log")"
+[[ "$pass_run" != "$run" && -f "$pass_run/0.log" && -f "$run/1.log" ]]
+[[ "$(rg -c '^### Validation summary' "$FIXTURE/summary.md")" == 1 ]]
+
+# Simulate a signal to the executing logger after output, without signaling the
+# test process group. Make's admission probe still uses the real executable.
+real_make="$(command -v make)"
+mkdir "$FIXTURE/signal-bin"
+cat > "$FIXTURE/signal-bin/make" <<'SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$*" != *interrupt-fixture* ]]; then exec "$REAL_MAKE" "$@"; fi
+printf 'partial raw output\n'
+kill -TERM "$PPID"
+SCRIPT
+chmod +x "$FIXTURE/signal-bin/make"
+status=0
+REAL_MAKE="$real_make" PATH="$FIXTURE/signal-bin:$PATH" \
+    VALIDATION_REPOSITORY_ROOT="$FIXTURE" VALIDATION_LOG_DIR="$FIXTURE/runs" \
+    bash "$FIXTURE/scripts/ci/run-validation-targets.sh" interrupt-fixture \
+    > "$FIXTURE/interrupted.log" 2>&1 || status=$?
+[[ "$status" == 143 ]]
+interrupted_run="$(sed -n 's/^Validation logs and timings: //p' "$FIXTURE/interrupted.log")"
+rg -Fx 'partial raw output' "$interrupted_run/0.log" >/dev/null
+[[ "$(wc -l < "$interrupted_run/timings.tsv" | tr -d ' ')" == 1 ]]
 echo "validation target runner test passed"

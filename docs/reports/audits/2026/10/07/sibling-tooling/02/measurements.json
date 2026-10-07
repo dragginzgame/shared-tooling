@@ -1,0 +1,332 @@
+{
+  "cloc_version": "2.10",
+  "partial": false,
+  "totals": {
+    "ci_loc": 54834,
+    "data_lines": 9664,
+    "local_loc": 53219,
+    "other_loc": 31852,
+    "shared_loc": 33467,
+    "total_loc": 86686
+  },
+  "repositories": [
+    {
+      "dirty": true,
+      "drifted_files": [],
+      "head": "8db6ff3ac40e49783a98fdd50a0ea0088c2872c4",
+      "name": "canic",
+      "skipped_files": [
+        ".github/CODEOWNERS"
+      ],
+      "snapshot_manifests": [
+        {
+          "path": ".shared-tooling.snapshot",
+          "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
+          "root": "."
+        }
+      ],
+      "totals": {
+        "ci_loc": 14552,
+        "data_lines": 7893,
+        "local_loc": 12138,
+        "other_loc": 2173,
+        "shared_loc": 4587,
+        "total_loc": 16725
+      },
+      "selected_files": 188
+    },
+    {
+      "dirty": true,
+      "drifted_files": [],
+      "head": "eece44dac79da1bfb36f82ce2cd30d51edd3a9c1",
+      "name": "ic-backup",
+      "skipped_files": [],
+      "snapshot_manifests": [
+        {
+          "path": ".shared-tooling.snapshot",
+          "revision": "e378671d90afa237ff63a4b0e3b9551eb2c222b6",
+          "root": "."
+        }
+      ],
+      "totals": {
+        "ci_loc": 3348,
+        "data_lines": 46,
+        "local_loc": 2101,
+        "other_loc": 2249,
+        "shared_loc": 3496,
+        "total_loc": 5597
+      },
+      "selected_files": 44
+    },
+    {
+      "dirty": true,
+      "drifted_files": [],
+      "head": "c727dbc87c07c92738a4cb0d75d2fb0825e32878",
+      "name": "ic-blob-storage",
+      "skipped_files": [],
+      "snapshot_manifests": [
+        {
+          "path": ".shared-tooling.snapshot",
+          "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
+          "root": "."
+        }
+      ],
+      "totals": {
+        "ci_loc": 3399,
+        "data_lines": 20,
+        "local_loc": 1470,
+        "other_loc": 2252,
+        "shared_loc": 4181,
+        "total_loc": 5651
+      },
+      "selected_files": 43
+    },
+    {
+      "dirty": true,
+      "drifted_files": [],
+      "head": "c7c0d85765054909c05d86f6d3fd2c9965510335",
+      "name": "ic-host-tooling",
+      "skipped_files": [],
+      "snapshot_manifests": [
+        {
+          "path": ".shared-tooling.snapshot",
+          "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
+          "root": "."
+        }
+      ],
+      "totals": {
+        "ci_loc": 2666,
+        "data_lines": 92,
+        "local_loc": 805,
+        "other_loc": 1328,
+        "shared_loc": 3189,
+        "total_loc": 3994
+      },
+      "selected_files": 40
+    },
+    {
+      "dirty": true,
+      "drifted_files": [],
+      "head": "2fdeec4582bbcffcaa09aac625f48a47b29e3194",
+      "name": "ic-memory",
+      "skipped_files": [],
+      "snapshot_manifests": [
+        {
+          "path": ".shared-tooling.snapshot",
+          "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
+          "root": "."
+        }
+      ],
+      "totals": {
+        "ci_loc": 2900,
+        "data_lines": 38,
+        "local_loc": 680,
+        "other_loc": 726,
+        "shared_loc": 2946,
+        "total_loc": 3626
+      },
+      "selected_files": 35
+    },
+    {
+      "dirty": true,
+      "drifted_files": [],
+      "head": "d8b3a46f24518a033cd36e40bf1f1895099b809f",
+      "name": "ic-metrics",
+      "skipped_files": [],
+      "snapshot_manifests": [
+        {
+          "path": ".shared-tooling.snapshot",
+          "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
+          "root": "."
+        }
+      ],
+      "totals": {
+        "ci_loc": 2952,
+        "data_lines": 21,
+        "local_loc": 1103,
+        "other_loc": 1317,
+        "shared_loc": 3166,
+        "total_loc": 4269
+      },
+      "selected_files": 39
+    },
+    {
+      "dirty": true,
+      "drifted_files": [],
+      "head": "f7b025024f8234bc9c9172ceef643f4aed1eb288",
+      "name": "ic-query",
+      "skipped_files": [],
+      "snapshot_manifests": [
+        {
+          "path": ".shared-tooling.snapshot",
+          "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
+          "root": "."
+        }
+      ],
+      "totals": {
+        "ci_loc": 3853,
+        "data_lines": 1352,
+        "local_loc": 3598,
+        "other_loc": 1839,
+        "shared_loc": 2094,
+        "total_loc": 5692
+      },
+      "selected_files": 48
+    },
+    {
+      "dirty": true,
+      "drifted_files": [],
+      "head": "5ed6a2e62c06fb13f90891b0c53c7b393688e57e",
+      "name": "ic-testkit",
+      "skipped_files": [],
+      "snapshot_manifests": [
+        {
+          "path": ".shared-tooling.snapshot",
+          "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
+          "root": "."
+        }
+      ],
+      "totals": {
+        "ci_loc": 3038,
+        "data_lines": 20,
+        "local_loc": 1752,
+        "other_loc": 1163,
+        "shared_loc": 2449,
+        "total_loc": 4201
+      },
+      "selected_files": 36
+    },
+    {
+      "dirty": false,
+      "drifted_files": [],
+      "head": "a30bfe01d9ce82ba691f5ddd1980f9a4b7c0454a",
+      "name": "ic-timers",
+      "skipped_files": [],
+      "snapshot_manifests": [
+        {
+          "path": ".shared-tooling-audits.snapshot",
+          "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
+          "root": "."
+        },
+        {
+          "path": ".shared-tooling.snapshot",
+          "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
+          "root": "."
+        },
+        {
+          "path": ".shared-tooling/helpers/.shared-tooling.snapshot",
+          "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
+          "root": ".shared-tooling/helpers"
+        }
+      ],
+      "totals": {
+        "ci_loc": 4095,
+        "data_lines": 54,
+        "local_loc": 3905,
+        "other_loc": 3274,
+        "shared_loc": 3464,
+        "total_loc": 7369
+      },
+      "selected_files": 70
+    },
+    {
+      "dirty": false,
+      "drifted_files": [],
+      "head": "0670a9887d727fb9c2cfef85e5ea1c6ebffa8157",
+      "name": "ichelper",
+      "skipped_files": [],
+      "snapshot_manifests": [],
+      "totals": {
+        "ci_loc": 0,
+        "data_lines": 0,
+        "local_loc": 131,
+        "other_loc": 131,
+        "shared_loc": 0,
+        "total_loc": 131
+      },
+      "selected_files": 5
+    },
+    {
+      "dirty": true,
+      "drifted_files": [],
+      "head": "049e561a843a8d3f4526460fd15876a4a238df10",
+      "name": "icydb",
+      "skipped_files": [
+        ".github/CODEOWNERS"
+      ],
+      "snapshot_manifests": [
+        {
+          "path": ".shared-tooling.snapshot",
+          "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
+          "root": "."
+        }
+      ],
+      "totals": {
+        "ci_loc": 7632,
+        "data_lines": 88,
+        "local_loc": 6630,
+        "other_loc": 2343,
+        "shared_loc": 3345,
+        "total_loc": 9975
+      },
+      "selected_files": 123
+    },
+    {
+      "dirty": false,
+      "drifted_files": [],
+      "head": "bfb50bd0884b5e6c5ee9592056531c6108f96d73",
+      "name": "shared-tooling",
+      "skipped_files": [],
+      "snapshot_manifests": [],
+      "totals": {
+        "ci_loc": 6054,
+        "data_lines": 20,
+        "local_loc": 7824,
+        "other_loc": 1770,
+        "shared_loc": 0,
+        "total_loc": 7824
+      },
+      "selected_files": 72
+    },
+    {
+      "dirty": true,
+      "drifted_files": [],
+      "head": "9071b4cc9c1cf0d6d905f73592154b5108ab2147",
+      "name": "toko-miner",
+      "skipped_files": [],
+      "snapshot_manifests": [
+        {
+          "path": ".shared-tooling.snapshot",
+          "revision": "9f8c7c768793f4ce8f25be9e88282c0f63a06e7f",
+          "root": "."
+        }
+      ],
+      "totals": {
+        "ci_loc": 345,
+        "data_lines": 20,
+        "local_loc": 11082,
+        "other_loc": 11287,
+        "shared_loc": 550,
+        "total_loc": 11632
+      },
+      "selected_files": 100
+    },
+    {
+      "dirty": false,
+      "drifted_files": [],
+      "head": "79e2407ed0d74840658530a0dd04a0c0c69c9ba0",
+      "name": "toko-miner-assets",
+      "skipped_files": [],
+      "snapshot_manifests": [],
+      "totals": {
+        "ci_loc": 0,
+        "data_lines": 0,
+        "local_loc": 0,
+        "other_loc": 0,
+        "shared_loc": 0,
+        "total_loc": 0
+      },
+      "selected_files": 0
+    }
+  ]
+}

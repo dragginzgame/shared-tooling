@@ -82,6 +82,12 @@ printf 'cloc-siblings.sh <%s>\n' "$fixture" > "$fixture/expected"
 cmp "$fixture/expected" "$TOOL_COMMAND_LOG"
 
 # The sibling tooling inventory is available through the same shared include.
+: > "$TOOL_COMMAND_LOG"
+make --no-print-directory -C "$consumer" cloc CLOC_MANIFEST=testing/Cargo.toml \
+    > "$fixture/manifest.log" 2>&1
+printf 'cloc.sh <--manifest> <testing/Cargo.toml> <%s>\n' "$consumer" > "$fixture/expected"
+cmp "$fixture/expected" "$TOOL_COMMAND_LOG"
+
 cat > "$snapshot/scripts/dev/cloc-tooling.pl" <<'PERL'
 use strict;
 use warnings;

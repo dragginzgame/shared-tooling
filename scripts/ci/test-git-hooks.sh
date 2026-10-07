@@ -352,4 +352,64 @@ GIT_INDEX_FILE="$FIXTURE/incorrect-index" MAKEFLAGS='--just-print' \
 # inventing dependencies or weakening manifest/index preservation checks.
 bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$PWD" alpha/src/lib.rs \
     alpha/Cargo.toml --no-dependency-tables "${overlays[@]}"
-echo 'Git hook preservation, installation, Cargo formatting and manifest sorting tests passed'
+# Mixed frontend selection uses prepared tools but only snapshot file inputs.
+new_fixture frontend
+mkdir frontend
+cp "$ROOT/scripts/dev/format-frontend.sh" scripts/dev/format-frontend.sh
+cat > Makefile <<'MAKE'
+.PHONY: fmt fmt-check
+fmt:
+	@bash scripts/dev/format-frontend.sh --write frontend
+fmt-check:
+	@bash scripts/dev/format-frontend.sh --check frontend
+MAKE
+export PRETTIER_BIN="$FIXTURE/prepared-prettier" PRETTIER_VERSION=99.1.0
+cat > "$PRETTIER_BIN" <<'SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$1" == --version ]]; then echo 99.1.0; exit 0; fi
+[[ "${PRETTIER_FIXTURE_FAIL:-}" != yes ]] || exit 9
+mode="$1"
+[[ "$2" == -- ]]
+shift 2
+for path in "$@"; do
+    if [[ "$mode" == --check ]]; then
+        if grep -q unformatted "$path"; then exit 1; fi
+    else
+        sed 's/unformatted/formatted/g' "$path" > "$path.tmp"
+        mv "$path.tmp" "$path"
+    fi
+done
+SCRIPT
+chmod +x "$PRETTIER_BIN"
+frontend_path=$'frontend/selected [1]\nname.ts'
+printf 'unformatted\n' > "$frontend_path"
+printf 'formatted\n' > frontend/unselected.ts
+git add Makefile scripts/dev/format-frontend.sh "$frontend_path" frontend/unselected.ts
+bash .githooks/pre-commit > output
+[[ "$(cat "$frontend_path")" == formatted ]]
+tree="$(git write-tree)"
+bash .githooks/pre-commit > output
+[[ "$(git write-tree)" == "$tree" ]]
+# A manual check covers full tracked scope; partial staging still fails before
+# invoking the prepared frontend formatter.
+printf 'unformatted working edit\n' > frontend/unselected.ts
+expect_failure make --no-print-directory fmt-check
+expect_failure bash .githooks/pre-commit
+[[ "$(git write-tree)" == "$tree" ]]
+printf 'formatted\n' > frontend/unselected.ts
+printf 'unformatted\n' > "$frontend_path"
+git add "$frontend_path"
+tree="$(git write-tree)"
+PRETTIER_FIXTURE_FAIL=yes expect_failure bash .githooks/pre-commit
+[[ "$(git write-tree)" == "$tree" && "$(cat "$frontend_path")" == unformatted ]]
+PRETTIER_VERSION=wrong expect_failure bash .githooks/pre-commit
+[[ "$(git write-tree)" == "$tree" ]]
+# The explicit list also demonstrates that an unselected frontend file is never
+# passed to the formatter. Use the helper in a disposable snapshot directory.
+printf '%s\0' "$frontend_path" > "$FIXTURE/frontend-selection"
+printf 'unformatted unselected\n' > frontend/unselected.ts
+SHARED_TOOLING_FORMAT_FILES="$FIXTURE/frontend-selection" \
+    bash scripts/dev/format-frontend.sh --write frontend
+[[ "$(cat "$frontend_path")" == formatted && "$(cat frontend/unselected.ts)" == 'unformatted unselected' ]]
+echo 'Git hook preservation, installation, Cargo sorting and frontend selection tests passed'

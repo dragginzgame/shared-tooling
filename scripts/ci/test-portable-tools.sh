@@ -77,6 +77,31 @@ expected_runtime="$FIXTURE/repository/.tmp/sccache-runtime"
 [[ "$(<"$FIXTURE/result/tmpdir")" == "$expected_runtime/tmp" ]]
 [[ "$(<"$FIXTURE/result/arguments")" == "rustc --version" ]]
 
+# Refused symlink selections must not create anything through the link.
+for selection in parent root child override trailing dot; do
+    probe="$FIXTURE/sccache-$selection"
+    mkdir -p "$probe/repository" "$probe/outside" "$probe/result"
+    runtime="$probe/repository/.tmp/sccache-runtime"
+    case "$selection" in
+        parent) ln -s "$probe/outside" "$probe/repository/.tmp" ;;
+        root) mkdir "$probe/repository/.tmp"; ln -s "$probe/outside" "$runtime" ;;
+        child) mkdir -p "$runtime"; ln -s "$probe/outside" "$runtime/tmp" ;;
+        override) runtime="$probe/explicit"; ln -s "$probe/outside" "$runtime" ;;
+        trailing) runtime="$probe/explicit"; ln -s "$probe/outside" "$runtime"; runtime="$runtime///" ;;
+        dot) runtime="$probe/explicit"; ln -s "$probe/outside" "$runtime"; runtime="$runtime/." ;;
+    esac
+    if SCCACHE_BIN="$FIXTURE/fake-sccache" SCCACHE_REPOSITORY_ROOT="$probe/repository" \
+        SCCACHE_RUNTIME_DIR="$runtime" SCCACHE_TEST_RESULT="$probe/result" \
+        bash "$ROOT/scripts/ci/run-sccache.sh" rustc --version > "$probe/refusal.log" 2>&1; then
+        echo "accepted symlinked sccache path: $selection" >&2; exit 1
+    fi
+    [[ -z "$(ls -A "$probe/outside")" && ! -e "$probe/result/arguments" ]]
+done
+SCCACHE_BIN="$FIXTURE/fake-sccache" SCCACHE_REPOSITORY_ROOT="$FIXTURE/repository" \
+    SCCACHE_RUNTIME_DIR="$FIXTURE/explicit-runtime" SCCACHE_TEST_RESULT="$FIXTURE/result" \
+    bash "$ROOT/scripts/ci/run-sccache.sh" --show-stats
+[[ "$(<"$FIXTURE/result/tmpdir")" == "$FIXTURE/explicit-runtime/tmp" ]]
+
 for installer in install-actionlint.sh install-gitleaks.sh install-shellcheck.sh install-sccache.sh install-yq.sh; do
     bash "$ROOT/scripts/ci/$installer" --help >/dev/null 2>&1
     if bash "$ROOT/scripts/ci/$installer" \

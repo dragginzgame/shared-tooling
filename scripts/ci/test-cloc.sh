@@ -148,4 +148,28 @@ cp "$FIXTURE/tests/root.rs" "$relocated/tests/"
 relocated_output="$(bash "$ROOT/scripts/dev/cloc.sh" "$relocated")"
 [[ "$relocated_output" == "$nested_output" ]]
 
-echo "cloc tests passed"
+# Explicit independent-workspace selection keeps graphs and build output separate.
+independent="$FIXTURE/independent"
+mkdir -p "$independent/.cargo" "$independent/crates/probe/src"
+cat > "$independent/Cargo.toml" <<'TOML'
+[workspace]
+members = ["crates/probe"]
+resolver = "2"
+TOML
+cat > "$independent/crates/probe/Cargo.toml" <<'TOML'
+[package]
+name = "independent-probe"
+version = "0.1.0"
+edition = "2021"
+TOML
+printf 'pub fn probe() {}\n' > "$independent/crates/probe/src/lib.rs"
+printf '[build]\ntarget-dir = "crates/probe/output"\n' > "$independent/.cargo/config.toml"
+git init -q "$FIXTURE"
+(cd "$independent" && cargo generate-lockfile --offline)
+selected_before="$(bash "$ROOT/scripts/dev/cloc.sh" --manifest "$independent/Cargo.toml" "$FIXTURE")"
+generated_rust "$independent/crates/probe/output"
+selected_after="$(bash "$ROOT/scripts/dev/cloc.sh" --manifest "$independent/Cargo.toml" "$FIXTURE")"
+[[ "$selected_before" == "$selected_after" ]]
+[[ "$(printf '%s\n' "$selected_after" | awk '$1 == "independent-probe" { print $2,$3,$5,$6 }')" == '1 0 0 0' ]]
+[[ "$(printf '%s\n' "$selected_after" | awk '$1 == "alpha" { print }')" == '' ]]
+echo 'cloc tests, including independent workspace selection, passed'

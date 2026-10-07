@@ -1,5 +1,43 @@
 # Changelog
 
+## [0.1.16]
+
+### Added
+
+- Select an independent Cargo workspace with `make cloc CLOC_MANIFEST=testing/Cargo.toml`;
+  reports use that workspace's configuration and exclude its generated output.
+  [#41](https://github.com/dragginzgame/shared-tooling/issues/41),
+  [#31](https://github.com/dragginzgame/shared-tooling/issues/31).
+- Retain validation success/failure logs and timing tables in a selected run
+  directory, with literal consumer failure-event highlighting and interrupted
+  output preservation. Failed targets preserve Make's failure status.
+  [#37](https://github.com/dragginzgame/shared-tooling/issues/37).
+- Provide a prepared Prettier adapter for selected frontend files in the common
+  formatting hook, alongside npm/Node pinning and publication guidance.
+  [#43](https://github.com/dragginzgame/shared-tooling/issues/43).
+
+### Fixed
+
+- Finalize drafts with trailing heading whitespace without separating their
+  notes from the selected release or rewriting historical headings.
+  [#38](https://github.com/dragginzgame/shared-tooling/issues/38).
+- Refuse symlinked cache runtime paths before creating directories through them.
+  [#32](https://github.com/dragginzgame/shared-tooling/issues/32).
+- Count shared tooling correctly with custom manifest locations, nested bundle
+  roots and equivalent HTTPS/SSH source URLs. Explicit root selection handles
+  other layouts without guessing from matching hashes.
+  [#39](https://github.com/dragginzgame/shared-tooling/issues/39).
+
+### Documentation
+
+- Add canister audit guidance for Candid consumers, lifecycle obligations and
+  measured Wasm budgets; clarify first-run scope and requested ranked backlogs.
+  [#44](https://github.com/dragginzgame/shared-tooling/issues/44).
+- Define release fixture ownership before consumer deduplication and document
+  the formatting checker's limitation for historical symlinks.
+  [#40](https://github.com/dragginzgame/shared-tooling/issues/40),
+  [#33](https://github.com/dragginzgame/shared-tooling/issues/33).
+
 ## [0.1.15]
 
 ### Added

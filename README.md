@@ -194,6 +194,13 @@ If no workspace was successfully counted, the total shows `N/A`.
 
 ### CI and tooling inventory
 
+For one independent Cargo workspace, use
+`make cloc CLOC_MANIFEST=testing/Cargo.toml`, or
+`bash scripts/dev/cloc.sh --manifest testing/Cargo.toml "$PWD"`.
+The explicit manifest selects only that graph and its Cargo target directory;
+metadata runs from its directory with the selected lockfile, offline. Default
+root reporting and sibling totals do not automatically combine independent graphs.
+
 Use `make cloc-tooling [CLOC_PARENT=/path/to/projects]` to find where sibling
 repositories maintain the most CI and tooling code. For per-file evidence:
 
@@ -211,8 +218,16 @@ This is a tooling inventory, not a whole-repository or semantic-duplication scan
 
 `total_loc` is CI plus other tooling code, excluding blank lines and comments.
 `shared_loc` matches both the SHA-256 and executable mode in the repository's
-`.shared-tooling*.snapshot` manifests, including nested snapshots whose paths
-resolve beside their manifest; the rest is `local_loc`. Modified snapshot files
+`.shared-tooling*.snapshot` manifests; the rest is `local_loc`. File records
+resolve from the consumer root, even when a manifest lives under `config/`.
+A default `.shared-tooling.snapshot` beside the canonical
+`scripts/ci/verify-shared-tooling-snapshot.sh` identifies a nested bundle root;
+other manifests default to the Git checkout root. For another explicit mapping,
+pass `--snapshot-root /path/to/manifest /path/to/consumer-root` to the Perl command
+(repeat for independent bundles). The selected root must stay inside that
+checkout, and the manifest must be tracked or nonignored. Selection never tries
+different roots until hashes match. HTTPS and SSH spellings of the same Shared
+Tooling GitHub repository are accepted. Modified snapshot files
 produce a warning and remain local in these counts. This comparison is not a
 complete snapshot-integrity or adoption check. Supporting JSON, patches and
 CSV/TSV tables appear separately as physical `data_lines`, so frozen baselines
@@ -250,6 +265,22 @@ The script defaults to the repository containing its vendored copy. Set
 from another location.
 If retaining a failed log in the selected directory fails, the runner keeps its
 temporary log directory and prints its location instead of deleting the evidence.
+
+Set `VALIDATION_LOG_DIR` to retain successful, failed and interrupted raw output
+under a unique run directory announced before dispatch. Its `timings.tsv` has
+`target`, `result`, `seconds` and `log` columns, with one row per completed target.
+An interrupted target can have a partial raw log without a completed timing row.
+`VALIDATION_FAILURE_EVENT_PREFIX` adds a literal line prefix, such as
+`[CANIC-TEST:E`, to live highlighting and bounded failure details. Raw logs keep
+their original bytes. Success returns zero; failure preserves the first failed
+Make invocation's status (normally 2, rather than the recipe's own status).
+A logging-only pipeline failure also returns nonzero. SIGINT/SIGTERM exit with
+130/143 when handled.
+Nested invocations retain separate run directories and only the outermost writes
+the GitHub summary. Consumer callers still own targets and child color policy:
+set a product variable such as `CANIC_TEST_COLOR` before dispatch when the caller
+has a terminal, respecting an explicit selection and `NO_COLOR`. The runner
+passes that environment through without learning product-specific variable names.
 
 ### Stable sccache launcher
 

@@ -45,12 +45,31 @@ jq -e '
 ' "$fixture/counts.json" >/dev/null
 perl "$ROOT/scripts/dev/cloc-tooling.pl" "$parent" > "$fixture/counts.txt"
 [[ "$(awk 'END { print $1,$2,$3,$4,$5,$6,$7 }' "$fixture/counts.txt")" == 'TOTAL 5 4 9 1 8 4' ]]
+# Custom manifest placement retains checkout-relative records for every source URL
+# admitted by the canonical verifier. It must not relocate records to config/.
+mkdir "$repo/config"
+mv "$repo/.shared-tooling.snapshot" "$repo/config/.shared-tooling.snapshot"
+for source in https://github.com/dragginzgame/shared-tooling.git git@github.com:dragginzgame/shared-tooling.git ssh://git@github.com/dragginzgame/shared-tooling; do
+    sed "s|https://github.com/dragginzgame/shared-tooling.git|$source|" "$repo/config/.shared-tooling.snapshot" > "$fixture/manifest"
+    cp "$fixture/manifest" "$repo/config/.shared-tooling-extra.snapshot"
+    perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$parent" > "$fixture/custom.json"
+    jq -e '.totals.shared_loc == 1 and .totals.local_loc == 8' "$fixture/custom.json" >/dev/null
+done
+rm "$repo/config/.shared-tooling-extra.snapshot"
+mv "$repo/config/.shared-tooling.snapshot" "$repo/.shared-tooling.snapshot"
 # Multiple manifests and nested snapshots retain their real shared ownership.
 sed 's|scripts/ci/a.sh|scripts/ci/b.sh|' "$repo/.shared-tooling.snapshot" > "$repo/.shared-tooling-extra.snapshot"
 mkdir -p "$repo/vendor/shared/scripts/ci"
 cp "$repo/scripts/ci/a.sh" "$repo/vendor/shared/scripts/ci/c.sh"
 cp "$repo/scripts/ci/a.sh" "$repo/vendor/shared/scripts/ci/d.sh"
 sed 's|scripts/ci/a.sh|scripts/ci/c.sh|' "$repo/.shared-tooling.snapshot" > "$repo/vendor/shared/.shared-tooling.snapshot"
+# A bundle with no canonical verifier needs an explicit root selection.
+perl "$ROOT/scripts/dev/cloc-tooling.pl" --json --snapshot-root \
+    "$repo/vendor/shared/.shared-tooling.snapshot" "$repo/vendor/shared" "$parent" > "$fixture/explicit.json"
+jq -e '.totals.shared_loc == 3 and .totals.local_loc == 8' "$fixture/explicit.json" >/dev/null
+# A normal bundle carries the verifier at its canonical path. This comment-only
+# marker models that placement without adding source LOC or running the verifier.
+printf '# verifier placement fixture\n' > "$repo/vendor/shared/scripts/ci/verify-shared-tooling-snapshot.sh"
 perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$parent" > "$fixture/nested.json"
 jq -e '.totals.total_loc == 11 and .totals.shared_loc == 3 and
   .totals.local_loc == 8 and (.repositories[0].snapshot_manifests | length) == 3' "$fixture/nested.json" >/dev/null
@@ -74,5 +93,36 @@ jq -e '.partial == true and .repositories[0].error != null and
   .repositories[1].totals.total_loc == 0' "$fixture/failed.json" >/dev/null
 grep -F 'Failed tooling inventory retained:' "$fixture/failed.err" >/dev/null
 if perl "$ROOT/scripts/dev/cloc-tooling.pl" "$fixture/absent" > /dev/null 2>&1; then exit 1; fi
+if perl "$ROOT/scripts/dev/cloc-tooling.pl" --snapshot-root "$fixture/manifest" "$fixture" "$parent" > /dev/null 2>&1; then exit 1; fi
 perl "$ROOT/scripts/dev/cloc-tooling.pl" --help >/dev/null
+# Cross-owner proof: export actual committed scripts, verify with the canonical
+# verifier, then inventory the same bytes. No fixture commits or network access.
+source_repo="$fixture/source"
+export_parent="$fixture/exported"
+consumer="$export_parent/consumer"
+git clone -q --shared "$ROOT" "$source_repo"
+mkdir "$export_parent"
+git clone -q --shared --no-checkout "$ROOT" "$consumer"
+export_files=(scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh scripts/ci/check-make-execution.sh)
+git -C "$consumer" checkout HEAD -- "${export_files[@]}"
+for source in https://github.com/dragginzgame/shared-tooling.git git@github.com:dragginzgame/shared-tooling.git ssh://git@github.com/dragginzgame/shared-tooling; do
+    git -C "$source_repo" remote set-url origin "$source"
+    rm -f "$consumer/config/.shared-tooling.snapshot"
+    bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_repo" \
+        --consumer "$consumer" --manifest config/.shared-tooling.snapshot \
+        --file "${export_files[0]}" --file "${export_files[1]}" --file "${export_files[2]}" > "$fixture/export.log"
+    bash "$consumer/scripts/ci/verify-shared-tooling-snapshot.sh" --manifest config/.shared-tooling.snapshot > "$fixture/verify.log"
+    perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$export_parent" > "$fixture/export.json"
+    jq -e '.partial == false and .totals.shared_loc > 0 and .totals.local_loc == 0' "$fixture/export.json" >/dev/null
+done
+mv "$consumer/config/.shared-tooling.snapshot" "$consumer/.shared-tooling.snapshot"
+perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$export_parent" > "$fixture/export-root.json"
+[[ "$(jq -c .totals "$fixture/export.json")" == "$(jq -c .totals "$fixture/export-root.json")" ]]
+mkdir -p "$consumer/vendor/shared"
+cp -Rp "$consumer/scripts" "$consumer/vendor/shared/"
+cp "$consumer/.shared-tooling.snapshot" "$consumer/vendor/shared/"
+bash "$consumer/vendor/shared/scripts/ci/verify-shared-tooling-snapshot.sh" > "$fixture/nested-verify.log"
+perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$export_parent" > "$fixture/export-nested.json"
+expected_shared="$(jq '.totals.shared_loc * 2' "$fixture/export-root.json")"
+jq -e --argjson expected "$expected_shared" '.partial == false and .totals.shared_loc == $expected and .totals.local_loc == 0' "$fixture/export-nested.json" >/dev/null
 echo 'Tooling LOC, source/data separation and snapshot ownership tests passed'
