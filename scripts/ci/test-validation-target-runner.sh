@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Fixtures below supply their own Make selections and logger identities.
-unset MAKEFLAGS MFLAGS MAKEOVERRIDES
+unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 unset VALIDATION_REPOSITORY_ROOT VALIDATION_RUNNER_SNAPSHOT_PATH
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -11,6 +11,7 @@ trap 'if [[ $? == 0 ]]; then rm -rf "$FIXTURE"; else printf "Failed validation-t
 
 mkdir -p "$FIXTURE/scripts/ci" "$FIXTURE/failure-logs"
 cp "$ROOT/scripts/ci/run-validation-targets.sh" "$FIXTURE/scripts/ci/"
+cp "$ROOT/scripts/ci/check-make-execution.sh" "$FIXTURE/scripts/ci/"
 printf '%s\n' \
     '.PHONY: pass passing-tests mutate-runner fail-one fail-two fail-after-caught-panic fail-with-test-context' \
     'pass:' \
@@ -48,6 +49,28 @@ printf '%s\n' \
     $'\t@echo "error:"' \
     $'\t@echo "test error::tests::actual ... FAILED"' \
     $'\t@exit 13' >"$FIXTURE/Makefile"
+
+# GNU Make owns option parsing, including compact flags and long aliases.
+# Matching variable values and legitimate parallel controls must remain valid.
+for variable in MAKEFLAGS GNUMAKEFLAGS; do
+    for flags in i n q t v ksin --ignore-errors --dry-run --just-print --recon --question --touch --version; do
+        if env "$variable=$flags" VALIDATION_REPOSITORY_ROOT="$FIXTURE" \
+            bash "$FIXTURE/scripts/ci/run-validation-targets.sh" fail-one \
+            > "$FIXTURE/$variable-$flags.log" 2>&1; then
+            echo 'validation accepted an incompatible Make execution mode' >&2
+            exit 1
+        fi
+        if [[ "$variable" == GNUMAKEFLAGS ]] && ! rg -F 'requires recipe execution and failure propagation' "$FIXTURE/$variable-$flags.log" >/dev/null; then
+            # GNU Make before 4.0 ignores GNUMAKEFLAGS: the real failing target
+            # must still execute and fail, rather than claiming skipped success.
+            rg -F 'first-failure-marker' "$FIXTURE/$variable-$flags.log" >/dev/null
+            rg -F 'VALIDATION FAILED' "$FIXTURE/$variable-$flags.log" >/dev/null
+        else
+            rg -F 'requires recipe execution and failure propagation' "$FIXTURE/$variable-$flags.log" >/dev/null
+        fi
+        if rg -F 'VALIDATION PASSED' "$FIXTURE/$variable-$flags.log" >/dev/null; then exit 1; fi
+    done
+done
 
 # Namespaced successful and ignored tests must remain ordinary live output.
 VALIDATION_FAILURE_LOG_DIR="$FIXTURE/passing-logs" \
@@ -205,6 +228,8 @@ parent="$FIXTURE/parent"
 mkdir -p "$parent/scripts/ci" "$parent/child/scripts/ci"
 cp "$ROOT/scripts/ci/run-validation-targets.sh" "$parent/scripts/ci/"
 cp "$ROOT/scripts/ci/run-validation-targets.sh" "$parent/child/scripts/ci/"
+cp "$ROOT/scripts/ci/check-make-execution.sh" "$parent/scripts/ci/"
+cp "$ROOT/scripts/ci/check-make-execution.sh" "$parent/child/scripts/ci/"
 cat > "$parent/Makefile" <<'MAKE'
 .PHONY: validate adoption same-checkout selection child-gate ci
 validate:
@@ -217,6 +242,7 @@ same-checkout:
 selection:
 	@test "$(RELEASE_VERSION)" = 9.8.7
 	@test "$(RELEASE_COMMIT)" = parent-selected-commit
+	@test "$(LABEL)" = 'night time'
 	@test "$$VALIDATION_RUNNER_DEPTH" = 2
 	@echo nested-selection-marker
 child-gate ci:
@@ -228,8 +254,9 @@ child-gate:
 	@echo child-gate-marker
 MAKE
 if ! VALIDATION_RUNNER_DEPTH=0 VALIDATION_FAILURE_LOG_DIR="$parent/failure-logs" \
-    make --no-print-directory -C "$parent" validate \
+    make --no-print-directory -j2 -k -s -C "$parent" validate \
     RELEASE_VERSION=9.8.7 RELEASE_COMMIT=parent-selected-commit \
+    'LABEL=night time' \
     METADATA_FIXTURE="$ROOT/scripts/ci/test-release-metadata.sh" \
     > "$FIXTURE/nested-context.log" 2>&1; then
     cat "$FIXTURE/nested-context.log" >&2
@@ -240,6 +267,10 @@ fi
     echo 'validation target runner test failed: executed the parent gate' >&2
     exit 1
 }
+if rg -i 'jobserver unavailable|jobserver.*forced' "$FIXTURE/nested-context.log" >/dev/null; then
+    echo 'validation target runner lost the inherited Make jobserver' >&2
+    exit 1
+fi
 for marker in child-gate-marker nested-selection-marker \
     'release metadata real-Git and validation-retention tests passed'; do
     rg -F "$marker" "$FIXTURE/nested-context.log" >/dev/null

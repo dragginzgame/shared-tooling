@@ -77,6 +77,27 @@ read -r _ _ _ _ total_test_fns total_inline_fns <<<"$total_row"
 [[ "$beta_test_fns" -eq 1 && "$beta_inline_fns" -eq 1 ]]
 [[ "$total_test_fns" -eq 3 && "$total_inline_fns" -eq 2 ]]
 
+# Build outputs never become maintained source, including a configured target
+# inside a member. Literal metacharacters must not prune a similarly named path.
+generated_rust() {
+    mkdir -p "$1/debug/build/example/out" "$1/tests"
+    printf 'pub fn generated() {}\n#[test]\nfn generated_test() {}\n' > "$1/debug/build/example/out/generated.rs"
+    printf '#[test]\nfn generated_integration_test() {}\n' > "$1/tests/generated.rs"
+}
+generated_rust "$FIXTURE/target"
+[[ "$(bash "$ROOT/scripts/dev/cloc.sh" "$FIXTURE")" == "$output" ]]
+custom_target="$FIXTURE/crates/alpha/build [generated]*?"
+generated_rust "$custom_target"
+[[ "$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" "$FIXTURE")" == "$output" ]]
+# This source directory matches the unescaped target glob and must be counted.
+mkdir -p "$FIXTURE/crates/alpha/build generated-copy"
+printf 'pub fn maintained() {}\n' > "$FIXTURE/crates/alpha/build generated-copy/lib.rs"
+custom_output="$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" "$FIXTURE")"
+read -r _ before_runtime _ _ _ _ <<<"$alpha_row"
+read -r _ after_runtime _ _ after_tests _ <<<"$(printf '%s\n' "$custom_output" | awk '$1 == "alpha"')"
+[[ "$after_runtime" == "$((before_runtime + 1))" && "$after_tests" == 2 ]]
+rm -r "$custom_target" "$FIXTURE/crates/alpha/build generated-copy"
+
 # A workspace root can also be a package, with other members below it.
 read -r _ member_runtime_loc member_test_loc _ _ _ <<<"$total_row"
 cat >>"$FIXTURE/Cargo.toml" <<'TOML'
@@ -107,6 +128,14 @@ read -r _ total_runtime_loc total_test_loc _ total_test_fns total_inline_fns <<<
 [[ "$total_runtime_loc" -eq $((member_runtime_loc + 3)) ]]
 [[ "$total_test_loc" -eq $((member_test_loc + 2)) ]]
 [[ "$total_test_fns" -eq 5 && "$total_inline_fns" -eq 3 ]]
+generated_rust "$FIXTURE/target"
+[[ "$(bash "$ROOT/scripts/dev/cloc.sh" "$FIXTURE")" == "$nested_output" ]]
+custom_target="$FIXTURE/build [generated]*?"
+# Move only fixture-owned output out of the default target before changing its
+# configured identity; Cargo reports one selected target directory at a time.
+mv "$FIXTURE/target" "$custom_target"
+[[ "$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" "$FIXTURE")" == "$nested_output" ]]
+rm -r "$custom_target"
 
 # Checkout ancestors must not affect runtime/test classification. Spaces and
 # glob characters in paths must remain literal when excluding nested members.

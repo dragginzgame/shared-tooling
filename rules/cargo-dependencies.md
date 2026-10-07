@@ -4,7 +4,9 @@ These rules are part of the mandatory [engineering baseline](../DRAGGINZGAME.md)
 The repository's root `Cargo.toml` is the authoritative catalog of direct
 dependencies and their version/source selections.
 The [workspace layout rules](rust-workspaces.md) require a virtual root with
-maintained packages under `crates/` and define independently scoped exceptions.
+maintained packages under `crates/` or application-owned `apps/` trees and define
+independently scoped exceptions. Both trees inherit from the same root catalog;
+application grouping does not authorize separate dependency selections.
 The [pinning rules](dependency-pinning.md) define compatible ranges, justified
 exact constraints, immutable Git revisions, lockfiles and external path inputs.
 

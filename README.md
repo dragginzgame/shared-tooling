@@ -34,8 +34,9 @@ The baseline's focused mandatory policies live in `rules/`. The
 [changelog rules](rules/changelogs.md) cover automatic next-version selection,
 concise release summaries, GitHub issue links, breaking changes and minor-line
 detail files. The [Rust workspace rules](rules/rust-workspaces.md) require a
-virtual root and packages under `crates/<package-name>/`, with explicit exceptions
-for independent workspaces and other layouts. The
+virtual root with packages under `crates/<package-name>/` or application-owned
+`apps/<app-name>/` trees. Both use the same workspace inheritance; independent
+workspaces and other layouts require explicit exceptions. The
 [Cargo dependency rules](rules/cargo-dependencies.md) require one root dependency
 catalog inherited by every child manifest. The
 [dependency pinning rules](rules/dependency-pinning.md) define immutable source
@@ -126,7 +127,9 @@ test-attribute counts, inline-test counts, and workspace totals for every member
 of a Cargo workspace. Path classification follows `tests/` directories and
 files ending in `tests.rs`; inline test code remains part of runtime-file LOC.
 Classification uses paths relative to each package, and nested workspace
-members are excluded from their parent package's counts.
+members are excluded from their parent package's counts. Cargo's selected target
+directory is excluded from both LOC and test counts, including a configured build
+directory inside a package.
 
 Requirements:
 
@@ -159,6 +162,10 @@ prefix, retains complete and condensed failure logs, and writes a GitHub step
 summary when one is available. Pass `--fail-fast` to stop after the first
 failed target.
 
+Vendor `scripts/ci/check-make-execution.sh` alongside the runner. It rejects
+inherited Make ignore-errors, dry-run, question, touch and version-only modes before validation;
+normal Make variables and parallel-job settings remain available to targets.
+
 ```bash
 scripts/ci/run-validation-targets.sh fmt-check shellcheck test
 scripts/ci/run-validation-targets.sh --fail-fast preflight test
@@ -190,7 +197,8 @@ files before `cargo fmt --all`; `fmt-check` checks both without modifying files.
 The shared `scripts/ci/check-format-tools.sh` admits the consumer's pinned
 cargo-sort and prepared rustfmt before either target, without installing tools.
 
-Rust consumers vendor both the hook and `scripts/dev/install-git-hooks.sh`, expose
+Rust consumers vendor the hook, `scripts/dev/install-git-hooks.sh` and
+`scripts/ci/check-make-execution.sh`, expose
 `make install-hooks`, and include `fmt-check` in CI. See the
 [hook contract and adoption steps](rules/git-hooks.md). Shared Tooling has no
 Cargo workspace and does not activate the Rust hook in its own checkout.

@@ -216,9 +216,11 @@ Consumer choices described in those guides remain subject to this baseline.
   Run the declaration checker in CI and release gates; consumers own the chosen
   versions, approved exceptions and runtime qualification evidence.
 - Use the [standard Rust workspace layout](rules/rust-workspaces.md): a virtual
-  repository-root workspace and maintained packages under `crates/<package-name>/`,
-  including single-package repositories. Approved independent workspaces use
-  that shape relative to their own roots; other layouts need explicit exceptions.
+  repository-root workspace, including single-package repositories. Maintained
+  packages use `crates/<package-name>/` or application-owned `apps/<app-name>/`
+  trees, including component packages grouped beneath an App. Both inherit from
+  the same root. Approved independent workspaces use those shapes relative to
+  their own roots; other layouts need explicit exceptions.
   Repositories without Rust packages do not need a Cargo workspace.
 - Cargo workspace members inherit package versions from the root. Apply the
   [Cargo dependency rules](rules/cargo-dependencies.md): every direct dependency

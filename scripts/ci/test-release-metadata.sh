@@ -159,6 +159,7 @@ logging_root="$FIXTURE/logging"
 mkdir -p "$logging_root/scripts/ci"
 git init -q "$logging_root"
 cp "$ROOT/scripts/ci/run-validation-targets.sh" "$logging_root/scripts/ci/"
+cp "$ROOT/scripts/ci/check-make-execution.sh" "$logging_root/scripts/ci/"
 cp "$ROOT/Makefile" "$logging_root/Makefile"
 cat >> "$logging_root/Makefile" <<'MAKE'
 ci:

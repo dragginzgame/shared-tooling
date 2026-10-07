@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.1.14]
+
+### Fixed
+
+- Reject inherited Make modes that ignore failures or skip execution before
+  release, validation and pre-commit formatting. Preserve release selections and
+  parallel-job settings. Consumers add the shared Make execution check to their
+  reviewed snapshots when adopting these entrypoints.
+  [#30](https://github.com/dragginzgame/shared-tooling/issues/30).
+- Exclude Cargo's selected build directory from Rust LOC and test-function
+  reports, including custom build paths inside packages.
+  [#31](https://github.com/dragginzgame/shared-tooling/issues/31).
+- Run snapshot distribution fixtures in existing consumers without replacing
+  their snapshot manifest or masking dirty-destination checks.
+  [#36](https://github.com/dragginzgame/shared-tooling/issues/36).
+
+### Documentation
+
+- Allow application-owned Rust packages under `apps/` alongside the standard
+  `crates/` layout, sharing root workspace versions and dependencies. Existing
+  layouts in either tree need no relocation.
+  [#34](https://github.com/dragginzgame/shared-tooling/issues/34).
+- Correct the four IC Host Tooling package owners in the provisioning and
+  provenance guides while preserving historical setup attribution.
+  [#35](https://github.com/dragginzgame/shared-tooling/issues/35).
+
 ## [0.1.12]
 
 ### Added

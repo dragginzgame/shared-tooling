@@ -6,8 +6,10 @@ owned APIs, canister identities, validation gates and deployment configuration.
 
 ## Standard layout
 
-Every repository containing maintained Rust packages uses this layout, including
-repositories with only one package:
+Every repository containing maintained Rust packages uses a virtual root,
+including repositories with only one package. Packages may live under `crates/`
+or `apps/`, according to their ownership; repositories need only the trees they
+use:
 
 ```text
 Cargo.toml                 # Virtual workspace; no [package]
@@ -17,34 +19,51 @@ crates/
     Cargo.toml             # [package].name = "package-name"
     src/
     tests/                 # When needed
+apps/
+  app-name/
+    canic.toml             # Application configuration, when used
+    component-role/
+      Cargo.toml           # Existing package name; directory may name its role
+      src/
 ```
 
 - The repository root is a virtual workspace: its `Cargo.toml` declares
   `[workspace]`, without `[package]`, package targets or package dependency
   tables. Select the resolver explicitly using the supported toolchain; a layout
   change does not authorize a resolver, edition or MSRV upgrade.
-- Put each maintained Rust package directly under `crates/<package-name>/`,
-  using its existing Cargo package name. This includes libraries, binaries,
-  canisters, schema packages, and separately packaged examples, tests and probes.
-  Keep ordinary module tests, examples and fixtures with their owning package;
+- Use `crates/<package-name>/` for reusable libraries, tools, shared schemas and
+  test support, using the existing Cargo package name. Standalone binaries,
+  canisters, examples and probes may also live here. An existing package under
+  `crates/` remains valid; adding support for `apps/` does not require moving it.
+- Application-owned Rust packages may live under `apps/<app-name>/` alongside
+  their application configuration and assets. A single-package application may
+  use `apps/<app-name>/Cargo.toml`; a multi-package application may use
+  `apps/<app-name>/<component-role>/Cargo.toml` for its canisters, binaries and
+  app-specific schema or fixture packages. Component directories may use role
+  names, such as `apps/demo/user_hub/`, without renaming their Cargo packages.
+  This is a standard layout, requiring no exception or nested `crates/` wrapper.
+- Keep ordinary module tests, examples and fixtures with their owning package;
   they do not need separate packages merely to follow this layout.
 - Declare the maintained members in the root workspace. Keep shared package
   versions and common package metadata in `[workspace.package]`, with inherited
   child values. Keep the complete direct dependency catalog in
   `[workspace.dependencies]` under the [Cargo dependency rules](cargo-dependencies.md).
   Preserve package identities, selected dependencies and effective features.
+  An `apps/` directory does not create an independent Cargo workspace: its
+  packages belong to the same root and inherit the same versions and dependencies.
 - Keep the selected `Cargo.lock`, workspace profiles and workspace-wide Cargo
   configuration at their owning root. Preserve intentional `default-members`,
   target distinctions and publication selections; a directory move must not
   silently widen normal builds or published packages.
 - Application/deployment configuration, frontend code, scripts and documentation
-  retain their locally owned locations. For example, an `apps/` directory may
-  keep fleet configuration that points to Rust packages under `crates/`.
+  retain their locally owned locations. An `apps/` directory may contain Rust
+  packages, non-Rust application files, or both; its package references follow
+  the owning application's discovery contract.
   Moving a package does not rename a deployed canister or authorize deployment.
 - Repositories without maintained Rust packages do not need a Cargo workspace
-  or an empty `crates/` directory. Generated scratch projects, vendored upstream
-  sources and frozen historical evidence are not maintained package locations;
-  do not move them or rewrite history to satisfy this layout.
+  or empty `crates/` or `apps/` directories. Generated scratch projects, vendored
+  upstream sources and frozen historical evidence are not maintained package
+  locations; do not move them or rewrite history to satisfy this layout.
 
 ## Independent workspaces and exceptions
 
@@ -54,10 +73,10 @@ naming its root, package scope, reason, lockfile and validation coverage. Preser
 existing approved dependency-graph boundaries; layout standardisation alone
 does not authorize merging their graphs or upgrading their dependencies.
 
-An approved independent workspace uses the same virtual-root and
-`crates/<package-name>/` shape relative to its own root. For example, an approved
+An approved independent workspace uses the same virtual-root and `crates/` or
+`apps/` choices relative to its own root. For example, an approved
 `testing/Cargo.toml` owns `testing/crates/<package-name>/` and `testing/Cargo.lock`.
-Keeping a package outside this shape, or keeping a root package, requires an
+Keeping a package outside these shapes, or keeping a root package, requires an
 explicit layout exception as well. A path's existing name or use as a test,
 example or canister is not implicit approval.
 
@@ -68,12 +87,17 @@ Coordinate consumer work through issues and preserve unrelated working changes.
 In the owning repository's authorized change:
 
 1. Inventory maintained manifests, workspace roots, selected lockfiles and
-   approved exceptions. Record old-to-new package paths before moving files.
+   approved exceptions. Retain packages already in either standard layout;
+   application grouping alone is not a reason to flatten packages into `crates/`.
+   Record old-to-new package paths before any necessary moves.
 2. Update workspace membership, dependency paths, package include/readme/license
    paths, build scripts, fixtures, source-relative paths, Make/CI commands,
    publication inputs and deployment package references together. Change any
    maintained scaffolding at its generator. Retire obsolete source locations
    rather than leaving duplicate packages or symlink aliases.
+   Formatting, release inventories and source checks must cover all declared
+   workspace members in both trees, using Cargo metadata or a verified member
+   inventory rather than assuming every package matches `crates/*`.
 3. Preserve package names, versions, APIs, features, publication policy, canister
    identities and selected dependencies. Review packaging contents and
    `CARGO_MANIFEST_DIR`-relative inputs; a successful directory move alone does

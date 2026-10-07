@@ -242,6 +242,7 @@ fi
 chmod +x "$consumer_root/scripts/ci/sample.sh"
 
 # Ignored destinations are still local work, not disposable output.
+mkdir -p "$consumer_root/.git/info"
 printf 'scripts/ci/sample.sh\n' > "$consumer_root/.git/info/exclude"
 printf '# ignored local edit\n' >> "$consumer_root/scripts/ci/sample.sh"
 cp "$consumer_root/scripts/ci/sample.sh" "$FIXTURE/ignored-sample"
@@ -304,6 +305,14 @@ cmp "$FIXTURE/original-checksum.sh" "$blocked_consumer/scripts/ci/verify-file-ch
 # Clone existing history; these fixtures never create commits or touch its index.
 tracked_consumer="$FIXTURE/tracked consumer"
 git clone --quiet --shared "$ROOT" "$tracked_consumer"
+# A consumer checkout already carries a default snapshot. Exercise that state
+# upstream too, preserving its bytes and using only our own initial manifest.
+if [[ ! -e "$tracked_consumer/.shared-tooling.snapshot" ]]; then
+    cp "$consumer_root/.shared-tooling.snapshot" "$tracked_consumer/.shared-tooling.snapshot"
+fi
+cp "$tracked_consumer/.shared-tooling.snapshot" "$FIXTURE/existing-consumer-manifest"
+tracked_manifest_dir="$(mktemp -d "$tracked_consumer/.snapshot-fixture.XXXXXX")"
+tracked_manifest="${tracked_manifest_dir#"$tracked_consumer/"}/snapshot"
 checksum_path=scripts/ci/verify-file-checksum.sh
 verifier_path=scripts/ci/verify-shared-tooling-snapshot.sh
 cp "$tracked_consumer/$checksum_path" "$FIXTURE/original-tracked-checksum"
@@ -332,14 +341,20 @@ for state in staged unstaged deleted unavailable; do
     if PATH="$FIXTURE/bin:$PATH" \
         bash "$source_root/scripts/distribution/refresh-consumer.sh" \
         --source "$source_root" --consumer "$tracked_consumer" \
+        --manifest "$tracked_manifest" \
         --file "$checksum_path" --file "$verifier_path" > "$FIXTURE/$state.log" 2>&1; then
         echo "snapshot distribution test failed: $state consumer state was overwritten" >&2
         exit 1
     fi
     unset SNAPSHOT_TEST_STATUS_FAIL
+    case "$state" in
+        unavailable) rg -F 'cannot inspect consumer changes' "$FIXTURE/$state.log" >/dev/null ;;
+        *) rg -F 'consumer destination has local changes' "$FIXTURE/$state.log" >/dev/null ;;
+    esac
     cmp "$FIXTURE/original-tracked-checksum" "$tracked_consumer/$checksum_path"
     [[ "$(git -C "$tracked_consumer" write-tree)" == "$index_before" ]]
-    [[ ! -e "$tracked_consumer/.shared-tooling.snapshot" ]]
+    [[ ! -e "$tracked_consumer/$tracked_manifest" ]]
+    cmp "$FIXTURE/existing-consumer-manifest" "$tracked_consumer/.shared-tooling.snapshot"
     if [[ "$state" == deleted ]]; then
         [[ ! -e "$tracked_consumer/$verifier_path" ]]
     else
@@ -354,10 +369,14 @@ cp "$tracked_consumer/README.md" "$FIXTURE/consumer-readme"
 PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$tracked_consumer" \
+    --manifest "$tracked_manifest" \
     --file "$checksum_path" --file "$verifier_path" >/dev/null
 cmp "$FIXTURE/consumer-readme" "$tracked_consumer/README.md"
 cmp "$revision_root/$checksum_path" "$tracked_consumer/$checksum_path"
 cmp "$revision_root/$verifier_path" "$tracked_consumer/$verifier_path"
+cmp "$FIXTURE/existing-consumer-manifest" "$tracked_consumer/.shared-tooling.snapshot"
+bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" \
+    --consumer "$tracked_consumer" --manifest "$tracked_manifest" >/dev/null
 
 # Export the documented governance selection, then check links in that export.
 # This proves closure of the consumer file set, not merely the source checkout.

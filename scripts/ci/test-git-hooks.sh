@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=/dev/null
 source "$ROOT/ci/tool-versions.env"
@@ -24,6 +26,7 @@ new_fixture() {
     git read-tree HEAD
     git checkout-index --all
     cp "$ROOT/.githooks/pre-commit" .githooks/pre-commit
+    cp "$ROOT/scripts/ci/check-make-execution.sh" scripts/ci/check-make-execution.sh
     cp "$ROOT/scripts/dev/install-git-hooks.sh" scripts/dev/install-git-hooks.sh
     cat > Makefile <<'MAKE'
 .PHONY: fmt
@@ -50,7 +53,7 @@ esac
 [[ "${FORMAT_TEST_FAIL:-}" != yes ]]
 FORMAT
     printf 'unformatted\n' > Cargo.toml
-    git add Makefile scripts/fixture-fmt.sh Cargo.toml
+    git add Makefile scripts/fixture-fmt.sh scripts/ci/check-make-execution.sh Cargo.toml
 }
 expect_failure() {
     if "$@" > output 2>&1; then
@@ -97,6 +100,16 @@ git add staged.rs
 tree="$(git write-tree)"
 FORMAT_TEST_FAIL=yes expect_failure bash .githooks/pre-commit
 [[ "$(git write-tree)" == "$tree" && "$(cat staged.rs)" == unformatted && "$(cat Cargo.toml)" == unformatted ]]
+
+for flags in i n q t v --ignore-errors; do
+    new_fixture "make-mode-$flags"
+    printf 'unformatted\n' > staged.rs
+    git add staged.rs
+    tree="$(git write-tree)"
+    MAKEFLAGS="$flags" FORMAT_TEST_FAIL=yes expect_failure bash .githooks/pre-commit
+    rg -F 'requires recipe execution and failure propagation' output >/dev/null
+    [[ "$(git write-tree)" == "$tree" && "$(cat staged.rs)" == unformatted && "$(cat Cargo.toml)" == unformatted ]]
+done
 
 for race in index worktree; do
     new_fixture "concurrent-$race"
