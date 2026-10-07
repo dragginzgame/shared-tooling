@@ -3,6 +3,16 @@
 Shared Tooling accepts reusable engineering principles, portable developer
 tools, and CI building blocks for Dragginz Game repositories.
 
+## Pull requests
+
+People and agents normally contribute through a topic branch and pull request.
+Under the [contribution rules](rules/contributions.md), asking an agent to open
+a PR authorizes its scoped commits, branch push and PR creation. You do not need
+to commit on the agent's behalf. Direct pushes to the default branch, merges and
+releases require their own authorization and remain subject to branch protections.
+Include relevant validation and update the current changelog draft; preparing
+a PR does not require a package version bump.
+
 ## Inclusion test
 
 A contribution belongs here when it satisfies at least one of these tests:

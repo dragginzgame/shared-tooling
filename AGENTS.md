@@ -11,5 +11,6 @@ overlay. Consumers adopt the baseline and keep their own `AGENTS.md`.
 - For documentation-only changes, check links, instruction consistency and the
   diff. Do not run the portable script suite solely because prose changed.
 
-The common authority rules apply here: commits remain maintainer-owned, and
-version changes, tags, pushes and publication require explicit authorization.
+The common [contribution authority rules](rules/contributions.md) apply here.
+An authorized PR includes its necessary branch, commits and branch push; merges,
+direct integration-branch pushes and releases require their own authorization.

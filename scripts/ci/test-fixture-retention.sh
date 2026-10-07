@@ -39,18 +39,23 @@ set -- "$fixture/portable"/shared-tooling-test.*
 # installer substitute, then check the final collector selects its evidence.
 # This checks local ordering/paths; GitHub's upload service is qualified by CI.
 yq -o json '.' "$ROOT/.github/workflows/ci.yml" > "$fixture/workflow.json"
+yq -o json '.' "$ROOT/.github/actions/retain-failure-evidence/action.yml" > "$fixture/collector.json"
+# shellcheck disable=SC2016 # GitHub expressions are literal workflow inputs.
 jq -e '
   .jobs["portable-regression"].steps | to_entries |
   map(select(.value.run? | strings | contains("make --no-print-directory install-ic-tools"))) as $native |
-  map(select(.value.uses? | strings | startswith("actions/upload-artifact@"))) as $uploads |
+  map(select(.value.uses == "./.github/actions/retain-failure-evidence" and .value.if == "failure()")) as $uploads |
   ($native | length) == 1 and ($uploads | length) == 1 and
-  $uploads[0].key > $native[0].key and $uploads[0].value.if == "failure()" and
-  $uploads[0].value.with["include-hidden-files"] == true
+  $uploads[0].key > $native[0].key and $uploads[0].key == length - 1 and
+  $uploads[0].value.with["temp-root"] == "${{ runner.temp }}" and
+  $uploads[0].value.with["repository-root"] == "${{ github.workspace }}"
 ' "$fixture/workflow.json" > /dev/null
+jq -e '.runs.steps | map(select(.uses? | strings | startswith("actions/upload-artifact@"))) |
+  length == 1 and .[0].with["include-hidden-files"] == true' "$fixture/collector.json" > /dev/null
 jq -r '.jobs["portable-regression"].steps[] | select(.run? | strings |
   contains("make --no-print-directory install-ic-tools")) | .run' "$fixture/workflow.json" > "$fixture/native-step.sh"
-jq -r '.jobs["portable-regression"].steps[] | select(.uses? | strings |
-  startswith("actions/upload-artifact@")) | .with.path' "$fixture/workflow.json" > "$fixture/upload-paths"
+jq -r '.runs.steps[] | select(.uses? | strings |
+  startswith("actions/upload-artifact@")) | .with.path' "$fixture/collector.json" > "$fixture/upload-paths"
 for phase in install check; do
     native="$fixture/native-$phase"
     mkdir -p "$native/scripts/dev" "$native/temp" "$native/make"
@@ -79,8 +84,8 @@ SCRIPT
     while IFS= read -r pattern; do
         [[ -n "$pattern" ]] || continue
         case "$pattern" in
-            '${{ runner.temp }}/'*) pattern="$native/temp/${pattern#*/}" ;;
-            '${{ github.workspace }}/'*) pattern="$native/${pattern#*/}" ;;
+            '${{ inputs.temp-root }}/'*) pattern="$native/temp/${pattern#*/}" ;;
+            '${{ inputs.repository-root }}/'*) pattern="$native/${pattern#*/}" ;;
             *) echo "unhandled artifact location: $pattern" >&2; exit 1 ;;
         esac
         compgen -G "$pattern" >> "$native/collected" || true

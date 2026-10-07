@@ -106,6 +106,15 @@ jobs:
           make --no-print-directory install-host-tools 2>&1 | tee "$RUNNER_TEMP/host-tools-install.log"
           make --no-print-directory host-tools-check 2>&1 | tee "$RUNNER_TEMP/host-tools-check.log"
           echo "$GITHUB_WORKSPACE/.tools/host/bin" >> "$GITHUB_PATH"
+      - name: Select the frontend fixture runtime
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: ci/frontend/package.json
+          package-manager-cache: false
+      - name: Prepare the locked frontend fixture
+        run: |
+          test "$(npm --version)" = "$(jq -er '.engines.npm' ci/frontend/package.json)"
+          npm ci --prefix ci/frontend
       - name: Run portable regression set with prepared tools
         shell: bash
         env:
@@ -114,23 +123,49 @@ jobs:
           mkdir -p "$TMPDIR"
           bash --version | head -n 1
           bash scripts/ci/test-portable-tools.sh 2>&1 | tee "$RUNNER_TEMP/portable-regression.log"
+      - name: Qualify the real frontend formatter and Rust hook
+        env:
+          TMPDIR: ${{ runner.temp }}/portable-fixtures
+        run: |
+          bash scripts/ci/test-frontend-formatting.sh 2>&1 | tee "$RUNNER_TEMP/portable-fixtures/frontend-formatting.log"
       - name: Qualify pinned native IC executables
         shell: bash
         run: |
           make --no-print-directory install-ic-tools 2>&1 | tee "$RUNNER_TEMP/ic-tools-install.log"
           make --no-print-directory ic-tools-check 2>&1 | tee "$RUNNER_TEMP/ic-tools-check.log"
+      - name: Exercise expected native installer and check failures
+        id: retention
+        continue-on-error: true
+        run: bash scripts/ci/qualify-native-failure-retention.sh "$RUNNER_TEMP/portable-fixtures/native-retention"
+      - name: Upload the native failure qualification evidence
+        if: ${{ !cancelled() && steps.retention.outcome == 'failure' }}
+        id: retention-upload
+        uses: ./.github/actions/retain-failure-evidence
+        with:
+          name: native-retention-${{ matrix.os }}-${{ github.run_attempt }}
+          temp-root: ${{ runner.temp }}/portable-fixtures/native-retention/temp
+          repository-root: ${{ runner.temp }}/portable-fixtures/native-retention/consumer
+      - name: Download the uploaded native failure evidence
+        if: ${{ !cancelled() && steps.retention-upload.outputs.artifact-id != '' }}
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          artifact-ids: ${{ steps.retention-upload.outputs.artifact-id }}
+          path: ${{ runner.temp }}/native-retention-downloaded
+          merge-multiple: true
+      - name: Verify native failure status and uploaded payload
+        if: ${{ !cancelled() && steps.retention.outcome != 'skipped' }}
+        env:
+          RETENTION_OUTCOME: ${{ steps.retention.outcome }}
+          RETENTION_QUALIFIED: ${{ steps.retention.outputs.qualified }}
+        run: |
+          test "$RETENTION_OUTCOME" = failure
+          test "$RETENTION_QUALIFIED" = true
+          cd "$RUNNER_TEMP/native-retention-downloaded"
+          bash "$GITHUB_WORKSPACE/scripts/ci/verify-evidence-checksums.sh" "$RUNNER_TEMP/portable-fixtures/native-retention/expected.sha256"
       - name: Retain failed validation and installer evidence
         if: failure()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        uses: ./.github/actions/retain-failure-evidence
         with:
           name: portable-failure-${{ matrix.os }}
-          path: |
-            ${{ runner.temp }}/portable-regression.log
-            ${{ runner.temp }}/portable-fixtures
-            ${{ runner.temp }}/host-tools-*.log
-            ${{ runner.temp }}/ic-tools-*.log
-            ${{ github.workspace }}/.tools/host-set.*
-            ${{ github.workspace }}/.tools/ic-set.*
-          include-hidden-files: true
-          retention-days: 14
-          if-no-files-found: ignore
+          temp-root: ${{ runner.temp }}
+          repository-root: ${{ github.workspace }}

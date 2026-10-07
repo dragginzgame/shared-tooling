@@ -1,0 +1,11 @@
+{
+  "name": "shared-tooling-frontend-fixture",
+  "private": true,
+  "engines": {
+    "node": "24.21.0",
+    "npm": "11.19.0"
+  },
+  "devDependencies": {
+    "prettier": "3.9.6"
+  }
+}

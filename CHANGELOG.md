@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.1.20]
+
+### Changed
+
+- Allow agents to complete explicitly requested PRs, including scoped commits
+  and branch pushes. Ordinary contributions use PRs; merges, direct integration
+  pushes and releases retain separate authorization.
+  [Toko #1789](https://github.com/dragginzgame/toko/issues/1789).
+
+### Testing
+
+- Add locked real Prettier/Rust hook qualification to the native CI matrix,
+  covering selected files, configuration, ignores and failed-format isolation.
+  [#43](https://github.com/dragginzgame/shared-tooling/issues/43).
+- Add native installer failure-artifact upload/download checks using the same
+  collector as ordinary CI failures, verifying retained payload and log bytes.
+  [#29](https://github.com/dragginzgame/shared-tooling/issues/29).
+
 ## [0.1.19]
 
 ### Added

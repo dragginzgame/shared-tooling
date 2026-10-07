@@ -31,6 +31,9 @@ local entry point and overlay; Shared Tooling's own validation commands stay in
 its [local instructions](AGENTS.md).
 
 The baseline's focused mandatory policies live in `rules/`. The
+[contribution rules](rules/contributions.md) support human and agent PRs:
+an authorized PR includes its branch, commits and branch push, while merges,
+direct integration-branch pushes and releases retain separate authority. The
 [changelog rules](rules/changelogs.md) cover automatic next-version selection,
 concise release summaries, GitHub issue links, breaking changes and minor-line
 detail files. The [Rust workspace rules](rules/rust-workspaces.md) require a
