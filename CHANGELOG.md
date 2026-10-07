@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.1.19]
+
+### Added
+
+- Retain a complete combined log for each failed validation batch, plus a latest
+  combined view, while preserving raw per-target logs and failure status.
+  [#37](https://github.com/dragginzgame/shared-tooling/issues/37).
+- Share opt-in PocketIC client/server alignment checks using locked offline
+  Cargo metadata, and verify externally selected server bytes before execution.
+  [#45](https://github.com/dragginzgame/shared-tooling/issues/45).
+- Check runner disk capacity with explicit paths and minimum free space, with
+  optional usage diagnostics and no cleanup. Consumers retain their thresholds
+  and runner-image policy.
+  [#46](https://github.com/dragginzgame/shared-tooling/issues/46).
+
+### Fixed
+
+- Reject redirected Rust-tool installation paths before running tools or Cargo,
+  preserving checkout ownership and retained installation evidence.
+  [#54](https://github.com/dragginzgame/shared-tooling/issues/54).
+- Accept trailing slashes and directory aliases in temporary paths used by tool
+  command fixtures, including native macOS scratch directories.
+  [#56](https://github.com/dragginzgame/shared-tooling/issues/56).
+- Preserve historical changelog bytes, including absent terminal newlines, and
+  reject already-dated release targets with varied heading whitespace.
+  [#55](https://github.com/dragginzgame/shared-tooling/issues/55).
+
 ## [0.1.18]
 
 ### Fixed

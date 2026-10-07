@@ -32,11 +32,27 @@ fi
 bash "$ROOT/scripts/ci/test-portable-prerequisites.sh"
 bash "$ROOT/scripts/ci/test-gh-ci.sh"
 bash "$ROOT/scripts/ci/test-validation-target-runner.sh"
+bash "$ROOT/scripts/ci/test-runner-disk-space.sh"
 bash "$ROOT/scripts/ci/test-installers.sh"
 bash "$ROOT/scripts/ci/test-ic-tools.sh"
+bash "$ROOT/scripts/ci/test-pocketic-checks.sh"
 bash "$ROOT/scripts/ci/test-host-tools.sh"
 bash "$ROOT/scripts/ci/test-rust-tools.sh"
 bash "$ROOT/scripts/ci/test-tool-commands.sh"
+# Make/Cargo select physical paths independently of the caller's TMPDIR spelling.
+mkdir "$FIXTURE/tool-contexts"
+ln -s "$(cd "$FIXTURE/tool-contexts" && pwd -P)" "$FIXTURE/tool-context-alias"
+for context in trailing-slash directory-alias; do
+    case "$context" in
+        trailing-slash) selected_tmp="$FIXTURE/tool-contexts/" ;;
+        directory-alias) selected_tmp="$FIXTURE/tool-context-alias" ;;
+    esac
+    for script in test-tool-commands test-pocketic-checks test-rust-tools; do
+        TMPDIR="$selected_tmp" bash "$ROOT/scripts/ci/$script.sh" \
+            > "$FIXTURE/$script-$context.log" 2>&1
+    done
+done
+echo 'Tool fixtures passed with trailing-slash and aliased temporary roots'
 bash "$ROOT/scripts/ci/test-evidence-checksums.sh"
 bash "$ROOT/scripts/ci/test-file-digests.sh"
 bash "$ROOT/scripts/ci/test-rustsec-db.sh"

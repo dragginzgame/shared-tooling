@@ -118,6 +118,10 @@ selection, deletion authorization, retained evidence and interrupted retries.
   caller's workspace, rejects zero passing tests and retains failed output.
   It requires the normal libtest summary format and preserves Cargo arguments
   and network policy. Cargo and logging failures remain failures.
+- `scripts/ci/check-runner-disk-space.sh --path PATH --min-free-mib N` checks
+  capacity before a consumer-selected step. Optional diagnostic paths report
+  disk usage without cleanup; thresholds stay local. See the
+  [disk checker contract](docs/verification-helpers.md#runner-disk-capacity).
 - `scripts/ci/check-release-tag.sh <exact-commit> <version>` checks an annotated
   `vX.Y.Z` tag against the selected full commit, without Git mutations. Consumer
   publication adapters select the version/commit; the release runner keeps its
@@ -273,6 +277,13 @@ The script defaults to the repository containing its vendored copy. Set
 from another location.
 If retaining a failed log in the selected directory fails, the runner keeps its
 temporary log directory and prints its location instead of deleting the evidence.
+
+Each completed failed batch also prints a unique combined log path and updates
+`latest-combined.log` in that failure directory. This is the byte concatenation
+of failed targets' raw logs in dispatch order. `latest.log` continues to hold
+the last failed target alone. Successful or interrupted batches leave the last
+completed combined view intact; interrupted raw logs remain available separately.
+Nested runs combine their own target streams without rediscovering child files.
 
 Set `VALIDATION_LOG_DIR` to retain successful, failed and interrupted raw output
 under a unique run directory announced before dispatch. Its `timings.tsv` has
