@@ -33,8 +33,11 @@ its [local instructions](AGENTS.md).
 The baseline's focused mandatory policies live in `rules/`. The
 [changelog rules](rules/changelogs.md) cover automatic next-version selection,
 concise release summaries, GitHub issue links, breaking changes and minor-line
-detail files. The [Cargo dependency rules](rules/cargo-dependencies.md) require
-one root dependency catalog inherited by every child manifest. The
+detail files. The [Rust workspace rules](rules/rust-workspaces.md) require a
+virtual root and packages under `crates/<package-name>/`, with explicit exceptions
+for independent workspaces and other layouts. The
+[Cargo dependency rules](rules/cargo-dependencies.md) require one root dependency
+catalog inherited by every child manifest. The
 [dependency pinning rules](rules/dependency-pinning.md) define immutable source
 identities, compatible registry requirements, locked builds and scoped exceptions. The
 [Git hook rules](rules/git-hooks.md) standardize Rust pre-commit formatting and
