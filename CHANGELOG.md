@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.30]
+
+### Testing
+
+- Add repeatable native Cargo binary/example installation qualification, including
+  offline reuse, concurrency and preservation after compiler failure. An explicit
+  Linux/macOS workflow collects the evidence needed for consumer-tool extraction.
+  ([#65](https://github.com/dragginzgame/shared-tooling/issues/65))
+
 ## [0.1.29]
 
 ### Added
