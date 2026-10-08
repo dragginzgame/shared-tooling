@@ -53,8 +53,9 @@ Handoffs link to issues without duplicating triage or issue status. Supporting
 evidence stays with its existing owner. Reuse a matching issue and include the
 reviewed revision, dirty-source identity when relevant, affected owner/callers/hosts,
 symptom, focused evidence, smallest proposal and disposition. Relevant GitHub
-issue work across repositories has the baseline's standing authorization;
-apply authorized local repairs directly. Follow the
+issue work in `dragginzgame/*` has the baseline's standing authorization;
+issue actions in other GitHub repositories require explicit authorization.
+Apply authorized local repairs directly. Follow the
 [maintenance rules](rules/agent-maintenance.md) for the reporting workflow and
 its separate boundaries for sibling file edits and release effects.
 

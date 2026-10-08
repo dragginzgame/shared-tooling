@@ -42,7 +42,9 @@ test-portable:
 	bash scripts/ci/test-portable-tools.sh
 
 check-pins:
-	bash scripts/ci/check-dependency-pins.sh
+	bash scripts/ci/check-dependency-pins.sh --npm-root ci/frontend \
+		--node-version "$$(jq -er '.engines.node' ci/frontend/package.json)" \
+		--npm-version "$$(jq -er '.engines.npm' ci/frontend/package.json)"
 
 check-doc-links:
 	perl scripts/ci/check-documentation-links.pl --root . *.md audits/*.md rules/*.md tasks/*.md docs/*.md docs/principles/*.md

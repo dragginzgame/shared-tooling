@@ -152,6 +152,9 @@ workspace lockfiles. `scripts/ci/check-dependency-pins.sh --consumer /path/to/re
 supports read-only consumer inspection. Prepare Mike Farah yq v4.47.2+, jq and Git
 first; Cargo is needed for Cargo workspaces. `YQ` can select an installed parser
 path. The shared installer requires an explicit reviewed version and checksum.
+Opt in to npm root declaration checks with `--npm-root`, `--node-version` and
+`--npm-version`, using that consumer's existing selections. The checker needs
+neither npm nor Node and leaves resolution to npm's own locked preparation.
 See the [pinning policy](rules/dependency-pinning.md) for exact constraints,
 external inputs, exception records and the checks still owned by consumer gates.
 
@@ -369,6 +372,35 @@ scripts/ci/install-actionlint.sh \
 ```
 
 Use `--install-dir` or `TOOL_INSTALL_DIR` to change the destination.
+
+### Sibling issue dashboard
+
+Run a live terminal dashboard for the connected sibling checkouts:
+
+```bash
+scripts/dev/issues-siblings.sh
+scripts/dev/issues-siblings.sh --interval 120
+scripts/dev/issues-siblings.sh --once /path/to/projects
+```
+
+The dashboard scans immediate Git checkouts with `AGENTS.md` and a GitHub.com
+`origin`, including Shared Tooling itself. This excludes unconnected checkouts
+such as `ichelper`. It skips symlink aliases and counts duplicate GitHub
+repositories once. The default parent belongs to the script's checkout; restart
+to discover new siblings. Requires Git, jq and an authenticated GitHub CLI;
+prepare authentication with `gh auth login`.
+
+Each row shows total, open, fixed and percent fixed, followed by combined totals.
+Here **fixed means closed**, including duplicates and issues closed as not
+planned; the percentage is `closed / (open + closed) * 100`. Pull requests are
+excluded, and repositories with no issues show `N/A` for the percentage. Counts
+use the GitHub API's full issue totals, without fetching a limited issue list.
+
+In a terminal it refreshes every 60 seconds using one read-only GraphQL request
+per refresh. Press `q` to quit, `r` to refresh early, or Ctrl-C to exit. `--once`
+prints one report; redirected input/output also selects a single report. Failed
+observations show `ERROR` and label the combined total `TOTAL (partial)`;
+single reports exit nonzero, while the live dashboard retries on the next cycle.
 
 ### GitHub Actions inspection
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared companions: scripts/ci/check-release-source.sh scripts/ci/finalize-release-changelog.awk
 set -euo pipefail
 SCRIPT_ROOT="${BASH_SOURCE[0]}"
 [[ "$SCRIPT_ROOT" == /* ]] || SCRIPT_ROOT="$PWD/$SCRIPT_ROOT"
@@ -16,19 +17,6 @@ version() {
     }
     printf '%s\n' "$value"
 }
-admit_files() (
-    paths="$(mktemp "${TMPDIR:-/tmp}/shared-release-paths.XXXXXX")"
-    trap 'rm -f "$paths"' EXIT
-    # HEAD-to-worktree alone hides staged edits reverted only in the worktree.
-    git diff --cached --name-only -z HEAD -- > "$paths"
-    git diff --name-only -z -- >> "$paths"
-    git ls-files --others --exclude-standard -z >> "$paths"
-    while IFS= read -r -d '' path; do
-        [[ "$path" == CHANGELOG.md || "$path" == VERSION ]] || {
-            printf 'uncommitted non-release path: %q\n' "$path" >&2; exit 1;
-        }
-    done < "$paths"
-)
 finalize_notes() {
     awk -v version="${RELEASE_VERSION:?}" -v previous="${RELEASE_PREVIOUS:?}" \
         -v date="${RELEASE_DATE:?}" -v allow_finalized=1 \
@@ -39,7 +27,7 @@ case "$operation" in
     preflight|prepare)
         observed_version="$(version)" || exit 1
         [[ "$observed_version" == "${RELEASE_PREVIOUS:?}" ]] || exit 1
-        admit_files
+        bash "$SCRIPT_ROOT/scripts/ci/check-release-source.sh" --allow CHANGELOG.md --allow VERSION
         [[ -f CHANGELOG.md && ! -L CHANGELOG.md ]] || exit 1
         # Git-owned scratch cannot become an unrelated untracked release input
         # if the process is killed before cleanup. VERSION is replaced last.
@@ -58,7 +46,7 @@ case "$operation" in
         fi
         ;;
     check|commit-check)
-        admit_files
+        bash "$SCRIPT_ROOT/scripts/ci/check-release-source.sh" --allow CHANGELOG.md --allow VERSION
         temporary="$(mktemp -d "${TMPDIR:-/tmp}/shared-release-metadata.XXXXXX")"
         trap 'rm -rf "$temporary"' EXIT
         notes=CHANGELOG.md

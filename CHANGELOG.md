@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.1.29]
+
+### Added
+
+- Add a live terminal issue dashboard for connected sibling repositories, with
+  total, open and closed counts, percent fixed, combined totals and visible
+  observation failures. Refresh automatically or print a single report.
+- Add optional, offline npm/Node declaration checks using each consumer's selected
+  root and tool versions, including lock agreement, immutable Git inputs and
+  qualified sibling paths. Shared Tooling checks its own frontend fixture pins.
+  ([#77](https://github.com/dragginzgame/shared-tooling/issues/77))
+
+### Fixed
+
+- Explain refused release source with staged, unstaged and untracked paths while
+  preserving files and the index. Initial preflight failures identify that
+  validation and version preparation have not started for the attempt.
+  ([#74](https://github.com/dragginzgame/shared-tooling/issues/74))
+- Update the shared PocketIC server default to 16.1.0 with reviewed archive
+  checksums. Consumer protocol qualification remains with IC Testkit and its
+  callers. ([#76](https://github.com/dragginzgame/shared-tooling/issues/76))
+
 ## [0.1.28]
 
 ### Added
