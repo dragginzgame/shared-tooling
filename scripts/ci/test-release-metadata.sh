@@ -2,10 +2,13 @@
 set -euo pipefail
 
 # This independent fixture owns its Make selections and logger checkout.
-unset MAKEFLAGS MFLAGS MAKEOVERRIDES
+unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 unset VALIDATION_REPOSITORY_ROOT VALIDATION_RUNNER_SNAPSHOT_PATH
 
-ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
+ROOT="$0"
+[[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
+ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
+ROOT="${ROOT%/.}"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/release-metadata-test.XXXXXX")"
 finish() {
     local status=$?

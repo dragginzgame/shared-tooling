@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+ROOT="$0"
+[[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
+ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
+ROOT="${ROOT%/.}"
 bash "$ROOT/scripts/ci/check-portable-prerequisites.sh"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-test.XXXXXX")"
 trap 'if [[ $? == 0 ]]; then rm -rf "$FIXTURE"; else printf "Failed portable-tools fixture retained: %s\n" "$FIXTURE" >&2; fi' EXIT
@@ -30,6 +33,7 @@ if bash "$ROOT/scripts/ci/verify-file-checksum.sh" \
 fi
 
 bash "$ROOT/scripts/ci/test-portable-prerequisites.sh"
+bash "$ROOT/scripts/ci/test-script-paths.sh"
 bash "$ROOT/scripts/ci/test-evidence-archive.sh"
 bash "$ROOT/scripts/ci/test-gh-ci.sh"
 bash "$ROOT/scripts/ci/test-validation-target-runner.sh"

@@ -3,7 +3,10 @@ set -euo pipefail
 
 # Explicit npm ci preparation is separate; this test only uses installed tools.
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
-ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
+ROOT="$0"
+[[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
+ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
+ROOT="${ROOT%/.}"
 [[ "$(node --version)" == "v$(jq -er '.engines.node' "$ROOT/ci/frontend/package.json")" ]]
 export PRETTIER_BIN="$ROOT/ci/frontend/node_modules/.bin/prettier"
 export PRETTIER_VERSION

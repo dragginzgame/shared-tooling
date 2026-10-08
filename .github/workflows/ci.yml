@@ -173,6 +173,55 @@ jobs:
           test -L portable-fixtures/link
           test "$(readlink portable-fixtures/link)" = ../outside-evidence
           test ! -e portable-fixtures/link
+      - name: Prepare failed candidate alongside verified native toolsets
+        if: ${{ !cancelled() && steps.retention.outputs.qualified == 'true' }}
+        id: compact-control
+        shell: bash
+        run: |
+          candidate="$(mktemp -d "$GITHUB_WORKSPACE/.tools/ic-set.evidenceXXXXXX")"
+          cp -R "$RUNNER_TEMP/portable-fixtures/native-retention/consumer/.tools/ic-set.check/." "$candidate/"
+          printf 'candidate=%s\n' "${candidate##*/}" >> "$GITHUB_OUTPUT"
+      - name: Upload compact native tool evidence
+        if: ${{ !cancelled() && steps.compact-control.outputs.candidate != '' }}
+        id: compact-upload
+        uses: ./.github/actions/retain-failure-evidence
+        with:
+          name: native-compact-tools-${{ matrix.os }}-${{ github.run_attempt }}
+          temp-root: ${{ runner.temp }}/portable-fixtures/native-retention/temp
+          repository-root: ${{ github.workspace }}
+          compact-successful-tools: 'true'
+      - name: Download compact native tool evidence
+        if: ${{ !cancelled() && steps.compact-upload.outputs.artifact-id != '' }}
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          artifact-ids: ${{ steps.compact-upload.outputs.artifact-id }}
+          path: ${{ runner.temp }}/compact-tools-downloaded
+          merge-multiple: true
+      - name: Verify compact native tool evidence and retained candidate
+        if: ${{ !cancelled() && steps.compact-upload.outputs.artifact-id != '' }}
+        env:
+          EVIDENCE_CANDIDATE: ${{ steps.compact-control.outputs.candidate }}
+        shell: bash
+        run: |
+          payload="$RUNNER_TEMP/compact-tools-downloaded/payload"
+          mkdir "$payload"
+          tar -xzf "$RUNNER_TEMP/compact-tools-downloaded/evidence.tar.gz" -C "$payload"
+          shopt -s nullglob
+          diagnostics=("$payload"/tool-evidence.*)
+          test "${#diagnostics[@]}" = 1
+          for kind in host ic; do
+            selection="$(cat "${diagnostics[0]}/$kind/selection.txt")"
+            test ! -e "$payload/.tools/${selection##*/}"
+            test -s "${diagnostics[0]}/$kind/check.log"
+          done
+          cmp ci/tool-versions.env "${diagnostics[0]}/host/caller-pins"
+          cmp ci/ic-tools.tsv "${diagnostics[0]}/ic/caller-pins"
+          for receipt in pins.tsv host files.sha256; do
+            cmp ".tools/ic/$receipt" "${diagnostics[0]}/ic/$receipt"
+          done
+          cmp ".tools/$EVIDENCE_CANDIDATE/bin/quill" "$payload/.tools/$EVIDENCE_CANDIDATE/bin/quill"
+          test -x "$payload/.tools/$EVIDENCE_CANDIDATE/bin/quill"
+          cmp "$RUNNER_TEMP/portable-fixtures/native-retention/temp/portable-regression.log" "$payload/portable-regression.log"
       - name: Retain failed validation and installer evidence
         if: failure()
         uses: ./.github/actions/retain-failure-evidence
@@ -180,3 +229,4 @@ jobs:
           name: portable-failure-${{ matrix.os }}
           temp-root: ${{ runner.temp }}
           repository-root: ${{ github.workspace }}
+          compact-successful-tools: 'true'

@@ -2,7 +2,10 @@
 set -euo pipefail
 
 # Repository-local suite setup; consumer validation owns its own prerequisites.
-ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
+ROOT="$0"
+[[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
+ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
+ROOT="${ROOT%/.}"
 [[ $# == 0 ]] || { echo 'usage: check-portable-prerequisites.sh' >&2; exit 2; }
 missing=0
 for tool in bash git make curl tar gzip xz perl shasum cargo jq yq rg cloc; do

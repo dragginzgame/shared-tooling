@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.27]
+
+### Fixed
+
+- Isolate metadata fixtures from inherited Make includes and GNU flags; qualify
+  their own release identity through nested Make/logger execution while preserving
+  production selections and jobserver behavior.
+  [#7](https://github.com/dragginzgame/shared-tooling/issues/7).
+
+- Retain Rust-tool build evidence and captured setup/check logs in the shared
+  failure collector, including when host/IC evidence is compacted.
+  [#68](https://github.com/dragginzgame/shared-tooling/issues/68).
+- Recognize dotted snapshot names in tooling LOC reports, counting shared files
+  once across overlapping manifests while preserving integrity checks.
+  [#69](https://github.com/dragginzgame/shared-tooling/issues/69).
+
 ## [0.1.26]
 
 ### Fixed

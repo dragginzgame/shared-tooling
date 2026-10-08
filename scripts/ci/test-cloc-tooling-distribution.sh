@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 # Upstream integration only: consumers vendor test-cloc-tooling.sh instead.
-ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
+ROOT="$0"
+[[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
+ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
+ROOT="${ROOT%/.}"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/cloc-tooling-distribution.XXXXXX")"
 trap 'if [[ $? == 0 ]]; then rm -rf "$fixture"; else printf "Failed tooling distribution fixture retained: %s\n" "$fixture" >&2; fi' EXIT
 
@@ -28,6 +31,18 @@ done
 mv "$consumer/config/.shared-tooling.snapshot" "$consumer/.shared-tooling.snapshot"
 perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$export_parent" > "$fixture/export-root.json"
 [[ "$(jq -c .totals "$fixture/export.json")" == "$(jq -c .totals "$fixture/export-root.json")" ]]
+# Export/verify a real dotted manifest with records overlapping the default.
+# Its name must not require a special root option in the inventory.
+git -C "$consumer" checkout HEAD -- scripts/ci/archive-evidence.sh
+bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_repo" \
+    --consumer "$consumer" --manifest .shared-tooling.archives.snapshot \
+    --file "${export_files[0]}" --file "${export_files[1]}" --file scripts/ci/archive-evidence.sh > "$fixture/dotted-export.log"
+bash "$consumer/scripts/ci/verify-shared-tooling-snapshot.sh" --manifest .shared-tooling.archives.snapshot > "$fixture/dotted-verify.log"
+perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$export_parent" > "$fixture/export-dotted.json"
+jq -e '.partial == false and .totals.shared_loc > 0 and .totals.local_loc == 0 and
+  (.repositories[0].snapshot_manifests | length) == 2' "$fixture/export-dotted.json" >/dev/null
+# Return to the original bundle for the nested-root comparison below.
+rm "$consumer/.shared-tooling.archives.snapshot" "$consumer/scripts/ci/archive-evidence.sh"
 mkdir -p "$consumer/vendor/shared"
 cp -Rp "$consumer/scripts" "$consumer/vendor/shared/"
 cp "$consumer/.shared-tooling.snapshot" "$consumer/vendor/shared/"

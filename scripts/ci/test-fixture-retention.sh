@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
+ROOT="$0"
+[[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
+ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
+ROOT="${ROOT%/.}"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/fixture-retention-test.XXXXXX")"
 trap 'if [[ $? == 0 ]]; then rm -rf "$fixture"; else echo "Retention fixtures retained: $fixture" >&2; fi' EXIT
 mkdir "$fixture/bin" "$fixture/cloc" "$fixture/portable"
@@ -97,5 +100,66 @@ SCRIPT
     cmp "$native/.tools/ic-set.fixture/payload" "$native/unpacked/.tools/ic-set.fixture/payload"
     cmp "$native/temp/ic-tools-$phase.log" "$native/unpacked/ic-tools-$phase.log"
     grep -Fx "native fixture: $phase" "$native/unpacked/ic-tools-$phase.log" > /dev/null
+done
+# Exercise the real Rust installer through the consumer-owned setup alias.
+# Cargo alone is substituted, failing after it has produced build evidence.
+native="$fixture/native-rust"
+mkdir -p "$native/temp" "$native/bin" "$native/make"
+cp "$ROOT/make/tools.mk" "$native/make/"
+printf 'include make/tools.mk\ninstall-tools: install-rust-tools\n' > "$native/Makefile"
+cat > "$native/bin/cargo" <<'SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+[[ $# == 9 && "$1" == install && "$6" == --root && "$8" == --target-dir && "$9" == "$7/build" ]]
+mkdir -p "$9"
+printf 'retained Rust build output\n' > "$9/failed-build.txt"
+echo 'injected Cargo installation failure' >&2
+exit 23
+SCRIPT
+chmod +x "$native/bin/cargo"
+for phase in install check; do
+    target=install-tools
+    [[ "$phase" != check ]] || target=rust-tools-check
+    status=0
+    PATH="$native/bin:$PATH" make --no-print-directory -C "$native" SHARED_TOOLING_ROOT="$ROOT" \
+        RUST_TOOL_VERSIONS="$ROOT/ci/tool-versions.env" "$target" \
+        2>&1 | tee "$native/temp/rust-tools-$phase.log" > "$native/$phase.log" || status=$?
+    [[ "$status" == 2 && -f "$native/.tools/rust/build/failed-build.txt" ]]
+    for compact in false true; do
+        EVIDENCE_TEMP_ROOT="$native/temp" EVIDENCE_REPOSITORY_ROOT="$native" EVIDENCE_COMPACT="$compact" \
+            EVIDENCE_ACTION_ROOT="$ROOT/.github/actions/retain-failure-evidence" \
+            RUNNER_TEMP="$native/temp" GITHUB_OUTPUT="$native/archive-$phase-$compact" \
+            "$BASH" --noprofile --norc -e -o pipefail "$fixture/collect.sh"
+        archive="$(sed -n 's/^path=//p' "$native/archive-$phase-$compact")"
+        unpacked="$native/unpacked-$phase-$compact"
+        mkdir "$unpacked"
+        tar -xzf "$archive" -C "$unpacked"
+        cmp "$native/.tools/rust/build/failed-build.txt" "$unpacked/.tools/rust/build/failed-build.txt"
+        cmp "$native/temp/rust-tools-$phase.log" "$unpacked/rust-tools-$phase.log"
+    done
+done
+grep -F 'injected Cargo installation failure' "$native/temp/rust-tools-install.log" >/dev/null
+grep -F 'missing or mismatched cargo-sort' "$native/temp/rust-tools-check.log" >/dev/null
+# Final links are preserved without their targets. Redirected parents must
+# neither leak external files nor prevent collection of the original setup log.
+for route in .tools .tools/rust .tools/rust/build; do
+    linked="$fixture/linked-${route//\//-}"
+    mkdir -p "$linked/temp" "$linked/$(dirname "$route")" "$linked/outside/build"
+    printf 'not selected\n' > "$linked/outside/build/private-input"
+    ln -s "$linked/outside" "$linked/$route"
+    printf 'Rust setup refused a link\n' > "$linked/temp/rust-tools-check.log"
+    EVIDENCE_TEMP_ROOT="$linked/temp" EVIDENCE_REPOSITORY_ROOT="$linked" \
+        EVIDENCE_ACTION_ROOT="$ROOT/.github/actions/retain-failure-evidence" \
+        RUNNER_TEMP="$linked/temp" GITHUB_OUTPUT="$linked/archive-output" \
+        "$BASH" --noprofile --norc -e -o pipefail "$fixture/collect.sh"
+    mkdir "$linked/unpacked"
+    tar -xzf "$(sed -n 's/^path=//p' "$linked/archive-output")" -C "$linked/unpacked"
+    cmp "$linked/temp/rust-tools-check.log" "$linked/unpacked/rust-tools-check.log"
+    if [[ "$route" == .tools/rust/build ]]; then
+        [[ -L "$linked/unpacked/$route" && "$(readlink "$linked/unpacked/$route")" == "$linked/outside" ]]
+    else
+        [[ ! -e "$linked/unpacked/.tools" ]]
+    fi
+    [[ ! -e "$linked/unpacked/outside" ]]
 done
 echo 'Failed fixture status and input retention checks passed'
