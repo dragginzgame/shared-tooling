@@ -7,6 +7,10 @@
 - Preserve literal evidence roots and output names, including trailing newlines;
   refuse occupied special-file outputs and symlink-parent traversal.
   [#59](https://github.com/dragginzgame/shared-tooling/issues/59).
+- Preserve concurrently installed symbolic tracking refs after release, including
+  replacements that resolve to the same commit. Check ref type under Git's update
+  lock before refreshing local status.
+  [#62](https://github.com/dragginzgame/shared-tooling/issues/62).
 
 ## [0.1.24]
 
