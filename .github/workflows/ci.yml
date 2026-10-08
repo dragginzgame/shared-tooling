@@ -221,7 +221,9 @@ jobs:
           done
           cmp ".tools/$EVIDENCE_CANDIDATE/bin/quill" "$payload/.tools/$EVIDENCE_CANDIDATE/bin/quill"
           test -x "$payload/.tools/$EVIDENCE_CANDIDATE/bin/quill"
-          cmp "$RUNNER_TEMP/portable-fixtures/native-retention/temp/portable-regression.log" "$payload/portable-regression.log"
+          for log in ic-tools-install ic-tools-check rust-tools-install rust-tools-check; do
+            cmp "$RUNNER_TEMP/portable-fixtures/native-retention/temp/$log.log" "$payload/$log.log"
+          done
       - name: Retain failed validation and installer evidence
         if: failure()
         uses: ./.github/actions/retain-failure-evidence

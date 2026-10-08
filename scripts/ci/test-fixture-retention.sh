@@ -162,4 +162,44 @@ for route in .tools .tools/rust .tools/rust/build; do
     fi
     [[ ! -e "$linked/unpacked/outside" ]]
 done
+# Execute the actual compact download verifier against a payload with the four
+# current producer logs. Installer/selector checks above own tool qualification;
+# this boundary owns byte comparisons after transport, including corrupt logs.
+jq -er '.jobs["portable-regression"].steps[] |
+  select(.name == "Verify compact native tool evidence and retained candidate") | .run' \
+    "$fixture/workflow.json" > "$fixture/verify-compact.sh"
+compact="$fixture/compact"
+mkdir -p "$compact/ci" "$compact/.tools/ic" "$compact/.tools/ic-set.candidate/bin" \
+    "$compact/temp/portable-fixtures/native-retention/temp" \
+    "$compact/temp/compact-tools-downloaded" "$compact/data/tool-evidence.fixture/host" \
+    "$compact/data/tool-evidence.fixture/ic" "$compact/data/.tools/ic-set.candidate/bin"
+cp "$ROOT/ci/tool-versions.env" "$ROOT/ci/ic-tools.tsv" "$compact/ci/"
+cp "$compact/ci/tool-versions.env" "$compact/data/tool-evidence.fixture/host/caller-pins"
+cp "$compact/ci/ic-tools.tsv" "$compact/data/tool-evidence.fixture/ic/caller-pins"
+for kind in host ic; do
+    printf '%s\n' "$compact/.tools/$kind-set.verified" > "$compact/data/tool-evidence.fixture/$kind/selection.txt"
+    printf 'verified fixture\n' > "$compact/data/tool-evidence.fixture/$kind/check.log"
+done
+for receipt in pins.tsv host files.sha256; do
+    printf 'receipt %s\n' "$receipt" > "$compact/.tools/ic/$receipt"
+    cp "$compact/.tools/ic/$receipt" "$compact/data/tool-evidence.fixture/ic/$receipt"
+done
+printf '#!/bin/sh\nexit 1\n' > "$compact/.tools/ic-set.candidate/bin/quill"
+chmod +x "$compact/.tools/ic-set.candidate/bin/quill"
+cp -p "$compact/.tools/ic-set.candidate/bin/quill" "$compact/data/.tools/ic-set.candidate/bin/quill"
+for log in ic-tools-install ic-tools-check rust-tools-install rust-tools-check; do
+    printf 'original %s failure\n' "$log" > "$compact/temp/portable-fixtures/native-retention/temp/$log.log"
+    cp "$compact/temp/portable-fixtures/native-retention/temp/$log.log" "$compact/data/$log.log"
+done
+for damaged in none ic-tools-install ic-tools-check rust-tools-install rust-tools-check; do
+    if [[ "$damaged" != none ]]; then printf 'corrupt log\n' > "$compact/data/$damaged.log"; fi
+    tar -czf "$compact/temp/compact-tools-downloaded/evidence.tar.gz" -C "$compact/data" .
+    status=0
+    (cd "$compact"; RUNNER_TEMP="$compact/temp" EVIDENCE_CANDIDATE=ic-set.candidate \
+        "$BASH" --noprofile --norc -e -o pipefail "$fixture/verify-compact.sh") \
+        > "$compact/verify-$damaged.log" 2>&1 || status=$?
+    if [[ "$damaged" == none ]]; then [[ "$status" == 0 ]]; else [[ "$status" != 0 ]]; fi
+    rm -rf "$compact/temp/compact-tools-downloaded/payload"
+    if [[ "$damaged" != none ]]; then cp "$compact/temp/portable-fixtures/native-retention/temp/$damaged.log" "$compact/data/$damaged.log"; fi
+done
 echo 'Failed fixture status and input retention checks passed'

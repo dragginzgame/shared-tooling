@@ -4,6 +4,13 @@
 
 ### Fixed
 
+- Resolve script entry paths independently of inherited directory search, and
+  preserve physical path bytes while locating helpers.
+  [#67](https://github.com/dragginzgame/shared-tooling/issues/67).
+- Compact freshly verified active host/IC bundles when explicitly selected,
+  retaining caller pins, check logs, IC receipts and full failed candidates.
+  [#66](https://github.com/dragginzgame/shared-tooling/issues/66).
+
 - Isolate metadata fixtures from inherited Make includes and GNU flags; qualify
   their own release identity through nested Make/logger execution while preserving
   production selections and jobserver behavior.
