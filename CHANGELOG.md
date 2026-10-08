@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.23]
+
+### Fixed
+
+- Keep PR release lookup working with packaged GitHub CLI versions that lack
+  `--slurp`, while rejecting incomplete responses and conflicting PRs across
+  pages. [#42](https://github.com/dragginzgame/shared-tooling/issues/42).
+- Recheck release payloads and exact tags after final consumer checks, and
+  verify published identity when resuming completed direct releases. Refuse
+  conflicts without repeating release effects.
+  [#58](https://github.com/dragginzgame/shared-tooling/issues/58).
+
 ## [0.1.22]
 
 ### Fixed
