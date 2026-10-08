@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.1.28]
+
+### Added
+
+- Add a readable maintenance task catalog and an opt-in local agent schedule for
+  three-day dependency, MSRV, Rust freshness, CI and snapshot checks, with rotating
+  audits, retained reports and owning-repository issue follow-up.
+
+### Fixed
+
+- Reject malformed active host/IC tool links before execution or downloads,
+  preserving their exact targets instead of accepting a newline-trimmed name.
+  [#75](https://github.com/dragginzgame/shared-tooling/issues/75).
+- Keep consumer release-runner tests simulation-only while retaining real-Git
+  tracking and recovery qualification in the complete owner suite.
+  [#70](https://github.com/dragginzgame/shared-tooling/issues/70).
+- Increase the portable regression and job budgets so Intel macOS has time to
+  finish validation and retain failure evidence.
+  [#71](https://github.com/dragginzgame/shared-tooling/issues/71).
+
+### Testing
+
+- Cover incomplete installer-test snapshots and explicit simulation-test
+  selections, checking refusal before any consumer files change.
+  [#73](https://github.com/dragginzgame/shared-tooling/issues/73),
+  [#60](https://github.com/dragginzgame/shared-tooling/issues/60).
+
 ## [0.1.27]
 
 ### Fixed

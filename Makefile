@@ -8,7 +8,7 @@ CLOC_REPORT := $(CURDIR)/scripts/dev/cloc-siblings.sh
 CLOC_ROOT = $(CLOC_PARENT)
 include make/tools.mk
 
-.PHONY: help version check-shell check-pins check-doc-links check-release-commands test-portable ci release-patch release-minor release-major \
+.PHONY: help tasks version check-shell check-pins check-doc-links check-release-commands test-portable ci release-patch release-minor release-major \
         release-resume release-version release-preflight release-verify \
         release-prepare-version release-prepared-check release-files \
         release-commit-check release-committed-check release-tagged-check release-push-check \
@@ -20,6 +20,7 @@ endif
 
 help:
 	@echo "Current local version: make version"
+	@echo "Repeatable maintenance catalog: make tasks"
 	@echo "Sibling Rust LOC summaries: make cloc [CLOC_PARENT=/path/to/projects]"
 	@echo "Sibling CI/tooling inventory: make cloc-tooling [CLOC_PARENT=/path/to/projects]"
 	@echo "Focused: check-shell, check-pins, check-doc-links, check-release-commands, test-portable"
@@ -31,6 +32,9 @@ help:
 	@echo "Delivery: direct by default; RELEASE_DELIVERY=pr selects review then merged validation/tag"
 	@echo "Recovery: rerun the normal release target; saved releases reconcile automatically"
 
+tasks:
+	@cat tasks/README.md
+
 check-shell:
 	$(SHELLCHECK) scripts/ci/*.sh scripts/dev/*.sh scripts/distribution/*.sh scripts/release/*.sh .githooks/pre-commit
 
@@ -41,7 +45,7 @@ check-pins:
 	bash scripts/ci/check-dependency-pins.sh
 
 check-doc-links:
-	perl scripts/ci/check-documentation-links.pl --root . *.md audits/*.md rules/*.md docs/*.md docs/principles/*.md
+	perl scripts/ci/check-documentation-links.pl --root . *.md audits/*.md rules/*.md tasks/*.md docs/*.md docs/principles/*.md
 
 check-release-commands:
 	bash scripts/ci/check-release-commands.sh . make/tools.mk

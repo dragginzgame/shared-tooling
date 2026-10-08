@@ -20,6 +20,18 @@ The top undated changelog entry describes the next proposed release. Standard
 release preparation updates both files; Git tags establish published release
 identity independently.
 
+## Repeatable maintenance
+
+Open the [task catalog](tasks/README.md) or run `make tasks`. Shared Tooling owns
+repeatable cargo-machete, MSRV, Rust freshness, CI/issue, snapshot and dependency
+advisory checks, plus bounded code and tooling-duplication audits. Each definition
+explains its scope, procedure and evidence; consumers keep their local inputs.
+
+The [local agent schedule](tasks/local-schedule.md) runs a maintenance pass every
+three days once explicitly enabled, retaining reports and coordinating findings
+through owning GitHub issues. It does not automatically edit sibling source or
+upgrade dependencies. Task definitions remain readable and runnable on demand.
+
 ## Shared principles
 
 The [`docs/principles/`](docs/principles/README.md) directory contains common
@@ -435,6 +447,7 @@ own macOS versions and architectures.
 - `.githooks/` — reviewed hooks for consuming repositories;
 - `scripts/ci/` — reusable non-interactive validation building blocks;
 - `rules/` — focused mandatory policies linked from the engineering baseline;
+- `tasks/` — repeatable maintenance procedures, agent prompt and scheduling guidance;
 - `docs/` — shared principles and integration guidance;
 - `scripts/distribution/` — source-side snapshot refresh tools; and
 - `.github/workflows/` — workflows owned by this repository.
