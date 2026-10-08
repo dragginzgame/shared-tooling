@@ -163,7 +163,16 @@ jobs:
           test "$RETENTION_OUTCOME" = failure
           test "$RETENTION_QUALIFIED" = true
           cd "$RUNNER_TEMP/native-retention-downloaded"
+          mkdir payload
+          tar -xzf evidence.tar.gz -C payload
+          cd payload
           bash "$GITHUB_WORKSPACE/scripts/ci/verify-evidence-checksums.sh" "$RUNNER_TEMP/portable-fixtures/native-retention/expected.sha256"
+          cmp "$RUNNER_TEMP/portable-fixtures/native-retention/temp/portable-fixtures/"$'line\nbreak:payload' "portable-fixtures/"$'line\nbreak:payload'
+          test "$(perl -e 'printf "%o", (stat($ARGV[0]))[2] & 0777' "portable-fixtures/"$'line\nbreak:payload')" = 640
+          test -x .tools/ic-set.check/bin/quill
+          test -L portable-fixtures/link
+          test "$(readlink portable-fixtures/link)" = ../outside-evidence
+          test ! -e portable-fixtures/link
       - name: Retain failed validation and installer evidence
         if: failure()
         uses: ./.github/actions/retain-failure-evidence

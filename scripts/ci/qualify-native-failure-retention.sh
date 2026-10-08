@@ -62,19 +62,24 @@ cmp "$original" "$bundle/pins.tsv"
     # Bind local dirty-source runs as well as hosted committed-source runs.
     for path in scripts/ci/qualify-native-failure-retention.sh scripts/dev/install-ic-tools.sh \
         scripts/ci/ic-tool-pins.awk scripts/ci/verify-file-checksum.sh \
-        scripts/ci/verify-evidence-checksums.sh make/tools.mk ci/ic-tools.tsv \
+        scripts/ci/verify-evidence-checksums.sh scripts/ci/archive-evidence.sh make/tools.mk ci/ic-tools.tsv \
         .github/actions/retain-failure-evidence/action.yml; do
         printf '%s  %s\n' "$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$ROOT/$path")" "$path"
     done
 } > "$fixture/temp/portable-fixtures/source.txt"
-# Upload's least common ancestor is fixture/ (consumer/ and temp/). Match that
-# relative layout, including hidden .tools paths. Keep the oracle outside the
-# upload selection; verify downloaded bytes against this original local file.
+# The collector archives paths relative to each selected evidence root. Keep
+# the oracle outside the upload selection and verify original bytes after download.
 cd "$fixture"
 find consumer/.tools/ic-set.* temp -type f -print | LC_ALL=C sort > files.txt
 while IFS= read -r file; do
-    printf '%s  %s\n' "$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$file")" "$file"
+    printf '%s  %s\n' "$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$file")" "${file#*/}"
 done < files.txt > expected.sha256.tmp
+# The line-oriented checksum manifest deliberately excludes this filename.
+# The workflow separately checks its bytes/mode and the unfollowed link.
+printf 'retained unusual filename\n' > temp/portable-fixtures/$'line\nbreak:payload'
+chmod 640 temp/portable-fixtures/$'line\nbreak:payload'
+printf 'outside collection\n' > temp/outside-evidence
+ln -s ../outside-evidence temp/portable-fixtures/link
 echo 'Expected install/check failures qualified; deliberately failing this CI step for collection.' >&2
 mv expected.sha256.tmp expected.sha256
 # A failed/refused invocation cannot qualify a stale manifest from another try.

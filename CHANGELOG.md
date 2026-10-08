@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.1.24]
+
+### Added
+
+- Share evidence archiving across CI collectors, preserving unusual Unix
+  filenames, modes and symlinks through a single archive upload.
+  [#59](https://github.com/dragginzgame/shared-tooling/issues/59).
+- Extend existing snapshots with explicit `--add-file` selections and reject
+  missing shared companions before replacing consumer files.
+  [#60](https://github.com/dragginzgame/shared-tooling/issues/60).
+
+### Fixed
+
+- Refresh matching local upstream tracking after confirmed direct release or
+  completed resume, so already-published commits do not repeatedly appear ahead.
+  Preserve captured-URL delivery, concurrent tracking values and unrelated upstreams.
+  [#62](https://github.com/dragginzgame/shared-tooling/issues/62).
+- Include `bin/` tooling and repositories awaiting their first commit in sibling
+  LOC reports, with explicit bootstrap identity and retained corruption checks.
+  [#61](https://github.com/dragginzgame/shared-tooling/issues/61).
+
 ## [0.1.23]
 
 ### Fixed

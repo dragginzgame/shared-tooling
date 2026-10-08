@@ -60,11 +60,10 @@ jq -e '
   $uploads[0].value.with["repository-root"] == "${{ github.workspace }}"
 ' "$fixture/workflow.json" > /dev/null
 jq -e '.runs.steps | map(select(.uses? | strings | startswith("actions/upload-artifact@"))) |
-  length == 1 and .[0].with["include-hidden-files"] == true' "$fixture/collector.json" > /dev/null
+  length == 1 and .[0].with["if-no-files-found"] == "error"' "$fixture/collector.json" > /dev/null
 jq -r '.jobs["portable-regression"].steps[] | select(.run? | strings |
   contains("make --no-print-directory install-ic-tools")) | .run' "$fixture/workflow.json" > "$fixture/native-step.sh"
-jq -r '.runs.steps[] | select(.uses? | strings |
-  startswith("actions/upload-artifact@")) | .with.path' "$fixture/collector.json" > "$fixture/upload-paths"
+jq -er '.runs.steps[] | select(.id == "archive") | .run' "$fixture/collector.json" > "$fixture/collect.sh"
 for phase in install check; do
     native="$fixture/native-$phase"
     mkdir -p "$native/scripts/dev" "$native/temp" "$native/make"
@@ -88,19 +87,15 @@ SCRIPT
         > "$native/command.log" 2>&1 || status=$?
     # GNU Make reports a failed recipe as status 2; the installer evidence stays.
     [[ "$status" == 2 && -f "$native/.tools/ic-set.fixture/payload" ]] || exit 1
-    : > "$native/collected"
-    # shellcheck disable=SC2016 # Replace literal GitHub expressions, not shell variables.
-    while IFS= read -r pattern; do
-        [[ -n "$pattern" ]] || continue
-        case "$pattern" in
-            '${{ inputs.temp-root }}/'*) pattern="$native/temp/${pattern#*/}" ;;
-            '${{ inputs.repository-root }}/'*) pattern="$native/${pattern#*/}" ;;
-            *) echo "unhandled artifact location: $pattern" >&2; exit 1 ;;
-        esac
-        compgen -G "$pattern" >> "$native/collected" || true
-    done < "$fixture/upload-paths"
-    grep -Fx "$native/.tools/ic-set.fixture" "$native/collected" > /dev/null
-    grep -Fx "$native/temp/ic-tools-$phase.log" "$native/collected" > /dev/null
-    grep -Fx "native fixture: $phase" "$native/temp/ic-tools-$phase.log" > /dev/null
+    EVIDENCE_TEMP_ROOT="$native/temp" EVIDENCE_REPOSITORY_ROOT="$native" \
+        EVIDENCE_ACTION_ROOT="$ROOT/.github/actions/retain-failure-evidence" \
+        RUNNER_TEMP="$native/temp" GITHUB_OUTPUT="$native/archive-output" \
+        "$BASH" --noprofile --norc -e -o pipefail "$fixture/collect.sh"
+    archive="$(sed -n 's/^path=//p' "$native/archive-output")"
+    mkdir "$native/unpacked"
+    tar -xzf "$archive" -C "$native/unpacked"
+    cmp "$native/.tools/ic-set.fixture/payload" "$native/unpacked/.tools/ic-set.fixture/payload"
+    cmp "$native/temp/ic-tools-$phase.log" "$native/unpacked/ic-tools-$phase.log"
+    grep -Fx "native fixture: $phase" "$native/unpacked/ic-tools-$phase.log" > /dev/null
 done
 echo 'Failed fixture status and input retention checks passed'

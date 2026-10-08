@@ -224,7 +224,7 @@ perl scripts/dev/cloc-tooling.pl --json /path/to/projects > tooling-inventory.js
 ```
 
 The table separates CI (`.github/`, `scripts/ci/`, `ci/`) from other tooling,
-including other scripts, hooks, Make files, `.cargo/`, `tools/`, `xtask/` and
+including other scripts, `bin/`, hooks, Make files, `.cargo/`, `tools/`, `xtask/` and
 Cargo package `build.rs` files. It reads tracked and nonignored untracked working
 files, captures their bytes in temporary files and counts all copies with cloc.
 Product source, documentation, caches, build output and symlinks are outside
@@ -249,8 +249,11 @@ CSV/TSV tables appear separately as physical `data_lines`, so frozen baselines
 and ablation patches do not inflate executable-tooling LOC.
 
 JSON output records source commits, dirty state, snapshot revisions, per-file
-hashes, ownership, counts and any files cloc skipped. Shell `.env` files and jq
-source filters are counted too. Errors leave other repository rows visible,
+hashes, ownership, counts and any files cloc skipped. Repositories awaiting their
+first commit are counted with `head: null` and `unborn: true`; the text report
+announces their uncommitted bootstrap state on stderr. A broken existing HEAD
+remains an error. Shell `.env` files and jq source filters are counted too.
+Errors leave other repository rows visible,
 mark totals partial, exit nonzero and retain captured inputs. Healthy shared
 copies already have a common owner; high local LOC or matching hashes only
 identify candidates for a contract review, not promised removable lines.

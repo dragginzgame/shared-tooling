@@ -30,6 +30,7 @@ if bash "$ROOT/scripts/ci/verify-file-checksum.sh" \
 fi
 
 bash "$ROOT/scripts/ci/test-portable-prerequisites.sh"
+bash "$ROOT/scripts/ci/test-evidence-archive.sh"
 bash "$ROOT/scripts/ci/test-gh-ci.sh"
 bash "$ROOT/scripts/ci/test-validation-target-runner.sh"
 bash "$ROOT/scripts/ci/test-runner-disk-space.sh"

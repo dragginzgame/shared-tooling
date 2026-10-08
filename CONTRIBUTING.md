@@ -102,7 +102,12 @@ Portable scripts must:
 
 CI and release scripts must remain usable as reviewed vendored snapshots. A
 new helper dependency must be included in the consumer's declared snapshot
-file set.
+file set. Declare unconditional shared companions on the owning entry point's
+second line: `# Shared companions: relative/path another/path`. Use space-separated
+canonical paths without whitespace; the exporter checks these from committed
+source before replacement. Keep conditional feature dependencies explicit in
+the adoption guide. Declarations enforce reviewed selections without implicitly
+expanding them.
 
 Contributions must preserve required macOS support. Document host-specific
 dependency setup, CI and deployment prerequisites, and qualify the affected
