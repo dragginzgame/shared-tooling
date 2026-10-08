@@ -7,12 +7,25 @@ set -euo pipefail
     echo 'usage: archive-evidence.sh NEW-ARCHIVE ROOT RELATIVE-PATH [ROOT RELATIVE-PATH]...' >&2
     exit 2
 }
-output="$(cd "$(dirname "$1")" && pwd -P)/$(basename "$1")"
+output="$1"
+[[ "$output" == /* ]] || output="$PWD/$output"
+output_name="${output##*/}"
+# A non-newline suffix preserves directory names through command substitution.
+# cd -P makes PWD physical without parsing dirname/basename/pwd output.
+output="$(cd -P "${output%/*}/" && printf '%s/.' "$PWD")"
+output="${output%/.}"
+output="${output%/}/$output_name"
+[[ ! -e "$output" && ! -L "$output" ]] || {
+    printf 'evidence output already exists: %s\n' "$output" >&2; exit 1;
+}
 shift
 arguments=()
 paths=()
 while [[ $# -gt 0 ]]; do
-    root="$(cd "$1" && pwd -P)"
+    root="$1"
+    [[ "$root" == /* ]] || root="$PWD/$root"
+    root="$(cd -P "$root" && printf '%s/.' "$PWD")"
+    root="${root%/.}"
     path="$2"
     shift 2
     case "/$path/" in
@@ -22,10 +35,10 @@ while [[ $# -gt 0 ]]; do
     [[ -e "$root/$path" || -L "$root/$path" ]] || {
         printf 'evidence input is missing: %s/%s\n' "$root" "$path" >&2; exit 1;
     }
-    parent="$(dirname "$path")"
-    while [[ "$parent" != . ]]; do
+    parent="$path"
+    while [[ "$parent" == */* ]]; do
+        parent="${parent%/*}"
         [[ ! -L "$root/$parent" ]] || { echo 'evidence input traverses a symlink' >&2; exit 1; }
-        parent="$(dirname "$parent")"
     done
     # Disallow duplicate/overlapping archive names even across different roots.
     # Preserve final symlinks themselves; tar must never dereference their targets.
@@ -34,15 +47,15 @@ while [[ $# -gt 0 ]]; do
             echo 'evidence selections have overlapping archive paths' >&2; exit 1;
         fi
     done
-    input="$root/$path"
+    input="${root%/}/$path"
     [[ "$path" != . ]] || input="$root"
-    [[ "$output" != "$input" && "$output" != "$input/"* ]] || {
+    [[ "$output" != "$input" && "$output" != "${input%/}/"* ]] || {
         echo 'archive output must be outside selected inputs' >&2; exit 1;
     }
     paths+=("$path")
     arguments+=(-C "$root" "./$path")
 done
-# noclobber admits one new output, including when another writer wins the race.
+# noclobber preserves an archive if another writer creates it after admission.
 # Keep a partially written archive and all original evidence on any tar failure.
 if ! (set -C; tar -czf - --exclude=.git --exclude='*/.git' --exclude='*/.git/*' \
     "${arguments[@]}" > "$output"); then

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.25]
+
+### Fixed
+
+- Preserve literal evidence roots and output names, including trailing newlines;
+  refuse occupied special-file outputs and symlink-parent traversal.
+  [#59](https://github.com/dragginzgame/shared-tooling/issues/59).
+
 ## [0.1.24]
 
 ### Added
