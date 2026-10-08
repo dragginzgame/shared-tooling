@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.26]
+
+### Fixed
+
+- Allow an unchanged, verified snapshot to refresh again before a consumer commit,
+  while refusing edited files, staged conflicts and changes made during preparation.
+  [#64](https://github.com/dragginzgame/shared-tooling/issues/64).
+
 ## [0.1.25]
 
 ### Fixed
