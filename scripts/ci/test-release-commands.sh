@@ -30,16 +30,19 @@ printf '%s\n' "$@" > "$RELEASE_TEST_EVENTS"
 exit "${RELEASE_TEST_STATUS:-0}"
 RUNNER
 cat > "$fixture/included/Makefile" <<'MAKE'
-SHARED_TOOLING_ROOT := $(CURDIR)/vendor
+SHARED_TOOLING_ROOT ?= $(CURDIR)/vendor
 include vendor/make/release.mk
-.PHONY: help admit
+.PHONY: help admit nested
 help:
 	@echo harmless
+release-patch release-minor release-major release-resume: override SHARED_TOOLING_ROOT := $(CURDIR)/vendor
 release-patch release-minor release-major release-resume: export CACHE_PREPARE := selected
 release-patch release-minor release-major release-resume: export RELEASE_DELIVERY := pr
 release-patch release-minor release-major release-resume: admit
 admit:
 	@test "$(DENY_RELEASE)" != yes
+nested:
+	+@$(MAKE) release-patch
 MAKE
 export RELEASE_TEST_EVENTS="$fixture/include-events"
 [[ "$(make --no-print-directory -C "$fixture/included")" == harmless ]]
@@ -53,6 +56,52 @@ if make --no-print-directory -C "$fixture/included" release-patch DENY_RELEASE=y
 if RELEASE_TEST_STATUS=23 make --no-print-directory -C "$fixture/included" release-resume VERSION=1.2.3 RELEASE_REMOTE=review RELEASE_BRANCH=topic > "$fixture/runner-failure.log" 2>&1; then exit 1; fi
 printf 'resume\n1.2.3\nreview\ntopic\n' > "$fixture/expected"
 cmp "$fixture/expected" "$RELEASE_TEST_EVENTS"
+# A recursive command may carry consumer Makefiles. Admission must qualify the
+# running Make executable without loading those files into its isolated probe.
+printf 'RELEASE_REMOTE := recursive\n' > "$fixture/included/overrides.mk"
+recursive_make="$(command -v make) --no-print-directory -f Makefile -f overrides.mk"
+make -j2 --no-print-directory -C "$fixture/included" nested "MAKE=$recursive_make" > "$fixture/recursive.log" 2>&1
+printf 'patch\nrecursive\nmain\n' > "$fixture/expected"
+cmp "$fixture/expected" "$RELEASE_TEST_EVENTS"
+# Parse-time admission follows the selected include, never the runtime root.
+# Target-specific root bindings take effect only after the includes are read.
+mkdir -p "$fixture/unselected/scripts/ci"
+cat > "$fixture/unselected/scripts/ci/check-make-execution.sh" <<'SENTINEL'
+#!/usr/bin/env bash
+echo escaped >> "$RELEASE_TEST_EVENTS"
+exit 23
+SENTINEL
+for target in help release-patch; do
+    for source in environment command; do
+        : > "$RELEASE_TEST_EVENTS"
+        if [[ "$source" == environment ]]; then
+            SHARED_TOOLING_ROOT="$fixture/unselected" make --no-print-directory -C "$fixture/included" "$target" > "$fixture/root-$source.log" 2>&1
+        else
+            make --no-print-directory -C "$fixture/included" "$target" "SHARED_TOOLING_ROOT=$fixture/unselected" > "$fixture/root-$source.log" 2>&1
+        fi
+        if [[ "$target" == help ]]; then
+            [[ ! -s "$RELEASE_TEST_EVENTS" ]]
+        else
+            printf 'patch\norigin\nmain\n' > "$fixture/expected"
+            cmp "$fixture/expected" "$RELEASE_TEST_EVENTS"
+        fi
+    done
+done
+# Propagated roots and argument-bearing recursive commands must compose without
+# changing the consumer's selected overrides or running the external probe.
+: > "$RELEASE_TEST_EVENTS"
+make -j2 --no-print-directory -C "$fixture/included" nested "MAKE=$recursive_make" \
+    "SHARED_TOOLING_ROOT=$fixture/unselected" > "$fixture/recursive-root.log" 2>&1
+printf 'patch\nrecursive\nmain\n' > "$fixture/expected"
+cmp "$fixture/expected" "$RELEASE_TEST_EVENTS"
+# An incomplete selected snapshot refuses; it cannot borrow an ambient probe.
+mv "$fixture/included/vendor/scripts/ci/check-make-execution.sh" "$fixture/saved-probe"
+: > "$RELEASE_TEST_EVENTS"
+status=0
+make --no-print-directory -C "$fixture/included" help "SHARED_TOOLING_ROOT=$fixture/unselected" \
+    > "$fixture/missing-probe.log" 2>&1 || status=$?
+[[ "$status" == 2 && ! -s "$RELEASE_TEST_EVENTS" ]]
+mv "$fixture/saved-probe" "$fixture/included/vendor/scripts/ci/check-make-execution.sh"
 # All four entrypoints reject unsupported direct and inherited modes before
 # runner dispatch, even when the substituted runner would return failure.
 for target in release-patch release-minor release-major release-resume; do
@@ -61,9 +110,9 @@ for target in release-patch release-minor release-major release-resume; do
             : > "$RELEASE_TEST_EVENTS"
             status=0
             if [[ "$source" == direct ]]; then
-                RELEASE_TEST_STATUS=23 make -C "$fixture/included" "$mode" "$target" > "$fixture/mode.log" 2>&1 || status=$?
+                RELEASE_TEST_STATUS=23 make -C "$fixture/included" "$mode" "$target" "MAKE=$recursive_make" > "$fixture/mode.log" 2>&1 || status=$?
             else
-                _shared_make_execution_checked=yes MAKEFLAGS="$mode" RELEASE_TEST_STATUS=23 make -C "$fixture/included" "$target" > "$fixture/mode.log" 2>&1 || status=$?
+                _shared_make_execution_checked=yes MAKEFLAGS="$mode" RELEASE_TEST_STATUS=23 make -C "$fixture/included" "$target" "MAKE=$recursive_make" > "$fixture/mode.log" 2>&1 || status=$?
             fi
             [[ "$status" == 2 && ! -s "$RELEASE_TEST_EVENTS" ]]
         done

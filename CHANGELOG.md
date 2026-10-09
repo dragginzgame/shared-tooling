@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.8]
+
+### Fixed
+
+- Keep Make admission bound to the selected snapshot when another tooling root
+  is inherited or supplied on the command line. Support recursive Make commands
+  with extra arguments while retaining unsafe execution-mode rejection.
+  ([#30](https://github.com/dragginzgame/shared-tooling/issues/30))
+
 ## [0.2.7]
 
 ### Fixed

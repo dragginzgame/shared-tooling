@@ -14,9 +14,10 @@ cp "$root/make/tools.mk" "$root/make/rust-format.mk" "$root/make/execution.mk" "
 cp "$root/scripts/ci/check-format-tools.sh" "$root/scripts/ci/check-make-execution.sh" "$consumer/vendor/scripts/ci/"
 printf 'export SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\n' > "$consumer/ci/tool-versions.env"
 cat > "$consumer/Makefile" <<'MAKE'
-SHARED_TOOLING_ROOT := $(CURDIR)/vendor
+SHARED_TOOLING_ROOT ?= $(CURDIR)/vendor
 FORMAT_CARGO := format-fixture-cargo
 include vendor/make/tools.mk vendor/make/rust-format.mk
+format-tools-check fmt fmt-check: override SHARED_TOOLING_ROOT := $(CURDIR)/vendor
 .PHONY: help
 help:
 	@echo harmless
@@ -45,6 +46,29 @@ for target in fmt fmt-check; do
         printf 'sort --workspace --check\nfmt --all -- --check\n' > "$fixture/expected"
     fi
     cmp "$fixture/expected" "$FORMAT_TEST_EVENTS"
+done
+# Ambient roots cannot select the parse-time helper, including for harmless help.
+mkdir -p "$fixture/unselected/scripts/ci"
+cat > "$fixture/unselected/scripts/ci/check-make-execution.sh" <<'SENTINEL'
+#!/usr/bin/env bash
+echo escaped >> "$FORMAT_TEST_EVENTS"
+exit 23
+SENTINEL
+for target in help fmt fmt-check; do
+    for source in environment command; do
+        : > "$FORMAT_TEST_EVENTS"
+        if [[ "$source" == environment ]]; then
+            SHARED_TOOLING_ROOT="$fixture/unselected" make --no-print-directory -C "$consumer" "$target" > "$fixture/root-$source.log" 2>&1
+        else
+            make --no-print-directory -C "$consumer" "$target" "SHARED_TOOLING_ROOT=$fixture/unselected" > "$fixture/root-$source.log" 2>&1
+        fi
+        case "$target" in
+            help) : > "$fixture/expected" ;;
+            fmt) printf 'sort --workspace\nfmt --all\n' > "$fixture/expected" ;;
+            fmt-check) printf 'sort --workspace --check\nfmt --all -- --check\n' > "$fixture/expected" ;;
+        esac
+        cmp "$fixture/expected" "$FORMAT_TEST_EVENTS"
+    done
 done
 # A failed prerequisite or sorter must not run the later formatting operation.
 for failure in wrong missing sort; do
