@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.1]
+
+### Fixed
+
+- Install and verify every selected IC tool when its pin matrix has no final
+  newline. Setup can no longer silently omit the last tool while offline checks
+  report success. Existing pin files and retained bundles are preserved.
+  ([#87](https://github.com/dragginzgame/shared-tooling/issues/87))
+
 ## [0.2.0]
 
 ### Breaking
