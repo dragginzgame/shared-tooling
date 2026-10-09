@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.36]
+
+### Fixed
+
+- Reject conflicting multi-document Cargo tool receipts during setup and offline
+  checks, recheck installation-directory ancestors after Cargo returns, and
+  preserve Cargo's original failure status alongside retained build evidence.
+  Existing valid installations remain reusable.
+  ([#65](https://github.com/dragginzgame/shared-tooling/issues/65))
+
 ## [0.1.35]
 
 ### Changed
