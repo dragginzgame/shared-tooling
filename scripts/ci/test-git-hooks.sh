@@ -221,6 +221,61 @@ git config --local core.hooksPath custom-hooks
 expect_failure bash scripts/dev/install-git-hooks.sh
 [[ "$(git config --get core.hooksPath)" == custom-hooks ]]
 
+# Git values are literal paths: trailing newlines must not become .githooks.
+for scope in local inherited; do
+    new_fixture "installer-newline-$scope"
+    config=.git/config
+    if [[ "$scope" == inherited ]]; then config="$FIXTURE/newline-global-config"; fi
+    git config --file "$config" core.hooksPath $'.githooks\n\n'
+    cp .git/config local-before
+    cp "$config" config-before
+    if [[ "$scope" == inherited ]]; then
+        GIT_CONFIG_GLOBAL="$config" expect_failure bash scripts/dev/install-git-hooks.sh
+    else
+        expect_failure bash scripts/dev/install-git-hooks.sh
+    fi
+    cmp local-before .git/config
+    cmp config-before "$config"
+done
+
+new_fixture $'installer-root\n'
+bash scripts/dev/install-git-hooks.sh > output
+bash scripts/dev/install-git-hooks.sh >> output
+[[ "$(git config --local --get core.hooksPath)" == .githooks ]]
+printf 'unformatted\n' > staged.rs
+git add staged.rs
+bash .githooks/pre-commit >> output
+[[ "$(git show :staged.rs)" == formatted && "$(cat staged.rs)" == formatted ]]
+
+# A failed observation must retain its status, even after printing a value.
+real_git="$(command -v git)"
+for observation in config root; do
+    new_fixture "installer-read-failure-$observation"
+    mkdir mock-bin
+    cat > mock-bin/git <<'GIT'
+#!/usr/bin/env bash
+if [[ "$HOOK_TEST_OBSERVATION" == config && "$*" == 'config --get core.hooksPath' ]]; then
+    printf '.githooks\n'
+    exit 23
+fi
+if [[ "$HOOK_TEST_OBSERVATION" == root && "$*" == 'rev-parse --show-toplevel' ]]; then
+    printf '%s\n' "$PWD"
+    exit 23
+fi
+exec "$HOOK_TEST_GIT" "$@"
+GIT
+    chmod +x mock-bin/git
+    cp .git/config config-before
+    if PATH="$PWD/mock-bin:$PATH" HOOK_TEST_GIT="$real_git" HOOK_TEST_OBSERVATION="$observation" \
+        bash scripts/dev/install-git-hooks.sh > output 2>&1; then
+        echo 'hook installer accepted a failed Git observation' >&2
+        exit 1
+    else
+        [[ $? == 23 ]]
+    fi
+    cmp config-before .git/config
+done
+
 new_fixture installer-disabled
 git config --local core.hooksPath ''
 expect_failure bash scripts/dev/install-git-hooks.sh

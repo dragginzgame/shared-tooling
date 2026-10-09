@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.5]
+
+### Fixed
+
+- Preserve existing hook selections whose paths end in newlines, and allow
+  formatting-hook installation and execution in checkouts with trailing-newline
+  directory names. Failed Git reads still stop setup without changing config.
+  ([#89](https://github.com/dragginzgame/shared-tooling/issues/89))
+
 ## [0.2.4]
 
 ### Fixed
