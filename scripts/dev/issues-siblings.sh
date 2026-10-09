@@ -49,7 +49,10 @@ while [[ $# -gt 0 ]]; do
             parent="$1"; shift ;;
     esac
 done
-parent="$(cd "${parent:-$ROOT/..}" && pwd -P)"
+parent="${parent:-$ROOT/..}"
+[[ "$parent" == /* ]] || parent="$PWD/$parent"
+parent="$(cd -P "$parent" && printf '%s/.' "$PWD")"
+parent="${parent%/.}"
 for tool in git gh jq; do
     command -v "$tool" >/dev/null 2>&1 || { echo "error: missing tool: $tool" >&2; exit 1; }
 done

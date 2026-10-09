@@ -19,7 +19,6 @@ jobs:
       matrix:
         os: [ubuntu-24.04, macos-15, macos-15-intel]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 40
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
@@ -29,7 +28,6 @@ jobs:
           make --no-print-directory install-host-tools host-tools-check
           echo "$GITHUB_WORKSPACE/.tools/host/bin" >> "$GITHUB_PATH"
       - name: Qualify real registry binary and example installation
-        timeout-minutes: 30
         run: |
           mkdir -p "$RUNNER_TEMP/portable-fixtures"
           bash scripts/ci/qualify-cargo-install.sh "$RUNNER_TEMP/portable-fixtures/cargo-install" \

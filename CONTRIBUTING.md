@@ -19,9 +19,15 @@ A contribution belongs here when it satisfies at least one of these tests:
 
 1. the same maintained need exists in more than one consuming repository;
 2. the behavior is repository-neutral and removes duplicated safety or
-   validation mechanics; or
+   validation mechanics;
 3. a shared principle captures a stable decision test while leaving product
-   policy with the consumer.
+   policy with the consumer; or
+4. it inspects or coordinates consistency across the repository fleet under
+   Shared Tooling's [ownership boundary](README.md#repository-fleet-ownership).
+
+Fleet inventory and dashboards belong here even when no consumer needs to vendor
+their implementation. Keep them outside domain libraries such as IC Metrics;
+shared development tooling adoption does not expand a consumer's product scope.
 
 Code, prose, and automation do not belong here merely because they could be
 reused. Keep product architecture, deployment identity, accepted release plans,

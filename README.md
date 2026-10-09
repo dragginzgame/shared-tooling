@@ -20,6 +20,27 @@ The top undated changelog entry describes the next proposed release. Standard
 release preparation updates both files; Git tags establish published release
 identity independently.
 
+## Repository fleet ownership
+
+Shared Tooling owns consistency across the Dragginzgame repositories: shared
+rules and tools, adoption/pin drift checks, repository and sibling counts,
+CI/issue dashboards, LOC/tooling inventories, and repeatable maintenance audits.
+The central reports run here. Consumers keep the shared setup and validation
+helpers they need locally; they do not need a copy of every fleet dashboard or
+an extra CI gate that scans their siblings.
+
+IC Metrics owns reusable measurement arithmetic. Repository discovery, sibling
+counts, GitHub status collection and fleet-consistency policy belong here, outside
+the IC Metrics product and runtime dependency graph. Product repositories retain
+their own behavior, validation evidence and issue resolution; central reporting
+does not grant cross-repository edit or deployment authority.
+
+Keep the tooling and fleet checks in this repository while they share the same
+maintenance lifecycle. Reconsider a separate application repository if a hosted
+dashboard or service needs its own persistent data, authentication, permissions
+and deployment lifecycle. Such an application would consume reviewed Shared
+Tooling rules and checks; it would not create a second engineering baseline.
+
 ## Repeatable maintenance
 
 Open the [task catalog](tasks/README.md) or run `make tasks`. Shared Tooling owns

@@ -62,6 +62,22 @@ if grep -E 'ichelper|example.invalid|no-origin|r3:' "$ISSUES_TEST_CALLS"; then e
 grep -F 'issues(states: OPEN) { totalCount }' "$ISSUES_TEST_CALLS"
 grep -F 'issues(states: CLOSED) { totalCount }' "$ISSUES_TEST_CALLS"
 
+# Relative parents ignore inherited CDPATH output and select the same repositories.
+cp "$ISSUES_TEST_CALLS" "$fixture/expected-calls"
+(cd "$fixture" && CDPATH="$fixture" run --once projects)
+cmp "$ISSUES_TEST_CALLS" "$fixture/expected-calls"
+
+# A trailing newline must not select the ordinary parent with the same prefix.
+newline_parent="$fixture/projects"$'\n'
+git init -q "$newline_parent/shared-tooling"
+git -C "$newline_parent/shared-tooling" remote add origin https://github.com/dragginzgame/shared-tooling
+touch "$newline_parent/shared-tooling/AGENTS.md"
+run --once "$newline_parent"
+grep -F 'name: "shared-tooling"' "$ISSUES_TEST_CALLS"
+if grep -E 'name: "(alpha|beta|zero)"|r1:' "$ISSUES_TEST_CALLS"; then exit 1; fi
+awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
+grep -Fx 'dragginzgame/shared-tooling 10000 2500 7500 75.0%' "$fixture/rows"
+
 # Nonterminal invocation reports once even without --once.
 run --interval 1 "$fixture/projects"
 [[ "$(grep -c 'api graphql' "$ISSUES_TEST_CALLS")" == 1 ]]

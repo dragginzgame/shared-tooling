@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.1.31]
+
+### Fixed
+
+- Remove the Cargo-install qualification workflow's 30-minute step and 40-minute
+  job limits so long builds can finish within GitHub Actions' default limits.
+- Select the intended sibling directory when `CDPATH` is set or its name ends
+  in a newline, keeping the issue dashboard scoped to the requested repositories.
+  ([#78](https://github.com/dragginzgame/shared-tooling/issues/78))
+- Reuse verified IC tools when pin comments or row order change, avoiding
+  unnecessary downloads while preserving installation provenance and all
+  selection, checksum and version checks.
+  ([#79](https://github.com/dragginzgame/shared-tooling/issues/79))
+
+### Changed
+
+- Clarify that Shared Tooling owns fleet consistency and cross-repository reports;
+  IC Metrics remains responsible for reusable measurement arithmetic. Consumers
+  adopt the tooling they need without adding fleet dashboards to their CI.
+
 ## [0.1.30]
 
 ### Testing
