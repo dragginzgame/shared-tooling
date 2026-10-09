@@ -43,13 +43,11 @@ set -- "$fixture/portable"/shared-tooling-test.*
 # This checks local ordering/paths; GitHub's upload service is qualified by CI.
 yq -o json '.' "$ROOT/.github/workflows/ci.yml" > "$fixture/workflow.json"
 yq -o json '.' "$ROOT/.github/actions/retain-failure-evidence/action.yml" > "$fixture/collector.json"
-# Stop an overlong suite before the job deadline so its failure collector can run.
+# A failed regression gate must still fail the job and reach failure collection.
 jq -e '
   .jobs["portable-regression"] as $job |
   [$job.steps[] | select(.run? | strings | contains("bash scripts/ci/test-portable-tools.sh"))] as $gate |
   ($gate | length) == 1 and
-  ($gate[0]["timeout-minutes"] | type == "number" and . > 0) and
-  $job["timeout-minutes"] > $gate[0]["timeout-minutes"] and
   $gate[0]["continue-on-error"] != true
 ' "$fixture/workflow.json" > /dev/null
 # shellcheck disable=SC2016 # GitHub expressions are literal workflow inputs.

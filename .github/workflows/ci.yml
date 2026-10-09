@@ -14,8 +14,10 @@ defaults:
     shell: /bin/bash --noprofile --norc -e -o pipefail {0}
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Preserve each pushed source's native qualification, including queued jobs.
+  # PR updates may still replace validation of an older review revision.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   lint-and-security:
@@ -77,8 +79,6 @@ jobs:
           - macos-15
           - macos-15-intel
     runs-on: ${{ matrix.os }}
-    # Include native setup and leave time to upload failed-suite evidence.
-    timeout-minutes: 35
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
@@ -118,7 +118,6 @@ jobs:
           npm ci --prefix ci/frontend
       - name: Run portable regression set with prepared tools
         shell: bash
-        timeout-minutes: 20
         env:
           TMPDIR: ${{ runner.temp }}/portable-fixtures
         run: |

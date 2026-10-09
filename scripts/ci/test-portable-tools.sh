@@ -34,6 +34,7 @@ fi
 
 bash "$ROOT/scripts/ci/test-portable-prerequisites.sh"
 bash "$ROOT/scripts/ci/test-script-paths.sh"
+bash "$ROOT/scripts/ci/test-cargo-install-qualification.sh"
 bash "$ROOT/scripts/ci/test-evidence-archive.sh"
 bash "$ROOT/scripts/ci/test-gh-ci.sh"
 bash "$ROOT/scripts/ci/test-issues-siblings.sh"

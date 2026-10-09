@@ -1,11 +1,32 @@
 # Changelog
 
+## [0.1.32]
+
+### Fixed
+
+- Preserve running and queued native CI for each pushed commit while allowing
+  newer PR revisions to replace older review runs.
+  ([#80](https://github.com/dragginzgame/shared-tooling/issues/80))
+- Resolve Cargo-install qualification evidence paths independently of `CDPATH`,
+  preserving unusual directory names and refusing existing evidence roots before
+  tool execution. Accept both Cargo receipt spellings for `--debug`, fixing a
+  false rejection after successful native macOS installation.
+  ([#65](https://github.com/dragginzgame/shared-tooling/issues/65))
+
+### Changed
+
+- Document the PocketIC handoff to Testkit, including the published setup/check
+  prerequisite and preservation of existing bundles before the current installer
+  contract can be retired.
+  ([#76](https://github.com/dragginzgame/shared-tooling/issues/76))
+
 ## [0.1.31]
 
 ### Fixed
 
-- Remove the Cargo-install qualification workflow's 30-minute step and 40-minute
-  job limits so long builds can finish within GitHub Actions' default limits.
+- Remove short job/step limits from Cargo-install qualification and portable
+  regression so long builds can finish within GitHub Actions' default limits.
+  Ordinary failure evidence collection remains enabled.
 - Select the intended sibling directory when `CDPATH` is set or its name ends
   in a newline, keeping the issue dashboard scoped to the requested repositories.
   ([#78](https://github.com/dragginzgame/shared-tooling/issues/78))

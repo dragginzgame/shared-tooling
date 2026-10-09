@@ -12,8 +12,10 @@ ROOT="$0"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
-mkdir "$1"
-fixture="$(cd -P "$1" && printf '%s/.' "$PWD")"
+selected="$1"
+[[ "$selected" == /* ]] || selected="$PWD/$selected"
+mkdir "$selected"
+fixture="$(cd -P "$selected" && printf '%s/.' "$PWD")"
 fixture="${fixture%/.}"
 trap 'printf "Cargo installation evidence retained: %s\n" "$fixture" >&2' EXIT
 export RUSTUP_AUTO_INSTALL=0
@@ -56,12 +58,17 @@ install_at() {
         --target-dir "$build_root" -j 2 "$@"
 }
 admit_receipt() {
+    # Cargo records --debug as dev on older toolchains and debug on newer ones.
     jq -e --arg identity "$package $version (registry+https://github.com/rust-lang/crates.io-index)" \
         --arg version "=$version" --arg target "$target" --arg host "$host" '
         (.installs | keys) == [$identity] and
         (.installs[$identity] | .version_req == $version and .bins == [$target] and
-          .profile == "debug" and .target == $host and (.rustc | type == "string"))
-    ' "$1/.crates2.json" > /dev/null
+          (.profile == "dev" or .profile == "debug") and
+          .target == $host and (.rustc | type == "string"))
+    ' "$1/.crates2.json" > /dev/null || {
+        printf 'Cargo receipt does not match the selected package, version, target, debug profile or host: %s\n' "$1/.crates2.json" >&2
+        return 1
+    }
 }
 assert_preserved() {
     cmp "$case_root/binary.before" "$case_root/install/bin/$target"
