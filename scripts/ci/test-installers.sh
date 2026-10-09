@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared companions: scripts/ci/install-actionlint.sh scripts/ci/install-gitleaks.sh scripts/ci/install-shellcheck.sh scripts/ci/install-yq.sh scripts/ci/install-sccache.sh
 set -euo pipefail
 
 ROOT="$0"

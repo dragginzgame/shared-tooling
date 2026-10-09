@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.3]
+
+### Fixed
+
+- Reject incomplete CI installer test snapshots during export, before changing
+  consumer files. Consumers selecting the optional suite must explicitly include
+  all five installer wrappers and their shared dependencies.
+  ([#73](https://github.com/dragginzgame/shared-tooling/issues/73))
+
 ## [0.2.2]
 
 ### Fixed

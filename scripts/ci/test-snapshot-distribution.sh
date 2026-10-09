@@ -474,6 +474,56 @@ for entry in test-host-tools test-ic-tools test-tool-evidence; do
         fi
     done
 done
+# CI installer fixtures require every wrapper, even when the consumer only
+# uses a subset in production. Omit each dependency from an otherwise complete
+# selection so no earlier missing edge can hide a missing declaration.
+installer_paths=(scripts/ci/test-installers.sh scripts/ci/install-ci-tool.sh)
+for tool in actionlint gitleaks shellcheck yq sccache; do
+    installer_paths+=("scripts/ci/install-$tool.sh")
+done
+for path in "${installer_paths[@]}"; do
+    cp -p "$ROOT/$path" "$source_root/$path"
+    cp -p "$ROOT/$path" "$revision_root/$path"
+done
+for tool in actionlint gitleaks shellcheck yq sccache; do
+    missing="scripts/ci/install-$tool.sh"
+    for mode in initial addition; do
+        selected_consumer="$selection_consumer"
+        selection_args=(--manifest config/selection)
+        option=--add-file
+        if [[ "$mode" == initial ]]; then
+            selected_consumer="$FIXTURE/incomplete-ci-$tool"
+            git init -q "$selected_consumer"
+            selection_args=(--file "$checksum_path" --file "$verifier_path")
+            option=--file
+        fi
+        for path in "${installer_paths[@]}"; do
+            [[ "$path" == "$missing" ]] || selection_args+=("$option" "$path")
+        done
+        if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+            --source "$source_root" --consumer "$selected_consumer" "${selection_args[@]}" \
+            > "$FIXTURE/missing-ci-$tool-$mode.log" 2>&1; then
+            echo "snapshot distribution test failed: CI fixture exported without $missing ($mode)" >&2
+            exit 1
+        fi
+        grep -F "requires selected companion: $missing" "$FIXTURE/missing-ci-$tool-$mode.log" >/dev/null
+        if [[ "$mode" == initial ]]; then
+            [[ ! -e "$selected_consumer/scripts" && ! -e "$selected_consumer/.shared-tooling.snapshot" ]]
+        else
+            cmp "$FIXTURE/selection-before-evidence" "$selected_consumer/config/selection"
+            bash "$ROOT/$verifier_path" --consumer "$selected_consumer" --manifest config/selection >/dev/null
+            [[ "$(cat "$selected_consumer/local.txt")" == 'unrelated input' ]]
+            for path in "${installer_paths[@]}"; do [[ ! -e "$selected_consumer/$path" ]]; done
+        fi
+    done
+done
+selection_args=(--manifest config/selection)
+for path in "${installer_paths[@]}"; do selection_args+=(--add-file "$path"); done
+PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$selection_consumer" "${selection_args[@]}" \
+    > "$FIXTURE/complete-ci-installers.log"
+bash "$ROOT/$verifier_path" --consumer "$selection_consumer" --manifest config/selection >/dev/null
+bash "$selection_consumer/scripts/ci/test-installers.sh" > "$FIXTURE/exported-ci-installers.log" 2>&1
 cp "$selection_consumer/config/selection" "$FIXTURE/selection-before-conflict"
 printf 'consumer-owned file\n' > "$selection_consumer/scripts/ci/sample.sh"
 if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
