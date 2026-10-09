@@ -451,29 +451,74 @@ bash "$selection_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
 # Real installer fixture declarations must prevent the previously successful
 # incomplete export. Check both initial export and addition to an existing set.
 cp "$selection_consumer/config/selection" "$FIXTURE/selection-before-evidence"
-for entry in test-host-tools test-ic-tools test-tool-evidence; do
-    missing=scripts/ci/test-tool-evidence.sh
-    [[ "$entry" != test-tool-evidence ]] || missing=scripts/ci/select-tool-evidence.sh
+while read -r entry missing; do
+    mkdir -p "$source_root/${entry%/*}" "$revision_root/${entry%/*}"
+    cp -p "$ROOT/$entry" "$source_root/$entry"
+    cp -p "$ROOT/$entry" "$revision_root/$entry"
+    label="${entry##*/}"
     for mode in initial addition; do
         selected_consumer="$selection_consumer"
-        selection_args=(--manifest config/selection --add-file "scripts/ci/$entry.sh")
+        selection_args=(--manifest config/selection --add-file "$entry")
         if [[ "$mode" == initial ]]; then
-            selected_consumer="$FIXTURE/incomplete-$entry"
+            selected_consumer="$FIXTURE/incomplete-$label"
             git init -q "$selected_consumer"
-            selection_args=(--file "$checksum_path" --file "$verifier_path" --file "scripts/ci/$entry.sh")
+            selection_args=(--file "$checksum_path" --file "$verifier_path" --file "$entry")
         fi
         if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
             --source "$source_root" --consumer "$selected_consumer" "${selection_args[@]}" \
-            > "$FIXTURE/missing-$entry-$mode.log" 2>&1; then exit 1; fi
-        grep -F "requires selected companion: $missing" "$FIXTURE/missing-$entry-$mode.log" >/dev/null
+            > "$FIXTURE/missing-$label-$mode.log" 2>&1; then
+            echo "snapshot distribution test failed: exported $entry without $missing ($mode)" >&2
+            exit 1
+        fi
+        grep -F "requires selected companion: $missing" "$FIXTURE/missing-$label-$mode.log" >/dev/null
         if [[ "$mode" == initial ]]; then
             [[ ! -e "$selected_consumer/scripts" && ! -e "$selected_consumer/.shared-tooling.snapshot" ]]
         else
             cmp "$FIXTURE/selection-before-evidence" "$selected_consumer/config/selection"
-            [[ ! -e "$selected_consumer/scripts/ci/$entry.sh" ]]
+            [[ ! -e "$selected_consumer/$entry" ]]
+            bash "$ROOT/$verifier_path" --consumer "$selected_consumer" --manifest config/selection >/dev/null
         fi
     done
+done <<'COMPANIONS'
+scripts/ci/test-host-tools.sh scripts/ci/test-tool-evidence.sh
+scripts/ci/test-ic-tools.sh scripts/ci/test-tool-evidence.sh
+scripts/ci/test-tool-evidence.sh scripts/ci/select-tool-evidence.sh
+scripts/ci/test-cargo-metadata.sh scripts/ci/read-cargo-workspace-version.sh
+scripts/ci/test-cloc.sh scripts/dev/cloc.sh
+scripts/ci/test-cloc-tooling.sh scripts/dev/cloc-tooling.pl
+scripts/ci/test-crates-io-version.sh scripts/ci/check-crates-io-version.sh
+scripts/ci/test-dependency-pins.sh scripts/ci/check-dependency-pins.sh
+scripts/ci/test-evidence-archive.sh scripts/ci/archive-evidence.sh
+scripts/ci/test-evidence-checksums.sh scripts/ci/verify-evidence-checksums.sh
+scripts/ci/test-format-tools.sh scripts/ci/check-format-tools.sh
+scripts/ci/test-gh-ci.sh scripts/dev/gh-ci.sh
+scripts/ci/test-release-pr.sh scripts/ci/release-pr.sh
+scripts/ci/test-runner-disk-space.sh scripts/ci/check-runner-disk-space.sh
+scripts/ci/test-rust-tools.sh scripts/dev/install-rust-tools.sh
+scripts/ci/test-rustsec-db.sh scripts/ci/prepare-rustsec-db.sh
+scripts/ci/test-tool-commands.sh make/tools.mk
+scripts/dev/cloc-siblings.sh scripts/dev/cloc.sh
+COMPANIONS
+
+# Complete focused selections must remain independently runnable, without
+# owner-only integration fixtures or unrelated production tools.
+focused_consumer="$FIXTURE/focused-fixtures"
+git init -q "$focused_consumer"
+selection_args=(--file "$checksum_path" --file "$verifier_path")
+for path in scripts/ci/test-format-tools.sh scripts/ci/check-format-tools.sh \
+    scripts/ci/test-rust-tools.sh scripts/dev/install-rust-tools.sh; do
+    mkdir -p "$source_root/${path%/*}" "$revision_root/${path%/*}"
+    cp -p "$ROOT/$path" "$source_root/$path"
+    cp -p "$ROOT/$path" "$revision_root/$path"
+    selection_args+=(--file "$path")
 done
+PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$focused_consumer" "${selection_args[@]}" \
+    > "$FIXTURE/focused-fixtures-export.log"
+for entry in test-format-tools test-rust-tools; do
+    bash "$focused_consumer/scripts/ci/$entry.sh" > "$FIXTURE/exported-$entry.log" 2>&1
+done
+bash "$ROOT/$verifier_path" --consumer "$focused_consumer" >/dev/null
 # CI installer fixtures require every wrapper, even when the consumer only
 # uses a subset in production. Omit each dependency from an otherwise complete
 # selection so no earlier missing edge can hide a missing declaration.

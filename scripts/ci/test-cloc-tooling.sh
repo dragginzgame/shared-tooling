@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared companions: scripts/dev/cloc-tooling.pl scripts/ci/verify-file-checksum.sh
 set -euo pipefail
 ROOT="$0"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"

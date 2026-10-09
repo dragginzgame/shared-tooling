@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared companions: scripts/ci/check-crates-io-version.sh
 set -euo pipefail
 root="$0"
 [[ "$root" == /* ]] || root="$PWD/$root"

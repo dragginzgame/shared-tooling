@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared companions: scripts/ci/check-runner-disk-space.sh
 set -euo pipefail
 
 ROOT="$0"

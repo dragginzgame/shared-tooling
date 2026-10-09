@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared companions: scripts/ci/prepare-rustsec-db.sh
 set -euo pipefail
 root="$0"
 [[ "$root" == /* ]] || root="$PWD/$root"

@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.4]
+
+### Fixed
+
+- Check the required helpers when exporting more reusable test suites and the
+  sibling LOC report. Incomplete selections now fail before changing consumer
+  files; complete focused selections remain independently runnable.
+  ([#73](https://github.com/dragginzgame/shared-tooling/issues/73))
+
 ## [0.2.3]
 
 ### Fixed
