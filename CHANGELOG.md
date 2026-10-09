@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.34]
+
+### Fixed
+
+- Resolve PocketIC alignment manifests correctly under `CDPATH` and unusual
+  directory names; stop before Cargo if the selected directory becomes unavailable.
+  ([#82](https://github.com/dragginzgame/shared-tooling/issues/82))
+
+### Changed
+
+- Keep small-fix handoffs and issue updates proportionate, linking retained
+  evidence and separating independent follow-up work.
+  ([#81](https://github.com/dragginzgame/shared-tooling/issues/81))
+
 ## [0.1.33]
 
 ### Changed
