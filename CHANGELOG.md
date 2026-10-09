@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.2]
+
+### Fixed
+
+- Publish CI tools to the exact requested executable path, preventing a directory
+  created during setup from redirecting installation or losing existing files.
+  Failed publication retains the downloaded candidate; late symlink targets
+  remain untouched. Perl is checked before setup for atomic publication.
+  ([#88](https://github.com/dragginzgame/shared-tooling/issues/88))
+
 ## [0.2.1]
 
 ### Fixed

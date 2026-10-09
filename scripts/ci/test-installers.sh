@@ -105,6 +105,16 @@ done
 
 [[ -n "$output" && -n "$url" ]]
 cp "$INSTALLER_TEST_ARCHIVES/${url##*/}" "$output"
+# Model another process creating the destination after initial admission.
+if [[ -n "${INSTALLER_TEST_DIRECTORY_DESTINATION:-}" ]]; then
+    mkdir "$INSTALLER_TEST_DIRECTORY_DESTINATION"
+    printf 'consumer-owned contents\n' > "$INSTALLER_TEST_DIRECTORY_DESTINATION/actionlint"
+fi
+if [[ -n "${INSTALLER_TEST_LINK_DESTINATION:-}" ]]; then
+    mkdir "$INSTALLER_TEST_LINK_DESTINATION-target"
+    printf 'consumer-owned contents\n' > "$INSTALLER_TEST_LINK_DESTINATION-target/actionlint"
+    ln -s "$INSTALLER_TEST_LINK_DESTINATION-target" "$INSTALLER_TEST_LINK_DESTINATION"
+fi
 SCRIPT
 chmod +x "$FIXTURE/bin/curl"
 
@@ -137,6 +147,40 @@ PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     --sha256 "$actionlint_checksum" \
     --install-dir "$FIXTURE/installed" >/dev/null
 [[ "$("$FIXTURE/installed/actionlint" -version)" == "1.7.12" ]]
+
+# A directory introduced during download is not a publication container.
+if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+    INSTALLER_TEST_DIRECTORY_DESTINATION="$FIXTURE/changed-destination/actionlint" \
+    bash "$ROOT/scripts/ci/install-actionlint.sh" --version 1.7.12 \
+    --sha256 "$actionlint_checksum" --install-dir "$FIXTURE/changed-destination" \
+    > "$FIXTURE/changed-destination.log" 2>&1; then
+    echo 'installer accepted a destination changed into a directory' >&2; exit 1
+fi
+[[ "$(cat "$FIXTURE/changed-destination/actionlint/actionlint")" == 'consumer-owned contents' ]]
+for attempt in "$FIXTURE/changed-destination/.actionlint-install."*; do
+    cmp "$archives/actionlint_1.7.12_linux_amd64.tar.gz" "$attempt/actionlint_1.7.12_linux_amd64.tar.gz"
+    cmp "$payloads/actionlint/actionlint" "$attempt/actionlint"
+done
+
+# A late symlink is replaced as an entry; its target remains untouched.
+PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+    INSTALLER_TEST_LINK_DESTINATION="$FIXTURE/changed-link/actionlint" \
+    bash "$ROOT/scripts/ci/install-actionlint.sh" --version 1.7.12 \
+    --sha256 "$actionlint_checksum" --install-dir "$FIXTURE/changed-link" \
+    > "$FIXTURE/changed-link.log" 2>&1
+[[ ! -L "$FIXTURE/changed-link/actionlint" ]]
+cmp "$payloads/actionlint/actionlint" "$FIXTURE/changed-link/actionlint"
+[[ "$(cat "$FIXTURE/changed-link/actionlint-target/actionlint")" == 'consumer-owned contents' ]]
+
+# Missing publication prerequisites fail before creating or downloading tools.
+mkdir "$FIXTURE/no-perl"
+ln -s "$(command -v bash)" "$FIXTURE/no-perl/bash"
+ln -s "$FIXTURE/bin/uname" "$FIXTURE/no-perl/uname"
+if PATH="$FIXTURE/no-perl" bash "$ROOT/scripts/ci/install-actionlint.sh" \
+    --version 1.7.12 --sha256 "$actionlint_checksum" --install-dir "$FIXTURE/unprepared" \
+    > "$FIXTURE/no-perl.log" 2>&1; then exit 1; fi
+[[ ! -e "$FIXTURE/unprepared" ]]
+grep -F 'Perl is required' "$FIXTURE/no-perl.log" > /dev/null
 
 PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     bash "$ROOT/scripts/ci/install-gitleaks.sh" \
