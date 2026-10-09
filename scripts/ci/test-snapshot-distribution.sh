@@ -458,6 +458,9 @@ while read -r entry missing; do
     label="${entry##*/}"
     for mode in initial addition; do
         selected_consumer="$selection_consumer"
+        # The release runner is already selected in this addition fixture.
+        # A present companion is not an incomplete export; initial still tests it.
+        if [[ "$mode" == addition && -f "$selected_consumer/$missing" ]]; then continue; fi
         selection_args=(--manifest config/selection --add-file "$entry")
         if [[ "$mode" == initial ]]; then
             selected_consumer="$FIXTURE/incomplete-$label"
@@ -497,6 +500,9 @@ scripts/ci/test-runner-disk-space.sh scripts/ci/check-runner-disk-space.sh
 scripts/ci/test-rust-tools.sh scripts/dev/install-rust-tools.sh
 scripts/ci/test-rustsec-db.sh scripts/ci/prepare-rustsec-db.sh
 scripts/ci/test-tool-commands.sh make/tools.mk
+make/release.mk scripts/ci/run-release.sh
+make/rust-format.mk make/tools.mk
+scripts/ci/test-make-format.sh make/tools.mk
 scripts/dev/cloc-siblings.sh scripts/dev/cloc.sh
 COMPANIONS
 
@@ -506,7 +512,8 @@ focused_consumer="$FIXTURE/focused-fixtures"
 git init -q "$focused_consumer"
 selection_args=(--file "$checksum_path" --file "$verifier_path")
 for path in scripts/ci/test-format-tools.sh scripts/ci/check-format-tools.sh \
-    scripts/ci/test-rust-tools.sh scripts/dev/install-rust-tools.sh; do
+    scripts/ci/test-rust-tools.sh scripts/dev/install-rust-tools.sh \
+    scripts/ci/test-make-format.sh make/tools.mk make/rust-format.mk; do
     mkdir -p "$source_root/${path%/*}" "$revision_root/${path%/*}"
     cp -p "$ROOT/$path" "$source_root/$path"
     cp -p "$ROOT/$path" "$revision_root/$path"
@@ -515,7 +522,7 @@ done
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$focused_consumer" "${selection_args[@]}" \
     > "$FIXTURE/focused-fixtures-export.log"
-for entry in test-format-tools test-rust-tools; do
+for entry in test-format-tools test-rust-tools test-make-format; do
     bash "$focused_consumer/scripts/ci/$entry.sh" > "$FIXTURE/exported-$entry.log" 2>&1
 done
 bash "$ROOT/$verifier_path" --consumer "$focused_consumer" >/dev/null

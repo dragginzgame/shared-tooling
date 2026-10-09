@@ -1,22 +1,17 @@
 .DEFAULT_GOAL := help
 
-RELEASE_REMOTE ?= origin
-RELEASE_BRANCH ?= main
 export RELEASE_DELIVERY ?= direct
 SHELLCHECK ?= shellcheck
 CLOC_REPORT := $(CURDIR)/scripts/dev/cloc-siblings.sh
 CLOC_ROOT = $(CLOC_PARENT)
 include make/tools.mk
+include make/release.mk
 
-.PHONY: help tasks version check-shell check-pins check-doc-links check-release-commands test-portable ci release-patch release-minor release-major \
-        release-resume release-version release-preflight release-verify \
+.PHONY: help tasks version check-shell check-pins check-doc-links check-release-commands test-portable ci \
+        release-version release-preflight release-verify \
         release-prepare-version release-prepared-check release-files \
         release-commit-check release-committed-check release-tagged-check release-push-check \
         release-merged-preflight
-
-ifneq ($(word 2,$(filter release-patch release-minor release-major release-resume,$(MAKECMDGOALS))),)
-$(error Select exactly one release target)
-endif
 
 help:
 	@echo "Current local version: make version"
@@ -50,19 +45,10 @@ check-doc-links:
 	perl scripts/ci/check-documentation-links.pl --root . *.md audits/*.md rules/*.md tasks/*.md docs/*.md docs/principles/*.md
 
 check-release-commands:
-	bash scripts/ci/check-release-commands.sh . make/tools.mk
+	bash scripts/ci/check-release-commands.sh . make/tools.mk make/release.mk
 
 ci:
-	+$(MAKE) --no-print-directory check-shell
-	+$(MAKE) --no-print-directory check-pins
-	+$(MAKE) --no-print-directory check-doc-links
-	+$(MAKE) --no-print-directory test-portable
-
-release-patch release-minor release-major:
-	+@bash scripts/ci/run-release.sh "$(@:release-%=%)" "$(RELEASE_REMOTE)" "$(RELEASE_BRANCH)"
-
-release-resume:
-	+@bash scripts/ci/run-release.sh resume "$(VERSION)" "$(RELEASE_REMOTE)" "$(RELEASE_BRANCH)"
+	+@bash scripts/ci/run-validation-targets.sh --fail-fast check-shell check-pins check-doc-links test-portable
 
 version release-version:
 	@bash scripts/release/metadata.sh version

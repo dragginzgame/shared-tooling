@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.2.6]
+
+### Added
+
+- Optional shared Make includes for standard release entrypoints and simple
+  Rust formatting, giving repeated recipes one maintained owner while leaving
+  consumer validation and release policy local. Shared Tooling uses the release
+  include; consumers adopt the reviewed files explicitly.
+  ([#91](https://github.com/dragginzgame/shared-tooling/issues/91),
+  [#92](https://github.com/dragginzgame/shared-tooling/issues/92))
+
+### Fixed
+
+- Let the checkout-local formatter fixture run with Apple's system Make by
+  resolving its executable through the recipe's exported PATH. Preserve checks
+  for missing and wrong-version tools, and clarify the portable recipe pattern.
+  ([#85](https://github.com/dragginzgame/shared-tooling/issues/85))
+
 ## [0.2.5]
 
 ### Fixed

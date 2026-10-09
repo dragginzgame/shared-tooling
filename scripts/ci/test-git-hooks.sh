@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared companions: .githooks/pre-commit scripts/dev/install-git-hooks.sh scripts/ci/check-make-execution.sh scripts/ci/check-format-tools.sh scripts/ci/check-formatting-hooks.sh scripts/dev/format-frontend.sh make/tools.mk make/rust-format.mk ci/tool-versions.env
 set -euo pipefail
 
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
@@ -116,12 +117,13 @@ include make/tools.mk
 .PHONY: fmt
 fmt:
 	bash scripts/ci/check-format-tools.sh $(SHARED_TOOLING_CARGO_SORT_VERSION) hook-fixture-cargo
-	hook-fixture-cargo sort --workspace
+	env hook-fixture-cargo sort --workspace
 include ci/tool-versions.env
 MAKE
     git add Makefile
     printf 'unformatted unrelated working edit\n' > README.md
-    # Direct Make already finds the tools through make/tools.mk.
+    # env resolves the exported recipe PATH even with Apple's posix_spawn Make.
+    # Its direct-command lookup uses Make's original process PATH instead.
     PATH=/usr/bin:/bin make --no-print-directory fmt > output
     printf 'unformatted\n' > Cargo.toml
     printf 'unformatted unrelated working edit\n' > README.md
@@ -299,6 +301,30 @@ new_fixture installer-non-executable
 chmod -x .githooks/pre-commit
 expect_failure bash scripts/dev/install-git-hooks.sh
 [[ ! -x .githooks/pre-commit && -z "$(git config --get core.hooksPath || true)" ]]
+
+# Qualify the optional shared formatter against real Cargo and the actual hook,
+# including the adoption checker's partial-stage and preservation cases.
+new_fixture shared-format-include
+cp "$ROOT/make/rust-format.mk" make/
+cp "$ROOT/scripts/ci/check-format-tools.sh" scripts/ci/
+cat > Makefile <<'MAKE'
+include make/tools.mk make/rust-format.mk
+MAKE
+cat > Cargo.toml <<'CARGO'
+[package]
+name = "shared-format-fixture"
+version = "0.0.0"
+edition = "2021"
+
+[workspace]
+CARGO
+mkdir -p src
+printf 'pub fn fixture( ){}\n' > src/lib.rs
+git add Makefile Cargo.toml src/lib.rs make/rust-format.mk scripts/ci/check-format-tools.sh
+bash .githooks/pre-commit > output
+[[ "$(git show :src/lib.rs)" == 'pub fn fixture() {}' ]]
+bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$PWD" src/lib.rs Cargo.toml --no-dependency-tables \
+    make/tools.mk make/rust-format.mk ci/tool-versions.env scripts/ci/check-format-tools.sh
 
 # Exercise real Cargo/rustfmt on both a root and a standalone nested workspace.
 # No dependencies, builds, Git commits or network access are needed.

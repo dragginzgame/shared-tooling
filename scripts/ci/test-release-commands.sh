@@ -15,7 +15,42 @@ mkdir "$fixture/consumer" "$fixture/logs"
 export TMPDIR="$fixture/logs"
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 unset VALIDATION_REPOSITORY_ROOT VALIDATION_RUNNER_SNAPSHOT_PATH
-bash "$root/scripts/ci/check-release-commands.sh" "$root" make/tools.mk
+bash "$root/scripts/ci/check-release-commands.sh" "$root" make/tools.mk make/release.mk
+# The include preserves defaults and consumer admission/environment even in a
+# nested snapshot. Only the runner is substituted; no release effects occur.
+mkdir -p "$fixture/included/vendor/make" "$fixture/included/vendor/scripts/ci"
+cp "$root/make/release.mk" "$fixture/included/vendor/make/"
+cat > "$fixture/included/vendor/scripts/ci/run-release.sh" <<'RUNNER'
+#!/usr/bin/env bash
+set -eu
+[[ "$CACHE_PREPARE" == selected && "$RELEASE_DELIVERY" == pr ]]
+printf '%s\n' "$@" > "$RELEASE_TEST_EVENTS"
+exit "${RELEASE_TEST_STATUS:-0}"
+RUNNER
+cat > "$fixture/included/Makefile" <<'MAKE'
+SHARED_TOOLING_ROOT := $(CURDIR)/vendor
+include vendor/make/release.mk
+.PHONY: help admit
+help:
+	@echo harmless
+release-patch release-minor release-major release-resume: export CACHE_PREPARE := selected
+release-patch release-minor release-major release-resume: export RELEASE_DELIVERY := pr
+release-patch release-minor release-major release-resume: admit
+admit:
+	@test "$(DENY_RELEASE)" != yes
+MAKE
+export RELEASE_TEST_EVENTS="$fixture/include-events"
+[[ "$(make --no-print-directory -C "$fixture/included")" == harmless ]]
+[[ ! -e "$RELEASE_TEST_EVENTS" ]]
+make --no-print-directory -C "$fixture/included" release-patch
+printf 'patch\norigin\nmain\n' > "$fixture/expected"
+cmp "$fixture/expected" "$RELEASE_TEST_EVENTS"
+rm "$RELEASE_TEST_EVENTS"
+if make --no-print-directory -C "$fixture/included" release-patch DENY_RELEASE=yes > "$fixture/admission.log" 2>&1; then exit 1; fi
+[[ ! -e "$RELEASE_TEST_EVENTS" ]]
+if RELEASE_TEST_STATUS=23 make --no-print-directory -C "$fixture/included" release-resume VERSION=1.2.3 RELEASE_REMOTE=review RELEASE_BRANCH=topic > "$fixture/runner-failure.log" 2>&1; then exit 1; fi
+printf 'resume\n1.2.3\nreview\ntopic\n' > "$fixture/expected"
+cmp "$fixture/expected" "$RELEASE_TEST_EVENTS"
 cat > "$fixture/consumer/Makefile" <<'MAKE'
 include tool-versions.env
 ifneq ($(word 2,$(filter release-patch release-minor release-major release-resume,$(MAKECMDGOALS))),)

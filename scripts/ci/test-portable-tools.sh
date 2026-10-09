@@ -46,6 +46,7 @@ bash "$ROOT/scripts/ci/test-ic-tools.sh"
 bash "$ROOT/scripts/ci/test-host-tools.sh"
 bash "$ROOT/scripts/ci/test-rust-tools.sh"
 bash "$ROOT/scripts/ci/test-tool-commands.sh"
+bash "$ROOT/scripts/ci/test-make-format.sh"
 # Make/Cargo select physical paths independently of the caller's TMPDIR spelling.
 mkdir "$FIXTURE/tool-contexts"
 ln -s "$(cd "$FIXTURE/tool-contexts" && pwd -P)" "$FIXTURE/tool-context-alias"
