@@ -112,10 +112,12 @@ the [adoption guide](docs/consuming-snapshots.md#local-ic-tool-adoption) lists i
 companion files and replaces copied Make recipes.
 
 `make install-ic-tools` installs the reviewed Quill, ICP CLI, didc, ic-wasm,
-PocketIC and Binaryen set beneath `.tools/ic/bin`. `make ic-tools-check` verifies
+and Binaryen set beneath `.tools/ic/bin`. `make ic-tools-check` verifies
 it offline. Setup activates only a complete verified set and preserves prior
 sets and failed candidates. See [local IC tools](docs/ic-tools.md) for pins,
 PATH setup, native host coverage and consumer adoption.
+IC Testkit owns PocketIC setup, offline admission and server lifecycle; see the
+[ownership handoff](docs/ic-tools.md#pocketic-ownership-handoff).
 
 Rust consumers can use `make install-rust-tools` and offline `make rust-tools-check`
 for pinned cargo-sort, cargo-sort-derives and candid-extractor under `.tools/rust/bin`.

@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0]
+
+### Breaking
+
+- Transfer PocketIC provisioning and compatibility admission to IC Testkit.
+  The shared IC bundle now contains five tools; PocketIC pins and the separate
+  alignment/binary checkers are removed. Consumers must adopt Testkit's explicit
+  setup and offline check, update their snapshot selections and server callers,
+  and reinstall the shared bundle. Existing bundles and evidence are retained.
+  See the [adoption steps](docs/ic-tools.md#pocketic-ownership-handoff).
+  ([#76](https://github.com/dragginzgame/shared-tooling/issues/76))
+
 ## [0.1.38]
 
 ### Fixed
