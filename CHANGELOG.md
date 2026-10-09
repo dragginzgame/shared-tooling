@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.38]
+
+### Fixed
+
+- Reject exception catalogs containing multiple JSON documents, preventing
+  malformed dependency-pinning exceptions from bypassing required validation.
+  Valid single-array catalogs continue to work unchanged.
+  ([#86](https://github.com/dragginzgame/shared-tooling/issues/86))
+
 ## [0.1.37]
 
 ### Fixed
