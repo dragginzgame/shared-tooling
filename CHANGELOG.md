@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.7]
+
+### Fixed
+
+- Reject Make modes that can hide failed release or formatting commands at the
+  shared entrypoints, preserving the existing runner and hook guards.
+  ([#30](https://github.com/dragginzgame/shared-tooling/issues/30))
+- Keep release-command qualification bound to its disposable snapshot even when
+  the caller exports another tooling root.
+  ([#7](https://github.com/dragginzgame/shared-tooling/issues/7))
+- Preserve newline-ending checkout paths during formatting-hook qualification,
+  including access to the source Git objects.
+  ([#90](https://github.com/dragginzgame/shared-tooling/issues/90))
+
 ## [0.2.6]
 
 ### Added

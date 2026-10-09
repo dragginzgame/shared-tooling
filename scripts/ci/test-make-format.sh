@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: make/tools.mk make/rust-format.mk scripts/ci/check-format-tools.sh
+# Shared companions: make/tools.mk make/rust-format.mk make/execution.mk scripts/ci/check-format-tools.sh scripts/ci/check-make-execution.sh
 set -euo pipefail
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 root="${BASH_SOURCE[0]}"
@@ -10,8 +10,8 @@ fixture="$(mktemp -d "${TMPDIR:-/tmp}/make-format.XXXXXX")"
 trap 'if [[ $? == 0 ]]; then rm -rf "$fixture"; else printf "Formatting Make fixture retained: %s\n" "$fixture" >&2; fi' EXIT
 consumer="$fixture/consumer with spaces"
 mkdir -p "$consumer/vendor/make" "$consumer/vendor/scripts/ci" "$consumer/ci" "$consumer/.tools/rust/bin"
-cp "$root/make/tools.mk" "$root/make/rust-format.mk" "$consumer/vendor/make/"
-cp "$root/scripts/ci/check-format-tools.sh" "$consumer/vendor/scripts/ci/"
+cp "$root/make/tools.mk" "$root/make/rust-format.mk" "$root/make/execution.mk" "$consumer/vendor/make/"
+cp "$root/scripts/ci/check-format-tools.sh" "$root/scripts/ci/check-make-execution.sh" "$consumer/vendor/scripts/ci/"
 printf 'export SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\n' > "$consumer/ci/tool-versions.env"
 cat > "$consumer/Makefile" <<'MAKE'
 SHARED_TOOLING_ROOT := $(CURDIR)/vendor
@@ -64,4 +64,22 @@ for failure in wrong missing sort; do
     [[ "$failure" != missing ]] || mv "$fixture/cargo" "$consumer/.tools/rust/bin/format-fixture-cargo"
     unset FORMAT_TEST_VERSION FORMAT_TEST_FAIL
 done
+# Outer Make must reject unsafe modes, even when a prerequisite fails and Make
+# would otherwise ignore it. No formatter may run, directly or via inherited flags.
+for target in fmt fmt-check; do
+    for mode in -i --ignore-errors -n -t -q; do
+        for source in direct inherited; do
+            : > "$FORMAT_TEST_EVENTS"
+            status=0
+            if [[ "$source" == direct ]]; then
+                FORMAT_TEST_VERSION=0.0.0 make -C "$consumer" "$mode" "$target" > "$fixture/mode.log" 2>&1 || status=$?
+            else
+                _shared_make_execution_checked=yes MAKEFLAGS="$mode" FORMAT_TEST_VERSION=0.0.0 make -C "$consumer" "$target" > "$fixture/mode.log" 2>&1 || status=$?
+            fi
+            [[ "$status" == 2 && ! -s "$FORMAT_TEST_EVENTS" ]]
+        done
+    done
+done
+# Normal parallel mode and quoted command variables still reach the formatter.
+make -j2 --no-print-directory -C "$consumer" fmt-check "AUDIT_SELECTION=owner's selection" > "$fixture/parallel.log" 2>&1
 echo 'Shared formatting Make commands passed (substitute Cargo; no installation)'

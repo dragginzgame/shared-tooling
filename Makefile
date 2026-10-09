@@ -45,7 +45,7 @@ check-doc-links:
 	perl scripts/ci/check-documentation-links.pl --root . *.md audits/*.md rules/*.md tasks/*.md docs/*.md docs/principles/*.md
 
 check-release-commands:
-	bash scripts/ci/check-release-commands.sh . make/tools.mk make/release.mk
+	bash scripts/ci/check-release-commands.sh . make/tools.mk make/release.mk make/execution.mk scripts/ci/check-make-execution.sh
 
 ci:
 	+@bash scripts/ci/run-validation-targets.sh --fail-fast check-shell check-pins check-doc-links test-portable

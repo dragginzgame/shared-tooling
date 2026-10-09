@@ -502,6 +502,7 @@ scripts/ci/test-rustsec-db.sh scripts/ci/prepare-rustsec-db.sh
 scripts/ci/test-tool-commands.sh make/tools.mk
 make/release.mk scripts/ci/run-release.sh
 make/rust-format.mk make/tools.mk
+make/execution.mk scripts/ci/check-make-execution.sh
 scripts/ci/test-make-format.sh make/tools.mk
 scripts/dev/cloc-siblings.sh scripts/dev/cloc.sh
 COMPANIONS
@@ -513,7 +514,7 @@ git init -q "$focused_consumer"
 selection_args=(--file "$checksum_path" --file "$verifier_path")
 for path in scripts/ci/test-format-tools.sh scripts/ci/check-format-tools.sh \
     scripts/ci/test-rust-tools.sh scripts/dev/install-rust-tools.sh \
-    scripts/ci/test-make-format.sh make/tools.mk make/rust-format.mk; do
+    scripts/ci/test-make-format.sh make/tools.mk make/rust-format.mk make/execution.mk scripts/ci/check-make-execution.sh; do
     mkdir -p "$source_root/${path%/*}" "$revision_root/${path%/*}"
     cp -p "$ROOT/$path" "$source_root/$path"
     cp -p "$ROOT/$path" "$revision_root/$path"

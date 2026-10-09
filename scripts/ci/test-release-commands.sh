@@ -15,11 +15,13 @@ mkdir "$fixture/consumer" "$fixture/logs"
 export TMPDIR="$fixture/logs"
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 unset VALIDATION_REPOSITORY_ROOT VALIDATION_RUNNER_SNAPSHOT_PATH
-bash "$root/scripts/ci/check-release-commands.sh" "$root" make/tools.mk make/release.mk
+make_inputs=(make/tools.mk make/release.mk make/execution.mk scripts/ci/check-make-execution.sh)
+bash "$root/scripts/ci/check-release-commands.sh" "$root" "${make_inputs[@]}"
 # The include preserves defaults and consumer admission/environment even in a
 # nested snapshot. Only the runner is substituted; no release effects occur.
 mkdir -p "$fixture/included/vendor/make" "$fixture/included/vendor/scripts/ci"
-cp "$root/make/release.mk" "$fixture/included/vendor/make/"
+cp "$root/make/release.mk" "$root/make/execution.mk" "$fixture/included/vendor/make/"
+cp "$root/scripts/ci/check-make-execution.sh" "$fixture/included/vendor/scripts/ci/"
 cat > "$fixture/included/vendor/scripts/ci/run-release.sh" <<'RUNNER'
 #!/usr/bin/env bash
 set -eu
@@ -51,6 +53,55 @@ if make --no-print-directory -C "$fixture/included" release-patch DENY_RELEASE=y
 if RELEASE_TEST_STATUS=23 make --no-print-directory -C "$fixture/included" release-resume VERSION=1.2.3 RELEASE_REMOTE=review RELEASE_BRANCH=topic > "$fixture/runner-failure.log" 2>&1; then exit 1; fi
 printf 'resume\n1.2.3\nreview\ntopic\n' > "$fixture/expected"
 cmp "$fixture/expected" "$RELEASE_TEST_EVENTS"
+# All four entrypoints reject unsupported direct and inherited modes before
+# runner dispatch, even when the substituted runner would return failure.
+for target in release-patch release-minor release-major release-resume; do
+    for mode in -i --ignore-errors -n -t -q; do
+        for source in direct inherited; do
+            : > "$RELEASE_TEST_EVENTS"
+            status=0
+            if [[ "$source" == direct ]]; then
+                RELEASE_TEST_STATUS=23 make -C "$fixture/included" "$mode" "$target" > "$fixture/mode.log" 2>&1 || status=$?
+            else
+                _shared_make_execution_checked=yes MAKEFLAGS="$mode" RELEASE_TEST_STATUS=23 make -C "$fixture/included" "$target" > "$fixture/mode.log" 2>&1 || status=$?
+            fi
+            [[ "$status" == 2 && ! -s "$RELEASE_TEST_EVENTS" ]]
+        done
+    done
+done
+make -j2 --no-print-directory -C "$fixture/included" release-patch "AUDIT_SELECTION=owner's selection" > "$fixture/parallel.log" 2>&1
+printf 'patch\norigin\nmain\n' > "$fixture/expected"
+cmp "$fixture/expected" "$RELEASE_TEST_EVENTS"
+# The root-snapshot checker must never follow a parent exported root or an
+# ordinary consumer assignment to an external runner. The sentinel has no effects
+# beyond its marker; the actual release implementation is never installed here.
+mkdir -p "$fixture/external/scripts/ci" "$fixture/root-consumer/make"
+cp "$root/make/tools.mk" "$root/make/release.mk" "$root/make/execution.mk" "$fixture/root-consumer/make/"
+mkdir -p "$fixture/root-consumer/scripts/ci"
+cp "$root/scripts/ci/check-make-execution.sh" "$fixture/root-consumer/scripts/ci/"
+cat > "$fixture/external/scripts/ci/run-release.sh" <<'SENTINEL'
+#!/usr/bin/env bash
+echo escaped >> "$RELEASE_TEST_EVENTS"
+exit 99
+SENTINEL
+cat > "$fixture/root-consumer/Makefile" <<'MAKE'
+SHARED_TOOLING_ROOT := $(EXTERNAL_ROOT)
+include make/tools.mk make/release.mk
+MAKE
+: > "$RELEASE_TEST_EVENTS"
+EXTERNAL_ROOT="$fixture/external" SHARED_TOOLING_ROOT="$fixture/external" \
+    bash "$root/scripts/ci/check-release-commands.sh" "$fixture/root-consumer" "${make_inputs[@]}"
+[[ ! -s "$RELEASE_TEST_EVENTS" ]]
+cat > "$fixture/root-parent.mk" <<'MAKE'
+export SHARED_TOOLING_ROOT := $(EXTERNAL_ROOT)
+export EXTERNAL_ROOT
+test:
+	+@bash "$(CHECKER)" "$(CONSUMER)" make/tools.mk make/release.mk make/execution.mk scripts/ci/check-make-execution.sh
+MAKE
+make -j2 --no-print-directory -f "$fixture/root-parent.mk" test \
+    EXTERNAL_ROOT="$fixture/external" CHECKER="$root/scripts/ci/check-release-commands.sh" \
+    CONSUMER="$fixture/root-consumer" > "$fixture/root-parent.log" 2>&1
+[[ ! -s "$RELEASE_TEST_EVENTS" ]]
 cat > "$fixture/consumer/Makefile" <<'MAKE'
 include tool-versions.env
 ifneq ($(word 2,$(filter release-patch release-minor release-major release-resume,$(MAKECMDGOALS))),)

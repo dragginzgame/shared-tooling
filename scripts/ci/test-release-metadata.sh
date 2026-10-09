@@ -167,6 +167,7 @@ cp "$ROOT/Makefile" "$logging_root/Makefile"
 mkdir -p "$logging_root/make"
 cp "$ROOT/make/tools.mk" "$logging_root/make/"
 cp "$ROOT/make/release.mk" "$logging_root/make/"
+cp "$ROOT/make/execution.mk" "$logging_root/make/"
 cat >> "$logging_root/Makefile" <<'MAKE'
 ci:
 	@test "$(RELEASE_VERSION)" = 0.1.1
