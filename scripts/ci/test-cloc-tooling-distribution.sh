@@ -14,6 +14,7 @@ source_repo="$fixture/source"
 export_parent="$fixture/exported"
 consumer="$export_parent/consumer"
 git clone -q --shared "$ROOT" "$source_repo"
+source_version="$(git -C "$source_repo" show HEAD:VERSION)"
 mkdir "$export_parent"
 git clone -q --shared --no-checkout "$ROOT" "$consumer"
 export_files=(scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh scripts/ci/check-make-execution.sh)
@@ -26,7 +27,9 @@ for source in https://github.com/dragginzgame/shared-tooling.git git@github.com:
         --file "${export_files[0]}" --file "${export_files[1]}" --file "${export_files[2]}" > "$fixture/export.log"
     bash "$consumer/scripts/ci/verify-shared-tooling-snapshot.sh" --manifest config/.shared-tooling.snapshot > "$fixture/verify.log"
     perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$export_parent" > "$fixture/export.json"
-    jq -e '.partial == false and .totals.shared_loc > 0 and .totals.local_loc == 0' "$fixture/export.json" >/dev/null
+    jq -e --arg version "$source_version" '.partial == false and .totals.shared_loc > 0 and .totals.local_loc == 0 and
+      .repositories[0].snapshot_manifests[0].version == $version and
+      .repositories[0].snapshot_manifests[0].integrity == "ok"' "$fixture/export.json" >/dev/null
 done
 mv "$consumer/config/.shared-tooling.snapshot" "$consumer/.shared-tooling.snapshot"
 perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$export_parent" > "$fixture/export-root.json"

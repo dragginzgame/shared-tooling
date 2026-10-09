@@ -10,20 +10,22 @@ export LC_ALL=C
 
 usage() {
     cat <<'EOF'
-Usage: issues-siblings.sh [--once] [--interval SECONDS] [parent-directory]
+Usage: github-siblings.sh [--once] [--interval SECONDS] [parent-directory]
 
-Show GitHub issue totals for immediate Git checkouts with AGENTS.md and a
+Show GitHub issue and pull-request totals for Git checkouts with AGENTS.md and a
 github.com origin. Defaults to the parent of this script's checkout. Symlink
 aliases are skipped; duplicate GitHub repositories are counted once.
 
 In a terminal, refresh every 60 seconds: q quits, r refreshes, Ctrl-C exits.
 --once prints one report (also the default when input/output is not a terminal).
 --interval selects 1..86400 seconds between completed refreshes.
-Rows show REPOSITORY, OPEN and FIXED (closed / total, then percent in brackets).
-Counts use comma separators and six-character, space-padded fields.
+Grouped headings show ISSUES (OPEN, FIXED) and PRS (OPEN, MERGED, CLOSED).
+FIXED shows closed / total, then percent in brackets; CLOSED PRs exclude merges.
+Open PRs include drafts. Numeric padding starts at four characters and expands
+to fit comma-separated counts, including totals. Headings and errors also fit.
 Sort by open issues descending, then repository name; failed rows appear last.
 Fixed means closed, including duplicates and issues closed as not planned.
-Percent fixed = closed / (open + closed); no issues shows N/A. PRs are excluded.
+Percent fixed = closed / (open + closed); no issues shows N/A.
 Failed observations show ERROR, never zero; totals then show TOTAL (partial).
 A partial/failed --once report exits nonzero. Watch mode retries next refresh.
 
@@ -90,6 +92,9 @@ for checkout in "${parent%/}"/*; do
     query="$query r$repo_count: repository(owner: \"${identity%/*}\", name: \"${identity#*/}\") {
         open: issues(states: OPEN) { totalCount }
         closed: issues(states: CLOSED) { totalCount }
+        prOpen: pullRequests(states: OPEN) { totalCount }
+        prMerged: pullRequests(states: MERGED) { totalCount }
+        prClosed: pullRequests(states: CLOSED) { totalCount }
     }"
     repo_count=$((repo_count + 1))
     [[ ${#identity} -le $width ]] || width=${#identity}
@@ -101,7 +106,7 @@ interactive=false
 if [[ "$once" == false && -t 0 && -t 1 && "${TERM:-dumb}" != dumb ]]; then
     interactive=true
 fi
-scratch="$(mktemp -d "${TMPDIR:-/tmp}/issues-siblings.XXXXXX")"
+scratch="$(mktemp -d "${TMPDIR:-/tmp}/github-siblings.XXXXXX")"
 cleanup() {
     if [[ "$interactive" == true ]]; then printf '\033[?25h\033[?1049l'; fi
     rm -rf "$scratch"
@@ -111,10 +116,16 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 print_row() {
-    printf '%-*s  %6s  %s\n' "$width" "$1" "$2" "$3"
+    printf '%-*s  %*s  %s  %*s  %*s  %*s\n' "$width" "$1" "$number_width" "$2" "$3" \
+        "$number_width" "$4" "$pr_result_width" "$5" "$pr_result_width" "$6"
 }
 print_separator() {
-    printf '%*s\n' "$((width + 34))" '' | tr ' ' '-'
+    printf '%*s\n' "$((width + 4 + issues_width + prs_width))" '' | tr ' ' '-'
+}
+center_text() {
+    local value="$1" span="$2" left
+    left=$(((span - ${#value}) / 2))
+    printf '%*s%s%*s' "$left" '' "$value" "$((span - ${#value} - left))" ''
 }
 format_count() {
     local value="$1" grouped=''
@@ -125,54 +136,95 @@ format_count() {
     done
     printf '%s%s' "$value" "$grouped"
 }
-print_counts() {
-    local name="$1" open="$2" closed="$3" total fixed percent=N/A
+format_percent() {
+    local open="$1" closed="$2" total
     total=$((open + closed))
     if [[ "$total" -gt 0 ]]; then
-        percent="$(awk -v closed="$closed" -v total="$total" 'BEGIN { printf "%.1f%%", 100 * closed / total }')"
+        awk -v closed="$closed" -v total="$total" 'BEGIN { printf "(%.1f%%)", 100 * closed / total }'
+    else
+        printf '(N/A)'
     fi
-    printf -v fixed '%6s / %6s (%s)' "$(format_count "$closed")" "$(format_count "$total")" "$percent"
-    print_row "$name" "$(format_count "$open")" "$fixed"
+}
+measure_counts() {
+    local value formatted percent
+    for value in "$@" "$(($1 + $2))"; do
+        formatted="$(format_count "$value")"
+        [[ ${#formatted} -le "$number_width" ]] || number_width=${#formatted}
+    done
+    percent="$(format_percent "$1" "$2")"
+    [[ ${#percent} -le "$percent_width" ]] || percent_width=${#percent}
+}
+print_counts() {
+    local name="$1" open="$2" closed="$3" total fixed
+    total=$((open + closed))
+    printf -v fixed '%*s / %*s %-*s' "$number_width" "$(format_count "$closed")" \
+        "$number_width" "$(format_count "$total")" "$percent_width" "$(format_percent "$open" "$closed")"
+    print_row "$name" "$(format_count "$open")" "$fixed" \
+        "$(format_count "$4")" "$(format_count "$5")" "$(format_count "$6")"
+}
+print_error() {
+    local fixed
+    printf -v fixed '%*s / %*s %-*s' "$number_width" ERROR "$number_width" ERROR "$percent_width" '(N/A)'
+    print_row "$1" ERROR "$fixed" ERROR ERROR ERROR
 }
 
 render() {
-    local i counts name open closed total_open=0 total_closed=0 successful=0 label=TOTAL
-    printf 'Sibling GitHub issues | %s\n' "$(date '+%Y-%m-%d %H:%M:%S %Z')"
-    printf 'Fixed = closed; PRs excluded. Refresh: %ss | q quit | r refresh\n\n' "$interval"
+    local i counts name open closed pr_open pr_merged pr_closed total_open=0 total_closed=0
+    local total_pr_open=0 total_pr_merged=0 total_pr_closed=0 successful=0 label=TOTAL
+    local number_width=4 percent_width=5 fixed_width issues_width prs_width pr_result_width
+    printf 'Sibling GitHub issues and pull requests | %s\n' "$(date '+%Y-%m-%d %H:%M:%S %Z')"
+    printf 'Issues: OPEN / FIXED. PRs: OPEN includes drafts; CLOSED excludes merged.\n'
+    printf 'Fixed = closed issues. Refresh: %ss | q quit | r refresh\n\n' "$interval"
     : > "$scratch/rows"
     for ((i=0; i<repo_count; i++)); do
         if counts="$(jq -er --arg key "r$i" '
             def count: type == "number" and . >= 0 and . == floor;
             .data[$key] |
-            select((.open.totalCount | count) and (.closed.totalCount | count)) |
-            [.open.totalCount, .closed.totalCount] | @tsv
+            [.open.totalCount, .closed.totalCount,
+             .prOpen.totalCount, .prMerged.totalCount, .prClosed.totalCount] |
+            select(all(.[]; count)) | @tsv
         ' "$scratch/response" 2>/dev/null)"; then
-            read -r open closed <<< "$counts"
-            printf '%s\t%s\t%s\n' "$open" "${repos[$i]}" "$closed" >> "$scratch/rows"
+            read -r open closed pr_open pr_merged pr_closed <<< "$counts"
+            measure_counts "$open" "$closed" "$pr_open" "$pr_merged" "$pr_closed"
+            printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$open" "${repos[$i]}" "$closed" "$pr_open" "$pr_merged" "$pr_closed" >> "$scratch/rows"
             total_open=$((total_open + open))
             total_closed=$((total_closed + closed))
+            total_pr_open=$((total_pr_open + pr_open))
+            total_pr_merged=$((total_pr_merged + pr_merged))
+            total_pr_closed=$((total_pr_closed + pr_closed))
             successful=$((successful + 1))
         else
             printf '%s\t%s\t%s\n' -1 "${repos[$i]}" ERROR >> "$scratch/rows"
             status=1
         fi
     done
+    if [[ "$successful" -gt 0 ]]; then
+        measure_counts "$total_open" "$total_closed" "$total_pr_open" "$total_pr_merged" "$total_pr_closed"
+    fi
+    if [[ "$successful" -lt "$repo_count" && "$number_width" -lt 5 ]]; then number_width=5; fi
+    fixed_width=$((2 * number_width + 4 + percent_width))
+    issues_width=$((number_width + 2 + fixed_width))
+    pr_result_width="$number_width"
+    [[ "$pr_result_width" -ge 6 ]] || pr_result_width=6
+    prs_width=$((number_width + 4 + 2 * pr_result_width))
     sort -t $'\t' -k1,1nr -k2,2 "$scratch/rows" > "$scratch/sorted"
-    print_row REPOSITORY OPEN FIXED
+    printf '%*s  %s  %s\n' "$width" '' "$(center_text ISSUES "$issues_width")" "$(center_text PRS "$prs_width")"
+    print_row REPOSITORY "$(center_text OPEN "$number_width")" "$(center_text FIXED "$fixed_width")" \
+        "$(center_text OPEN "$number_width")" "$(center_text MERGED "$pr_result_width")" "$(center_text CLOSED "$pr_result_width")"
     print_separator
-    while IFS=$'\t' read -r open name closed; do
+    while IFS=$'\t' read -r open name closed pr_open pr_merged pr_closed; do
         if [[ "$open" == -1 ]]; then
-            print_row "$name" ERROR ' ERROR /  ERROR (N/A)'
+            print_error "$name"
         else
-            print_counts "$name" "$open" "$closed"
+            print_counts "$name" "$open" "$closed" "$pr_open" "$pr_merged" "$pr_closed"
         fi
     done < "$scratch/sorted"
     print_separator
     if [[ "$status" != 0 ]]; then label='TOTAL (partial)'; fi
     if [[ "$successful" -gt 0 ]]; then
-        print_counts "$label" "$total_open" "$total_closed"
+        print_counts "$label" "$total_open" "$total_closed" "$total_pr_open" "$total_pr_merged" "$total_pr_closed"
     else
-        print_row "$label" ERROR ' ERROR /  ERROR (N/A)'
+        print_error "$label"
     fi
     print_separator
     if [[ -s "$scratch/errors" ]]; then
@@ -182,7 +234,7 @@ render() {
 }
 
 if [[ "$interactive" == true ]]; then
-    printf '\033[?1049h\033[?25lLoading GitHub issue counts...\n'
+    printf '\033[?1049h\033[?25lLoading GitHub issue and pull-request counts...\n'
 fi
 while :; do
     status=0

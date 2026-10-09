@@ -281,12 +281,24 @@ pass `--snapshot-root /path/to/manifest /path/to/consumer-root` to the Perl comm
 checkout, and the manifest must be tracked or nonignored. Selection never tries
 different roots until hashes match. HTTPS and SSH spellings of the same Shared
 Tooling GitHub repository are accepted. Modified snapshot files
-produce a warning and remain local in these counts. This comparison is not a
-complete snapshot-integrity or adoption check. Supporting JSON, patches and
+produce a warning and remain local in these counts. Supporting JSON, patches and
 CSV/TSV tables appear separately as physical `data_lines`, so frozen baselines
 and ablation patches do not inflate executable-tooling LOC.
 
-JSON output records source commits, dirty state, snapshot revisions, per-file
+The table's `shared_snapshot` column shows the recorded version and abbreviated
+source commit, such as `0.2.8@b2646cde9abb`; multiple selections are comma-separated.
+A version absent from the manifest shows `unrecorded`, never a guess from another
+checkout. Refresh records it automatically from the selected committed `VERSION`.
+`integrity` is `OK` when every declared file matches its hash and executable mode,
+`DRIFT` for changed, missing or symlinked files, `NONE` without a recorded snapshot,
+or `ERROR` when the inventory cannot be read. This checks declared documents too,
+without including them in LOC. Drift does not prevent the remaining counts and
+is reported in stderr/JSON; malformed input produces a partial report and failure.
+These observations neither authenticate the manifest's provenance nor qualify
+consumer behavior. They run no consumer scripts and require no Cargo package.
+
+JSON output records source commits, dirty state, snapshot versions and full
+revisions, per-manifest integrity and drifted paths, per-file
 hashes, ownership, counts and any files cloc skipped. Repositories awaiting their
 first commit are counted with `head: null` and `unborn: true`; the text report
 announces their uncommitted bootstrap state on stderr. A broken existing HEAD
@@ -396,14 +408,14 @@ scripts/ci/install-actionlint.sh \
 
 Use `--install-dir` or `TOOL_INSTALL_DIR` to change the destination.
 
-### Sibling issue dashboard
+### Sibling GitHub dashboard
 
 Run a live terminal dashboard for the connected sibling checkouts:
 
 ```bash
-scripts/dev/issues-siblings.sh
-scripts/dev/issues-siblings.sh --interval 120
-scripts/dev/issues-siblings.sh --once /path/to/projects
+scripts/dev/github-siblings.sh
+scripts/dev/github-siblings.sh --interval 120
+scripts/dev/github-siblings.sh --once /path/to/projects
 ```
 
 The dashboard scans immediate Git checkouts with `AGENTS.md` and a GitHub.com
@@ -413,21 +425,30 @@ repositories once. The default parent belongs to the script's checkout; restart
 to discover new siblings. Requires Git, jq and an authenticated GitHub CLI;
 prepare authentication with `gh auth login`.
 
-Rows show `REPOSITORY` first, then `OPEN` and `FIXED` as
-`23 / 1,095 (2.1%)` (closed / total). Counts are right-aligned in six-character
-fields with comma separators, expanding for larger values. Repositories sort by
+Rows show `REPOSITORY` first, then centered `ISSUES` and `PRS` group headings.
+Issues have `OPEN` and `FIXED`; PRs have `OPEN`, `MERGED` and `CLOSED`.
+`FIXED` is centered over the full closed / total and percentage value, such as
+`23 / 1,095 (2.1%)`. Numeric padding starts at four characters and expands to fit
+the largest comma-separated count in that refresh, including totals. Column
+headings and `ERROR` also fit without shifting later columns. Counts remain
+right-aligned. Repositories sort by
 open issues descending, then by name, with failed observations last. Dashed
 separators distinguish the header and combined totals.
 Here **fixed means closed**, including duplicates and issues closed as not
-planned; the percentage is `closed / (open + closed) * 100`. Pull requests are
-excluded, and repositories with no issues show `N/A` for the percentage. Counts
-use the GitHub API's full issue totals, without fetching a limited issue list.
+planned; the percentage is `closed / (open + closed) * 100`. Pull requests stay
+separate from that calculation, and repositories with no issues show `N/A` for
+the percentage even if they have PRs. PR `OPEN` includes drafts. PR `CLOSED`
+counts only requests closed without merging, following GitHub's
+[pull-request states](https://docs.github.com/en/graphql/reference/pulls#pullrequeststate).
+Counts use the GitHub API's complete totals without fetching limited lists.
 
 In a terminal it refreshes every 60 seconds using one read-only GraphQL request
 per refresh. Press `q` to quit, `r` to refresh early, or Ctrl-C to exit. `--once`
 prints one report; redirected input/output also selects a single report. Failed
 observations show `ERROR` and label the combined total `TOTAL (partial)`;
 single reports exit nonzero, while the live dashboard retries on the next cycle.
+A repository row requires valid issue and PR counts; an unavailable category
+never becomes zero. Partial totals include only complete repository rows.
 
 ### GitHub Actions inspection
 

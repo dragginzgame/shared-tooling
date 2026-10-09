@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.2.9]
+
+### Added
+
+- Show open, merged and closed-without-merge pull requests alongside issue counts
+  in the sibling GitHub dashboard, keeping issue completion percentages separate.
+  Center the issue/PR group headings and completion heading, and expand numeric
+  padding from four characters to fit the report's counts and totals.
+- Record Shared Tooling's source version during snapshot refresh and show each
+  sibling's recorded version, revision and integrity in the tooling report.
+  Existing snapshots without a version remain explicit until refreshed.
+
+### Fixed
+
+- Include every declared snapshot file in fleet integrity checks, so missing
+  files and drift in documents or executable modes cannot appear intact merely
+  because they are outside the tooling LOC scope.
+
 ## [0.2.8]
 
 ### Fixed

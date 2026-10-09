@@ -20,6 +20,7 @@ mkdir -p \
     "$consumer_root" \
     "$FIXTURE/bin"
 git init -q "$consumer_root"
+printf '8.8.8\n' > "$consumer_root/VERSION"
 
 cp "$ROOT/scripts/ci/verify-file-checksum.sh" "$source_root/scripts/ci/"
 cp "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" "$source_root/scripts/ci/"
@@ -31,6 +32,9 @@ chmod +x "$source_root/scripts/ci/sample.sh"
 revision_root="$FIXTURE/revision"
 mkdir -p "$revision_root"
 cp -Rp "$source_root/scripts" "$revision_root/"
+printf '0.2.8\n' > "$revision_root/VERSION"
+# The export must use the committed version even if working bytes differ.
+printf '9.9.9\n' > "$source_root/VERSION"
 
 cat >"$FIXTURE/bin/git" <<'SCRIPT'
 #!/usr/bin/env bash
@@ -135,6 +139,40 @@ fi
 
 bash "$consumer_root/scripts/ci/verify-shared-tooling-snapshot.sh" \
     --consumer "$consumer_root" >/dev/null
+
+[[ "$(awk -F '\t' '$1 == "# version" {print $2}' "$consumer_root/.shared-tooling.snapshot")" == 0.2.8 ]]
+[[ "$(cat "$consumer_root/VERSION")" == 8.8.8 ]]
+cp "$consumer_root/.shared-tooling.snapshot" "$FIXTURE/version-manifest"
+for annotation in $'# version\t01.2.3' $'# version\t0.2.8\textra' $'# version\t0.2.8\n# version\t0.2.8'; do
+    sed '/^# version/d' "$FIXTURE/version-manifest" > "$consumer_root/.shared-tooling.snapshot"
+    printf '%s\n' "$annotation" >> "$consumer_root/.shared-tooling.snapshot"
+    cp "$consumer_root/.shared-tooling.snapshot" "$FIXTURE/invalid-version-manifest"
+    if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer_root" \
+        > "$FIXTURE/invalid-version-verify.log" 2>&1; then exit 1; fi
+    if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+        --source "$source_root" --consumer "$consumer_root" > "$FIXTURE/invalid-version-refresh.log" 2>&1; then exit 1; fi
+    cmp "$FIXTURE/invalid-version-manifest" "$consumer_root/.shared-tooling.snapshot"
+done
+cp "$FIXTURE/version-manifest" "$consumer_root/.shared-tooling.snapshot"
+# Version annotations are display metadata. A record without one remains a
+# valid v1 snapshot; a real refresh adds the version from its selected source.
+sed '/^# version/d' "$FIXTURE/version-manifest" > "$consumer_root/.shared-tooling.snapshot"
+bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer_root" \
+    > "$FIXTURE/unrecorded-version.log"
+grep -F 'version unrecorded' "$FIXTURE/unrecorded-version.log" >/dev/null
+PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$consumer_root" >/dev/null
+cmp "$FIXTURE/version-manifest" "$consumer_root/.shared-tooling.snapshot"
+# Invalid or missing committed versions fail before replacing a consumer file.
+for version in missing 01.2.3 $'0.2.8\n\n'; do
+    if [[ "$version" == missing ]]; then rm "$revision_root/VERSION";
+    else printf '%s' "$version" > "$revision_root/VERSION"; fi
+    if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+        --source "$source_root" --consumer "$consumer_root" > "$FIXTURE/source-version.log" 2>&1; then exit 1; fi
+    cmp "$FIXTURE/version-manifest" "$consumer_root/.shared-tooling.snapshot"
+    cmp "$revision_root/scripts/ci/sample.sh" "$consumer_root/scripts/ci/sample.sh"
+done
+printf '0.2.8' > "$revision_root/VERSION"
 
 # The checksum helper is inspected data, never verification authority. Neither
 # helper-only corruption nor corruption of both helper and payload may pass.
@@ -623,8 +661,9 @@ git -C "$advance_source" config core.hooksPath /dev/null
 git -C "$advance_source" remote add origin https://example.invalid/shared-tooling
 for path in "$checksum_path" "$verifier_path"; do cp -p "$ROOT/$path" "$advance_source/$path"; done
 printf '#!/usr/bin/env bash\nprintf "old snapshot\\n"\n' > "$advance_source/scripts/ci/sample.sh"
+printf '0.2.8\n' > "$advance_source/VERSION"
 chmod +x "$advance_source/scripts/ci/sample.sh"
-git -C "$advance_source" add scripts
+git -C "$advance_source" add scripts VERSION
 git -C "$advance_source" commit -qm 'Synthetic previous snapshot'
 git init -q "$advance_seed"
 bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$advance_source" --consumer "$advance_seed" \
@@ -632,14 +671,15 @@ bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$advance_source"
 printf 'unrelated staged input\n' > "$advance_seed/unrelated"
 git -C "$advance_seed" add unrelated
 printf '#!/usr/bin/env bash\nprintf "new snapshot\\n"\n' > "$advance_source/scripts/ci/sample.sh"
+printf '0.2.9\n' > "$advance_source/VERSION"
 chmod -x "$advance_source/scripts/ci/sample.sh"
-git -C "$advance_source" add scripts/ci/sample.sh
+git -C "$advance_source" add scripts/ci/sample.sh VERSION
 git -C "$advance_source" commit -qm 'Synthetic next snapshot'
 export SNAPSHOT_ADVANCE_SOURCE="$advance_source"
 cat > "$FIXTURE/advance-bin/git" <<'SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
-if [[ "$1" == -C && "$2" == "$SNAPSHOT_ADVANCE_SOURCE" && "$3" == cat-file && "$4" == blob &&
+if [[ "$1" == -C && "$2" == "$SNAPSHOT_ADVANCE_SOURCE" && "$3" == cat-file && "$4" == blob && "$5" == *:scripts/ci/* &&
     ! -e "$SNAPSHOT_ADVANCE_CONSUMER/mutated" ]]; then
     consumer="$SNAPSHOT_ADVANCE_CONSUMER"
     case "$SNAPSHOT_ADVANCE_CASE" in
@@ -689,6 +729,7 @@ for state in unchanged partial edited mode staged symlink forged unavailable man
         --source "$advance_source" --consumer "$consumer" > "$FIXTURE/advance-$state.log" 2>&1 || status=$?
     if [[ "$state" == unchanged || "$state" == partial ]]; then
         [[ "$status" == 0 ]]
+        [[ "$(awk -F '\t' '$1 == "# version" {print $2}' "$consumer/.shared-tooling.snapshot")" == 0.2.9 ]]
         cmp "$advance_source/scripts/ci/sample.sh" "$consumer/scripts/ci/sample.sh"
         [[ ! -x "$consumer/scripts/ci/sample.sh" ]]
         bash "$ROOT/$verifier_path" --consumer "$consumer" >/dev/null
