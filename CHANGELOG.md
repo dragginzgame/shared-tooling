@@ -1,9 +1,28 @@
 # Changelog
 
+## [0.1.35]
+
+### Changed
+
+- Clarify that authorized dependency updates include registry access, while
+  release/deployment preparation fetches locked dependencies before offline
+  validation; agents must not impose offline mode on those preparation steps.
+  ([#84](https://github.com/dragginzgame/shared-tooling/issues/84))
+
+### Added
+
+- Install consumer-selected Cargo binaries and examples through the shared Rust
+  tool installer, with explicit profiles, offline receipt and byte checks, and
+  retained failed builds that leave earlier installations usable.
+  ([#65](https://github.com/dragginzgame/shared-tooling/issues/65))
+
 ## [0.1.34]
 
 ### Fixed
 
+- Include locked dependency-cache preparation before compiled release adapters,
+  preserving explicit offline settings and interrupted metadata recovery.
+  ([#84](https://github.com/dragginzgame/shared-tooling/issues/84))
 - Resolve PocketIC alignment manifests correctly under `CDPATH` and unusual
   directory names; stop before Cargo if the selected directory becomes unavailable.
   ([#82](https://github.com/dragginzgame/shared-tooling/issues/82))

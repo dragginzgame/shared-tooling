@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/verify-file-checksum.sh ci/tool-versions.env
+# Shared companions: scripts/ci/verify-file-checksum.sh scripts/dev/install-rust-tools.sh ci/tool-versions.env
 set -euo pipefail
 
 # Explicit native qualification, separate from the offline portable suite.
@@ -29,7 +29,7 @@ host="$(sed -n 's/^host: //p' "$fixture/rustc.txt")"
 [[ -n "$host" ]]
 {
     git -C "$ROOT" rev-parse HEAD
-    for file in scripts/ci/qualify-cargo-install.sh scripts/ci/verify-file-checksum.sh ci/tool-versions.env; do
+    for file in scripts/ci/qualify-cargo-install.sh scripts/dev/install-rust-tools.sh scripts/ci/verify-file-checksum.sh ci/tool-versions.env; do
         printf '%s  %s\n' "$(bash "$checksum" --print sha256 "$ROOT/$file")" "$file"
     done
 } > "$fixture/source.txt"
@@ -127,6 +127,25 @@ exercise() {
     printf '\nchanged qualification bytes\n' >> "$case_root/damaged-binary"
     if bash "$checksum" sha256 "$digest" "$case_root/damaged-binary" > "$case_root/damaged-check.log" 2>&1; then
         echo 'changed binary was admitted' >&2; exit 1
+    fi
+
+    # Exercise the production entry point separately from Cargo's own contract.
+    # Include release-profile binary selection; the example retains debug.
+    local profile=debug installed
+    [[ "$kind" != bin ]] || profile=release
+    mkdir "$case_root/consumer"
+    local installer_args=(--consumer "$case_root/consumer" --package "$package"
+        --version "$version" "--$kind" "$target" --profile "$profile")
+    bash "$ROOT/scripts/dev/install-rust-tools.sh" "${installer_args[@]}" > "$case_root/selected-install.txt" 2> "$case_root/selected-install.log"
+    installed="$(cat "$case_root/selected-install.txt")"
+    [[ -x "$installed" && -f "$installed" && ! -L "$installed" ]]
+    CARGO_NET_OFFLINE=true bash "$ROOT/scripts/dev/install-rust-tools.sh" "${installer_args[@]}" --check > "$case_root/selected-check.txt"
+    CARGO_NET_OFFLINE=true bash "$ROOT/scripts/dev/install-rust-tools.sh" "${installer_args[@]}" > "$case_root/selected-reuse.txt"
+    cmp "$case_root/selected-install.txt" "$case_root/selected-check.txt"
+    cmp "$case_root/selected-install.txt" "$case_root/selected-reuse.txt"
+    printf '\nchanged qualification bytes\n' >> "$installed"
+    if CARGO_NET_OFFLINE=true bash "$ROOT/scripts/dev/install-rust-tools.sh" "${installer_args[@]}" --check > "$case_root/selected-corruption.log" 2>&1; then
+        echo 'production check admitted changed executable' >&2; exit 1
     fi
     printf 'Native Cargo %s installation qualified: %s %s (%s); observed sha256 %s\n' "$kind" "$package" "$version" "$target" "$digest"
 }
