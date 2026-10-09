@@ -52,10 +52,13 @@ run() {
 }
 (cd "$fixture/elsewhere" && run --once)
 awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
-grep -Fx 'dragginzgame/alpha 10000 2500 7500 75.0%' "$fixture/rows"
-grep -Fx 'dragginzgame/beta 10 9 1 10.0%' "$fixture/rows"
-grep -Fx 'dragginzgame/zero 0 0 0 N/A' "$fixture/rows"
-grep -Fx 'TOTAL 10010 2509 7501 74.9%' "$fixture/rows"
+grep -Fx 'REPOSITORY OPEN FIXED' "$fixture/rows"
+[[ "$(grep -cE '^-+$' "$fixture/rows")" == 3 ]]
+grep -Fx 'dragginzgame/alpha 2,500 7,500 / 10,000 (75.0%)' "$fixture/rows"
+grep -Fx 'dragginzgame/beta 9 1 / 10 (10.0%)' "$fixture/rows"
+grep -Fx 'dragginzgame/zero 0 0 / 0 (N/A)' "$fixture/rows"
+grep -Fx 'TOTAL 2,509 7,501 / 10,010 (74.9%)' "$fixture/rows"
+grep -Fx 'dragginzgame/beta              9       1 /     10 (10.0%)' "$fixture/output"
 [[ "$(wc -l < "$ISSUES_TEST_CALLS" | tr -d ' ')" == 1 ]]
 grep -F 'api graphql --hostname github.com' "$ISSUES_TEST_CALLS"
 if grep -E 'ichelper|example.invalid|no-origin|r3:' "$ISSUES_TEST_CALLS"; then exit 1; fi
@@ -76,7 +79,7 @@ run --once "$newline_parent"
 grep -F 'name: "shared-tooling"' "$ISSUES_TEST_CALLS"
 if grep -E 'name: "(alpha|beta|zero)"|r1:' "$ISSUES_TEST_CALLS"; then exit 1; fi
 awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
-grep -Fx 'dragginzgame/shared-tooling 10000 2500 7500 75.0%' "$fixture/rows"
+grep -Fx 'dragginzgame/shared-tooling 2,500 7,500 / 10,000 (75.0%)' "$fixture/rows"
 
 # Nonterminal invocation reports once even without --once.
 run --interval 1 "$fixture/projects"
@@ -90,6 +93,19 @@ status=0
 run --interval || status=$?
 [[ "$status" == 2 && ! -s "$ISSUES_TEST_CALLS" ]]
 
+# Rank numerically by open count, with name ties, irrespective of total count.
+# Grouped counts wider than six characters must remain intact.
+cat > "$ISSUES_TEST_RESPONSE" <<'JSON'
+{"data":{"r0":{"open":{"totalCount":9},"closed":{"totalCount":999999}},"r1":{"open":{"totalCount":100},"closed":{"totalCount":1}},"r2":{"open":{"totalCount":9},"closed":{"totalCount":0}}}}
+JSON
+run --once
+awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
+grep -Fx 'dragginzgame/beta 100 1 / 101 (1.0%)' "$fixture/rows"
+grep -Fx 'dragginzgame/alpha 9 999,999 / 1,000,008 (100.0%)' "$fixture/rows"
+awk '$1 ~ /^dragginzgame\// { print $1 }' "$fixture/output" > "$fixture/order"
+printf '%s\n' dragginzgame/beta dragginzgame/alpha dragginzgame/zero > "$fixture/expected-order"
+cmp "$fixture/order" "$fixture/expected-order"
+
 # A GraphQL partial response retains successful rows and fails the report.
 cat > "$ISSUES_TEST_RESPONSE" <<'JSON'
 {"data":{"r0":{"open":{"totalCount":2500},"closed":{"totalCount":7500}},"r1":null,"r2":{"open":{"totalCount":0},"closed":{"totalCount":0}}},"errors":[{"message":"unavailable","path":["r1"]}]}
@@ -98,8 +114,11 @@ status=0
 ISSUES_TEST_STATUS=1 run --once || status=$?
 [[ "$status" == 1 ]]
 awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
-grep -Fx 'dragginzgame/beta ERROR ERROR ERROR N/A' "$fixture/rows"
-grep -Fx 'TOTAL (partial) 10000 2500 7500 75.0%' "$fixture/rows"
+grep -Fx 'dragginzgame/beta ERROR ERROR / ERROR (N/A)' "$fixture/rows"
+grep -Fx 'TOTAL (partial) 2,500 7,500 / 10,000 (75.0%)' "$fixture/rows"
+awk '$1 ~ /^dragginzgame\// { print $1 }' "$fixture/output" > "$fixture/order"
+printf '%s\n' dragginzgame/alpha dragginzgame/zero dragginzgame/beta > "$fixture/expected-order"
+cmp "$fixture/order" "$fixture/expected-order"
 grep -F 'simulated GitHub failure' "$fixture/output"
 
 # Invalid, missing, fractional and negative observations must never become zero.
@@ -111,7 +130,7 @@ for response in '' 'not JSON' '{"data":{}}' \
     run --once || status=$?
     [[ "$status" == 1 ]]
     awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
-    grep -Fx 'TOTAL (partial) ERROR ERROR ERROR N/A' "$fixture/rows"
+    grep -Fx 'TOTAL (partial) ERROR ERROR / ERROR (N/A)' "$fixture/rows"
 done
 mkdir "$fixture/empty"
 status=0

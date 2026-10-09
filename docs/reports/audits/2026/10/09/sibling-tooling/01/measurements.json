@@ -1,0 +1,592 @@
+{
+   "cloc_version" : "2.10",
+   "inventory_sha256" : "b0fb55ddba7bc751d16b1d38870cdd0c6bdf1829aed52aa558357baa22a68c35",
+   "method" : "audits/flow-convergence-and-duplication.md",
+   "repositories" : [
+      {
+         "agents_sha256" : "e5b35a2f1f4ac2d5926e15588ee585e781f4cb84a8e29385e3bfe75ea96d7338",
+         "dirty" : true,
+         "drifted_files" : [],
+         "fleet_candidates" : [
+            {
+               "code" : 88,
+               "kind" : "ci",
+               "language" : "Bourne Shell",
+               "owner" : "shared",
+               "path" : "scripts/ci/test-cloc-tooling.sh",
+               "sha256" : "1d84dee6c5695151f4e35e800459e1f14f49a274a050e966998368176abb0f6a"
+            },
+            {
+               "code" : 116,
+               "kind" : "other",
+               "language" : "Bourne Shell",
+               "owner" : "shared",
+               "path" : "scripts/dev/cloc-siblings.sh",
+               "sha256" : "496af9d869f2dbeac20e75e340be83b1df61561b7c34f74f309abc32a46c77da"
+            },
+            {
+               "code" : 265,
+               "kind" : "other",
+               "language" : "Perl",
+               "owner" : "shared",
+               "path" : "scripts/dev/cloc-tooling.pl",
+               "sha256" : "cffe6f55592e52d14939f1dfd0f9da84a3c53caa41cdd2da57be90f073e321a8"
+            }
+         ],
+         "head" : "c4c046f947b2b28f4342cbf6efe9221ba1ed5f70",
+         "name" : "canic",
+         "skipped_files" : [
+            ".github/CODEOWNERS"
+         ],
+         "snapshot_manifests" : [
+            {
+               "path" : ".shared-tooling.snapshot",
+               "revision" : "0ba0ad00ed94848e54ecc82629b6b7873b7284c0",
+               "root" : "."
+            }
+         ],
+         "totals" : {
+            "ci_loc" : 15343,
+            "data_lines" : 7893,
+            "local_loc" : 11794,
+            "other_loc" : 2757,
+            "shared_loc" : 6306,
+            "total_loc" : 18100
+         }
+      },
+      {
+         "agents_sha256" : "5cd952b53b4c8d2616a31c715c30a54bd4d7d71feb0ad5aa31af6f25d10a9da1",
+         "dirty" : true,
+         "drifted_files" : [],
+         "fleet_candidates" : [
+            {
+               "code" : 279,
+               "kind" : "other",
+               "language" : "Perl",
+               "owner" : "shared",
+               "path" : "scripts/dev/cloc-tooling.pl",
+               "sha256" : "1dd0f35519fc3afafb723eadbb7d2cce1207e4103f41939d3ceec5a6678ebb22"
+            }
+         ],
+         "head" : "01f765b2b0b1c403feb3df3e0a7210bcaa6c26c9",
+         "name" : "ic-auth",
+         "skipped_files" : [],
+         "snapshot_manifests" : [
+            {
+               "path" : ".shared-tooling.snapshot",
+               "revision" : "9af82393c620e486578febed74a648523725c234",
+               "root" : "."
+            }
+         ],
+         "totals" : {
+            "ci_loc" : 3387,
+            "data_lines" : 42,
+            "local_loc" : 855,
+            "other_loc" : 1890,
+            "shared_loc" : 4422,
+            "total_loc" : 5277
+         }
+      },
+      {
+         "agents_sha256" : "0c8e204947f49d328f6dc9b0b35b2b31fbbcc6dbaaea6c8c8c34454eb158c10a",
+         "dirty" : true,
+         "drifted_files" : [],
+         "fleet_candidates" : [
+            {
+               "code" : 126,
+               "kind" : "ci",
+               "language" : "Bourne Shell",
+               "owner" : "shared",
+               "path" : "scripts/ci/test-cloc-tooling.sh",
+               "sha256" : "6e2bb50c2f0d6f229bf93eb7904134232ed08ece3fcc9c4cc5886d52d7c64008"
+            },
+            {
+               "code" : 279,
+               "kind" : "other",
+               "language" : "Perl",
+               "owner" : "shared",
+               "path" : "scripts/dev/cloc-tooling.pl",
+               "sha256" : "1dd0f35519fc3afafb723eadbb7d2cce1207e4103f41939d3ceec5a6678ebb22"
+            }
+         ],
+         "head" : "d6c6082efc7c36de98e6e92ec5b4091de5ca43b4",
+         "name" : "ic-backup",
+         "skipped_files" : [],
+         "snapshot_manifests" : [
+            {
+               "path" : ".shared-tooling.snapshot",
+               "revision" : "635a39a9dd5f8d021fa9c9196b591e00521a7e02",
+               "root" : "."
+            }
+         ],
+         "totals" : {
+            "ci_loc" : 6217,
+            "data_lines" : 47,
+            "local_loc" : 2296,
+            "other_loc" : 3072,
+            "shared_loc" : 6993,
+            "total_loc" : 9289
+         }
+      },
+      {
+         "agents_sha256" : "d8521894280245cf85b5cc07f3ce449c7fc30eabf757619a8066c12a3941c414",
+         "dirty" : false,
+         "drifted_files" : [],
+         "fleet_candidates" : [
+            {
+               "code" : 116,
+               "kind" : "ci",
+               "language" : "Bourne Shell",
+               "owner" : "shared",
+               "path" : "scripts/ci/test-cloc-siblings.sh",
+               "sha256" : "e2b88271eb7c655eb8130d72e856c7e58033c1968f91f77e49311d680ac17d6a"
+            },
+            {
+               "code" : 126,
+               "kind" : "ci",
+               "language" : "Bourne Shell",
+               "owner" : "shared",
+               "path" : "scripts/ci/test-cloc-tooling.sh",
+               "sha256" : "6e2bb50c2f0d6f229bf93eb7904134232ed08ece3fcc9c4cc5886d52d7c64008"
+            },
+            {
+               "code" : 119,
+               "kind" : "other",
+               "language" : "Bourne Shell",
+               "owner" : "shared",
+               "path" : "scripts/dev/cloc-siblings.sh",
+               "sha256" : "1d1f057ef5f2788b79bfd3d0eb1d0a73c2a9eeda161a23f4757e3f16a6ff9566"
+            },
+            {
+               "code" : 279,
+               "kind" : "other",
+               "language" : "Perl",
+               "owner" : "shared",
+               "path" : "scripts/dev/cloc-tooling.pl",
+               "sha256" : "1dd0f35519fc3afafb723eadbb7d2cce1207e4103f41939d3ceec5a6678ebb22"
+            }
+         ],
+         "head" : "f0192506d0a71a3f4116220db1f6d901947ba74a",
+         "name" : "ic-blob-storage",
+         "skipped_files" : [],
+         "snapshot_manifests" : [
+            {
+               "path" : ".shared-tooling.snapshot",
+               "revision" : "9af82393c620e486578febed74a648523725c234",
+               "root" : "."
+            }
+         ],
+         "totals" : {
+            "ci_loc" : 6053,
+            "data_lines" : 20,
+            "local_loc" : 2117,
+            "other_loc" : 3326,
+            "shared_loc" : 7262,
+            "total_loc" : 9379
+         }
+      },
+      {
+         "agents_sha256" : "9faa3b575f72b67dd60785a8ad949822108df118d4e3c4f113f19da07911ca7a",
+         "dirty" : false,
+         "drifted_files" : [],
+         "fleet_candidates" : [
+            {
+               "code" : 279,
+               "kind" : "other",
+               "language" : "Perl",
+               "owner" : "shared",
+               "path" : "scripts/dev/cloc-tooling.pl",
+               "sha256" : "1dd0f35519fc3afafb723eadbb7d2cce1207e4103f41939d3ceec5a6678ebb22"
+            }
+         ],
+         "head" : "1cad3253096b6eb67be5187209e7fb606593c501",
+         "name" : "ic-host-tooling",
+         "skipped_files" : [],
+         "snapshot_manifests" : [
+            {
+               "path" : ".shared-tooling.snapshot",
+               "revision" : "9af82393c620e486578febed74a648523725c234",
+               "root" : "."
+            }
+         ],
+         "totals" : {
+            "ci_loc" : 4000,
+            "data_lines" : 114,
+            "local_loc" : 945,
+            "other_loc" : 2297,
+            "shared_loc" : 5352,
+            "total_loc" : 6297
+         }
+      },
+      {
+         "agents_sha256" : "d8372569a77cac386cdb8c2b7c67cbffb3ad9f47a05a5cac674c654428e7b33f",
+         "dirty" : true,
+         "drifted_files" : [],
+         "fleet_candidates" : [
+            {
+               "code" : 279,
+               "kind" : "other",
+               "language" : "Perl",
+               "owner" : "shared",
+               "path" : "scripts/dev/cloc-tooling.pl",
+               "sha256" : "1dd0f35519fc3afafb723eadbb7d2cce1207e4103f41939d3ceec5a6678ebb22"
+            }
+         ],
+         "head" : "f6c6e414fa1ea3a1726a5535c0f9d5ded180ddc8",
+         "name" : "ic-jobs",
+         "skipped_files" : [],
+         "snapshot_manifests" : [
+            {
+               "path" : ".shared-tooling.snapshot",
+               "revision" : "4e274a2219c0b0cc3af68ec65658b373253518fb",
+               "root" : "."
+            }
+         ],
+         "totals" : {
+            "ci_loc" : 2075,
+            "data_lines" : 20,
+            "local_loc" : 492,
+            "other_loc" : 1561,
+            "shared_loc" : 3144,
+            "total_loc" : 3636
+         }
+      },
+      {
+         "agents_sha256" : "0c49f9d090970a20d2a7cd56249aa0f47e80a298a273fad4e5ed48f1362a5209",
+         "dirty" : true,
+         "drifted_files" : [],
+         "fleet_candidates" : [
+            {
+               "code" : 25,
+               "kind" : "ci",
+               "language" : "Bourne Shell",
+               "owner" : "shared",
+               "path" : "scripts/ci/test-cloc-fixture-contexts.sh",
+               "sha256" : "b07ebcbe7d8308a64f4723fe48366ee40b8b228a80dc808516169e983dc4a6a4"
+            },
+            {
+               "code" : 116,
+               "kind" : "ci",
+               "language" : "Bourne Shell",
+               "owner" : "shared",
+               "path" : "scripts/ci/test-cloc-siblings.sh",
+               "sha256" : "e2b88271eb7c655eb8130d72e856c7e58033c1968f91f77e49311d680ac17d6a"
+            },
+            {
+               "code" : 126,
+               "kind" : "ci",
+               "language" : "Bourne Shell",
+               "owner" : "shared",
+               "path" : "scripts/ci/test-cloc-tooling.sh",
+               "sha256" : "6e2bb50c2f0d6f229bf93eb7904134232ed08ece3fcc9c4cc5886d52d7c64008"
+            },
+            {
+               "code" : 119,
+               "kind" : "other",
+               "language" : "Bourne Shell",
+               "owner" : "shared",
+               "path" : "scripts/dev/cloc-siblings.sh",
+               "sha256" : "1d1f057ef5f2788b79bfd3d0eb1d0a73c2a9eeda161a23f4757e3f16a6ff9566"
+            },
+            {
+               "code" : 279,
+               "kind" : "other",
+               "language" : "Perl",
+               "owner" : "shared",
+               "path" : "scripts/dev/cloc-tooling.pl",
+               "sha256" : "1dd0f35519fc3afafb723eadbb7d2cce1207e4103f41939d3ceec5a6678ebb22"
+            }
+         ],
+         "head" : "6343f62a36636cb999fa404e4b8769159ca9f4cb",
+         "name" : "ic-memory",
+         "skipped_files" : [],
+         "snapshot_manifests" : [
+            {
+               "path" : ".shared-tooling.snapshot",
+               "revision" : "1872ed2c20f6c70689bb2249050b1d673c60bfa0",
+               "root" : "."
+            }
+         ],
+         "totals" : {
+            "ci_loc" : 4856,
+            "data_lines" : 38,
+            "local_loc" : 917,
+            "other_loc" : 1571,
+            "shared_loc" : 5510,
+            "total_loc" : 6427
+         }
+      },
+      {
+         "agents_sha256" : "8fe599b6e8784d9390af1a0e6fb8cc8ccd3f64bec8c1eb602632f6b10c5748d4",
+         "dirty" : true,
+         "drifted_files" : [],
+         "fleet_candidates" : [
+            {
+               "code" : 126,
+               "kind" : "ci",
+               "language" : "Bourne Shell",
+               "owner" : "shared",
+               "path" : "scripts/ci/test-cloc-tooling.sh",
+               "sha256" : "6e2bb50c2f0d6f229bf93eb7904134232ed08ece3fcc9c4cc5886d52d7c64008"
+            },
+            {
+               "code" : 279,
+               "kind" : "other",
+               "language" : "Perl",
+               "owner" : "shared",
+               "path" : "scripts/dev/cloc-tooling.pl",
+               "sha256" : "1dd0f35519fc3afafb723eadbb7d2cce1207e4103f41939d3ceec5a6678ebb22"
+            }
+         ],
+         "head" : "d8276daa3ae8603a5b4e196d0bb5369de54c1216",
+         "name" : "ic-metrics",
+         "skipped_files" : [],
+         "snapshot_manifests" : [
+            {
+               "path" : ".shared-tooling.snapshot",
+               "revision" : "4e274a2219c0b0cc3af68ec65658b373253518fb",
+               "root" : "."
+            }
+         ],
+         "totals" : {
+            "ci_loc" : 5211,
+            "data_lines" : 21,
+            "local_loc" : 1520,
+            "other_loc" : 2581,
+            "shared_loc" : 6272,
+            "total_loc" : 7792
+         }
+      },
+      {
+         "agents_sha256" : "881d7d6ebe4e7490134447209be0ed7ea110a72a99eba03e47fe6f2781ce93ad",
+         "dirty" : true,
+         "drifted_files" : [],
+         "fleet_candidates" : [
+            {
+               "code" : 279,
+               "kind" : "other",
+               "language" : "Perl",
+               "owner" : "shared",
+               "path" : "scripts/dev/cloc-tooling.pl",
+               "sha256" : "1dd0f35519fc3afafb723eadbb7d2cce1207e4103f41939d3ceec5a6678ebb22"
+            }
+         ],
+         "head" : "edd68020d9ef8e76a241e89daf77e51155a92f57",
+         "name" : "ic-query",
+         "skipped_files" : [],
+         "snapshot_manifests" : [
+            {
+               "path" : ".shared-tooling.snapshot",
+               "revision" : "9af82393c620e486578febed74a648523725c234",
+               "root" : "."
+            }
+         ],
+         "totals" : {
+            "ci_loc" : 5572,
+            "data_lines" : 1352,
+            "local_loc" : 4087,
+            "other_loc" : 2776,
+            "shared_loc" : 4261,
+            "total_loc" : 8348
+         }
+      },
+      {
+         "agents_sha256" : "9bb76e1cb57bb736f95edfc213b207d9fb70ce95b07237344b3b244b679e7fd8",
+         "dirty" : true,
+         "drifted_files" : [],
+         "fleet_candidates" : [
+            {
+               "code" : 279,
+               "kind" : "other",
+               "language" : "Perl",
+               "owner" : "shared",
+               "path" : "scripts/dev/cloc-tooling.pl",
+               "sha256" : "1dd0f35519fc3afafb723eadbb7d2cce1207e4103f41939d3ceec5a6678ebb22"
+            }
+         ],
+         "head" : "a27967101b68e111f9a717e27977fb41c2fd1818",
+         "name" : "ic-testkit",
+         "skipped_files" : [],
+         "snapshot_manifests" : [
+            {
+               "path" : ".shared-tooling.snapshot",
+               "revision" : "1a54fb625d6e47efa64c4384808ecbc87be84e7e",
+               "root" : "."
+            }
+         ],
+         "totals" : {
+            "ci_loc" : 5381,
+            "data_lines" : 20,
+            "local_loc" : 2044,
+            "other_loc" : 1684,
+            "shared_loc" : 5021,
+            "total_loc" : 7065
+         }
+      },
+      {
+         "agents_sha256" : "cd9d806ace7e8979d24132bd65fac0503ea6e31a867b366aa2784d1b925834ac",
+         "dirty" : true,
+         "drifted_files" : [],
+         "fleet_candidates" : [
+            {
+               "code" : 126,
+               "kind" : "ci",
+               "language" : "Bourne Shell",
+               "owner" : "shared",
+               "path" : "scripts/ci/test-cloc-tooling.sh",
+               "sha256" : "6e2bb50c2f0d6f229bf93eb7904134232ed08ece3fcc9c4cc5886d52d7c64008"
+            },
+            {
+               "code" : 279,
+               "kind" : "other",
+               "language" : "Perl",
+               "owner" : "shared",
+               "path" : "scripts/dev/cloc-tooling.pl",
+               "sha256" : "1dd0f35519fc3afafb723eadbb7d2cce1207e4103f41939d3ceec5a6678ebb22"
+            }
+         ],
+         "head" : "5c6b7f45d72f9051b4e155410ec47339885dc4f2",
+         "name" : "ic-timers",
+         "skipped_files" : [],
+         "snapshot_manifests" : [
+            {
+               "path" : ".shared-tooling-audits.snapshot",
+               "revision" : "1a54fb625d6e47efa64c4384808ecbc87be84e7e",
+               "root" : "."
+            },
+            {
+               "path" : ".shared-tooling.snapshot",
+               "revision" : "1a54fb625d6e47efa64c4384808ecbc87be84e7e",
+               "root" : "."
+            },
+            {
+               "path" : ".shared-tooling/helpers/.shared-tooling.snapshot",
+               "revision" : "1a54fb625d6e47efa64c4384808ecbc87be84e7e",
+               "root" : ".shared-tooling/helpers"
+            }
+         ],
+         "totals" : {
+            "ci_loc" : 6677,
+            "data_lines" : 46,
+            "local_loc" : 4580,
+            "other_loc" : 4030,
+            "shared_loc" : 6127,
+            "total_loc" : 10707
+         }
+      },
+      {
+         "agents_sha256" : "4c1763da78d8e07b79793926e8994b928f3831fb1a66c75cc87704cfca38a0f5",
+         "dirty" : true,
+         "drifted_files" : [],
+         "fleet_candidates" : [
+            {
+               "code" : 119,
+               "kind" : "other",
+               "language" : "Bourne Shell",
+               "owner" : "shared",
+               "path" : "scripts/dev/cloc-siblings.sh",
+               "sha256" : "1d1f057ef5f2788b79bfd3d0eb1d0a73c2a9eeda161a23f4757e3f16a6ff9566"
+            },
+            {
+               "code" : 279,
+               "kind" : "other",
+               "language" : "Perl",
+               "owner" : "shared",
+               "path" : "scripts/dev/cloc-tooling.pl",
+               "sha256" : "1dd0f35519fc3afafb723eadbb7d2cce1207e4103f41939d3ceec5a6678ebb22"
+            }
+         ],
+         "head" : "145250b8ca7ce36cda240d4ff8fa47f254527877",
+         "name" : "icydb",
+         "skipped_files" : [
+            ".github/CODEOWNERS"
+         ],
+         "snapshot_manifests" : [
+            {
+               "path" : ".shared-tooling.snapshot",
+               "revision" : "4e274a2219c0b0cc3af68ec65658b373253518fb",
+               "root" : "."
+            }
+         ],
+         "totals" : {
+            "ci_loc" : 8688,
+            "data_lines" : 88,
+            "local_loc" : 6630,
+            "other_loc" : 3000,
+            "shared_loc" : 5058,
+            "total_loc" : 11688
+         }
+      },
+      {
+         "agents_sha256" : "adc44bd4872dee1609463c57f7ea5017d5a5ba1e6f72f46f0a37426ef0802d9e",
+         "dirty" : true,
+         "drifted_files" : [],
+         "fleet_candidates" : [],
+         "head" : "44d4e2c6d41e3575b2503e79ffa369129ff3ecf2",
+         "name" : "toko",
+         "skipped_files" : [],
+         "snapshot_manifests" : [],
+         "totals" : {
+            "ci_loc" : 231,
+            "data_lines" : 168,
+            "local_loc" : 6264,
+            "other_loc" : 6033,
+            "shared_loc" : 0,
+            "total_loc" : 6264
+         }
+      },
+      {
+         "agents_sha256" : "63de26e0f221f9ec6876b51da6fa5f83425b15d5afc8306d28ddff46ff5888c7",
+         "dirty" : true,
+         "drifted_files" : [],
+         "fleet_candidates" : [
+            {
+               "code" : 279,
+               "kind" : "other",
+               "language" : "Perl",
+               "owner" : "shared",
+               "path" : "scripts/dev/cloc-tooling.pl",
+               "sha256" : "1dd0f35519fc3afafb723eadbb7d2cce1207e4103f41939d3ceec5a6678ebb22"
+            }
+         ],
+         "head" : "5bb1043b7528f6237efc2db517bae9e914099d3c",
+         "name" : "toko-miner",
+         "skipped_files" : [],
+         "snapshot_manifests" : [
+            {
+               "path" : ".shared-tooling.snapshot",
+               "revision" : "9af82393c620e486578febed74a648523725c234",
+               "root" : "."
+            }
+         ],
+         "totals" : {
+            "ci_loc" : 3371,
+            "data_lines" : 62,
+            "local_loc" : 12012,
+            "other_loc" : 12537,
+            "shared_loc" : 3896,
+            "total_loc" : 15908
+         }
+      },
+      {
+         "agents_sha256" : "de8a05ca2467e1f6778f79a291442d5b415f8aee7ea149866064efd9affbf9e7",
+         "dirty" : false,
+         "drifted_files" : [],
+         "fleet_candidates" : [],
+         "head" : "79e2407ed0d74840658530a0dd04a0c0c69c9ba0",
+         "name" : "toko-miner-assets",
+         "skipped_files" : [],
+         "snapshot_manifests" : [],
+         "totals" : {
+            "ci_loc" : 0,
+            "data_lines" : 0,
+            "local_loc" : 0,
+            "other_loc" : 0,
+            "shared_loc" : 0,
+            "total_loc" : 0
+         }
+      }
+   ],
+   "shared_revision" : "635a39a9dd5f8d021fa9c9196b591e00521a7e02",
+   "source_mode" : "working-tree inspection; dashboard edits already dirty in Shared Tooling"
+}

@@ -19,6 +19,9 @@ aliases are skipped; duplicate GitHub repositories are counted once.
 In a terminal, refresh every 60 seconds: q quits, r refreshes, Ctrl-C exits.
 --once prints one report (also the default when input/output is not a terminal).
 --interval selects 1..86400 seconds between completed refreshes.
+Rows show REPOSITORY, OPEN and FIXED (closed / total, then percent in brackets).
+Counts use comma separators and six-character, space-padded fields.
+Sort by open issues descending, then repository name; failed rows appear last.
 Fixed means closed, including duplicates and issues closed as not planned.
 Percent fixed = closed / (open + closed); no issues shows N/A. PRs are excluded.
 Failed observations show ERROR, never zero; totals then show TOTAL (partial).
@@ -53,7 +56,7 @@ parent="${parent:-$ROOT/..}"
 [[ "$parent" == /* ]] || parent="$PWD/$parent"
 parent="$(cd -P "$parent" && printf '%s/.' "$PWD")"
 parent="${parent%/.}"
-for tool in git gh jq; do
+for tool in git gh jq sort; do
     command -v "$tool" >/dev/null 2>&1 || { echo "error: missing tool: $tool" >&2; exit 1; }
 done
 
@@ -108,22 +111,35 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 print_row() {
-    printf '%-*s %9s %9s %9s %9s\n' "$width" "$@"
+    printf '%-*s  %6s  %s\n' "$width" "$1" "$2" "$3"
+}
+print_separator() {
+    printf '%*s\n' "$((width + 34))" '' | tr ' ' '-'
+}
+format_count() {
+    local value="$1" grouped=''
+    # Group explicitly: LC_ALL=C and macOS locales need not supply separators.
+    while [[ ${#value} -gt 3 ]]; do
+        grouped=",${value: -3}$grouped"
+        value="${value:0:${#value}-3}"
+    done
+    printf '%s%s' "$value" "$grouped"
 }
 print_counts() {
-    local name="$1" open="$2" closed="$3" total percent=N/A
+    local name="$1" open="$2" closed="$3" total fixed percent=N/A
     total=$((open + closed))
     if [[ "$total" -gt 0 ]]; then
         percent="$(awk -v closed="$closed" -v total="$total" 'BEGIN { printf "%.1f%%", 100 * closed / total }')"
     fi
-    print_row "$name" "$total" "$open" "$closed" "$percent"
+    printf -v fixed '%6s / %6s (%s)' "$(format_count "$closed")" "$(format_count "$total")" "$percent"
+    print_row "$name" "$(format_count "$open")" "$fixed"
 }
 
 render() {
-    local i counts open closed total_open=0 total_closed=0 successful=0 label=TOTAL
+    local i counts name open closed total_open=0 total_closed=0 successful=0 label=TOTAL
     printf 'Sibling GitHub issues | %s\n' "$(date '+%Y-%m-%d %H:%M:%S %Z')"
     printf 'Fixed = closed; PRs excluded. Refresh: %ss | q quit | r refresh\n\n' "$interval"
-    print_row REPOSITORY TOTAL OPEN FIXED FIXED_%
+    : > "$scratch/rows"
     for ((i=0; i<repo_count; i++)); do
         if counts="$(jq -er --arg key "r$i" '
             def count: type == "number" and . >= 0 and . == floor;
@@ -132,22 +148,33 @@ render() {
             [.open.totalCount, .closed.totalCount] | @tsv
         ' "$scratch/response" 2>/dev/null)"; then
             read -r open closed <<< "$counts"
-            print_counts "${repos[$i]}" "$open" "$closed"
+            printf '%s\t%s\t%s\n' "$open" "${repos[$i]}" "$closed" >> "$scratch/rows"
             total_open=$((total_open + open))
             total_closed=$((total_closed + closed))
             successful=$((successful + 1))
         else
-            print_row "${repos[$i]}" ERROR ERROR ERROR N/A
+            printf '%s\t%s\t%s\n' -1 "${repos[$i]}" ERROR >> "$scratch/rows"
             status=1
         fi
     done
-    printf '\n'
+    sort -t $'\t' -k1,1nr -k2,2 "$scratch/rows" > "$scratch/sorted"
+    print_row REPOSITORY OPEN FIXED
+    print_separator
+    while IFS=$'\t' read -r open name closed; do
+        if [[ "$open" == -1 ]]; then
+            print_row "$name" ERROR ' ERROR /  ERROR (N/A)'
+        else
+            print_counts "$name" "$open" "$closed"
+        fi
+    done < "$scratch/sorted"
+    print_separator
     if [[ "$status" != 0 ]]; then label='TOTAL (partial)'; fi
     if [[ "$successful" -gt 0 ]]; then
         print_counts "$label" "$total_open" "$total_closed"
     else
-        print_row "$label" ERROR ERROR ERROR N/A
+        print_row "$label" ERROR ' ERROR /  ERROR (N/A)'
     fi
+    print_separator
     if [[ -s "$scratch/errors" ]]; then
         printf '\nGitHub diagnostics:\n'
         cat "$scratch/errors"

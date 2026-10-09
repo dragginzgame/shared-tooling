@@ -411,7 +411,11 @@ repositories once. The default parent belongs to the script's checkout; restart
 to discover new siblings. Requires Git, jq and an authenticated GitHub CLI;
 prepare authentication with `gh auth login`.
 
-Each row shows total, open, fixed and percent fixed, followed by combined totals.
+Rows show `REPOSITORY` first, then `OPEN` and `FIXED` as
+`23 / 1,095 (2.1%)` (closed / total). Counts are right-aligned in six-character
+fields with comma separators, expanding for larger values. Repositories sort by
+open issues descending, then by name, with failed observations last. Dashed
+separators distinguish the header and combined totals.
 Here **fixed means closed**, including duplicates and issues closed as not
 planned; the percentage is `closed / (open + closed) * 100`. Pull requests are
 excluded, and repositories with no issues show `N/A` for the percentage. Counts

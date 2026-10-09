@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.33]
+
+### Changed
+
+- Make the sibling issue dashboard easier to scan with repository names first,
+  repositories ranked by remaining issues, dashed separators and comma-separated
+  counts padded with spaces to six characters, followed by the percentage in
+  parentheses for closed/total counts.
+- Make fleet reports an optional consumer snapshot selection while preserving
+  existing commands, so local tool setup and workspace LOC reporting do not
+  require copies of fleet reporters or their tests.
+  ([#83](https://github.com/dragginzgame/shared-tooling/issues/83))
+
 ## [0.1.32]
 
 ### Fixed
