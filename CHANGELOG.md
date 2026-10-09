@@ -14,6 +14,9 @@
 
 ### Fixed
 
+- Use authenticated, current-run artifact readback for CI evidence qualification,
+  preserving exact uploaded IDs and digest/payload verification.
+  ([#93](https://github.com/dragginzgame/shared-tooling/issues/93))
 - Include every declared snapshot file in fleet integrity checks, so missing
   files and drift in documents or executable modes cannot appear intact merely
   because they are outside the tooling LOC scope.

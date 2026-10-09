@@ -71,6 +71,9 @@ jobs:
             "$GITHUB_WORKSPACE"
 
   portable-regression:
+    permissions:
+      contents: read
+      actions: read
     strategy:
       fail-fast: false
       matrix:
@@ -151,6 +154,10 @@ jobs:
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           artifact-ids: ${{ steps.retention-upload.outputs.artifact-id }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
+          digest-mismatch: error
           path: ${{ runner.temp }}/native-retention-downloaded
           merge-multiple: true
       - name: Verify native failure status and uploaded payload
@@ -194,6 +201,10 @@ jobs:
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           artifact-ids: ${{ steps.compact-upload.outputs.artifact-id }}
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.run_id }}
+          digest-mismatch: error
           path: ${{ runner.temp }}/compact-tools-downloaded
           merge-multiple: true
       - name: Verify compact native tool evidence and retained candidate
