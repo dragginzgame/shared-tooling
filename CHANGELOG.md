@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.37]
+
+### Fixed
+
+- Pre-commit formatting and its adoption check now find tools prepared in the
+  original checkout without requiring a shell PATH export. Formatting still
+  uses isolated staged inputs and rejects missing or incorrectly pinned tools.
+  ([#85](https://github.com/dragginzgame/shared-tooling/issues/85))
+
 ## [0.1.36]
 
 ### Fixed

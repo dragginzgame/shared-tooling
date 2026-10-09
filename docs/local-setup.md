@@ -152,7 +152,9 @@ tools-check: rust-tools-check
 
 The common aggregate does not require a Rust toolchain in non-Rust repositories.
 Shared Make commands include `.tools/rust/bin` on PATH; interactive shells use
-the export at the top of this guide. The helper never prepares or upgrades a
+the export at the top of this guide. The standard formatting hook and its
+adoption check preserve the original checkout's host, IC and Rust tool paths
+while formatting isolated index inputs. The helper never prepares or upgrades a
 toolchain implicitly. Installation may fetch registry dependencies and compile;
 build output stays in `.tools/rust/build`, including on failure. Cargo owns
 installation locking and registry checksum verification. Tools install one at

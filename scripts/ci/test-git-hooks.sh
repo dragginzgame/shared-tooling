@@ -87,6 +87,59 @@ tree="$(git write-tree)"
 bash .githooks/pre-commit > output
 [[ "$(git write-tree)" == "$tree" && "$(cat Cargo.toml)" == unformatted ]]
 
+# Prepared checkout-local tools stay discoverable without a caller PATH export.
+# The tools are untracked; formatter inputs still come from the selected index.
+for tools in prepared missing wrong; do
+    new_fixture "local tools $tools"
+    mkdir -p .tools/host/bin .tools/ic/bin .tools/rust/bin
+    cat > .tools/rust/bin/hook-fixture-cargo <<'TOOL'
+#!/usr/bin/env bash
+set -euo pipefail
+case "$*" in
+    'sort --version') printf 'cargo-sort %s\n' "$(cat "${0%/*}/version")" ;;
+    'fmt --version') echo 'rustfmt fixture' ;;
+    'sort --workspace')
+        hook-fixture-host
+        hook-fixture-ic
+        bash scripts/fixture-fmt.sh ;;
+    *) exit 1 ;;
+esac
+TOOL
+    printf '%s\n' "$SHARED_TOOLING_CARGO_SORT_VERSION" > .tools/rust/bin/version
+    for kind in host ic; do
+        printf '#!/usr/bin/env bash\nexit 0\n' > ".tools/$kind/bin/hook-fixture-$kind"
+        chmod +x ".tools/$kind/bin/hook-fixture-$kind"
+    done
+    chmod +x .tools/rust/bin/hook-fixture-cargo
+    cat > Makefile <<'MAKE'
+include make/tools.mk
+.PHONY: fmt
+fmt:
+	bash scripts/ci/check-format-tools.sh $(SHARED_TOOLING_CARGO_SORT_VERSION) hook-fixture-cargo
+	hook-fixture-cargo sort --workspace
+include ci/tool-versions.env
+MAKE
+    git add Makefile
+    printf 'unformatted unrelated working edit\n' > README.md
+    # Direct Make already finds the tools through make/tools.mk.
+    PATH=/usr/bin:/bin make --no-print-directory fmt > output
+    printf 'unformatted\n' > Cargo.toml
+    printf 'unformatted unrelated working edit\n' > README.md
+    tree="$(git write-tree)"
+    case "$tools" in
+        missing) rm .tools/rust/bin/hook-fixture-cargo ;;
+        wrong) printf '0.0.0\n' > .tools/rust/bin/version ;;
+    esac
+    if [[ "$tools" == prepared ]]; then
+        PATH=/usr/bin:/bin "$BASH" .githooks/pre-commit > output
+        [[ "$(git show :Cargo.toml)" == formatted && "$(cat Cargo.toml)" == formatted ]]
+    else
+        PATH=/usr/bin:/bin expect_failure "$BASH" .githooks/pre-commit
+        [[ "$(git write-tree)" == "$tree" && "$(cat Cargo.toml)" == unformatted ]]
+    fi
+    [[ "$(cat README.md)" == 'unformatted unrelated working edit' ]]
+done
+
 new_fixture partial
 printf 'unformatted selected\n' > partial.rs
 git add partial.rs
@@ -336,6 +389,16 @@ CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0 bash .githooks/pre-commit > output
 [[ "$(git write-tree)" == "$tree" && ! -e target && ! -e testing/target ]]
 # Exercise the adoption helper with this consumer's real Cargo targets, including
 # inherited Make/Git identities that must not redirect the disposable checkout.
+mkdir -p .tools/host/bin
+printf '#!/usr/bin/env bash\nexit 0\n' > .tools/host/bin/hook-fixture-prerequisite
+chmod +x .tools/host/bin/hook-fixture-prerequisite
+cat >> Makefile <<'MAKE'
+.PHONY: local-tools
+fmt fmt-check: local-tools
+local-tools:
+	hook-fixture-prerequisite
+MAKE
+git add Makefile
 overlays=(Cargo.toml Cargo.lock src/lib.rs)
 for workspace in . testing; do
     for member in alpha zeta consumer; do
