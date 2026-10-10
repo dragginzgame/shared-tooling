@@ -104,16 +104,24 @@ done
 # Outer Make must reject unsafe modes, even when a prerequisite fails and Make
 # would otherwise ignore it. No formatter may run, directly or via inherited flags.
 for target in fmt fmt-check; do
-    for mode in -i --ignore-errors -n -t -q; do
-        for source in direct inherited; do
+    for mode in -i --ignore-errors -n --dry-run --just-print --recon -t --touch -q --question -kin; do
+        for source in direct inherited cleared replaced both-hidden; do
             : > "$FORMAT_TEST_EVENTS"
             status=0
             if [[ "$source" == direct ]]; then
                 FORMAT_TEST_VERSION=0.0.0 make -C "$consumer" "$mode" "$target" > "$fixture/mode.log" 2>&1 || status=$?
-            else
+            elif [[ "$source" == inherited ]]; then
                 _shared_make_execution_checked=yes MAKEFLAGS="$mode" FORMAT_TEST_VERSION=0.0.0 make -C "$consumer" "$target" > "$fixture/mode.log" 2>&1 || status=$?
+            else
+                flags=(MAKEFLAGS=)
+                [[ "$source" != replaced ]] || flags=(MAKEFLAGS=--no-print-directory)
+                [[ "$source" != both-hidden ]] || flags+=(MFLAGS=)
+                make -C "$consumer" "$mode" "$target" "${flags[@]}" > "$fixture/mode.log" 2>&1 || status=$?
             fi
-            [[ "$status" == 2 && ! -s "$FORMAT_TEST_EVENTS" ]]
+            if [[ "$status" != 2 || -s "$FORMAT_TEST_EVENTS" ]]; then
+                echo "Formatting admission failed: $target $mode $source (status $status)" >&2
+                exit 1
+            fi
         done
     done
 done

@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.11]
+
+### Fixed
+
+- Reject unsafe Make modes even when `MAKEFLAGS` is cleared or replaced, before
+  release or formatting recipes run. Preserve normal parallel and recursive
+  commands; refuse assignments that overwrite Make's retained `MFLAGS` evidence.
+  ([#30](https://github.com/dragginzgame/shared-tooling/issues/30))
+
 ## [0.2.10]
 
 ### Changed

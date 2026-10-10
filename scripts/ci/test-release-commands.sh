@@ -105,22 +105,45 @@ mv "$fixture/saved-probe" "$fixture/included/vendor/scripts/ci/check-make-execut
 # All four entrypoints reject unsupported direct and inherited modes before
 # runner dispatch, even when the substituted runner would return failure.
 for target in release-patch release-minor release-major release-resume; do
-    for mode in -i --ignore-errors -n -t -q; do
-        for source in direct inherited; do
+    for mode in -i --ignore-errors -n --dry-run --just-print --recon -t --touch -q --question -kin; do
+        for source in direct inherited cleared replaced both-hidden; do
             : > "$RELEASE_TEST_EVENTS"
             status=0
             if [[ "$source" == direct ]]; then
                 RELEASE_TEST_STATUS=23 make -C "$fixture/included" "$mode" "$target" "MAKE=$recursive_make" > "$fixture/mode.log" 2>&1 || status=$?
-            else
+            elif [[ "$source" == inherited ]]; then
                 _shared_make_execution_checked=yes MAKEFLAGS="$mode" RELEASE_TEST_STATUS=23 make -C "$fixture/included" "$target" "MAKE=$recursive_make" > "$fixture/mode.log" 2>&1 || status=$?
+            else
+                flags=(MAKEFLAGS=)
+                [[ "$source" != replaced ]] || flags=(MAKEFLAGS=--no-print-directory)
+                [[ "$source" != both-hidden ]] || flags+=(MFLAGS=)
+                RELEASE_TEST_STATUS=23 make -C "$fixture/included" "$mode" "$target" "MAKE=$recursive_make" "${flags[@]}" > "$fixture/mode.log" 2>&1 || status=$?
             fi
-            [[ "$status" == 2 && ! -s "$RELEASE_TEST_EVENTS" ]]
+            if [[ "$status" != 2 || -s "$RELEASE_TEST_EVENTS" ]]; then
+                echo "Release admission failed: $target $mode $source (status $status)" >&2
+                exit 1
+            fi
         done
     done
 done
 make -j2 --no-print-directory -C "$fixture/included" release-patch "AUDIT_SELECTION=owner's selection" > "$fixture/parallel.log" 2>&1
 printf 'patch\norigin\nmain\n' > "$fixture/expected"
 cmp "$fixture/expected" "$RELEASE_TEST_EVENTS"
+# Replacing MAKEFLAGS is allowed when the actual invocation is safe. An
+# independently assigned MFLAGS cannot establish the outer invocation's modes.
+for selection in '' --no-print-directory; do
+    make -j2 --no-print-directory -C "$fixture/included" release-patch "MAKEFLAGS=$selection" \
+        "AUDIT_SELECTION=owner's selection" > "$fixture/safe-flags.log" 2>&1
+    cmp "$fixture/expected" "$RELEASE_TEST_EVENTS"
+done
+for assignment in 'MFLAGS :=' 'override MFLAGS :='; do
+    printf '%s\n' "$assignment" > "$fixture/included/hidden.mk"
+    : > "$RELEASE_TEST_EVENTS"
+    status=0
+    make -i -C "$fixture/included" -f hidden.mk -f Makefile release-patch MAKEFLAGS= \
+        > "$fixture/hidden-mflags.log" 2>&1 || status=$?
+    [[ "$status" == 2 && ! -s "$RELEASE_TEST_EVENTS" ]]
+done
 # The root-snapshot checker must never follow a parent exported root or an
 # ordinary consumer assignment to an external runner. The sentinel has no effects
 # beyond its marker; the actual release implementation is never installed here.
