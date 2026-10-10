@@ -364,7 +364,10 @@ under a unique run directory announced before dispatch. Its `timings.tsv` has
 An interrupted target can have a partial raw log without a completed timing row.
 `VALIDATION_FAILURE_EVENT_PREFIX` adds a literal line prefix, such as
 `[CANIC-TEST:E`, to live highlighting and bounded failure details. Raw logs keep
-their original bytes. Success returns zero; failure preserves the first failed
+their original bytes. Live output and retained summaries use the same diagnostic
+rules, including fatal, LLVM and missing-file errors before long ordinary log
+tails. Surrounding context and passing namespaced Rust tests remain neutral.
+Success returns zero; failure preserves the first failed
 Make invocation's status (normally 2, rather than the recipe's own status).
 A logging-only pipeline failure also returns nonzero. SIGINT/SIGTERM exit with
 130/143 when handled.

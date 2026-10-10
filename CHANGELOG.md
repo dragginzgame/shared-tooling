@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.9]
+
+### Fixed
+
+- Run Rust tool preflight, checks and installation from the selected consumer
+  directory so toolchain and Cargo configuration agree when invoked elsewhere.
+  ([#101](https://github.com/dragginzgame/shared-tooling/issues/101))
+- Use consistent validation error classification in live output and retained
+  summaries, keeping early fatal, LLVM and missing-file diagnostics visible.
+  ([#110](https://github.com/dragginzgame/shared-tooling/issues/110))
+
 ## [0.3.8]
 
 ### Changed
@@ -122,7 +133,7 @@
 
 - Highlight sibling issue completion with pale whole-row text colours and list the
   lowest percentages first. Show separate issues fixed and added today columns
-  using a daylight-saving-aware 06:00 Europe/Monaco cutoff, and keep repository
+  using a daylight-saving-aware 06:00 cutoff in Paris time, and keep repository
   number padding at a minimum of four characters without widening it for fleet
   totals or errors.
 
