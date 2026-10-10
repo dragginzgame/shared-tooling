@@ -53,7 +53,8 @@ shift 2
 
 case "$1:$2" in
 rev-parse:--show-toplevel)
-    printf '%s\n' "$repository"
+    [[ "${SNAPSHOT_TEST_TOP_FAIL:-}" != true ]] || exit 9
+    printf '%s%s\n' "$repository" "${SNAPSHOT_TEST_TOP_SUFFIX:-}"
     ;;
 rev-parse:HEAD)
     printf '%s\n' 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
@@ -139,6 +140,76 @@ fi
 
 bash "$consumer_root/scripts/ci/verify-shared-tooling-snapshot.sh" \
     --consumer "$consumer_root" >/dev/null
+
+# Unsupported directory names must refuse, never select a trimmed neighbor.
+# Keep valid snapshot bytes in both neighbors so missing inputs cannot mask the
+# check. A normal-looking symlink must not hide a forbidden physical root.
+cp "$consumer_root/.shared-tooling.snapshot" "$FIXTURE/path-manifest"
+for suffix in $'\n' $'\n\n' $'\r' $'\r\n' $'\nchild'; do
+    bad_consumer="$consumer_root$suffix"
+    bad_source="$source_root$suffix"
+    mkdir "$bad_consumer" "$bad_source"
+    git init -q "$bad_consumer"
+    cp -Rp "$consumer_root/scripts" "$bad_consumer/"
+    cp "$FIXTURE/path-manifest" "$bad_consumer/.shared-tooling.snapshot"
+    ln -s "$bad_consumer" "$FIXTURE/consumer-alias"
+    ln -s "$bad_source" "$FIXTURE/source-alias"
+    for candidate in "$bad_consumer" "$FIXTURE/consumer-alias"; do
+        if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$candidate" \
+            > "$FIXTURE/path-verify.log" 2>&1; then
+            echo 'snapshot verifier accepted a forbidden directory name' >&2; exit 1
+        fi
+        if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+            --source "$source_root" --consumer "$candidate" > "$FIXTURE/path-refresh.log" 2>&1; then
+            echo 'snapshot refresh accepted a forbidden consumer directory' >&2; exit 1
+        fi
+    done
+    for candidate in "$bad_source" "$FIXTURE/source-alias"; do
+        if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+            --source "$candidate" --consumer "$consumer_root" > "$FIXTURE/path-source.log" 2>&1; then
+            echo 'snapshot refresh accepted a forbidden source directory' >&2; exit 1
+        fi
+    done
+    cmp "$FIXTURE/path-manifest" "$consumer_root/.shared-tooling.snapshot"
+    cmp "$FIXTURE/path-manifest" "$bad_consumer/.shared-tooling.snapshot"
+    diff -r "$consumer_root/scripts" "$bad_consumer/scripts"
+    [[ ! -e "$bad_consumer/.git/index" ]]
+    rm "$FIXTURE/consumer-alias" "$FIXTURE/source-alias"
+done
+# Relative inputs and ordinary physical aliases stay valid under hostile CDPATH.
+ln -s "$consumer_root" "$FIXTURE/consumer-alias"
+ln -s "$source_root" "$FIXTURE/source-alias"
+(cd "$FIXTURE"; CDPATH="$FIXTURE/source" bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" \
+    --consumer consumer-alias) > "$FIXTURE/path-normal-verify.log"
+(cd "$FIXTURE"; CDPATH="$FIXTURE/source" PATH="$FIXTURE/bin:$PATH" \
+    bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source source-alias --consumer consumer-alias) > "$FIXTURE/path-normal-refresh.log"
+cmp "$FIXTURE/path-manifest" "$consumer_root/.shared-tooling.snapshot"
+
+# A resolved custom-manifest parent must obey the same directory policy.
+mkdir "$consumer_root/config"$'\n'
+cp "$FIXTURE/path-manifest" "$consumer_root/config"$'\n'/snapshot
+ln -s $'config\n' "$consumer_root/config-alias"
+if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer_root" \
+    --manifest config-alias/snapshot > "$FIXTURE/path-manifest-parent.log" 2>&1; then
+    echo 'snapshot verifier accepted a forbidden resolved manifest parent' >&2; exit 1
+fi
+rm "$consumer_root/config-alias"
+# Git output has one record terminator. Extra pathname bytes and observation
+# failures cannot be normalized into the valid source root beside them.
+for suffix in $'\n' $'\r'; do
+    if SNAPSHOT_TEST_TOP_SUFFIX="$suffix" PATH="$FIXTURE/bin:$PATH" \
+        bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+        --source "$source_root" --consumer "$consumer_root" > "$FIXTURE/path-git.log" 2>&1; then
+        echo 'snapshot refresh trimmed a forbidden Git root observation' >&2; exit 1
+    fi
+done
+if SNAPSHOT_TEST_TOP_FAIL=true PATH="$FIXTURE/bin:$PATH" \
+    bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$consumer_root" > "$FIXTURE/path-git-failure.log" 2>&1; then
+    echo 'snapshot refresh accepted a failed Git root observation' >&2; exit 1
+fi
+cmp "$FIXTURE/path-manifest" "$consumer_root/.shared-tooling.snapshot"
 
 [[ "$(awk -F '\t' '$1 == "# version" {print $2}' "$consumer_root/.shared-tooling.snapshot")" == 0.2.8 ]]
 [[ "$(cat "$consumer_root/VERSION")" == 8.8.8 ]]

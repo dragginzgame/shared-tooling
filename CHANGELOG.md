@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.12]
+
+### Fixed
+
+- Reject line breaks in snapshot directory paths before export or verification
+  can select a different checkout. Check resolved aliases as well as supplied
+  paths, preserving ordinary paths and existing artifacts.
+  ([#95](https://github.com/dragginzgame/shared-tooling/issues/95))
+
 ## [0.2.11]
 
 ### Fixed
