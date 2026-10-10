@@ -5,7 +5,16 @@ ROOT="$0"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/github-siblings-test.XXXXXX")"
-trap 'if [[ $? == 0 ]]; then rm -rf "$fixture"; else printf "GitHub dashboard fixtures retained: %s\n" "$fixture" >&2; fi' EXIT
+# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+fixture_complete=false
+finish() {
+    local status=$?
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    if [[ "$status" == 0 ]]; then rm -rf "$fixture"
+    else printf "GitHub dashboard fixtures retained: %s\n" "$fixture" >&2; fi
+    exit "$status"
+}
+trap finish EXIT
 mkdir -p "$fixture/bin" "$fixture/projects" "$fixture/elsewhere"
 export GITHUB_SIBLINGS_TEST_RESPONSE="$fixture/response"
 export GITHUB_SIBLINGS_TEST_PAGE="$fixture/page"
@@ -288,3 +297,4 @@ status=0
 run --once "$fixture/empty" || status=$?
 [[ "$status" == 1 && ! -s "$GITHUB_SIBLINGS_TEST_CALLS" ]]
 echo 'Sibling GitHub dashboard tests passed'
+fixture_complete=true

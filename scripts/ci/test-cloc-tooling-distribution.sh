@@ -6,7 +6,16 @@ ROOT="$0"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/cloc-tooling-distribution.XXXXXX")"
-trap 'if [[ $? == 0 ]]; then rm -rf "$fixture"; else printf "Failed tooling distribution fixture retained: %s\n" "$fixture" >&2; fi' EXIT
+# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+fixture_complete=false
+finish() {
+    local status=$?
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    if [[ "$status" == 0 ]]; then rm -rf "$fixture"
+    else printf "Failed tooling distribution fixture retained: %s\n" "$fixture" >&2; fi
+    exit "$status"
+}
+trap finish EXIT
 
 # Export actual committed scripts, verify, then inventory the same bytes.
 # Existing objects suffice; no fixture commits or network access are needed.
@@ -63,3 +72,4 @@ cp "$ROOT/scripts/ci/test-cloc-tooling.sh" "$ROOT/scripts/ci/verify-file-checksu
 cp "$ROOT/scripts/dev/cloc-tooling.pl" "$adoption/scripts/dev/"
 bash "$adoption/scripts/ci/test-cloc-tooling.sh" > "$fixture/adoption.log" 2>&1
 echo 'Tooling LOC exporter integration and uncommitted consumer fixture passed'
+fixture_complete=true

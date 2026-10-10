@@ -6,7 +6,16 @@ ROOT="${BASH_SOURCE[0]}"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/cargo-qualification-paths.XXXXXX")"
-trap 'if [[ $? == 0 ]]; then rm -rf "$fixture"; else printf "Cargo qualification path fixtures retained: %s\n" "$fixture" >&2; fi' EXIT
+# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+fixture_complete=false
+finish() {
+    local status=$?
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    if [[ "$status" == 0 ]]; then rm -rf "$fixture"
+    else printf "Cargo qualification path fixtures retained: %s\n" "$fixture" >&2; fi
+    exit "$status"
+}
+trap finish EXIT
 mkdir "$fixture/bin"
 export QUALIFICATION_CALLS="$fixture/calls"
 cat > "$fixture/bin/rustc" <<'SCRIPT'
@@ -79,3 +88,4 @@ for profile in dev debug release; do
     fi
 done
 echo 'Cargo qualification paths, receipt profiles, retained failure roots and early refusal passed (substitute Cargo)'
+fixture_complete=true

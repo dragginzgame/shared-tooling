@@ -6,7 +6,16 @@ ROOT="$0"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/cloc-tooling-test.XXXXXX")"
-trap 'if [[ $? == 0 ]]; then rm -rf "$fixture"; else printf "Failed tooling LOC fixture retained: %s\n" "$fixture" >&2; fi' EXIT
+# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+fixture_complete=false
+finish() {
+    local status=$?
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    if [[ "$status" == 0 ]]; then rm -rf "$fixture"
+    else printf "Failed tooling LOC fixture retained: %s\n" "$fixture" >&2; fi
+    exit "$status"
+}
+trap finish EXIT
 parent="$fixture/parent projects"
 repo="$parent/a consumer"
 mkdir -p "$parent"
@@ -183,3 +192,4 @@ if perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$bootstrap_parent" \
     > "$fixture/broken.json" 2> "$fixture/broken.err"; then exit 1; fi
 jq -e '.partial == true and .repositories[0].error != null' "$fixture/broken.json" >/dev/null
 echo 'Tooling LOC, source/data separation and snapshot ownership tests passed'
+fixture_complete=true

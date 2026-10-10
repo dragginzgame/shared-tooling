@@ -5,7 +5,16 @@ ROOT="$0"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/portable-prerequisites-test.XXXXXX")"
-trap 'if [[ $? == 0 ]]; then rm -rf "$fixture"; else echo "Prerequisite fixtures retained: $fixture" >&2; fi' EXIT
+# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+fixture_complete=false
+finish() {
+    local status=$?
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    if [[ "$status" == 0 ]]; then rm -rf "$fixture"
+    else echo "Prerequisite fixtures retained: $fixture" >&2; fi
+    exit "$status"
+}
+trap finish EXIT
 mkdir "$fixture/missing" "$fixture/formatter"
 ln -s "$BASH" "$fixture/missing/bash"
 ln -s "$(command -v dirname)" "$fixture/missing/dirname"
@@ -37,3 +46,4 @@ PATH="$fixture/formatter:$PATH" bash "$ROOT/scripts/ci/check-portable-prerequisi
 grep -F 'Formatting requires prepared cargo-sort' "$fixture/formatter.log"
 grep -F 'no tools were installed' "$fixture/formatter.log"
 echo 'Portable prerequisite early-refusal tests passed'
+fixture_complete=true

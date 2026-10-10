@@ -5,7 +5,16 @@ ROOT="${BASH_SOURCE[0]}"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/script-paths-test.XXXXXX")"
-trap 'if [[ $? == 0 ]]; then rm -rf "$fixture"; else printf "Script path fixture retained: %s\n" "$fixture" >&2; fi' EXIT
+# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+fixture_complete=false
+finish() {
+    local status=$?
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    if [[ "$status" == 0 ]]; then rm -rf "$fixture"
+    else printf "Script path fixture retained: %s\n" "$fixture" >&2; fi
+    exit "$status"
+}
+trap finish EXIT
 checkout="$fixture/checkout"$'\n'
 mkdir -p "$checkout/scripts/ci" "$checkout/scripts/dev" "$fixture/decoy/scripts/ci"
 for script in check-dependency-pins verify-shared-tooling-snapshot install-actionlint install-shellcheck install-yq install-ci-tool; do
@@ -24,3 +33,4 @@ done
 cp "$ROOT/scripts/ci/test-evidence-archive.sh" "$ROOT/scripts/ci/archive-evidence.sh" "$checkout/scripts/ci/"
 (cd "$checkout"; CDPATH="$fixture/decoy:$checkout" bash scripts/ci/test-evidence-archive.sh) > "$fixture/archive.log" 2>&1
 echo 'Relative/absolute entry points, inherited CDPATH and newline checkout bootstrap passed'
+fixture_complete=true

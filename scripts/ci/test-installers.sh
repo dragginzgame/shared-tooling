@@ -7,10 +7,14 @@ ROOT="$0"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-installers-test.XXXXXX")"
+fixture_complete=false
 finish() {
     local status=$?
+    # Bash 3.2 may report zero after nounset before assertions finish.
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
     if [[ "$status" == 0 ]]; then rm -rf "$FIXTURE"
     else echo "Installer fixtures retained: $FIXTURE" >&2; fi
+    exit "$status"
 }
 trap finish EXIT
 
@@ -352,3 +356,4 @@ for host in Linux:aarch64 Darwin:x86_64 Darwin:arm64; do
     done
 done
 echo "installer tests passed"
+fixture_complete=true

@@ -5,7 +5,53 @@ ROOT="$0"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/fixture-retention-test.XXXXXX")"
-trap 'if [[ $? == 0 ]]; then rm -rf "$fixture"; else echo "Retention fixtures retained: $fixture" >&2; fi' EXIT
+# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+fixture_complete=false
+finish() {
+    local status=$?
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    if [[ "$status" == 0 ]]; then rm -rf "$fixture"
+    else echo "Retention fixtures retained: $fixture" >&2; fi
+    exit "$status"
+}
+trap finish EXIT
+# Inject exits into disposable copies of actual fixtures immediately after their
+# EXIT trap. No installer, release, or nested test body is dispatched. Exercise
+# cleanup/status handling using this invocation's Bash (including 3.2).
+mkdir -p "$fixture/exit-source/scripts/ci"
+export RETENTION_EXIT_PATH="$fixture/exit-path"
+for name in format-tools tool-commands rust-tools release-runner host-tools fixture-retention; do
+    for failure in nounset command nonzero premature completed failed-completion; do
+        # shellcheck disable=SC2016 # Expanded by the disposable child fixture.
+        case "$failure" in
+            nounset) injection='unset RETENTION_UNBOUND; printf "%s\n" "$RETENTION_UNBOUND"'; expected=1 ;;
+            command) injection='false'; expected=1 ;;
+            nonzero) injection='exit 23'; expected=23 ;;
+            premature) injection='exit 0'; expected=1 ;;
+            completed) injection='fixture_complete=true; exit 0'; expected=0 ;;
+            failed-completion) injection='fixture_complete=true; exit 23'; expected=23 ;;
+        esac
+        # Pass literal shell source through ENVIRON, not awk -v escape decoding.
+        RETENTION_INJECTION="$injection" awk '
+            { print }
+            /^trap .* EXIT$/ && !injected {
+                print "printf \"%s\\n\" \"${fixture:-${FIXTURE_ROOT:-}}\" > \"$RETENTION_EXIT_PATH\""
+                print ENVIRON["RETENTION_INJECTION"]
+                print "exit 99"
+                injected=1
+            }
+            END { if (!injected) exit 1 }
+        ' "$ROOT/scripts/ci/test-$name.sh" > "$fixture/exit-source/scripts/ci/probe.sh"
+        status=0
+        TMPDIR="$fixture" "$BASH" "$fixture/exit-source/scripts/ci/probe.sh" \
+            > "$fixture/exit-$name-$failure.log" 2>&1 || status=$?
+        [[ "$status" == "$expected" ]]
+        retained="$(cat "$RETENTION_EXIT_PATH")"
+        [[ -n "$retained" ]]
+        if [[ "$expected" == 0 ]]; then [[ ! -e "$retained" ]]
+        else [[ -d "$retained" ]]; fi
+    done
+done
 mkdir "$fixture/bin" "$fixture/cloc" "$fixture/portable"
 export RETENTION_REAL_BASH="$BASH"
 cat > "$fixture/bin/cloc" <<'SCRIPT'
@@ -68,7 +114,9 @@ jq -er '.runs.steps[] | select(.id == "archive") | .run' "$fixture/collector.jso
 for phase in install check; do
     native="$fixture/native-$phase"
     mkdir -p "$native/scripts/dev" "$native/temp" "$native/make"
-    cp "$ROOT/make/tools.mk" "$native/make/"
+    cp "$ROOT/make/tools.mk" "$ROOT/make/execution.mk" "$native/make/"
+    mkdir -p "$native/scripts/ci"
+    cp "$ROOT/scripts/ci/check-make-execution.sh" "$native/scripts/ci/"
     printf 'include make/tools.mk\n' > "$native/Makefile"
     for tool in host rust; do
         printf '#!/usr/bin/env bash\nexit 0\n' > "$native/scripts/dev/install-$tool-tools.sh"
@@ -109,7 +157,9 @@ done
 # Cargo alone is substituted, failing after it has produced build evidence.
 native="$fixture/native-rust"
 mkdir -p "$native/temp" "$native/bin" "$native/make"
-cp "$ROOT/make/tools.mk" "$native/make/"
+cp "$ROOT/make/tools.mk" "$ROOT/make/execution.mk" "$native/make/"
+mkdir -p "$native/scripts/ci"
+cp "$ROOT/scripts/ci/check-make-execution.sh" "$native/scripts/ci/"
 cat > "$native/Makefile" <<'MAKE'
 include make/tools.mk
 # Host/IC effects are substituted; the Rust installer and collector are real.
@@ -213,3 +263,4 @@ for damaged in none ic-tools-install ic-tools-check rust-tools-install rust-tool
     if [[ "$damaged" != none ]]; then cp "$compact/temp/portable-fixtures/native-retention/temp/$damaged.log" "$compact/data/$damaged.log"; fi
 done
 echo 'Failed fixture status and input retention checks passed'
+fixture_complete=true

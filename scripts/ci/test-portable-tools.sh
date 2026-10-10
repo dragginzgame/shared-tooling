@@ -7,7 +7,16 @@ ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 bash "$ROOT/scripts/ci/check-portable-prerequisites.sh"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-test.XXXXXX")"
-trap 'if [[ $? == 0 ]]; then rm -rf "$FIXTURE"; else printf "Failed portable-tools fixture retained: %s\n" "$FIXTURE" >&2; fi' EXIT
+# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+fixture_complete=false
+finish() {
+    local status=$?
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    if [[ "$status" == 0 ]]; then rm -rf "$FIXTURE"
+    else printf "Failed portable-tools fixture retained: %s\n" "$FIXTURE" >&2; fi
+    exit "$status"
+}
+trap finish EXIT
 
 for script in \
     "$ROOT"/scripts/ci/*.sh \
@@ -145,3 +154,4 @@ done
 bash "$ROOT/scripts/dev/gh-ci.sh" --help >/dev/null 2>&1
 
 echo "portable tools tests passed"
+fixture_complete=true

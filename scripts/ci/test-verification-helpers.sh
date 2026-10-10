@@ -6,7 +6,16 @@ ROOT="$0"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/verification-helpers.XXXXXX")"
-trap 'if [[ $? == 0 ]]; then rm -rf "$fixture"; else echo "Verification fixtures retained: $fixture" >&2; fi' EXIT
+# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+fixture_complete=false
+finish() {
+    local status=$?
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    if [[ "$status" == 0 ]]; then rm -rf "$fixture"
+    else echo "Verification fixtures retained: $fixture" >&2; fi
+    exit "$status"
+}
+trap finish EXIT
 mkdir "$fixture/bin" "$fixture/workspace" "$fixture/logs"
 export VERIFY_HELPER_FIXTURE="$fixture"
 cat > "$fixture/bin/cargo" <<'SCRIPT'
@@ -82,3 +91,4 @@ for version in 01.1.2 v0.1.2 0.1.2-rc.1; do
 done
 if bash "$ROOT/scripts/ci/check-release-tag.sh" HEAD 0.1.2 > /dev/null 2>&1; then exit 1; fi
 echo 'Verification helper failure, identity and evidence tests passed'
+fixture_complete=true

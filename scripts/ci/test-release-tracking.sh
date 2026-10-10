@@ -10,7 +10,16 @@ ROOT="${BASH_SOURCE[0]}"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 FIXTURE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/release-tracking-test.XXXXXX")"
-trap 'if [[ $? == 0 ]]; then rm -rf "$FIXTURE_ROOT"; else printf "Failed release-tracking fixture retained: %s\n" "$FIXTURE_ROOT" >&2; fi' EXIT
+# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+fixture_complete=false
+finish() {
+    local status=$?
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    if [[ "$status" == 0 ]]; then rm -rf "$FIXTURE_ROOT"
+    else printf "Failed release-tracking fixture retained: %s\n" "$FIXTURE_ROOT" >&2; fi
+    exit "$status"
+}
+trap finish EXIT
 export REAL_GIT REAL_MAKE
 REAL_GIT="$(command -v git)"
 REAL_MAKE="$(command -v make)"
@@ -224,3 +233,4 @@ MAKE
 done
 
 echo 'Native release tracking and recovery tests passed'
+fixture_complete=true

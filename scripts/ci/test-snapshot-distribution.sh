@@ -6,7 +6,16 @@ ROOT="$0"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-snapshot-test.XXXXXX")"
-trap 'if [[ $? == 0 ]]; then rm -rf "$FIXTURE"; else printf "Failed snapshot-distribution fixture retained: %s\n" "$FIXTURE" >&2; fi' EXIT
+# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+fixture_complete=false
+finish() {
+    local status=$?
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    if [[ "$status" == 0 ]]; then rm -rf "$FIXTURE"
+    else printf "Failed snapshot-distribution fixture retained: %s\n" "$FIXTURE" >&2; fi
+    exit "$status"
+}
+trap finish EXIT
 # Match refresh-consumer physical paths when TMPDIR contains a host alias.
 FIXTURE="$(cd "$FIXTURE" && pwd -P)"
 REAL_GIT="$(command -v git)"
@@ -612,6 +621,7 @@ scripts/ci/test-tool-commands.sh make/tools.mk
 make/release.mk scripts/ci/run-release.sh
 make/rust-format.mk make/tools.mk
 make/execution.mk scripts/ci/check-make-execution.sh
+make/tools.mk make/execution.mk
 scripts/ci/test-make-format.sh make/tools.mk
 scripts/dev/cloc-siblings.sh scripts/dev/cloc.sh
 COMPANIONS
@@ -828,3 +838,4 @@ for state in unchanged partial edited mode staged symlink forged unavailable man
 done
 
 echo "snapshot distribution test passed"
+fixture_complete=true

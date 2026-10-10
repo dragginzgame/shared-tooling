@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.3.2]
+
+### Fixed
+
+- Require explicit fixture completion before reporting success or deleting test
+  evidence, including Bash 3.2 errors that otherwise return a zero exit status.
+  ([#103](https://github.com/dragginzgame/shared-tooling/issues/103))
+- Preserve Cargo jobserver descriptors through shared formatting, LOC reports
+  and Rust tool setup/check commands. Apply the existing Make execution guard to
+  standalone tool includes so dry-run, touch, question and ignore-errors modes cannot
+  dispatch installers.
+  ([#99](https://github.com/dragginzgame/shared-tooling/issues/99))
+
+### Added
+
+- Include advisory README freshness reviews in the routine maintenance pass,
+  without rewriting prose or adding release gates.
+  ([#100](https://github.com/dragginzgame/shared-tooling/issues/100))
+
 ## [0.3.1]
 
 ### Fixed

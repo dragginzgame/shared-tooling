@@ -5,10 +5,14 @@ root="$0"
 root="$(cd -P "${root%/*}/../.." && printf '%s/.' "$PWD")"
 root="${root%/.}"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/release-command-tests.XXXXXX")"
+fixture_complete=false
 finish() {
     local status=$?
+    # Bash 3.2 may report zero after nounset before assertions finish.
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
     if [[ "$status" == 0 ]]; then rm -rf "$fixture";
     else echo "Release smoke fixtures retained: $fixture" >&2; fi
+    exit "$status"
 }
 trap finish EXIT
 mkdir "$fixture/consumer" "$fixture/logs"
@@ -216,3 +220,4 @@ for mode in ignore-failure wrong-version conflict; do
 done
 if bash "$root/scripts/ci/check-release-commands.sh" "$fixture/consumer" ../parent.mk > /dev/null 2>&1; then exit 1; fi
 echo 'Release command adoption, nested Make and retained failure tests passed'
+fixture_complete=true

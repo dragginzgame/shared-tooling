@@ -7,7 +7,16 @@ root="${BASH_SOURCE[0]}"
 root="$(cd -P "${root%/*}/../.." && printf '%s/.' "$PWD")"
 root="${root%/.}"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/make-format.XXXXXX")"
-trap 'if [[ $? == 0 ]]; then rm -rf "$fixture"; else printf "Formatting Make fixture retained: %s\n" "$fixture" >&2; fi' EXIT
+# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+fixture_complete=false
+finish() {
+    local status=$?
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    if [[ "$status" == 0 ]]; then rm -rf "$fixture"
+    else printf "Formatting Make fixture retained: %s\n" "$fixture" >&2; fi
+    exit "$status"
+}
+trap finish EXIT
 consumer="$fixture/consumer with spaces"
 mkdir -p "$consumer/vendor/make" "$consumer/vendor/scripts/ci" "$consumer/ci" "$consumer/.tools/rust/bin"
 cp "$root/make/tools.mk" "$root/make/rust-format.mk" "$root/make/execution.mk" "$consumer/vendor/make/"
@@ -25,6 +34,12 @@ MAKE
 cat > "$consumer/.tools/rust/bin/format-fixture-cargo" <<'CARGO'
 #!/usr/bin/env bash
 set -eu
+if [[ "${JOBSERVER_TEST_REQUIRED:-0}" == 1 ]]; then
+    [[ "${MAKEFLAGS:-}" =~ --jobserver-(auth|fds)=([0-9]+),([0-9]+) ]]
+    reader="${BASH_REMATCH[2]}"; writer="${BASH_REMATCH[3]}"
+    : <&"$reader"
+    : >&"$writer"
+fi
 [[ "$CARGO_NET_OFFLINE" == true && "$RUSTUP_AUTO_INSTALL" == 0 ]]
 case "$*" in
     'sort --version') echo "cargo-sort ${FORMAT_TEST_VERSION:-2.1.4}"; exit 0 ;;
@@ -126,7 +141,12 @@ for target in fmt fmt-check; do
     done
 done
 # Normal parallel mode and quoted command variables still reach the formatter.
-make -j2 --no-print-directory -C "$consumer" fmt-check "AUDIT_SELECTION=owner's selection" > "$fixture/parallel.log" 2>&1
+parallel=(-j2)
+if make --help | grep -q -- --jobserver-style; then parallel+=(--jobserver-style=pipe); fi
+for target in format-tools-check fmt fmt-check; do
+    JOBSERVER_TEST_REQUIRED=1 make "${parallel[@]}" --no-print-directory -C "$consumer" "$target" \
+        "AUDIT_SELECTION=owner's selection" > "$fixture/parallel-$target.log" 2>&1
+done
 # Custom workspace/frontend adapters share presentation without giving this
 # wrapper their formatter policy. Arguments and nonzero statuses remain exact.
 status=0
@@ -139,3 +159,4 @@ logs=("$fixture"/formatting.*)
 grep -Fx 'selected path with spaces' "$fixture"/formatting.*
 grep -Fx formatter-error "$fixture"/formatting.*
 echo 'Shared formatting Make commands passed (substitute Cargo; no installation)'
+fixture_complete=true

@@ -12,7 +12,16 @@ ROOT="${ROOT%/.}"
 source "$ROOT/ci/tool-versions.env"
 bash "$ROOT/scripts/ci/check-format-tools.sh" "$SHARED_TOOLING_CARGO_SORT_VERSION"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/git-hooks-test.XXXXXX")"
-trap 'if [[ $? == 0 ]]; then rm -rf -- "$FIXTURE"; else printf "Failed hook fixture retained: %s\n" "$FIXTURE" >&2; fi' EXIT
+# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+fixture_complete=false
+finish() {
+    local status=$?
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    if [[ "$status" == 0 ]]; then rm -rf -- "$FIXTURE"
+    else printf "Failed hook fixture retained: %s\n" "$FIXTURE" >&2; fi
+    exit "$status"
+}
+trap finish EXIT
 # Reuse an existing source commit read-only, without creating fixture commits.
 source_commit="$(git -C "$ROOT" rev-parse HEAD)"
 source_objects="$(git -C "$ROOT" rev-parse --git-path objects)"
@@ -577,3 +586,4 @@ SHARED_TOOLING_FORMAT_FILES="$FIXTURE/frontend-selection" \
     bash scripts/dev/format-frontend.sh --write frontend
 [[ "$(cat "$frontend_path")" == formatted && "$(cat frontend/unselected.ts)" == 'unformatted unselected' ]]
 echo 'Git hook preservation, installation, Cargo sorting and frontend selection tests passed'
+fixture_complete=true

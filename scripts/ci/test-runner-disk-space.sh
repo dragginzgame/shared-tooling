@@ -7,7 +7,16 @@ ROOT="$0"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/runner-disk-test.XXXXXX")"
-trap 'if [[ $? == 0 ]]; then rm -rf "$fixture"; else printf "Disk fixtures retained: %s\n" "$fixture" >&2; fi' EXIT
+# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+fixture_complete=false
+finish() {
+    local status=$?
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    if [[ "$status" == 0 ]]; then rm -rf "$fixture"
+    else printf "Disk fixtures retained: %s\n" "$fixture" >&2; fi
+    exit "$status"
+}
+trap finish EXIT
 checker="$ROOT/scripts/ci/check-runner-disk-space.sh"
 mkdir -p "$fixture/bin" "$fixture/workspace [one]" "$fixture/-selected"
 printf 'retained build/evidence input\n' > "$fixture/workspace [one]/artifact"
@@ -107,3 +116,4 @@ expect_status 2 --path . --min-free-mib 0 --diagnostic-path $'tab\tpath'
 expect_status 2 --path . --min-free-mib 0 --unknown
 [[ "$(< "$fixture/workspace [one]/artifact")" == 'retained build/evidence input' ]]
 echo 'Runner disk capacity checks passed'
+fixture_complete=true

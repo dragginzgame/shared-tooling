@@ -10,10 +10,14 @@ ROOT="$0"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/release-metadata-test.XXXXXX")"
+fixture_complete=false
 finish() {
     local status=$?
+    # Bash 3.2 may report zero after nounset before assertions finish.
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
     if [[ "$status" == 0 ]]; then rm -rf "$FIXTURE";
     else echo "Release metadata fixtures retained: $FIXTURE" >&2; fi
+    exit "$status"
 }
 trap finish EXIT
 
@@ -198,3 +202,4 @@ retained_logs=("$logging_root"/.git/release-state/validation-failures/*-0-ci.log
 [[ "${#retained_logs[@]}" == 2 ]] || exit 1
 
 echo 'release metadata real-Git and validation-retention tests passed'
+fixture_complete=true
