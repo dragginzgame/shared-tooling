@@ -100,9 +100,10 @@ contributions.
 
 ### Local IC executables
 
-Use `make install-tools` for the common local setup, including pinned jq,
-Mike Farah yq, ripgrep with PCRE2 and cloc, and `make tools-check` for offline
-verification. The [required tool inventory](docs/local-setup.md#required-tool-inventory)
+Use `make install-tools` for the complete common host, IC and Cargo toolsets,
+and `make tools-check` for offline verification. Every repository gets the same
+12 executables, including tools it does not currently use; setup runs host, IC
+and Rust steps in order. The [required tool inventory](docs/local-setup.md#required-tool-inventory)
 is the shared setup list for every repository. See [local setup](docs/local-setup.md)
 for Linux Mint/macOS bootstrap packages and shell PATH configuration. Make targets
 select the local binaries automatically; direct shell commands need the documented
@@ -119,10 +120,12 @@ PATH setup, native host coverage and consumer adoption.
 IC Testkit owns PocketIC setup, offline admission and server lifecycle; see the
 [ownership handoff](docs/ic-tools.md#pocketic-ownership-handoff).
 
-Rust consumers can use `make install-rust-tools` and offline `make rust-tools-check`
+The aggregate includes `make install-rust-tools` and offline `make rust-tools-check`
 for pinned cargo-sort, cargo-sort-derives and candid-extractor under `.tools/rust/bin`.
-See [Rust setup](docs/local-setup.md#rust-development-tools) for attaching them to
-the common setup commands after preparing the consumer's Rust toolchain.
+Prepare a declared Rust toolchain even for non-Rust repositories. See
+[Rust setup](docs/local-setup.md#rust-development-tools) and the
+[0.3.0 adoption steps](docs/consuming-snapshots.md#complete-toolset-adoption-in-030)
+for the complete pins, removed optional host flags and ordered product extensions.
 
 ### Focused verification helpers
 
@@ -429,32 +432,45 @@ The dashboard scans immediate Git checkouts with `AGENTS.md` and a GitHub.com
 `origin`, including Shared Tooling itself. This excludes unconnected checkouts
 such as `ichelper`. It skips symlink aliases and counts duplicate GitHub
 repositories once. The default parent belongs to the script's checkout; restart
-to discover new siblings. Requires Git, jq and an authenticated GitHub CLI;
-prepare authentication with `gh auth login`.
+to discover new siblings. Requires Git, jq, Perl core, system timezone data and
+an authenticated GitHub CLI; prepare authentication with `gh auth login`.
 
-Rows show `REPOSITORY` first, then centered `ISSUES` and `PRS` group headings.
-Issues have `OPEN` and `FIXED`; PRs have `OPEN`, `MERGED` and `CLOSED`.
+Rows show `REPOSITORY` first, then centered `ISSUES`, `TODAY` and `PRS` group
+headings. Issues have `OPEN` and `FIXED`; TODAY has `FIXED` and `ADDED`; PRs
+have `OPEN`, `MERGED` and `CLOSED`.
 `FIXED` is centered over the full closed / total and percentage value, such as
 `23 / 1,095 (2.1%)`. Numeric padding starts at four characters and expands to fit
-the largest comma-separated count in that refresh, including totals. Column
-headings and `ERROR` also fit without shifting later columns. Counts remain
-right-aligned. Repositories sort by
-open issues descending, then by name, with failed observations last. Dashed
-separators distinguish the header and combined totals.
+the largest comma-separated repository count in that refresh. Totals grow
+independently, so a fleet total above 999 does not widen every repository's
+`FIXED` ratio: ` 400 /  486 (82.3%)` keeps two spaces after the slash.
+Column headings and `ERROR` fit without shifting later columns. Counts remain
+right-aligned. Repositories sort by percentage fixed ascending, then open issues
+descending and name. Repositories with no issues follow ranked rows; failed
+observations come last. Entire repository and total rows use pale red–yellow–green
+text from 0% to 100% fixed, preserving the terminal background. `NO_COLOR` or
+`TERM=dumb` disables colour, and redirected
+reports remain plain text. Dashed separators distinguish the header and combined totals.
 Here **fixed means closed**, including duplicates and issues closed as not
 planned; the percentage is `closed / (open + closed) * 100`. Pull requests stay
 separate from that calculation, and repositories with no issues show `N/A` for
 the percentage even if they have PRs. PR `OPEN` includes drafts. PR `CLOSED`
 counts only requests closed without merging, following GitHub's
 [pull-request states](https://docs.github.com/en/graphql/reference/pulls#pullrequeststate).
-Counts use the GitHub API's complete totals without fetching limited lists.
+`TODAY / FIXED` counts currently closed issues whose latest closure was at or
+after 06:00 Europe/Monaco. `TODAY / ADDED` counts issues created since that same
+cutoff, whether currently open or closed. Before 06:00 it uses the previous calendar day's cutoff,
+including daylight-saving changes. Each refresh recalculates the cutoff;
+reopened issues do not count as fixed, and editing an old issue does not count
+as adding or fixing it. An issue created and closed today counts in both columns.
 
-In a terminal it refreshes every 60 seconds using one read-only GraphQL request
-per refresh. Press `q` to quit, `r` to refresh early, or Ctrl-C to exit. `--once`
-prints one report; redirected input/output also selects a single report. Failed
+Counts use complete GitHub API totals. For `TODAY`, the dashboard paginates
+[recently updated issues](https://docs.github.com/en/graphql/reference/issues)
+and checks their creation and closure timestamps. In a terminal it refreshes every 60 seconds
+using a batched read-only GraphQL request plus any required recent-issue pages.
+Press `q` to quit, `r` to refresh early, or Ctrl-C to exit. `--once` prints one report; redirected input/output also selects a single report. Failed
 observations show `ERROR` and label the combined total `TOTAL (partial)`;
 single reports exit nonzero, while the live dashboard retries on the next cycle.
-A repository row requires valid issue and PR counts; an unavailable category
+A repository row requires valid issue, PR and TODAY counts; an unavailable category
 never becomes zero. Partial totals include only complete repository rows.
 
 ### GitHub Actions inspection

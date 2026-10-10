@@ -53,7 +53,7 @@ jq -e '
 # shellcheck disable=SC2016 # GitHub expressions are literal workflow inputs.
 jq -e '
   .jobs["portable-regression"].steps | to_entries |
-  map(select(.value.run? | strings | contains("make --no-print-directory install-ic-tools"))) as $native |
+  map(select(.value.run? | strings | contains("make --no-print-directory install-tools"))) as $native |
   map(select(.value.uses == "./.github/actions/retain-failure-evidence" and .value.if == "failure()")) as $uploads |
   ($native | length) == 1 and ($uploads | length) == 1 and
   $uploads[0].key > $native[0].key and $uploads[0].key == length - 1 and
@@ -63,13 +63,16 @@ jq -e '
 jq -e '.runs.steps | map(select(.uses? | strings | startswith("actions/upload-artifact@"))) |
   length == 1 and .[0].with["if-no-files-found"] == "error"' "$fixture/collector.json" > /dev/null
 jq -r '.jobs["portable-regression"].steps[] | select(.run? | strings |
-  contains("make --no-print-directory install-ic-tools")) | .run' "$fixture/workflow.json" > "$fixture/native-step.sh"
+  contains("make --no-print-directory install-tools")) | .run' "$fixture/workflow.json" > "$fixture/native-step.sh"
 jq -er '.runs.steps[] | select(.id == "archive") | .run' "$fixture/collector.json" > "$fixture/collect.sh"
 for phase in install check; do
     native="$fixture/native-$phase"
     mkdir -p "$native/scripts/dev" "$native/temp" "$native/make"
     cp "$ROOT/make/tools.mk" "$native/make/"
     printf 'include make/tools.mk\n' > "$native/Makefile"
+    for tool in host rust; do
+        printf '#!/usr/bin/env bash\nexit 0\n' > "$native/scripts/dev/install-$tool-tools.sh"
+    done
     cat > "$native/scripts/dev/install-ic-tools.sh" <<'SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -97,16 +100,21 @@ SCRIPT
     mkdir "$native/unpacked"
     tar -xzf "$archive" -C "$native/unpacked"
     cmp "$native/.tools/ic-set.fixture/payload" "$native/unpacked/.tools/ic-set.fixture/payload"
-    cmp "$native/temp/ic-tools-$phase.log" "$native/unpacked/ic-tools-$phase.log"
+    cmp "$native/temp/tools-$phase.log" "$native/unpacked/tools-$phase.log"
     cmp "$native/temp/formatting.fixture" "$native/unpacked/formatting.fixture"
-    grep -Fx "native fixture: $phase" "$native/unpacked/ic-tools-$phase.log" > /dev/null
+    grep -Fx "native fixture: $phase" "$native/unpacked/tools-$phase.log" > /dev/null
 done
-# Exercise the real Rust installer through the consumer-owned setup alias.
+# Exercise the real Rust installer through the complete common setup route.
 # Cargo alone is substituted, failing after it has produced build evidence.
 native="$fixture/native-rust"
 mkdir -p "$native/temp" "$native/bin" "$native/make"
 cp "$ROOT/make/tools.mk" "$native/make/"
-printf 'include make/tools.mk\ninstall-tools: install-rust-tools\n' > "$native/Makefile"
+cat > "$native/Makefile" <<'MAKE'
+include make/tools.mk
+# Host/IC effects are substituted; the Rust installer and collector are real.
+install-host-tools install-ic-tools:
+	@:
+MAKE
 cat > "$native/bin/cargo" <<'SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail

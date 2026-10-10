@@ -20,7 +20,7 @@ help:
 	@echo "Sibling CI/tooling inventory: make cloc-tooling [CLOC_PARENT=/path/to/projects]"
 	@echo "Focused: check-shell, check-pins, check-doc-links, check-release-commands, test-portable"
 	@echo "Local IC executables: install-ic-tools; offline verification: ic-tools-check"
-	@echo "Common host/IC executables (including jq/yq/ripgrep/cloc): install-tools; offline verification: tools-check"
+	@echo "Complete common host, IC and Rust toolset: install-tools; offline verification: tools-check"
 	@echo "Pinned Cargo tools: install-rust-tools; offline verification: rust-tools-check"
 	@echo "Full gate: ci (explicit request or configured CI)"
 	@echo "Maintainer releases: release-patch, release-minor, release-major"

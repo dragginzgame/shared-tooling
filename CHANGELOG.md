@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.3.0]
+
+### Breaking
+
+- Standardize `install-tools` and `tools-check` on the complete common host, IC
+  and Cargo toolsets in every repository. Host setup always includes ripgrep and
+  cloc; remove their optional flags and redundant Rust aggregate prerequisites.
+  Register product tools through the ordered local target lists, prepare a Rust
+  toolchain, and refresh the shared scripts and pin catalogs together. Existing
+  installations and failed evidence remain preserved.
+  ([#98](https://github.com/dragginzgame/shared-tooling/issues/98),
+  [adoption guide](docs/consuming-snapshots.md#complete-toolset-adoption-in-030))
+
+### Changed
+
+- Highlight sibling issue completion with pale whole-row text colours and list the
+  lowest percentages first. Show separate issues fixed and added today columns
+  using a daylight-saving-aware 06:00 Europe/Monaco cutoff, and keep repository
+  number padding at a minimum of four characters without widening it for fleet
+  totals or errors.
+
 ## [0.2.14]
 
 ### Fixed

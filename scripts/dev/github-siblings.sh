@@ -19,18 +19,24 @@ aliases are skipped; duplicate GitHub repositories are counted once.
 In a terminal, refresh every 60 seconds: q quits, r refreshes, Ctrl-C exits.
 --once prints one report (also the default when input/output is not a terminal).
 --interval selects 1..86400 seconds between completed refreshes.
-Grouped headings show ISSUES (OPEN, FIXED) and PRS (OPEN, MERGED, CLOSED).
+Grouped headings show ISSUES (OPEN, FIXED), TODAY (FIXED, ADDED), and PRS (OPEN, MERGED, CLOSED).
 FIXED shows closed / total, then percent in brackets; CLOSED PRs exclude merges.
 Open PRs include drafts. Numeric padding starts at four characters and expands
-to fit comma-separated counts, including totals. Headings and errors also fit.
-Sort by open issues descending, then repository name; failed rows appear last.
+to fit repository counts. Totals grow independently; headings/errors also fit.
+Sort by percent fixed ascending, then open issues descending and name.
+Repositories with no issues follow ranked rows; failed rows appear last.
+Pale red-to-yellow-to-green row text marks completion in terminals.
+NO_COLOR or TERM=dumb disables colour; redirected reports are always plain.
 Fixed means closed, including duplicates and issues closed as not planned.
 Percent fixed = closed / (open + closed); no issues shows N/A.
+TODAY shows issues FIXED (currently closed, latest closure) and ADDED (created
+in any state) since 06:00 Europe/Monaco, including daylight-saving changes. Before 06:00, use the previous day's cutoff.
 Failed observations show ERROR, never zero; totals then show TOTAL (partial).
 A partial/failed --once report exits nonzero. Watch mode retries next refresh.
 
-Requires Bash 3.2+, Git, jq, and an authenticated GitHub CLI (gh auth login).
-Uses one read-only GitHub GraphQL request per refresh. Restart to rescan siblings.
+Requires Bash 3.2+, Git, jq, Perl core, system timezone data, and an authenticated
+GitHub CLI (gh auth login). Uses a batched read-only GraphQL request per refresh,
+plus pagination for recently updated issues. Restart to rescan siblings.
 EOF
 }
 
@@ -58,7 +64,7 @@ parent="${parent:-$ROOT/..}"
 [[ "$parent" == /* ]] || parent="$PWD/$parent"
 parent="$(cd -P "$parent" && printf '%s/.' "$PWD")"
 parent="${parent%/.}"
-for tool in git gh jq sort; do
+for tool in git gh jq sort awk perl; do
     command -v "$tool" >/dev/null 2>&1 || { echo "error: missing tool: $tool" >&2; exit 1; }
 done
 
@@ -66,7 +72,9 @@ shopt -s nullglob dotglob
 repos=()
 repo_count=0
 width=24
-query='query {'
+# GraphQL variables, not shell interpolation.
+# shellcheck disable=SC2016
+query='query($since: DateTime!) {'
 for checkout in "${parent%/}"/*; do
     [[ -d "$checkout" && ! -L "$checkout" && -e "$checkout/.git" && -f "$checkout/AGENTS.md" ]] || continue
     remote="$(git -C "$checkout" remote get-url origin 2>/dev/null)" || continue
@@ -92,6 +100,10 @@ for checkout in "${parent%/}"/*; do
     query="$query r$repo_count: repository(owner: \"${identity%/*}\", name: \"${identity#*/}\") {
         open: issues(states: OPEN) { totalCount }
         closed: issues(states: CLOSED) { totalCount }
+        recent: issues(first: 100, filterBy: {since: \$since}) {
+            nodes { state createdAt closedAt }
+            pageInfo { hasNextPage endCursor }
+        }
         prOpen: pullRequests(states: OPEN) { totalCount }
         prMerged: pullRequests(states: MERGED) { totalCount }
         prClosed: pullRequests(states: CLOSED) { totalCount }
@@ -106,6 +118,8 @@ interactive=false
 if [[ "$once" == false && -t 0 && -t 1 && "${TERM:-dumb}" != dumb ]]; then
     interactive=true
 fi
+colour=false
+if [[ -t 1 && "${TERM:-dumb}" != dumb && -z "${NO_COLOR+x}" ]]; then colour=true; fi
 scratch="$(mktemp -d "${TMPDIR:-/tmp}/github-siblings.XXXXXX")"
 cleanup() {
     if [[ "$interactive" == true ]]; then printf '\033[?25h\033[?1049l'; fi
@@ -116,11 +130,11 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 print_row() {
-    printf '%-*s  %*s  %s  %*s  %*s  %*s\n' "$width" "$1" "$number_width" "$2" "$3" \
-        "$number_width" "$4" "$pr_result_width" "$5" "$pr_result_width" "$6"
+    printf '%s%-*s  %*s  %s  %*s  %*s  %*s  %*s  %*s%s\n' "${9:-}" "$width" "$1" "$open_width" "$2" "$3" \
+        "$today_width" "$4" "$today_width" "$5" "$open_width" "$6" "$pr_result_width" "$7" "$pr_result_width" "$8" "${10:-}"
 }
 print_separator() {
-    printf '%*s\n' "$((width + 4 + issues_width + prs_width))" '' | tr ' ' '-'
+    printf '%*s\n' "$((width + 6 + issues_width + today_group_width + prs_width))" '' | tr ' ' '-'
 }
 center_text() {
     local value="$1" span="$2" left
@@ -154,27 +168,99 @@ measure_counts() {
     percent="$(format_percent "$1" "$2")"
     [[ ${#percent} -le "$percent_width" ]] || percent_width=${#percent}
 }
+# Calendar arithmetic, not subtracting 24 hours: the cutoff can cross DST.
+# Perl's core POSIX functions use the same IANA timezone data on Linux/macOS.
+day_cutoff() {
+    TZ=Europe/Monaco perl -MPOSIX=mktime,strftime,tzset -e '
+        tzset();
+        my $now = shift;
+        my @local = localtime($now);
+        my $cutoff = mktime(0, 0, 6, @local[3..5], 0, 0, -1);
+        $cutoff = mktime(0, 0, 6, $local[3]-1, @local[4..5], 0, 0, -1)
+            if $now < $cutoff;
+        print strftime("%Y-%m-%dT%H:%M:%SZ", gmtime($cutoff));
+    ' "$(date +%s)"
+}
+
+count_today() {
+    local index="$1" page counts fixed added total_fixed=0 total_added=0 cursor='' next
+    page="$(jq -c --arg key "r$index" '.data[$key].recent' "$scratch/response")" || return 1
+    while :; do
+        # A missing/invalid page is unavailable, not a zero or partial count.
+        counts="$(jq -er --arg since "$cutoff" '
+            def timestamp: type == "string" and
+                test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$");
+            select((.nodes | type == "array") and
+                (.pageInfo.hasNextPage | type == "boolean") and
+                all(.nodes[]; (.createdAt | timestamp) and
+                    ((.state == "OPEN" and .closedAt == null) or
+                     (.state == "CLOSED" and (.closedAt | timestamp))))) |
+            [([.nodes[] | select(.state == "CLOSED" and .closedAt >= $since)] | length),
+             ([.nodes[] | select(.createdAt >= $since)] | length)] | @tsv
+        ' <<< "$page")" || return 1
+        read -r fixed added <<< "$counts"
+        total_fixed=$((total_fixed + fixed))
+        total_added=$((total_added + added))
+        [[ "$(jq -r '.pageInfo.hasNextPage' <<< "$page")" == true ]] || break
+        next="$(jq -er '.pageInfo.endCursor | select(type == "string" and length > 0)' <<< "$page")" || return 1
+        [[ "$next" != "$cursor" ]] || return 1
+        cursor="$next"
+        # shellcheck disable=SC2016
+        if ! gh api graphql --hostname github.com -f query='
+            query($owner: String!, $name: String!, $since: DateTime!, $after: String!) {
+                repository(owner: $owner, name: $name) {
+                    recent: issues(first: 100,
+                        filterBy: {since: $since}, after: $after) {
+                        nodes { state createdAt closedAt }
+                        pageInfo { hasNextPage endCursor }
+                    }
+                }
+            }' -f "owner=${repos[$index]%/*}" -f "name=${repos[$index]#*/}" \
+            -f "since=$cutoff" -f "after=$cursor" > "$scratch/page" 2>> "$scratch/errors"; then
+            return 1
+        fi
+        page="$(jq -ec 'select((.errors // []) | length == 0) | .data.repository.recent' "$scratch/page")" || return 1
+    done
+    printf '%s\t%s' "$total_fixed" "$total_added"
+}
+
+colour_fixed() {
+    # Apply the pastel scale to foreground text, preserving the terminal background.
+    awk -v open="$1" -v closed="$2" 'BEGIN {
+        p = closed / (open + closed);
+        if (p <= 0.5) { r=250; g=218+50*p; b=218-28*p }
+        else { r=250-68*(p-0.5); g=243-11*(p-0.5); b=204+30*(p-0.5) }
+        printf "\033[38;2;%d;%d;%dm", r, g, b;
+    }'
+}
 print_counts() {
-    local name="$1" open="$2" closed="$3" total fixed
+    local name="$1" open="$2" closed="$3" total fixed foreground='' reset=''
+    local number_width="${9:-$number_width}"
     total=$((open + closed))
     printf -v fixed '%*s / %*s %-*s' "$number_width" "$(format_count "$closed")" \
         "$number_width" "$(format_count "$total")" "$percent_width" "$(format_percent "$open" "$closed")"
+    printf -v fixed '%*s' "$fixed_width" "$fixed"
+    if [[ "$colour" == true && "$total" -gt 0 ]]; then
+        foreground="$(colour_fixed "$open" "$closed")"
+        reset=$'\033[39m'
+    fi
     print_row "$name" "$(format_count "$open")" "$fixed" \
-        "$(format_count "$4")" "$(format_count "$5")" "$(format_count "$6")"
+        "$(format_count "$7")" "$(format_count "$8")" "$(format_count "$4")" "$(format_count "$5")" "$(format_count "$6")" "$foreground" "$reset"
 }
 print_error() {
     local fixed
-    printf -v fixed '%*s / %*s %-*s' "$number_width" ERROR "$number_width" ERROR "$percent_width" '(N/A)'
-    print_row "$1" ERROR "$fixed" ERROR ERROR ERROR
+    fixed="$(center_text ERROR "$fixed_width")"
+    print_row "$1" ERROR "$fixed" ERROR ERROR ERROR ERROR ERROR
 }
 
 render() {
-    local i counts name open closed pr_open pr_merged pr_closed total_open=0 total_closed=0
-    local total_pr_open=0 total_pr_merged=0 total_pr_closed=0 successful=0 label=TOTAL
-    local number_width=4 percent_width=5 fixed_width issues_width prs_width pr_result_width
+    local i counts name open closed pr_open pr_merged pr_closed today added day_counts rank total_open=0 total_closed=0
+    local total_added=0 total_today=0 total_pr_open=0 total_pr_merged=0 total_pr_closed=0 successful=0 label=TOTAL
+    local number_width=4 percent_width=5 fixed_width issues_width prs_width pr_result_width open_width today_width today_group_width total_number_width row_number_width
     printf 'Sibling GitHub issues and pull requests | %s\n' "$(date '+%Y-%m-%d %H:%M:%S %Z')"
     printf 'Issues: OPEN / FIXED. PRs: OPEN includes drafts; CLOSED excludes merged.\n'
-    printf 'Fixed = closed issues. Refresh: %ss | q quit | r refresh\n\n' "$interval"
+    printf 'Fixed = closed issues. TODAY since %s (06:00 Europe/Monaco).\n' "$cutoff"
+    printf 'Lowest percent fixed first. Refresh: %ss | q quit | r refresh\n\n' "$interval"
     : > "$scratch/rows"
     for ((i=0; i<repo_count; i++)); do
         if counts="$(jq -er --arg key "r$i" '
@@ -183,10 +269,14 @@ render() {
             [.open.totalCount, .closed.totalCount,
              .prOpen.totalCount, .prMerged.totalCount, .prClosed.totalCount] |
             select(all(.[]; count)) | @tsv
-        ' "$scratch/response" 2>/dev/null)"; then
+        ' "$scratch/response" 2>/dev/null)" && day_counts="$(count_today "$i" 2>> "$scratch/errors")"; then
             read -r open closed pr_open pr_merged pr_closed <<< "$counts"
-            measure_counts "$open" "$closed" "$pr_open" "$pr_merged" "$pr_closed"
-            printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$open" "${repos[$i]}" "$closed" "$pr_open" "$pr_merged" "$pr_closed" >> "$scratch/rows"
+            read -r today added <<< "$day_counts"
+            measure_counts "$open" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added"
+            rank="$(awk -v o="$open" -v c="$closed" 'BEGIN { if (o+c) printf "%.12f", c/(o+c); else print 2 }')"
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$rank" "$open" "${repos[$i]}" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added" >> "$scratch/rows"
+            total_today=$((total_today + today))
+            total_added=$((total_added + added))
             total_open=$((total_open + open))
             total_closed=$((total_closed + closed))
             total_pr_open=$((total_pr_open + pr_open))
@@ -194,35 +284,43 @@ render() {
             total_pr_closed=$((total_pr_closed + pr_closed))
             successful=$((successful + 1))
         else
-            printf '%s\t%s\t%s\n' -1 "${repos[$i]}" ERROR >> "$scratch/rows"
+            printf '3\t%s\t%s\t%s\n' -1 "${repos[$i]}" ERROR >> "$scratch/rows"
             status=1
         fi
     done
+    row_number_width="$number_width"
     if [[ "$successful" -gt 0 ]]; then
-        measure_counts "$total_open" "$total_closed" "$total_pr_open" "$total_pr_merged" "$total_pr_closed"
+        measure_counts "$total_open" "$total_closed" "$total_pr_open" "$total_pr_merged" "$total_pr_closed" "$total_today" "$total_added"
     fi
-    if [[ "$successful" -lt "$repo_count" && "$number_width" -lt 5 ]]; then number_width=5; fi
-    fixed_width=$((2 * number_width + 4 + percent_width))
-    issues_width=$((number_width + 2 + fixed_width))
-    pr_result_width="$number_width"
+    total_number_width="$number_width"
+    number_width="$row_number_width"
+    open_width="$total_number_width"
+    if [[ "$successful" -lt "$repo_count" && "$open_width" -lt 5 ]]; then open_width=5; fi
+    today_width="$total_number_width"
+    [[ "$today_width" -ge 5 ]] || today_width=5
+    fixed_width=$((2 * total_number_width + 4 + percent_width))
+    issues_width=$((open_width + 2 + fixed_width))
+    today_group_width=$((2 * today_width + 2))
+    pr_result_width="$total_number_width"
     [[ "$pr_result_width" -ge 6 ]] || pr_result_width=6
-    prs_width=$((number_width + 4 + 2 * pr_result_width))
-    sort -t $'\t' -k1,1nr -k2,2 "$scratch/rows" > "$scratch/sorted"
-    printf '%*s  %s  %s\n' "$width" '' "$(center_text ISSUES "$issues_width")" "$(center_text PRS "$prs_width")"
-    print_row REPOSITORY "$(center_text OPEN "$number_width")" "$(center_text FIXED "$fixed_width")" \
-        "$(center_text OPEN "$number_width")" "$(center_text MERGED "$pr_result_width")" "$(center_text CLOSED "$pr_result_width")"
+    prs_width=$((open_width + 4 + 2 * pr_result_width))
+    sort -t $'\t' -k1,1n -k2,2nr -k3,3 "$scratch/rows" > "$scratch/sorted"
+    printf '%*s  %s  %s  %s\n' "$width" '' "$(center_text ISSUES "$issues_width")" \
+        "$(center_text TODAY "$today_group_width")" "$(center_text PRS "$prs_width")"
+    print_row REPOSITORY "$(center_text OPEN "$open_width")" "$(center_text FIXED "$fixed_width")" \
+        "$(center_text FIXED "$today_width")" "$(center_text ADDED "$today_width")" "$(center_text OPEN "$open_width")" "$(center_text MERGED "$pr_result_width")" "$(center_text CLOSED "$pr_result_width")"
     print_separator
-    while IFS=$'\t' read -r open name closed pr_open pr_merged pr_closed; do
+    while IFS=$'\t' read -r rank open name closed pr_open pr_merged pr_closed today added; do
         if [[ "$open" == -1 ]]; then
             print_error "$name"
         else
-            print_counts "$name" "$open" "$closed" "$pr_open" "$pr_merged" "$pr_closed"
+            print_counts "$name" "$open" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added"
         fi
     done < "$scratch/sorted"
     print_separator
     if [[ "$status" != 0 ]]; then label='TOTAL (partial)'; fi
     if [[ "$successful" -gt 0 ]]; then
-        print_counts "$label" "$total_open" "$total_closed" "$total_pr_open" "$total_pr_merged" "$total_pr_closed"
+        print_counts "$label" "$total_open" "$total_closed" "$total_pr_open" "$total_pr_merged" "$total_pr_closed" "$total_today" "$total_added" "$total_number_width"
     else
         print_error "$label"
     fi
@@ -238,8 +336,9 @@ if [[ "$interactive" == true ]]; then
 fi
 while :; do
     status=0
+    cutoff="$(day_cutoff)"
     # Read-only query, explicitly bound to github.com regardless of GH_HOST/GH_REPO.
-    gh api graphql --hostname github.com -f "query=$query" \
+    gh api graphql --hostname github.com -f "query=$query" -f "since=$cutoff" \
         > "$scratch/response" 2> "$scratch/errors" || status=1
     render > "$scratch/frame"
     if [[ "$interactive" == true ]]; then printf '\033[H\033[2J'; fi

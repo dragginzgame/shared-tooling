@@ -97,19 +97,16 @@ jobs:
         shell: bash
         run: |
           echo /bin >> "$GITHUB_PATH"
-      - name: Install pinned Cargo manifest formatter
+      - name: Prepare and check the complete common toolset
         shell: bash
         run: |
-          source ci/tool-versions.env
-          cargo install cargo-sort --version "$SHARED_TOOLING_CARGO_SORT_VERSION" \
-            --locked --root "$RUNNER_TEMP/shared-tooling-cargo"
-          echo "$RUNNER_TEMP/shared-tooling-cargo/bin" >> "$GITHUB_PATH"
-      - name: Install pinned parsers, ripgrep and cloc
-        shell: bash
-        run: |
-          make --no-print-directory install-host-tools 2>&1 | tee "$RUNNER_TEMP/host-tools-install.log"
-          make --no-print-directory host-tools-check 2>&1 | tee "$RUNNER_TEMP/host-tools-check.log"
-          echo "$GITHUB_WORKSPACE/.tools/host/bin" >> "$GITHUB_PATH"
+          make --no-print-directory install-tools 2>&1 | tee "$RUNNER_TEMP/tools-install.log"
+          make --no-print-directory tools-check 2>&1 | tee "$RUNNER_TEMP/tools-check.log"
+          {
+            echo "$GITHUB_WORKSPACE/.tools/host/bin"
+            echo "$GITHUB_WORKSPACE/.tools/ic/bin"
+            echo "$GITHUB_WORKSPACE/.tools/rust/bin"
+          } >> "$GITHUB_PATH"
       - name: Select the frontend fixture runtime
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
@@ -132,11 +129,6 @@ jobs:
           TMPDIR: ${{ runner.temp }}/portable-fixtures
         run: |
           bash scripts/ci/test-frontend-formatting.sh 2>&1 | tee "$RUNNER_TEMP/portable-fixtures/frontend-formatting.log"
-      - name: Qualify pinned native IC executables
-        shell: bash
-        run: |
-          make --no-print-directory install-ic-tools 2>&1 | tee "$RUNNER_TEMP/ic-tools-install.log"
-          make --no-print-directory ic-tools-check 2>&1 | tee "$RUNNER_TEMP/ic-tools-check.log"
       - name: Exercise expected native installer and check failures
         id: retention
         continue-on-error: true
