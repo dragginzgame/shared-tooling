@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: make/tools.mk make/rust-format.mk make/execution.mk scripts/ci/check-format-tools.sh scripts/ci/check-make-execution.sh
+# Shared companions: make/tools.mk make/rust-format.mk make/execution.mk scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh scripts/ci/check-make-execution.sh
 set -euo pipefail
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 root="${BASH_SOURCE[0]}"
@@ -11,7 +11,7 @@ trap 'if [[ $? == 0 ]]; then rm -rf "$fixture"; else printf "Formatting Make fix
 consumer="$fixture/consumer with spaces"
 mkdir -p "$consumer/vendor/make" "$consumer/vendor/scripts/ci" "$consumer/ci" "$consumer/.tools/rust/bin"
 cp "$root/make/tools.mk" "$root/make/rust-format.mk" "$root/make/execution.mk" "$consumer/vendor/make/"
-cp "$root/scripts/ci/check-format-tools.sh" "$root/scripts/ci/check-make-execution.sh" "$consumer/vendor/scripts/ci/"
+cp "$root/scripts/ci/check-format-tools.sh" "$root/scripts/ci/run-formatting.sh" "$root/scripts/ci/check-make-execution.sh" "$consumer/vendor/scripts/ci/"
 printf 'export SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\n' > "$consumer/ci/tool-versions.env"
 cat > "$consumer/Makefile" <<'MAKE'
 SHARED_TOOLING_ROOT ?= $(CURDIR)/vendor
@@ -31,10 +31,13 @@ case "$*" in
     'fmt --version') exit 0 ;;
 esac
 printf '%s\n' "$*" >> "$FORMAT_TEST_EVENTS"
+echo 'Finished: Cargo.toml is sorted already, no changes made'
+echo 'fixture stderr details' >&2
 [[ "$*" != "${FORMAT_TEST_FAIL:-}" ]]
 CARGO
 chmod +x "$consumer/.tools/rust/bin/format-fixture-cargo"
 export FORMAT_TEST_EVENTS="$fixture/events"
+export RUNNER_TEMP="$fixture"
 [[ "$(make --no-print-directory -C "$consumer")" == harmless ]]
 [[ ! -e "$FORMAT_TEST_EVENTS" ]]
 for target in fmt fmt-check; do
@@ -42,10 +45,13 @@ for target in fmt fmt-check; do
     PATH=/usr/bin:/bin make --no-print-directory -C "$consumer" "$target" > "$fixture/$target.log" 2>&1
     if [[ "$target" == fmt ]]; then
         printf 'sort --workspace\nfmt --all\n' > "$fixture/expected"
+        printf 'Formatting... ok\n' > "$fixture/expected-output"
     else
         printf 'sort --workspace --check\nfmt --all -- --check\n' > "$fixture/expected"
+        printf 'Checking formatting... ok\n' > "$fixture/expected-output"
     fi
     cmp "$fixture/expected" "$FORMAT_TEST_EVENTS"
+    cmp "$fixture/expected-output" "$fixture/$target.log"
 done
 # Ambient roots cannot select the parse-time helper, including for harmless help.
 mkdir -p "$fixture/unselected/scripts/ci"
@@ -82,6 +88,13 @@ for failure in wrong missing sort; do
     if [[ "$failure" == sort ]]; then
         printf 'sort --workspace\n' > "$fixture/expected"
         cmp "$fixture/expected" "$FORMAT_TEST_EVENTS"
+        grep -Fx 'Formatting... FAILED (exit 1)' "$fixture/$failure.log"
+        logs=("$fixture"/formatting.*)
+        [[ ${#logs[@]} == 1 ]]
+        log="${logs[0]}"
+        grep -Fx 'fixture stderr details' "$log"
+        grep -Fx 'Finished: Cargo.toml is sorted already, no changes made' "$log"
+        if grep -F 'Finished: Cargo.toml' "$fixture/$failure.log"; then exit 1; fi
     else
         [[ ! -s "$FORMAT_TEST_EVENTS" ]]
     fi
@@ -106,4 +119,15 @@ for target in fmt fmt-check; do
 done
 # Normal parallel mode and quoted command variables still reach the formatter.
 make -j2 --no-print-directory -C "$consumer" fmt-check "AUDIT_SELECTION=owner's selection" > "$fixture/parallel.log" 2>&1
+# Custom workspace/frontend adapters share presentation without giving this
+# wrapper their formatter policy. Arguments and nonzero statuses remain exact.
+status=0
+bash "$root/scripts/ci/run-formatting.sh" --check bash -c 'printf "%s\n" "$1"; echo formatter-error >&2; exit 23' -- 'selected path with spaces' \
+    > "$fixture/custom-output" 2>&1 || status=$?
+[[ "$status" == 23 && "$(wc -l < "$fixture/custom-output")" -eq 2 ]]
+grep -Fx 'Checking formatting... FAILED (exit 23)' "$fixture/custom-output"
+logs=("$fixture"/formatting.*)
+[[ ${#logs[@]} == 2 ]]
+grep -Fx 'selected path with spaces' "$fixture"/formatting.*
+grep -Fx formatter-error "$fixture"/formatting.*
 echo 'Shared formatting Make commands passed (substitute Cargo; no installation)'

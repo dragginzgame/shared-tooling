@@ -88,6 +88,7 @@ SCRIPT
         > "$native/command.log" 2>&1 || status=$?
     # GNU Make reports a failed recipe as status 2; the installer evidence stays.
     [[ "$status" == 2 && -f "$native/.tools/ic-set.fixture/payload" ]] || exit 1
+    printf 'retained formatter diff\n' > "$native/temp/formatting.fixture"
     EVIDENCE_TEMP_ROOT="$native/temp" EVIDENCE_REPOSITORY_ROOT="$native" \
         EVIDENCE_ACTION_ROOT="$ROOT/.github/actions/retain-failure-evidence" \
         RUNNER_TEMP="$native/temp" GITHUB_OUTPUT="$native/archive-output" \
@@ -97,6 +98,7 @@ SCRIPT
     tar -xzf "$archive" -C "$native/unpacked"
     cmp "$native/.tools/ic-set.fixture/payload" "$native/unpacked/.tools/ic-set.fixture/payload"
     cmp "$native/temp/ic-tools-$phase.log" "$native/unpacked/ic-tools-$phase.log"
+    cmp "$native/temp/formatting.fixture" "$native/unpacked/formatting.fixture"
     grep -Fx "native fixture: $phase" "$native/unpacked/ic-tools-$phase.log" > /dev/null
 done
 # Exercise the real Rust installer through the consumer-owned setup alias.

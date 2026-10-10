@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.10]
+
+### Changed
+
+- Keep formatting output to one success line or a short failure summary with a
+  retained diagnostic log. Shared Rust recipes and custom formatter adapters use
+  the same reporter; CI failure artifacts include its logs.
+  ([#92](https://github.com/dragginzgame/shared-tooling/issues/92))
+
+### Added
+
+- Observe exact crates.io package metadata through the shared registry checker,
+  with bounded, retained responses and validated checksum/yanked facts. Consumers
+  can replace duplicate readback while retaining their own publication policy.
+  ([#94](https://github.com/dragginzgame/shared-tooling/issues/94))
+
 ## [0.2.9]
 
 ### Added

@@ -149,7 +149,9 @@ selection, deletion authorization, retained evidence and interrupted retries.
 - `make check-doc-links` checks local Markdown targets in the selected shared
   documents; `make check-release-commands` tests Make entry points using a
   substitute runner. The read-only `scripts/ci/check-crates-io-version.sh` reports
-  present, absent or unavailable for one exact stable crates.io version. See
+  present, absent or unavailable for one exact stable crates.io version. Its
+  optional metadata mode retains bounded response evidence and returns validated
+  checksum/yanked facts while leaving publication decisions with the caller. See
   [verification helper contracts and adoption](docs/verification-helpers.md).
 - `scripts/ci/verify-evidence-checksums.sh <manifest> [...]` verifies nonempty
   SHA-256 manifests using the shared portable checksum backend. Paths in each
@@ -159,6 +161,11 @@ selection, deletion authorization, retained evidence and interrupted retries.
   caller's workspace, rejects zero passing tests and retains failed output.
   It requires the normal libtest summary format and preserves Cargo arguments
   and network policy. Cargo and logging failures remain failures.
+- `scripts/ci/run-formatting.sh --check|--write COMMAND [ARG ...]` reports one
+  success line or a short failure summary with the full retained log path.
+  `make/rust-format.mk` uses it for Rust formatting; custom workspace/frontend
+  adapters can use the same output contract without changing their policy.
+  See the [formatting rules](rules/git-hooks.md).
 - `scripts/ci/check-runner-disk-space.sh --path PATH --min-free-mib N` checks
   capacity before a consumer-selected step. Optional diagnostic paths report
   disk usage without cleanup; thresholds stay local. See the

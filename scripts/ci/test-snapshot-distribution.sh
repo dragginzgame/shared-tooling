@@ -550,14 +550,23 @@ COMPANIONS
 focused_consumer="$FIXTURE/focused-fixtures"
 git init -q "$focused_consumer"
 selection_args=(--file "$checksum_path" --file "$verifier_path")
+without_reporter=("${selection_args[@]}")
 for path in scripts/ci/test-format-tools.sh scripts/ci/check-format-tools.sh \
     scripts/ci/test-rust-tools.sh scripts/dev/install-rust-tools.sh \
-    scripts/ci/test-make-format.sh make/tools.mk make/rust-format.mk make/execution.mk scripts/ci/check-make-execution.sh; do
+    scripts/ci/test-make-format.sh make/tools.mk make/rust-format.mk make/execution.mk scripts/ci/check-make-execution.sh scripts/ci/run-formatting.sh; do
     mkdir -p "$source_root/${path%/*}" "$revision_root/${path%/*}"
     cp -p "$ROOT/$path" "$source_root/$path"
     cp -p "$ROOT/$path" "$revision_root/$path"
     selection_args+=(--file "$path")
+    if [[ "$path" != scripts/ci/run-formatting.sh ]]; then without_reporter+=(--file "$path"); fi
 done
+missing_reporter="$FIXTURE/missing-format-reporter"
+git init -q "$missing_reporter"
+if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$missing_reporter" "${without_reporter[@]}" \
+    > "$FIXTURE/missing-format-reporter.log" 2>&1; then exit 1; fi
+grep -F 'requires selected companion: scripts/ci/run-formatting.sh' "$FIXTURE/missing-format-reporter.log" >/dev/null
+[[ ! -e "$missing_reporter/.shared-tooling.snapshot" && ! -e "$missing_reporter/scripts" ]]
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$focused_consumer" "${selection_args[@]}" \
     > "$FIXTURE/focused-fixtures-export.log"
