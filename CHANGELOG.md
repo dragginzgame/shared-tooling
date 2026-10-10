@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.4]
+
+### Changed
+
+- Select Binaryen 133 for the common IC toolset and exercise optimization and
+  execution in native CI. Prepare the updated selection explicitly; previous
+  toolsets and failed candidates remain retained. Consumers still qualify their
+  own optimized Wasm bundles before adopting the new pins.
+  ([#102](https://github.com/dragginzgame/shared-tooling/issues/102))
+
 ## [0.3.3]
 
 ### Fixed

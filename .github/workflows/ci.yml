@@ -116,6 +116,10 @@ jobs:
         run: |
           test "$(npm --version)" = "$(jq -er '.engines.npm' ci/frontend/package.json)"
           npm ci --prefix ci/frontend
+      - name: Qualify native Wasm optimization and execution
+        run: |
+          mkdir -p "$RUNNER_TEMP/portable-fixtures"
+          bash scripts/ci/qualify-wasm-opt.sh "$RUNNER_TEMP/portable-fixtures/wasm-opt"
       - name: Run portable regression set with prepared tools
         shell: bash
         env:
