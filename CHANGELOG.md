@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.14]
+
+### Fixed
+
+- Report unavailable failed-step logs during CI inspection instead of silently
+  succeeding. Retain partial logs and fetch errors, while allowing successful
+  runs that legitimately have no failed-step logs.
+  ([#97](https://github.com/dragginzgame/shared-tooling/issues/97))
+
 ## [0.2.13]
 
 ### Fixed
