@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.13]
+
+### Fixed
+
+- Identify the exact missing or invalid selected Cargo executable in setup/check
+  failures. Release preparation now requires the consumer's existing selected-tool
+  setup and early offline checks; consumer adapters must adopt that ordering.
+  ([#96](https://github.com/dragginzgame/shared-tooling/issues/96))
+
 ## [0.2.12]
 
 ### Fixed

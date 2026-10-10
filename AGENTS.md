@@ -6,8 +6,12 @@ overlay. Consumers adopt the baseline and keep their own `AGENTS.md`.
 
 ## Validation in Shared Tooling
 
-- After script changes, run `bash scripts/ci/test-portable-tools.sh` and ShellCheck
-  over `scripts/ci/*.sh`, `scripts/dev/*.sh` and `scripts/distribution/*.sh`.
+- During script development, run focused fixtures and ShellCheck for the affected
+  scripts. Before delivering the completed batch as ready, run the full
+  `bash scripts/ci/test-portable-tools.sh` suite and ShellCheck over
+  `scripts/ci/*.sh`, `scripts/dev/*.sh` and `scripts/distribution/*.sh`.
+  This is standing validation authority; no additional request is needed. Reuse
+  passing results for unchanged inputs rather than rerunning at every handoff.
 - For documentation-only changes, check links, instruction consistency and the
   diff. Do not run the portable script suite solely because prose changed.
 
