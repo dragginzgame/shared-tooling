@@ -19,12 +19,23 @@ trap finish EXIT
 # EXIT trap. No installer, release, or nested test body is dispatched. Exercise
 # cleanup/status handling using this invocation's Bash (including 3.2).
 mkdir -p "$fixture/exit-source/scripts/ci"
+mkdir -p "$fixture/exit-input/src" "$fixture/exit-input/.githooks" "$fixture/exit-input/scripts/dev" "$fixture/exit-input/scripts/ci"
+for input in src/lib.rs Cargo.toml Makefile README.md .githooks/pre-commit scripts/dev/install-git-hooks.sh scripts/ci/check-make-execution.sh; do
+    printf 'retained input\n' > "$fixture/exit-input/$input"
+done
 export RETENTION_EXIT_PATH="$fixture/exit-path"
-for name in format-tools tool-commands rust-tools release-runner host-tools fixture-retention; do
-    for failure in nounset command nonzero premature completed failed-completion; do
+for name in format-tools tool-commands rust-tools release-runner host-tools fixture-retention check-formatting-hooks; do
+    source="$ROOT/scripts/ci/test-$name.sh"
+    probe_args=()
+    if [[ "$name" == check-formatting-hooks ]]; then
+        source="$ROOT/scripts/ci/$name.sh"
+        probe_args=("$fixture/exit-input" src/lib.rs Cargo.toml --no-dependency-tables)
+    fi
+    for failure in nounset nounset-function command nonzero premature completed failed-completion; do
         # shellcheck disable=SC2016 # Expanded by the disposable child fixture.
         case "$failure" in
             nounset) injection='unset RETENTION_UNBOUND; printf "%s\n" "$RETENTION_UNBOUND"'; expected=1 ;;
+            nounset-function) injection='unset RETENTION_UNBOUND; probe_unbound() { echo "$RETENTION_UNBOUND"; }; probe_unbound'; expected=1 ;;
             command) injection='false'; expected=1 ;;
             nonzero) injection='exit 23'; expected=23 ;;
             premature) injection='exit 0'; expected=1 ;;
@@ -36,20 +47,24 @@ for name in format-tools tool-commands rust-tools release-runner host-tools fixt
             { print }
             /^trap .* EXIT$/ && !injected {
                 print "printf \"%s\\n\" \"${fixture:-${FIXTURE_ROOT:-}}\" > \"$RETENTION_EXIT_PATH\""
+                print "printf \"retained evidence\\n\" > \"${fixture:-${FIXTURE_ROOT:-}}/exit-evidence\""
                 print ENVIRON["RETENTION_INJECTION"]
                 print "exit 99"
                 injected=1
             }
             END { if (!injected) exit 1 }
-        ' "$ROOT/scripts/ci/test-$name.sh" > "$fixture/exit-source/scripts/ci/probe.sh"
+        ' "$source" > "$fixture/exit-source/scripts/ci/probe.sh"
         status=0
         TMPDIR="$fixture" "$BASH" "$fixture/exit-source/scripts/ci/probe.sh" \
+            ${probe_args[@]+"${probe_args[@]}"} \
             > "$fixture/exit-$name-$failure.log" 2>&1 || status=$?
-        [[ "$status" == "$expected" ]]
+        [[ "$status" == "$expected" ]] || exit 1
         retained="$(cat "$RETENTION_EXIT_PATH")"
-        [[ -n "$retained" ]]
-        if [[ "$expected" == 0 ]]; then [[ ! -e "$retained" ]]
-        else [[ -d "$retained" ]]; fi
+        [[ -n "$retained" ]] || exit 1
+        if [[ "$expected" == 0 ]]; then [[ ! -e "$retained" ]] || exit 1
+        else
+            [[ -d "$retained" && "$(cat "$retained/exit-evidence")" == 'retained evidence' ]] || exit 1
+        fi
     done
 done
 mkdir "$fixture/bin" "$fixture/cloc" "$fixture/portable"

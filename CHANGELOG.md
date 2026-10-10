@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.6]
+
+### Fixed
+
+- Stop pre-commit formatting when a Git index-tree check fails, preserving its
+  error status and leaving working files and staging unchanged even if Git
+  prints the expected tree ID.
+  ([#106](https://github.com/dragginzgame/shared-tooling/issues/106))
+- Require the formatting-hook adoption checker to finish before reporting success
+  or removing evidence, including after premature Bash 3.2 exits.
+  ([#103](https://github.com/dragginzgame/shared-tooling/issues/103))
+
+### Added
+
+- Select Cargo executable versions directly from an explicit consumer lockfile,
+  sharing strict package/source admission and retaining builds if the selection
+  changes during installation. Offline checks use the same selection without
+  resolving dependencies or installing tools.
+  ([#96](https://github.com/dragginzgame/shared-tooling/issues/96))
+
 ## [0.3.5]
 
 ### Fixed

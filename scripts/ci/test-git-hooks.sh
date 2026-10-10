@@ -168,6 +168,60 @@ tree="$(git write-tree)"
 FORMAT_TEST_FAIL=yes expect_failure bash .githooks/pre-commit
 [[ "$(git write-tree)" == "$tree" && "$(cat staged.rs)" == unformatted && "$(cat Cargo.toml)" == unformatted ]]
 
+# A tree ID on stdout is not a successful observation. Fail before any real
+# file refresh or staging, including when the snapshot formatter already ran.
+real_git="$(command -v git)"
+for observation in 1 2 3; do
+    new_fixture "hook-tree-failure-$observation"
+    printf 'unformatted\n' > staged.rs
+    printf 'unrelated working edit\n' > README.md
+    cat >> scripts/fixture-fmt.sh <<'FORMAT'
+printf 'called\n' >> "$HOOK_TEST_FORMAT_MARKER"
+FORMAT
+    git add staged.rs scripts/fixture-fmt.sh
+    tree="$(git write-tree)"
+    cp .git/index index-before
+    mkdir mock-bin
+    cat > mock-bin/git <<'GIT'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" >> "$HOOK_TEST_STATE/commands"
+if [[ "$*" == write-tree ]]; then
+    count=0
+    [[ ! -f "$HOOK_TEST_STATE/count" ]] || read -r count < "$HOOK_TEST_STATE/count"
+    count=$((count + 1))
+    printf '%s\n' "$count" > "$HOOK_TEST_STATE/count"
+    "$HOOK_TEST_GIT" "$@"
+    if [[ "$count" == "$HOOK_TEST_OBSERVATION" ]]; then
+        echo 'injected write-tree observation failure' >&2
+        exit 23
+    fi
+    exit 0
+fi
+exec "$HOOK_TEST_GIT" "$@"
+GIT
+    chmod +x mock-bin/git
+    if PATH="$PWD/mock-bin:$PATH" HOOK_TEST_GIT="$real_git" \
+        HOOK_TEST_STATE="$PWD/mock-bin" HOOK_TEST_OBSERVATION="$observation" \
+        HOOK_TEST_FORMAT_MARKER="$PWD/formatter-called" \
+        bash .githooks/pre-commit > output 2>&1; then
+        echo 'pre-commit accepted a failed Git tree observation' >&2
+        exit 1
+    else
+        [[ $? == 23 ]]
+    fi
+    rg -F 'injected write-tree observation failure' output >/dev/null
+    [[ "$(cat mock-bin/count)" == "$observation" && "$(tail -n 1 mock-bin/commands)" == write-tree ]]
+    cmp index-before .git/index
+    [[ "$(git write-tree)" == "$tree" && "$(cat staged.rs)" == unformatted && "$(cat Cargo.toml)" == unformatted ]]
+    [[ "$(cat README.md)" == 'unrelated working edit' ]]
+    if [[ "$observation" == 3 ]]; then
+        [[ "$(cat formatter-called)" == called ]]
+    else
+        [[ ! -e formatter-called ]]
+    fi
+done
+
 for flags in i n q t v --ignore-errors; do
     new_fixture "make-mode-$flags"
     printf 'unformatted\n' > staged.rs
@@ -259,7 +313,6 @@ bash .githooks/pre-commit >> output
 [[ "$(git show :staged.rs)" == formatted && "$(cat staged.rs)" == formatted ]]
 
 # A failed observation must retain its status, even after printing a value.
-real_git="$(command -v git)"
 for observation in config root; do
     new_fixture "installer-read-failure-$observation"
     mkdir mock-bin
