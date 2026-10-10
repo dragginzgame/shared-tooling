@@ -336,6 +336,9 @@ normal Make variables and parallel-job settings remain available to targets.
 The complete argument list is checked before dispatch: arguments must be named
 goals, not Make options, variable assignments or names containing tabs/newlines.
 Pass variable selections through the caller's environment or owning Makefile.
+`VALIDATION_RUNNER_DEPTH` is inherited nesting metadata: unset or empty starts
+at zero; otherwise it must be a canonical non-negative decimal integer of at
+most 18 digits. Invalid depth refuses before logs or targets are created.
 
 ```bash
 scripts/ci/run-validation-targets.sh fmt-check shellcheck test
@@ -365,6 +368,9 @@ their original bytes. Success returns zero; failure preserves the first failed
 Make invocation's status (normally 2, rather than the recipe's own status).
 A logging-only pipeline failure also returns nonzero. SIGINT/SIGTERM exit with
 130/143 when handled.
+Both the temporary-source wrapper and validation body require explicit
+completion before returning success. Premature exits, including Bash 3.2
+nounset errors that report zero, fail and retain their available source or logs.
 Nested invocations retain separate run directories and only the outermost writes
 the GitHub summary. Consumer callers still own targets and child color policy:
 set a product variable such as `CANIC_TEST_COLOR` before dispatch when the caller

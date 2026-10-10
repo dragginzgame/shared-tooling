@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.3]
+
+### Fixed
+
+- Reject malformed validation nesting depth before dispatch, and require explicit
+  runner completion before returning success. Premature exits on Bash 3.2 fail
+  and preserve available evidence while completed target failures retain their
+  original status.
+  ([#104](https://github.com/dragginzgame/shared-tooling/issues/104))
+
 ## [0.3.2]
 
 ### Fixed
