@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.5]
+
+### Fixed
+
+- Isolate validation-runner tests from inherited log destinations and GitHub
+  summaries, preventing false test failures and synthetic results leaking into
+  the parent gate's evidence.
+  ([#105](https://github.com/dragginzgame/shared-tooling/issues/105))
+
 ## [0.3.4]
 
 ### Changed

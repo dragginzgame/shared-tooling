@@ -48,7 +48,24 @@ bash "$ROOT/scripts/ci/test-evidence-archive.sh"
 bash "$ROOT/scripts/ci/test-gh-ci.sh"
 bash "$ROOT/scripts/ci/test-github-siblings.sh"
 bash "$ROOT/scripts/ci/test-maintenance-task.sh"
-bash "$ROOT/scripts/ci/test-validation-target-runner.sh"
+# A parent gate may retain its own logs and GitHub summary. The runner fixture
+# must select its own destinations without changing those parent-owned outputs.
+mkdir -p "$FIXTURE/runner-parent/logs" "$FIXTURE/runner-parent/failures"
+printf 'parent-owned evidence\n' > "$FIXTURE/runner-parent/expected"
+for destination in logs/sentinel failures/sentinel summary.md; do
+    cp "$FIXTURE/runner-parent/expected" "$FIXTURE/runner-parent/$destination"
+done
+VALIDATION_LOG_DIR="$FIXTURE/runner-parent/logs" \
+    VALIDATION_FAILURE_LOG_DIR="$FIXTURE/runner-parent/failures" \
+    GITHUB_STEP_SUMMARY="$FIXTURE/runner-parent/summary.md" \
+    bash "$ROOT/scripts/ci/test-validation-target-runner.sh"
+for destination in logs/sentinel failures/sentinel summary.md; do
+    cmp "$FIXTURE/runner-parent/expected" "$FIXTURE/runner-parent/$destination"
+done
+for directory in logs failures; do
+    [[ "$(ls -A "$FIXTURE/runner-parent/$directory")" == sentinel ]]
+done
+echo 'Runner fixture preserves inherited parent logs and summary'
 bash "$ROOT/scripts/ci/test-runner-disk-space.sh"
 bash "$ROOT/scripts/ci/test-installers.sh"
 bash "$ROOT/scripts/ci/test-ic-tools.sh"
