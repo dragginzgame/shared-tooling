@@ -25,7 +25,7 @@ git checkout-index --all
 check() { bash "$ROOT/scripts/ci/check-release-source.sh" "$@" > "$fixture/output" 2>&1; }
 refuse() { if check "$@"; then echo 'unexpected release source admission' >&2; exit 1; fi; }
 check
-[[ ! -s "$fixture/output" ]]
+[[ ! -s "$fixture/output" ]] || exit 1
 
 # A lock-only change names the actual lock and leaves its bytes untouched.
 printf '\n' >> ci/frontend/package-lock.json
@@ -54,7 +54,7 @@ printf '  untracked: %q\n' "$untracked" > "$fixture/expected"
 grep -Fx -f "$fixture/expected" "$fixture/output" > /dev/null
 cmp .git/index "$fixture/index"
 cmp CONTRIBUTING.md "$fixture/working"
-[[ "$(cat "$untracked")" == 'untracked content' ]]
+[[ "$(cat "$untracked")" == 'untracked content' ]] || exit 1
 check --allow README.md --allow CONTRIBUTING.md --allow "$untracked"
 refuse --allow '*'
 

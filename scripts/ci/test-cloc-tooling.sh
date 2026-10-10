@@ -59,7 +59,7 @@ jq -e '
   .repositories[1].totals.total_loc == 0
 ' "$fixture/counts.json" >/dev/null
 perl "$ROOT/scripts/dev/cloc-tooling.pl" "$parent" > "$fixture/counts.txt"
-[[ "$(awk 'END { print $1,$2,$3,$4,$5,$6,$7 }' "$fixture/counts.txt")" == 'TOTAL 5 4 9 1 8 4' ]]
+[[ "$(awk 'END { print $1,$2,$3,$4,$5,$6,$7 }' "$fixture/counts.txt")" == 'TOTAL 5 4 9 1 8 4' ]] || exit 1
 grep -F "unrecorded@${revision:0:12}" "$fixture/counts.txt" >/dev/null
 printf '# version\t0.2.8\n' >> "$repo/.shared-tooling.snapshot"
 perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$parent" > "$fixture/version.json"
@@ -149,7 +149,7 @@ printf 'printf "changed\\n"\n' >> "$repo/scripts/ci/a.sh"
 perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$parent" > "$fixture/drift.json" 2> "$fixture/drift.err"
 jq -e '.totals.shared_loc == 2 and .totals.local_loc == 10 and
   .repositories[0].drifted_files == ["scripts/ci/a.sh"]' "$fixture/drift.json" >/dev/null
-[[ -s "$fixture/drift.err" ]]
+[[ -s "$fixture/drift.err" ]] || exit 1
 # A mode-only difference must not be labelled an intact snapshot copy.
 cp "$repo/scripts/ci/b.sh" "$repo/scripts/ci/a.sh"
 chmod +x "$repo/scripts/ci/a.sh"
@@ -184,7 +184,7 @@ jq -e '.partial == false and .repositories[0].head == null and
   (.repositories[0].files | map(.path) | sort) == ["bin/local.pl", "bin/runner"]' "$fixture/bootstrap.json" >/dev/null
 perl "$ROOT/scripts/dev/cloc-tooling.pl" "$bootstrap_parent" > "$fixture/bootstrap.txt" 2> "$fixture/bootstrap.err"
 grep -F 'uncommitted bootstrap' "$fixture/bootstrap.err" >/dev/null
-[[ "$(awk 'END { print $1,$4 }' "$fixture/bootstrap.txt")" == 'TOTAL 3' ]]
+[[ "$(awk 'END { print $1,$4 }' "$fixture/bootstrap.txt")" == 'TOTAL 3' ]] || exit 1
 # An existing corrupt branch reference is not a harmless first-commit state.
 git -C "$bootstrap" symbolic-ref HEAD refs/heads/broken
 printf 'not-an-object\n' > "$bootstrap/.git/refs/heads/broken"

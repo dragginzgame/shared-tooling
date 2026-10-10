@@ -26,7 +26,7 @@ SCRIPT
 chmod +x "$fixture/missing/mktemp"
 status=0
 PATH="$fixture/missing" "$BASH" "$ROOT/scripts/ci/test-portable-tools.sh" > "$fixture/missing.log" 2>&1 || status=$?
-[[ "$status" == 1 ]]
+[[ "$status" == 1 ]] || exit 1
 grep -Fx 'Missing portable-test prerequisite: cloc' "$fixture/missing.log"
 grep -Fx 'Missing portable-test prerequisite: yq' "$fixture/missing.log"
 grep -F 'docs/local-setup.md' "$fixture/missing.log"
@@ -42,7 +42,7 @@ SCRIPT
 chmod +x "$fixture/formatter/cargo"
 status=0
 PATH="$fixture/formatter:$PATH" bash "$ROOT/scripts/ci/check-portable-prerequisites.sh" > "$fixture/formatter.log" 2>&1 || status=$?
-[[ "$status" == 1 ]]
+[[ "$status" == 1 ]] || exit 1
 grep -F 'Formatting requires prepared cargo-sort' "$fixture/formatter.log"
 grep -F 'no tools were installed' "$fixture/formatter.log"
 echo 'Portable prerequisite early-refusal tests passed'

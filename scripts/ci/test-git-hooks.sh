@@ -49,7 +49,7 @@ MAKE
     cat > scripts/fixture-fmt.sh <<'FORMAT'
 #!/usr/bin/env bash
 set -euo pipefail
-[[ -z "${GIT_INDEX_FILE:-}" && -z "${GIT_DIR:-}" ]]
+[[ -z "${GIT_INDEX_FILE:-}" && -z "${GIT_DIR:-}" ]] || exit 1
 for path in *.rs Cargo.toml README.md; do
     [[ -f "$path" ]] || continue
     sed 's/unformatted/formatted/g' "$path" > "$path.fmt"
@@ -63,7 +63,7 @@ case "${FORMAT_TEST_RACE:-}" in
         ;;
     worktree) printf 'concurrent working edit\n' > "$FORMAT_TEST_REAL_ROOT/staged.rs" ;;
 esac
-[[ "${FORMAT_TEST_FAIL:-}" != yes ]]
+[[ "${FORMAT_TEST_FAIL:-}" != yes ]] || exit 1
 FORMAT
     printf 'unformatted\n' > Cargo.toml
     git add Makefile scripts/fixture-fmt.sh scripts/ci/check-make-execution.sh Cargo.toml
@@ -83,19 +83,19 @@ printf 'unformatted untracked\n' > unselected.rs
 printf 'unformatted unrelated working edit\n' > README.md
 git add -- 'staged [1].rs' "$newline_path"
 bash .githooks/pre-commit > output
-[[ "$(git show ':staged [1].rs')" == formatted && "$(git show ":$newline_path")" == formatted ]]
-[[ "$(git show :Cargo.toml)" == formatted && "$(cat README.md)" == 'unformatted unrelated working edit' ]]
-[[ "$(git show :README.md)" == "$(git show HEAD:README.md)" ]]
-[[ "$(cat unselected.rs)" == 'unformatted untracked' && -z "$(git ls-files -- unselected.rs)" ]]
+[[ "$(git show ':staged [1].rs')" == formatted && "$(git show ":$newline_path")" == formatted ]] || exit 1
+[[ "$(git show :Cargo.toml)" == formatted && "$(cat README.md)" == 'unformatted unrelated working edit' ]] || exit 1
+[[ "$(git show :README.md)" == "$(git show HEAD:README.md)" ]] || exit 1
+[[ "$(cat unselected.rs)" == 'unformatted untracked' && -z "$(git ls-files -- unselected.rs)" ]] || exit 1
 tree="$(git write-tree)"
 bash .githooks/pre-commit > output
-[[ "$(git write-tree)" == "$tree" ]]
+[[ "$(git write-tree)" == "$tree" ]] || exit 1
 
 new_fixture no-selection
 git read-tree HEAD
 tree="$(git write-tree)"
 bash .githooks/pre-commit > output
-[[ "$(git write-tree)" == "$tree" && "$(cat Cargo.toml)" == unformatted ]]
+[[ "$(git write-tree)" == "$tree" && "$(cat Cargo.toml)" == unformatted ]] || exit 1
 
 # Prepared checkout-local tools stay discoverable without a caller PATH export.
 # The tools are untracked; formatter inputs still come from the selected index.
@@ -143,12 +143,12 @@ MAKE
     esac
     if [[ "$tools" == prepared ]]; then
         PATH=/usr/bin:/bin "$BASH" .githooks/pre-commit > output
-        [[ "$(git show :Cargo.toml)" == formatted && "$(cat Cargo.toml)" == formatted ]]
+        [[ "$(git show :Cargo.toml)" == formatted && "$(cat Cargo.toml)" == formatted ]] || exit 1
     else
         PATH=/usr/bin:/bin expect_failure "$BASH" .githooks/pre-commit
-        [[ "$(git write-tree)" == "$tree" && "$(cat Cargo.toml)" == unformatted ]]
+        [[ "$(git write-tree)" == "$tree" && "$(cat Cargo.toml)" == unformatted ]] || exit 1
     fi
-    [[ "$(cat README.md)" == 'unformatted unrelated working edit' ]]
+    [[ "$(cat README.md)" == 'unformatted unrelated working edit' ]] || exit 1
 done
 
 new_fixture partial
@@ -158,7 +158,7 @@ printf 'unformatted unstaged\n' >> partial.rs
 tree="$(git write-tree)"
 cp partial.rs before
 expect_failure bash .githooks/pre-commit
-[[ "$(git write-tree)" == "$tree" && "$(cat Cargo.toml)" == unformatted ]]
+[[ "$(git write-tree)" == "$tree" && "$(cat Cargo.toml)" == unformatted ]] || exit 1
 cmp before partial.rs
 
 new_fixture formatter-failure
@@ -166,7 +166,7 @@ printf 'unformatted\n' > staged.rs
 git add staged.rs
 tree="$(git write-tree)"
 FORMAT_TEST_FAIL=yes expect_failure bash .githooks/pre-commit
-[[ "$(git write-tree)" == "$tree" && "$(cat staged.rs)" == unformatted && "$(cat Cargo.toml)" == unformatted ]]
+[[ "$(git write-tree)" == "$tree" && "$(cat staged.rs)" == unformatted && "$(cat Cargo.toml)" == unformatted ]] || exit 1
 
 # A tree ID on stdout is not a successful observation. Fail before any real
 # file refresh or staging, including when the snapshot formatter already ran.
@@ -208,17 +208,17 @@ GIT
         echo 'pre-commit accepted a failed Git tree observation' >&2
         exit 1
     else
-        [[ $? == 23 ]]
+        [[ $? == 23 ]] || exit 1
     fi
     rg -F 'injected write-tree observation failure' output >/dev/null
-    [[ "$(cat mock-bin/count)" == "$observation" && "$(tail -n 1 mock-bin/commands)" == write-tree ]]
+    [[ "$(cat mock-bin/count)" == "$observation" && "$(tail -n 1 mock-bin/commands)" == write-tree ]] || exit 1
     cmp index-before .git/index
-    [[ "$(git write-tree)" == "$tree" && "$(cat staged.rs)" == unformatted && "$(cat Cargo.toml)" == unformatted ]]
-    [[ "$(cat README.md)" == 'unrelated working edit' ]]
+    [[ "$(git write-tree)" == "$tree" && "$(cat staged.rs)" == unformatted && "$(cat Cargo.toml)" == unformatted ]] || exit 1
+    [[ "$(cat README.md)" == 'unrelated working edit' ]] || exit 1
     if [[ "$observation" == 3 ]]; then
-        [[ "$(cat formatter-called)" == called ]]
+        [[ "$(cat formatter-called)" == called ]] || exit 1
     else
-        [[ ! -e formatter-called ]]
+        [[ ! -e formatter-called ]] || exit 1
     fi
 done
 
@@ -229,7 +229,7 @@ for flags in i n q t v --ignore-errors; do
     tree="$(git write-tree)"
     MAKEFLAGS="$flags" FORMAT_TEST_FAIL=yes expect_failure bash .githooks/pre-commit
     rg -F 'requires recipe execution and failure propagation' output >/dev/null
-    [[ "$(git write-tree)" == "$tree" && "$(cat staged.rs)" == unformatted && "$(cat Cargo.toml)" == unformatted ]]
+    [[ "$(git write-tree)" == "$tree" && "$(cat staged.rs)" == unformatted && "$(cat Cargo.toml)" == unformatted ]] || exit 1
 done
 
 for race in index worktree; do
@@ -238,10 +238,10 @@ for race in index worktree; do
     git add staged.rs
     tree="$(git write-tree)"
     FORMAT_TEST_RACE="$race" FORMAT_TEST_REAL_ROOT="$PWD" expect_failure bash .githooks/pre-commit
-    [[ "$(git show :staged.rs)" == unformatted ]]
+    [[ "$(git show :staged.rs)" == unformatted ]] || exit 1
     case "$race" in
-        index) [[ "$(git show :concurrent.txt)" == 'concurrent staged edit' && "$(cat staged.rs)" == unformatted ]] ;;
-        worktree) [[ "$(git write-tree)" == "$tree" && "$(cat staged.rs)" == 'concurrent working edit' ]] ;;
+        index) [[ "$(git show :concurrent.txt)" == 'concurrent staged edit' && "$(cat staged.rs)" == unformatted ]] || exit 1 ;;
+        worktree) [[ "$(git write-tree)" == "$tree" && "$(cat staged.rs)" == 'concurrent working edit' ]] || exit 1 ;;
     esac
 done
 
@@ -251,8 +251,8 @@ git add staged.rs
 real_tree="$(git write-tree)"
 cp .git/index "$FIXTURE/alternate.index"
 GIT_DIR="$PWD/.git" GIT_INDEX_FILE="$FIXTURE/alternate.index" bash .githooks/pre-commit > output
-[[ "$(git write-tree)" == "$real_tree" && "$(git show :staged.rs)" == unformatted ]]
-[[ "$(GIT_INDEX_FILE="$FIXTURE/alternate.index" git show :staged.rs)" == formatted && "$(cat staged.rs)" == formatted ]]
+[[ "$(git write-tree)" == "$real_tree" && "$(git show :staged.rs)" == unformatted ]] || exit 1
+[[ "$(GIT_INDEX_FILE="$FIXTURE/alternate.index" git show :staged.rs)" == formatted && "$(cat staged.rs)" == formatted ]] || exit 1
 
 new_fixture symlink
 printf 'unformatted\n' > outside.rs
@@ -260,16 +260,16 @@ ln -s outside.rs linked.rs
 git add linked.rs
 tree="$(git write-tree)"
 expect_failure bash .githooks/pre-commit
-[[ "$(git write-tree)" == "$tree" && "$(cat outside.rs)" == unformatted ]]
+[[ "$(git write-tree)" == "$tree" && "$(cat outside.rs)" == unformatted ]] || exit 1
 
 new_fixture deleted
 git rm --quiet README.md
 bash .githooks/pre-commit > output
-[[ ! -e README.md && -z "$(git ls-files -- README.md)" ]]
+[[ ! -e README.md && -z "$(git ls-files -- README.md)" ]] || exit 1
 
 new_fixture installer
 bash scripts/dev/install-git-hooks.sh > output
-[[ "$(git config --local --get core.hooksPath)" == .githooks ]]
+[[ "$(git config --local --get core.hooksPath)" == .githooks ]] || exit 1
 bash scripts/dev/install-git-hooks.sh > output
 
 # Logical aliases such as macOS /var versus /private/var name the same root.
@@ -279,12 +279,12 @@ ln -s "$PWD" "$FIXTURE/installer-alias"
     cd "$FIXTURE/installer-alias"
     bash scripts/dev/install-git-hooks.sh > output
 )
-[[ "$(git config --local --get core.hooksPath)" == .githooks ]]
+[[ "$(git config --local --get core.hooksPath)" == .githooks ]] || exit 1
 
 new_fixture installer-configured
 git config --local core.hooksPath custom-hooks
 expect_failure bash scripts/dev/install-git-hooks.sh
-[[ "$(git config --get core.hooksPath)" == custom-hooks ]]
+[[ "$(git config --get core.hooksPath)" == custom-hooks ]] || exit 1
 
 # Git values are literal paths: trailing newlines must not become .githooks.
 for scope in local inherited; do
@@ -306,11 +306,11 @@ done
 new_fixture $'installer-root\n'
 bash scripts/dev/install-git-hooks.sh > output
 bash scripts/dev/install-git-hooks.sh >> output
-[[ "$(git config --local --get core.hooksPath)" == .githooks ]]
+[[ "$(git config --local --get core.hooksPath)" == .githooks ]] || exit 1
 printf 'unformatted\n' > staged.rs
 git add staged.rs
 bash .githooks/pre-commit >> output
-[[ "$(git show :staged.rs)" == formatted && "$(cat staged.rs)" == formatted ]]
+[[ "$(git show :staged.rs)" == formatted && "$(cat staged.rs)" == formatted ]] || exit 1
 
 # A failed observation must retain its status, even after printing a value.
 for observation in config root; do
@@ -335,7 +335,7 @@ GIT
         echo 'hook installer accepted a failed Git observation' >&2
         exit 1
     else
-        [[ $? == 23 ]]
+        [[ $? == 23 ]] || exit 1
     fi
     cmp config-before .git/config
 done
@@ -343,12 +343,12 @@ done
 new_fixture installer-disabled
 git config --local core.hooksPath ''
 expect_failure bash scripts/dev/install-git-hooks.sh
-[[ "$(git config --local --get core.hooksPath)" == '' ]]
+[[ "$(git config --local --get core.hooksPath)" == '' ]] || exit 1
 
 new_fixture installer-inherited
 printf '[core]\n\thooksPath = inherited-hooks\n' > "$FIXTURE/global-config"
 GIT_CONFIG_GLOBAL="$FIXTURE/global-config" expect_failure bash scripts/dev/install-git-hooks.sh
-[[ -z "$(git config --local --get core.hooksPath || true)" ]]
+[[ -z "$(git config --local --get core.hooksPath || true)" ]] || exit 1
 
 new_fixture installer-private-hook
 mkdir .git/hooks
@@ -357,12 +357,12 @@ chmod +x .git/hooks/pre-push
 cp .git/hooks/pre-push before
 expect_failure bash scripts/dev/install-git-hooks.sh
 cmp before .git/hooks/pre-push
-[[ -z "$(git config --get core.hooksPath || true)" ]]
+[[ -z "$(git config --get core.hooksPath || true)" ]] || exit 1
 
 new_fixture installer-non-executable
 chmod -x .githooks/pre-commit
 expect_failure bash scripts/dev/install-git-hooks.sh
-[[ ! -x .githooks/pre-commit && -z "$(git config --get core.hooksPath || true)" ]]
+[[ ! -x .githooks/pre-commit && -z "$(git config --get core.hooksPath || true)" ]] || exit 1
 
 # Qualify the optional shared formatter against real Cargo and the actual hook,
 # including the adoption checker's partial-stage and preservation cases.
@@ -384,7 +384,7 @@ mkdir -p src
 printf 'pub fn fixture( ){}\n' > src/lib.rs
 git add Makefile Cargo.toml src/lib.rs make/rust-format.mk make/execution.mk scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh
 bash .githooks/pre-commit > output
-[[ "$(git show :src/lib.rs)" == 'pub fn fixture() {}' ]]
+[[ "$(git show :src/lib.rs)" == 'pub fn fixture() {}' ]] || exit 1
 cp .git/index "$FIXTURE/newline-index"
 cp src/lib.rs "$FIXTURE/newline-source"
 CDPATH="$FIXTURE" bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$PWD" src/lib.rs Cargo.toml --no-dependency-tables \
@@ -428,15 +428,15 @@ CARGO
     done
     git add Makefile Cargo.toml src/lib.rs testing/Cargo.toml testing/src/lib.rs
     CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0 bash .githooks/pre-commit > output
-    [[ "$(git show :src/lib.rs)" == 'pub fn fixture() {}' && "$(git show :testing/src/lib.rs)" == 'pub fn fixture() {}' ]]
+    [[ "$(git show :src/lib.rs)" == 'pub fn fixture() {}' && "$(git show :testing/src/lib.rs)" == 'pub fn fixture() {}' ]] || exit 1
     for workspace in . testing; do
         if [[ -f "$workspace/selected-lock" ]]; then
             cmp "$workspace/selected-lock" "$workspace/Cargo.lock"
         else
-            [[ ! -e "$workspace/Cargo.lock" ]]
+            [[ ! -e "$workspace/Cargo.lock" ]] || exit 1
         fi
     done
-    [[ ! -e target && ! -e testing/target ]]
+    [[ ! -e target && ! -e testing/target ]] || exit 1
 done
 
 # Sorting must cover inherited member tables and separate workspace catalogs,
@@ -517,7 +517,7 @@ git add Makefile Cargo.toml src alpha zeta consumer testing
 cp consumer/Cargo.toml "$FIXTURE/unsorted-consumer.toml"
 tree="$(git write-tree)"
 expect_failure make --no-print-directory fmt-check
-[[ "$(git write-tree)" == "$tree" ]]
+[[ "$(git write-tree)" == "$tree" ]] || exit 1
 git --literal-pathspecs diff --quiet -- Cargo.toml consumer/Cargo.toml testing/Cargo.toml testing/consumer/Cargo.toml
 CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0 bash .githooks/pre-commit > output
 make --no-print-directory fmt-check > output
@@ -533,7 +533,7 @@ for workspace in . testing; do
 done
 tree="$(git write-tree)"
 CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0 bash .githooks/pre-commit > output
-[[ "$(git write-tree)" == "$tree" && ! -e target && ! -e testing/target ]]
+[[ "$(git write-tree)" == "$tree" && ! -e target && ! -e testing/target ]] || exit 1
 # Exercise the adoption helper with this consumer's real Cargo targets, including
 # inherited Make/Git identities that must not redirect the disposable checkout.
 mkdir -p .tools/host/bin
@@ -584,7 +584,7 @@ if [[ "$1" == --version ]]; then echo 99.1.0; exit "${PRETTIER_VERSION_STATUS:-0
 [[ -z "${PRETTIER_CALL_MARKER:-}" ]] || touch "$PRETTIER_CALL_MARKER"
 [[ "${PRETTIER_FIXTURE_FAIL:-}" != yes ]] || exit 9
 mode="$1"
-[[ "$2" == -- ]]
+[[ "$2" == -- ]] || exit 1
 shift 2
 for path in "$@"; do
     if [[ "$mode" == --check ]]; then
@@ -601,28 +601,28 @@ printf 'unformatted\n' > "$frontend_path"
 printf 'formatted\n' > frontend/unselected.ts
 git add Makefile scripts/dev/format-frontend.sh "$frontend_path" frontend/unselected.ts
 bash .githooks/pre-commit > output
-[[ "$(cat "$frontend_path")" == formatted ]]
+[[ "$(cat "$frontend_path")" == formatted ]] || exit 1
 tree="$(git write-tree)"
 bash .githooks/pre-commit > output
-[[ "$(git write-tree)" == "$tree" ]]
+[[ "$(git write-tree)" == "$tree" ]] || exit 1
 # A manual check covers full tracked scope; partial staging still fails before
 # invoking the prepared frontend formatter.
 printf 'unformatted working edit\n' > frontend/unselected.ts
 expect_failure make --no-print-directory fmt-check
 expect_failure bash .githooks/pre-commit
-[[ "$(git write-tree)" == "$tree" ]]
+[[ "$(git write-tree)" == "$tree" ]] || exit 1
 printf 'formatted\n' > frontend/unselected.ts
 printf 'unformatted\n' > "$frontend_path"
 git add "$frontend_path"
 tree="$(git write-tree)"
 PRETTIER_FIXTURE_FAIL=yes expect_failure bash .githooks/pre-commit
-[[ "$(git write-tree)" == "$tree" && "$(cat "$frontend_path")" == unformatted ]]
+[[ "$(git write-tree)" == "$tree" && "$(cat "$frontend_path")" == unformatted ]] || exit 1
 PRETTIER_VERSION=wrong expect_failure bash .githooks/pre-commit
-[[ "$(git write-tree)" == "$tree" ]]
+[[ "$(git write-tree)" == "$tree" ]] || exit 1
 PRETTIER_VERSION_STATUS=23 PRETTIER_CALL_MARKER="$FIXTURE/formatter-called" \
     expect_failure bash .githooks/pre-commit
-[[ ! -e "$FIXTURE/formatter-called" && "$(git write-tree)" == "$tree" ]]
-[[ "$(cat "$frontend_path")" == unformatted ]]
+[[ ! -e "$FIXTURE/formatter-called" && "$(git write-tree)" == "$tree" ]] || exit 1
+[[ "$(cat "$frontend_path")" == unformatted ]] || exit 1
 for mode in --check --write; do
     expect_failure bash scripts/dev/format-frontend.sh "$mode" fronted
 done
@@ -637,6 +637,6 @@ printf '%s\0' "$frontend_path" > "$FIXTURE/frontend-selection"
 printf 'unformatted unselected\n' > frontend/unselected.ts
 SHARED_TOOLING_FORMAT_FILES="$FIXTURE/frontend-selection" \
     bash scripts/dev/format-frontend.sh --write frontend
-[[ "$(cat "$frontend_path")" == formatted && "$(cat frontend/unselected.ts)" == 'unformatted unselected' ]]
+[[ "$(cat "$frontend_path")" == formatted && "$(cat frontend/unselected.ts)" == 'unformatted unselected' ]] || exit 1
 echo 'Git hook preservation, installation, Cargo sorting and frontend selection tests passed'
 fixture_complete=true

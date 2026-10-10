@@ -35,12 +35,12 @@ cat > "$consumer/.tools/rust/bin/format-fixture-cargo" <<'CARGO'
 #!/usr/bin/env bash
 set -eu
 if [[ "${JOBSERVER_TEST_REQUIRED:-0}" == 1 ]]; then
-    [[ "${MAKEFLAGS:-}" =~ --jobserver-(auth|fds)=([0-9]+),([0-9]+) ]]
+    [[ "${MAKEFLAGS:-}" =~ --jobserver-(auth|fds)=([0-9]+),([0-9]+) ]] || exit 1
     reader="${BASH_REMATCH[2]}"; writer="${BASH_REMATCH[3]}"
     : <&"$reader"
     : >&"$writer"
 fi
-[[ "$CARGO_NET_OFFLINE" == true && "$RUSTUP_AUTO_INSTALL" == 0 ]]
+[[ "$CARGO_NET_OFFLINE" == true && "$RUSTUP_AUTO_INSTALL" == 0 ]] || exit 1
 case "$*" in
     'sort --version') echo "cargo-sort ${FORMAT_TEST_VERSION:-2.1.4}"; exit 0 ;;
     'fmt --version') exit 0 ;;
@@ -48,13 +48,13 @@ esac
 printf '%s\n' "$*" >> "$FORMAT_TEST_EVENTS"
 echo 'Finished: Cargo.toml is sorted already, no changes made'
 echo 'fixture stderr details' >&2
-[[ "$*" != "${FORMAT_TEST_FAIL:-}" ]]
+[[ "$*" != "${FORMAT_TEST_FAIL:-}" ]] || exit 1
 CARGO
 chmod +x "$consumer/.tools/rust/bin/format-fixture-cargo"
 export FORMAT_TEST_EVENTS="$fixture/events"
 export RUNNER_TEMP="$fixture"
-[[ "$(make --no-print-directory -C "$consumer")" == harmless ]]
-[[ ! -e "$FORMAT_TEST_EVENTS" ]]
+[[ "$(make --no-print-directory -C "$consumer")" == harmless ]] || exit 1
+[[ ! -e "$FORMAT_TEST_EVENTS" ]] || exit 1
 for target in fmt fmt-check; do
     : > "$FORMAT_TEST_EVENTS"
     PATH=/usr/bin:/bin make --no-print-directory -C "$consumer" "$target" > "$fixture/$target.log" 2>&1
@@ -105,13 +105,13 @@ for failure in wrong missing sort; do
         cmp "$fixture/expected" "$FORMAT_TEST_EVENTS"
         grep -Fx 'Formatting... FAILED (exit 1)' "$fixture/$failure.log"
         logs=("$fixture"/formatting.*)
-        [[ ${#logs[@]} == 1 ]]
+        [[ ${#logs[@]} == 1 ]] || exit 1
         log="${logs[0]}"
         grep -Fx 'fixture stderr details' "$log"
         grep -Fx 'Finished: Cargo.toml is sorted already, no changes made' "$log"
         if grep -F 'Finished: Cargo.toml' "$fixture/$failure.log"; then exit 1; fi
     else
-        [[ ! -s "$FORMAT_TEST_EVENTS" ]]
+        [[ ! -s "$FORMAT_TEST_EVENTS" ]] || exit 1
     fi
     [[ "$failure" != missing ]] || mv "$fixture/cargo" "$consumer/.tools/rust/bin/format-fixture-cargo"
     unset FORMAT_TEST_VERSION FORMAT_TEST_FAIL
@@ -152,10 +152,10 @@ done
 status=0
 bash "$root/scripts/ci/run-formatting.sh" --check bash -c 'printf "%s\n" "$1"; echo formatter-error >&2; exit 23' -- 'selected path with spaces' \
     > "$fixture/custom-output" 2>&1 || status=$?
-[[ "$status" == 23 && "$(wc -l < "$fixture/custom-output")" -eq 2 ]]
+[[ "$status" == 23 && "$(wc -l < "$fixture/custom-output")" -eq 2 ]] || exit 1
 grep -Fx 'Checking formatting... FAILED (exit 23)' "$fixture/custom-output"
 logs=("$fixture"/formatting.*)
-[[ ${#logs[@]} == 2 ]]
+[[ ${#logs[@]} == 2 ]] || exit 1
 grep -Fx 'selected path with spaces' "$fixture"/formatting.*
 grep -Fx formatter-error "$fixture"/formatting.*
 echo 'Shared formatting Make commands passed (substitute Cargo; no installation)'

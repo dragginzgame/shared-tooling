@@ -26,14 +26,14 @@ make --no-print-directory -C "$fixture/consumer" -f "$ROOT/make/tools.mk" \
     SHARED_TOOLING_ROOT="$ROOT" IC_TOOL_PINS="$pins" install-ic-tools \
     2>&1 | tee "$fixture/temp/ic-tools-install.log" || status=$?
 [[ "$status" == 2 ]] || { echo 'Expected the install recipe to fail' >&2; exit 1; }
-[[ ! -e "$fixture/consumer/.tools/ic" && ! -L "$fixture/consumer/.tools/ic" ]]
+[[ ! -e "$fixture/consumer/.tools/ic" && ! -L "$fixture/consumer/.tools/ic" ]] || exit 1
 set -- "$fixture/consumer/.tools/"ic-set.*
-[[ $# == 1 && -d "$1" && ! -f "$1/files.sha256" ]]
+[[ $# == 1 && -d "$1" && ! -f "$1/files.sha256" ]] || exit 1
 candidate="$1"
 cmp "$pins" "$candidate/pins.tsv"
 host="$(cat "$candidate/host")"
 set -- "$candidate/downloads/quill/"*
-[[ $# == 1 && -s "$1" ]]
+[[ $# == 1 && -s "$1" ]] || exit 1
 archive="$1"
 digest="$(awk -F '\t' -v host="$host" '$1 == "quill" && $3 == host { print $4 }' "$original")"
 # Prove this was an actual upstream payload rejected by the altered pin, not a
@@ -55,7 +55,7 @@ status=0
 make --no-print-directory -C "$fixture/consumer" -f "$ROOT/make/tools.mk" \
     SHARED_TOOLING_ROOT="$ROOT" IC_TOOL_PINS="$original" ic-tools-check \
     2>&1 | tee "$fixture/temp/ic-tools-check.log" || status=$?
-[[ "$status" == 2 && "$(readlink "$fixture/consumer/.tools/ic")" == ic-set.check ]]
+[[ "$status" == 2 && "$(readlink "$fixture/consumer/.tools/ic")" == ic-set.check ]] || exit 1
 bash "$ROOT/scripts/ci/verify-file-checksum.sh" sha256 "$digest" "$bundle/bin/quill"
 cmp "$original" "$bundle/pins.tsv"
 
@@ -65,7 +65,7 @@ mkdir "$fixture/bin"
 cat > "$fixture/bin/cargo" <<'SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
-[[ $# == 9 && "$1" == install && "$6" == --root && "$8" == --target-dir && "$9" == "$7/build" ]]
+[[ $# == 9 && "$1" == install && "$6" == --root && "$8" == --target-dir && "$9" == "$7/build" ]] || exit 1
 mkdir -p "$9"
 printf 'retained Rust build output\n' > "$9/failed-build.txt"
 echo 'injected Cargo installation failure' >&2
@@ -79,7 +79,7 @@ for phase in install check; do
     PATH="$fixture/bin:$PATH" make --no-print-directory -C "$fixture/consumer" -f "$ROOT/make/tools.mk" \
         SHARED_TOOLING_ROOT="$ROOT" RUST_TOOL_VERSIONS="$ROOT/ci/tool-versions.env" "$target" \
         2>&1 | tee "$fixture/temp/rust-tools-$phase.log" || status=$?
-    [[ "$status" == 2 && -s "$fixture/consumer/.tools/rust/build/failed-build.txt" ]]
+    [[ "$status" == 2 && -s "$fixture/consumer/.tools/rust/build/failed-build.txt" ]] || exit 1
 done
 grep -F 'injected Cargo installation failure' "$fixture/temp/rust-tools-install.log" >/dev/null
 grep -F 'missing or mismatched cargo-sort' "$fixture/temp/rust-tools-check.log" >/dev/null

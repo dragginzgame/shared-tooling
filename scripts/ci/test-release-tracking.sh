@@ -152,9 +152,9 @@ MAKE
             if bash "$ROOT/scripts/ci/run-release.sh" patch origin main > "$selected/first.log" 2>&1; then
                 echo "tracking fixture accepted failed/lost push: $tracking_case" >&2; exit 1
             fi
-            [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$source_head" ]]
+            [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$source_head" ]] || exit 1
             if [[ "$tracking_case" == rejected-push ]]; then
-                [[ "$("$REAL_GIT" --git-dir="$selected/destination.git" rev-parse refs/heads/main)" == "$source_head" ]]
+                [[ "$("$REAL_GIT" --git-dir="$selected/destination.git" rev-parse refs/heads/main)" == "$source_head" ]] || exit 1
             fi
             unset TRACKING_PUSH_FAIL TRACKING_PUSH_LOST
             bash "$ROOT/scripts/ci/run-release.sh" resume 0.1.1 origin main > "$selected/resume.log" 2>&1
@@ -162,46 +162,46 @@ MAKE
             bash "$ROOT/scripts/ci/run-release.sh" patch origin main > "$selected/first.log" 2>&1
         fi
         release_head="$("$REAL_GIT" rev-parse HEAD)"
-        [[ "$("$REAL_GIT" --git-dir="$selected/destination.git" rev-parse refs/heads/main)" == "$release_head" ]]
-        [[ "$(tail -n 1 .git/release-state/0.1.1.plan)" == complete ]]
+        [[ "$("$REAL_GIT" --git-dir="$selected/destination.git" rev-parse refs/heads/main)" == "$release_head" ]] || exit 1
+        [[ "$(tail -n 1 .git/release-state/0.1.1.plan)" == complete ]] || exit 1
         case "$tracking_case" in
             no-upstream|other-remote|other-branch|fetch-destination|symbolic)
-                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$source_head" ]]
-                [[ "$(awk '$0 == "tracking" { count++ } END { print count+0 }' "$TRACKING_EVENTS")" == 0 ]]
+                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$source_head" ]] || exit 1
+                [[ "$(awk '$0 == "tracking" { count++ } END { print count+0 }' "$TRACKING_EVENTS")" == 0 ]] || exit 1
                 if [[ "$tracking_case" == symbolic ]]; then
-                    [[ "$("$REAL_GIT" symbolic-ref "$tracking_ref")" == refs/heads/preserved ]]
-                    [[ "$("$REAL_GIT" rev-parse preserved)" == "$source_head" ]]
+                    [[ "$("$REAL_GIT" symbolic-ref "$tracking_ref")" == refs/heads/preserved ]] || exit 1
+                    [[ "$("$REAL_GIT" rev-parse preserved)" == "$source_head" ]] || exit 1
                 fi
                 ;;
             update-race)
-                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$TRACKING_RACE_OID" ]]
-                [[ "$(awk '$0 == "push" { count++ } END { print count+0 }' "$TRACKING_EVENTS")" == 1 ]]
+                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$TRACKING_RACE_OID" ]] || exit 1
+                [[ "$(awk '$0 == "push" { count++ } END { print count+0 }' "$TRACKING_EVENTS")" == 1 ]] || exit 1
                 ;;
             symbolic-race|missing-symbolic-race)
-                [[ "$("$REAL_GIT" symbolic-ref "$tracking_ref")" == refs/heads/preserved ]]
+                [[ "$("$REAL_GIT" symbolic-ref "$tracking_ref")" == refs/heads/preserved ]] || exit 1
                 if [[ "$tracking_case" == symbolic-race ]]; then
-                    [[ "$("$REAL_GIT" rev-parse preserved)" == "$source_head" ]]
+                    [[ "$("$REAL_GIT" rev-parse preserved)" == "$source_head" ]] || exit 1
                 else
                     if "$REAL_GIT" show-ref --verify --quiet refs/heads/preserved; then exit 1; fi
                 fi
-                [[ ! -e "$("$REAL_GIT" rev-parse --git-path "$tracking_ref.lock")" ]]
+                [[ ! -e "$("$REAL_GIT" rev-parse --git-path "$tracking_ref.lock")" ]] || exit 1
                 bash "$ROOT/scripts/ci/run-release.sh" resume 0.1.1 origin main > "$selected/resume.log" 2>&1
-                [[ "$("$REAL_GIT" symbolic-ref "$tracking_ref")" == refs/heads/preserved ]]
-                [[ "$(awk '$0 == "push" { count++ } END { print count+0 }' "$TRACKING_EVENTS")" == 1 ]]
+                [[ "$("$REAL_GIT" symbolic-ref "$tracking_ref")" == refs/heads/preserved ]] || exit 1
+                [[ "$(awk '$0 == "push" { count++ } END { print count+0 }' "$TRACKING_EVENTS")" == 1 ]] || exit 1
                 ;;
             update-failure|inspection-failure)
-                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$source_head" ]]
-                [[ ! -e "$("$REAL_GIT" rev-parse --git-path "$tracking_ref.lock")" ]]
+                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$source_head" ]] || exit 1
+                [[ ! -e "$("$REAL_GIT" rev-parse --git-path "$tracking_ref.lock")" ]] || exit 1
                 unset TRACKING_UPDATE_FAIL TRACKING_INSPECTION_FAIL
                 bash "$ROOT/scripts/ci/run-release.sh" resume 0.1.1 origin main > "$selected/resume.log" 2>&1
-                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$release_head" ]]
-                [[ "$(awk '$0 == "push" { count++ } END { print count+0 }' "$TRACKING_EVENTS")" == 1 ]]
+                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$release_head" ]] || exit 1
+                [[ "$(awk '$0 == "push" { count++ } END { print count+0 }' "$TRACKING_EVENTS")" == 1 ]] || exit 1
                 ;;
             completed-resume)
                 "$REAL_GIT" update-ref "$tracking_ref" "$source_head"
                 bash "$ROOT/scripts/ci/run-release.sh" resume 0.1.1 origin main > "$selected/resume.log" 2>&1
-                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$release_head" ]]
-                [[ "$(awk '$0 == "push" { count++ } END { print count+0 }' "$TRACKING_EVENTS")" == 1 ]]
+                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$release_head" ]] || exit 1
+                [[ "$(awk '$0 == "push" { count++ } END { print count+0 }' "$TRACKING_EVENTS")" == 1 ]] || exit 1
                 ;;
             newer|divergent)
                 tracking_parent="$release_head"
@@ -209,22 +209,22 @@ MAKE
                 retained_head="$(printf 'retained observation\n' | "$REAL_GIT" commit-tree "$("$REAL_GIT" rev-parse "HEAD^{tree}")" -p "$tracking_parent")"
                 "$REAL_GIT" update-ref "$tracking_ref" "$retained_head"
                 bash "$ROOT/scripts/ci/run-release.sh" resume 0.1.1 origin main > "$selected/resume.log" 2>&1
-                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$retained_head" ]]
-                [[ "$(awk '$0 == "push" { count++ } END { print count+0 }' "$TRACKING_EVENTS")" == 1 ]]
+                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$retained_head" ]] || exit 1
+                [[ "$(awk '$0 == "push" { count++ } END { print count+0 }' "$TRACKING_EVENTS")" == 1 ]] || exit 1
                 ;;
             *)
-                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$release_head" ]]
-                [[ "$("$REAL_GIT" rev-list --count "@{upstream}..HEAD")" == 0 ]]
+                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$release_head" ]] || exit 1
+                [[ "$("$REAL_GIT" rev-list --count "@{upstream}..HEAD")" == 0 ]] || exit 1
                 if [[ "$tracking_case" == prepared-symbolic-race ]]; then
-                    [[ "$("$REAL_GIT" rev-parse preserved)" == "$source_head" ]]
-                    [[ "$(awk '$0 == "symbolic-writer-refused" { count++ } END { print count+0 }' "$TRACKING_EVENTS")" == 1 ]]
+                    [[ "$("$REAL_GIT" rev-parse preserved)" == "$source_head" ]] || exit 1
+                    [[ "$(awk '$0 == "symbolic-writer-refused" { count++ } END { print count+0 }' "$TRACKING_EVENTS")" == 1 ]] || exit 1
                     if grep -q '^symbolic-writer-accepted$' "$TRACKING_EVENTS"; then exit 1; fi
                 fi
                 if [[ "$tracking_case" == custom-map ]]; then
-                    [[ "$("$REAL_GIT" rev-parse refs/remotes/origin/main)" == "$source_head" ]]
+                    [[ "$("$REAL_GIT" rev-parse refs/remotes/origin/main)" == "$source_head" ]] || exit 1
                 fi
                 if [[ "$tracking_case" == lost-push ]]; then
-                    [[ "$(awk '$0 == "push" { count++ } END { print count+0 }' "$TRACKING_EVENTS")" == 1 ]]
+                    [[ "$(awk '$0 == "push" { count++ } END { print count+0 }' "$TRACKING_EVENTS")" == 1 ]] || exit 1
                 fi
                 ;;
         esac

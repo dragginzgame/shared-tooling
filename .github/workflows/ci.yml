@@ -14,10 +14,9 @@ defaults:
     shell: /bin/bash --noprofile --norc -e -o pipefail {0}
 
 concurrency:
-  # Preserve each pushed source's native qualification, including queued jobs.
-  # PR updates may still replace validation of an older review revision.
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # A newer run replaces queued and running checks for this workflow and ref.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint-and-security:

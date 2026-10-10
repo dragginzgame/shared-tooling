@@ -26,7 +26,7 @@ rustc -vV > "$fixture/rustc.txt"
 cargo -V > "$fixture/cargo.txt"
 cat "$fixture/rustc.txt" "$fixture/cargo.txt"
 host="$(sed -n 's/^host: //p' "$fixture/rustc.txt")"
-[[ -n "$host" ]]
+[[ -n "$host" ]] || exit 1
 {
     git -C "$ROOT" rev-parse HEAD
     for file in scripts/ci/qualify-cargo-install.sh scripts/dev/install-rust-tools.sh scripts/ci/verify-file-checksum.sh ci/tool-versions.env; do
@@ -83,7 +83,7 @@ exercise() {
         "$package" "$version" "$kind" "$target" > "$case_root/selection.txt"
     install_at "$case_root/install" "$case_root/build" > "$case_root/install.log" 2>&1
     admit_receipt "$case_root/install"
-    [[ -f "$case_root/install/bin/$target" && ! -L "$case_root/install/bin/$target" && -x "$case_root/install/bin/$target" ]]
+    [[ -f "$case_root/install/bin/$target" && ! -L "$case_root/install/bin/$target" && -x "$case_root/install/bin/$target" ]] || exit 1
     cp "$case_root/install/bin/$target" "$case_root/binary.before"
     cp "$case_root/install/.crates.toml" "$case_root/crates.before.toml"
     cp "$case_root/install/.crates2.json" "$case_root/crates2.before.json"
@@ -105,7 +105,7 @@ exercise() {
         CARGO_QUALIFICATION_REJECTION="$case_root/compile-rejected.txt" \
         install_at "$case_root/install" "$case_root/failed-build" --force \
         > "$case_root/failed-build.log" 2>&1 || status=$?
-    [[ "$status" != 0 && -s "$case_root/compile-rejected.txt" ]]
+    [[ "$status" != 0 && -s "$case_root/compile-rejected.txt" ]] || exit 1
     assert_preserved
 
     # Concurrent offline requests share Cargo's lock and recheck installation.
@@ -116,7 +116,7 @@ exercise() {
     first_status=0 second_status=0
     wait "$first" || first_status=$?
     wait "$second" || second_status=$?
-    [[ "$first_status" == 0 && "$second_status" == 0 ]]
+    [[ "$first_status" == 0 && "$second_status" == 0 ]] || exit 1
     admit_receipt "$case_root/concurrent"
     bash "$checksum" sha256 "$digest" "$case_root/concurrent/bin/$target"
     assert_preserved
@@ -138,7 +138,7 @@ exercise() {
         --version "$version" "--$kind" "$target" --profile "$profile")
     bash "$ROOT/scripts/dev/install-rust-tools.sh" "${installer_args[@]}" > "$case_root/selected-install.txt" 2> "$case_root/selected-install.log"
     installed="$(cat "$case_root/selected-install.txt")"
-    [[ -x "$installed" && -f "$installed" && ! -L "$installed" ]]
+    [[ -x "$installed" && -f "$installed" && ! -L "$installed" ]] || exit 1
     CARGO_NET_OFFLINE=true bash "$ROOT/scripts/dev/install-rust-tools.sh" "${installer_args[@]}" --check > "$case_root/selected-check.txt"
     CARGO_NET_OFFLINE=true bash "$ROOT/scripts/dev/install-rust-tools.sh" "${installer_args[@]}" > "$case_root/selected-reuse.txt"
     cmp "$case_root/selected-install.txt" "$case_root/selected-check.txt"

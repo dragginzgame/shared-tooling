@@ -100,13 +100,13 @@ awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
 grep -Fx 'ISSUES TODAY PRS' "$fixture/rows"
 grep -Fx 'REPOSITORY OPEN FIXED FIXED ADDED OPEN MERGED CLOSED' "$fixture/rows"
 check_layout 97 38 43 84 63
-[[ "$(grep -cE '^-+$' "$fixture/rows")" == 3 ]]
+[[ "$(grep -cE '^-+$' "$fixture/rows")" == 3 ]] || exit 1
 grep -Fx 'dragginzgame/alpha 2,500 7,500 / 10,000 (75.0%) 0 0 12 1,500 20' "$fixture/rows"
 grep -Fx 'dragginzgame/beta 9 1 / 10 (10.0%) 0 0 3 7 2' "$fixture/rows"
 grep -Fx 'dragginzgame/zero 0 0 / 0 (N/A) 0 0 5 0 1' "$fixture/rows"
 grep -Fx 'TOTAL 2,509 7,501 / 10,010 (74.9%) 0 0 20 1,507 23' "$fixture/rows"
 grep -F 'dragginzgame/beta              9       1 /     10 (10.0%)' "$fixture/output"
-[[ "$(wc -l < "$GITHUB_SIBLINGS_TEST_CALLS" | tr -d ' ')" == 1 ]]
+[[ "$(wc -l < "$GITHUB_SIBLINGS_TEST_CALLS" | tr -d ' ')" == 1 ]] || exit 1
 grep -F 'api graphql --hostname github.com' "$GITHUB_SIBLINGS_TEST_CALLS"
 if grep -E 'ichelper|example.invalid|no-origin|r3:' "$GITHUB_SIBLINGS_TEST_CALLS"; then exit 1; fi
 grep -F 'issues(states: OPEN) { totalCount }' "$GITHUB_SIBLINGS_TEST_CALLS"
@@ -133,15 +133,15 @@ grep -Fx 'dragginzgame/shared-tooling 2,500 7,500 / 10,000 (75.0%) 0 0 12 1,500 
 
 # Nonterminal invocation reports once even without --once.
 run --interval 1 "$fixture/projects"
-[[ "$(grep -c 'api graphql' "$GITHUB_SIBLINGS_TEST_CALLS")" == 1 ]]
+[[ "$(grep -c 'api graphql' "$GITHUB_SIBLINGS_TEST_CALLS")" == 1 ]] || exit 1
 for bad in 0 -1 abc 1.5 86401 99999999999999999999; do
     status=0
     run --interval "$bad" || status=$?
-    [[ "$status" == 2 && ! -s "$GITHUB_SIBLINGS_TEST_CALLS" ]]
+    [[ "$status" == 2 && ! -s "$GITHUB_SIBLINGS_TEST_CALLS" ]] || exit 1
 done
 status=0
 run --interval || status=$?
-[[ "$status" == 2 && ! -s "$GITHUB_SIBLINGS_TEST_CALLS" ]]
+[[ "$status" == 2 && ! -s "$GITHUB_SIBLINGS_TEST_CALLS" ]] || exit 1
 
 # Rank by completion fraction, not the rounded display or open count.
 # Grouped counts widen every numeric field, including the completion ratio.
@@ -174,7 +174,7 @@ cat > "$GITHUB_SIBLINGS_TEST_RESPONSE" <<'JSON'
 JSON
 status=0
 GITHUB_SIBLINGS_TEST_STATUS=1 run --once || status=$?
-[[ "$status" == 1 ]]
+[[ "$status" == 1 ]] || exit 1
 awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
 grep -Fx 'dragginzgame/beta ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
 grep -Fx 'TOTAL (partial) 2,500 7,500 / 10,000 (75.0%) 0 0 17 1,500 21' "$fixture/rows"
@@ -188,7 +188,7 @@ for response in '' 'not JSON' '{"data":{}}'; do
     printf '%s\n' "$response" > "$GITHUB_SIBLINGS_TEST_RESPONSE"
     status=0
     run --once || status=$?
-    [[ "$status" == 1 ]]
+    [[ "$status" == 1 ]] || exit 1
     awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
     grep -Fx 'TOTAL (partial) ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
 done
@@ -210,7 +210,7 @@ for field in open closed prOpen prMerged prClosed; do
             '.data.r0[$field].totalCount = $invalid' "$fixture/valid-response" > "$GITHUB_SIBLINGS_TEST_RESPONSE"
         status=0
         run --once || status=$?
-        [[ "$status" == 1 ]]
+        [[ "$status" == 1 ]] || exit 1
         awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
         grep -Fx 'dragginzgame/alpha ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
         grep -Fx 'TOTAL (partial) 0 0 / 0 (N/A) 0 0 0 0 0' "$fixture/rows"
@@ -222,7 +222,7 @@ jq '.data.r0.open.totalCount=86 | .data.r0.closed.totalCount=400 | .data.r1=null
     "$fixture/valid-response" > "$GITHUB_SIBLINGS_TEST_RESPONSE"
 status=0
 run --once || status=$?
-[[ "$status" == 1 ]]
+[[ "$status" == 1 ]] || exit 1
 grep -F ' 400 /  486 (82.3%)' "$fixture/output"
 check_layout 89 36 40 77 57
 
@@ -268,7 +268,7 @@ run --once
 awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
 grep -Fx 'dragginzgame/alpha 10 20 / 30 (66.7%) 2 3 2 3 4' "$fixture/rows"
 grep -Fx 'TOTAL 10 21 / 31 (67.7%) 3 3 2 3 4' "$fixture/rows"
-[[ "$(wc -l < "$GITHUB_SIBLINGS_TEST_CALLS" | tr -d ' ')" == 2 ]]
+[[ "$(wc -l < "$GITHUB_SIBLINGS_TEST_CALLS" | tr -d ' ')" == 2 ]] || exit 1
 grep -F 'after=page-one' "$GITHUB_SIBLINGS_TEST_CALLS"
 # Failures, malformed pages and stalled cursors cannot publish a partial count.
 cp "$GITHUB_SIBLINGS_TEST_PAGE" "$fixture/valid-page"
@@ -279,14 +279,14 @@ for response in '{}' '{"data":{"repository":{"recent":{"nodes":[],"pageInfo":{"h
     printf '%s\n' "$response" > "$GITHUB_SIBLINGS_TEST_PAGE"
     status=0
     run --once || status=$?
-    [[ "$status" == 1 ]]
+    [[ "$status" == 1 ]] || exit 1
     awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
     grep -Fx 'dragginzgame/alpha ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
 done
 cp "$fixture/valid-page" "$GITHUB_SIBLINGS_TEST_PAGE"
 status=0
 GITHUB_SIBLINGS_TEST_PAGE_STATUS=1 run --once || status=$?
-[[ "$status" == 1 ]]
+[[ "$status" == 1 ]] || exit 1
 # Redirected output stays plain even when TERM advertises colour.
 cp "$fixture/valid-response" "$GITHUB_SIBLINGS_TEST_RESPONSE"
 TERM=xterm-256color run --once
@@ -295,6 +295,6 @@ if LC_ALL=C grep -q $'\033' "$fixture/output"; then exit 1; fi
 mkdir "$fixture/empty"
 status=0
 run --once "$fixture/empty" || status=$?
-[[ "$status" == 1 && ! -s "$GITHUB_SIBLINGS_TEST_CALLS" ]]
+[[ "$status" == 1 && ! -s "$GITHUB_SIBLINGS_TEST_CALLS" ]] || exit 1
 echo 'Sibling GitHub dashboard tests passed'
 fixture_complete=true

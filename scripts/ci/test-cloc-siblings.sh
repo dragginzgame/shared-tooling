@@ -78,18 +78,18 @@ printf '#[test]\nfn another_test() {}\n' >"$zeta/src/lib.rs"
 cp "$ROOT/scripts/dev/cloc.sh" "$ROOT/scripts/dev/cloc-siblings.sh" "$zeta/scripts/dev/"
 
 output="$(bash "$ROOT/scripts/dev/cloc-siblings.sh" "$parent")"
-[[ "$(printf '%s\n' "$output" | wc -l | tr -d ' ')" == 7 ]]
-[[ "$(printf '%s\n' "$output" | awk 'NR == 3 { print $1, $2, $3, $4, $5, $6 }')" == '.notes N/A N/A N/A N/A N/A' ]]
-[[ "$(printf '%s\n' "$output" | awk 'NR == 4 { print $(NF-4), $(NF-3), $(NF-2), $(NF-1), $NF }')" == '4 2 33.3% 2 1' ]]
-[[ "$(printf '%s\n' "$output" | awk 'NR == 5 { print $1, $2, $3, $4, $5, $6 }')" == 'zeta 2 0 0.0% 1 1' ]]
+[[ "$(printf '%s\n' "$output" | wc -l | tr -d ' ')" == 7 ]] || exit 1
+[[ "$(printf '%s\n' "$output" | awk 'NR == 3 { print $1, $2, $3, $4, $5, $6 }')" == '.notes N/A N/A N/A N/A N/A' ]] || exit 1
+[[ "$(printf '%s\n' "$output" | awk 'NR == 4 { print $(NF-4), $(NF-3), $(NF-2), $(NF-1), $NF }')" == '4 2 33.3% 2 1' ]] || exit 1
+[[ "$(printf '%s\n' "$output" | awk 'NR == 5 { print $1, $2, $3, $4, $5, $6 }')" == 'zeta 2 0 0.0% 1 1' ]] || exit 1
 # Percentages are recomputed from combined LOC, not averaged from repository rows.
-[[ "$(printf '%s\n' "$output" | awk 'END { print $1, $2, $3, $4, $5, $6 }')" == 'TOTAL 6 2 25.0% 3 2' ]]
-[[ -f "$zeta/.git" && ! -e "$zeta/Cargo.lock" ]]
+[[ "$(printf '%s\n' "$output" | awk 'END { print $1, $2, $3, $4, $5, $6 }')" == 'TOTAL 6 2 25.0% 3 2' ]] || exit 1
+[[ -f "$zeta/.git" && ! -e "$zeta/Cargo.lock" ]] || exit 1
 cmp "$alpha/Cargo.lock" "$FIXTURE/alpha.lock"
 
 # The default parent follows the installed script, not the caller's directory.
 default_output="$(cd "$FIXTURE/elsewhere" && bash "$zeta/scripts/dev/cloc-siblings.sh")"
-[[ "$default_output" == "$output" ]]
+[[ "$default_output" == "$output" ]] || exit 1
 
 # A missing shared prerequisite fails once, before printing a misleading table.
 # Use the copied scripts so this checkout's installed tools cannot mask absence.
@@ -102,7 +102,7 @@ if PATH="$FIXTURE/no-cloc" "$BASH" "$zeta/scripts/dev/cloc-siblings.sh" "$parent
     echo 'missing cloc was accepted' >&2
     exit 1
 fi
-[[ ! -s "$FIXTURE/missing.out" && "$(grep -c 'missing LOC tools: cloc' "$FIXTURE/missing.err")" == 1 ]]
+[[ ! -s "$FIXTURE/missing.out" && "$(grep -c 'missing LOC tools: cloc' "$FIXTURE/missing.err")" == 1 ]] || exit 1
 grep -F 'make install-host-tools' "$FIXTURE/missing.err" >/dev/null
 # Explicit installation beside the report supplies cloc without a PATH export.
 mkdir -p "$zeta/.tools/host/bin"
@@ -116,9 +116,9 @@ if bash "$ROOT/scripts/dev/cloc-siblings.sh" "$parent" >"$FIXTURE/failed.out" 2>
     echo 'broken Cargo workspace was reported as successful' >&2
     exit 1
 fi
-[[ "$(awk '$1 == "middle-broken" { print $2, $3, $4, $5, $6 }' "$FIXTURE/failed.out")" == 'ERROR ERROR ERROR ERROR ERROR' ]]
-[[ "$(awk '$1 == "zeta" { print $2, $3, $4, $5, $6 }' "$FIXTURE/failed.out")" == '2 0 0.0% 1 1' ]]
-[[ "$(awk 'END { print $1, $2, $3, $4, $5, $6, $7 }' "$FIXTURE/failed.out")" == 'TOTAL (partial) 6 2 25.0% 3 2' ]]
+[[ "$(awk '$1 == "middle-broken" { print $2, $3, $4, $5, $6 }' "$FIXTURE/failed.out")" == 'ERROR ERROR ERROR ERROR ERROR' ]] || exit 1
+[[ "$(awk '$1 == "zeta" { print $2, $3, $4, $5, $6 }' "$FIXTURE/failed.out")" == '2 0 0.0% 1 1' ]] || exit 1
+[[ "$(awk 'END { print $1, $2, $3, $4, $5, $6, $7 }' "$FIXTURE/failed.out")" == 'TOTAL (partial) 6 2 25.0% 3 2' ]] || exit 1
 grep -F "$parent/middle-broken" "$FIXTURE/failed.err" >/dev/null
 cmp "$alpha/Cargo.lock" "$FIXTURE/alpha.lock"
 
@@ -126,14 +126,14 @@ cmp "$alpha/Cargo.lock" "$FIXTURE/alpha.lock"
 mkdir "$FIXTURE/no-rust"
 git init -q "$FIXTURE/no-rust/notes"
 output="$(bash "$ROOT/scripts/dev/cloc-siblings.sh" "$FIXTURE/no-rust")"
-[[ "$(printf '%s\n' "$output" | awk 'END { print $0 }')" =~ TOTAL[[:space:]]+N/A[[:space:]]+N/A[[:space:]]+N/A[[:space:]]+N/A[[:space:]]+N/A$ ]]
+[[ "$(printf '%s\n' "$output" | awk 'END { print $0 }')" =~ TOTAL[[:space:]]+N/A[[:space:]]+N/A[[:space:]]+N/A[[:space:]]+N/A[[:space:]]+N/A$ ]] || exit 1
 mkdir -p "$FIXTURE/empty-rust/empty/src"
 git init -q "$FIXTURE/empty-rust/empty"
 cp "$zeta/Cargo.toml" "$FIXTURE/empty-rust/empty/Cargo.toml"
 cp -R "$zeta/.cargo" "$FIXTURE/empty-rust/empty/"
 : > "$FIXTURE/empty-rust/empty/src/lib.rs"
 output="$(bash "$ROOT/scripts/dev/cloc-siblings.sh" "$FIXTURE/empty-rust")"
-[[ "$(printf '%s\n' "$output" | awk 'END { print $1, $2, $3, $4, $5, $6 }')" == 'TOTAL 0 0 0.0% 0 0' ]]
+[[ "$(printf '%s\n' "$output" | awk 'END { print $1, $2, $3, $4, $5, $6 }')" == 'TOTAL 0 0 0.0% 0 0' ]] || exit 1
 
 bash "$ROOT/scripts/dev/cloc-siblings.sh" --help >/dev/null
 for path in "$FIXTURE/absent" "$FIXTURE/elsewhere"; do

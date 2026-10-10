@@ -29,7 +29,7 @@ cp "$root/scripts/ci/check-make-execution.sh" "$fixture/included/vendor/scripts/
 cat > "$fixture/included/vendor/scripts/ci/run-release.sh" <<'RUNNER'
 #!/usr/bin/env bash
 set -eu
-[[ "$CACHE_PREPARE" == selected && "$RELEASE_DELIVERY" == pr ]]
+[[ "$CACHE_PREPARE" == selected && "$RELEASE_DELIVERY" == pr ]] || exit 1
 printf '%s\n' "$@" > "$RELEASE_TEST_EVENTS"
 exit "${RELEASE_TEST_STATUS:-0}"
 RUNNER
@@ -49,14 +49,14 @@ nested:
 	+@$(MAKE) release-patch
 MAKE
 export RELEASE_TEST_EVENTS="$fixture/include-events"
-[[ "$(make --no-print-directory -C "$fixture/included")" == harmless ]]
-[[ ! -e "$RELEASE_TEST_EVENTS" ]]
+[[ "$(make --no-print-directory -C "$fixture/included")" == harmless ]] || exit 1
+[[ ! -e "$RELEASE_TEST_EVENTS" ]] || exit 1
 make --no-print-directory -C "$fixture/included" release-patch
 printf 'patch\norigin\nmain\n' > "$fixture/expected"
 cmp "$fixture/expected" "$RELEASE_TEST_EVENTS"
 rm "$RELEASE_TEST_EVENTS"
 if make --no-print-directory -C "$fixture/included" release-patch DENY_RELEASE=yes > "$fixture/admission.log" 2>&1; then exit 1; fi
-[[ ! -e "$RELEASE_TEST_EVENTS" ]]
+[[ ! -e "$RELEASE_TEST_EVENTS" ]] || exit 1
 if RELEASE_TEST_STATUS=23 make --no-print-directory -C "$fixture/included" release-resume VERSION=1.2.3 RELEASE_REMOTE=review RELEASE_BRANCH=topic > "$fixture/runner-failure.log" 2>&1; then exit 1; fi
 printf 'resume\n1.2.3\nreview\ntopic\n' > "$fixture/expected"
 cmp "$fixture/expected" "$RELEASE_TEST_EVENTS"
@@ -84,7 +84,7 @@ for target in help release-patch; do
             make --no-print-directory -C "$fixture/included" "$target" "SHARED_TOOLING_ROOT=$fixture/unselected" > "$fixture/root-$source.log" 2>&1
         fi
         if [[ "$target" == help ]]; then
-            [[ ! -s "$RELEASE_TEST_EVENTS" ]]
+            [[ ! -s "$RELEASE_TEST_EVENTS" ]] || exit 1
         else
             printf 'patch\norigin\nmain\n' > "$fixture/expected"
             cmp "$fixture/expected" "$RELEASE_TEST_EVENTS"
@@ -104,7 +104,7 @@ mv "$fixture/included/vendor/scripts/ci/check-make-execution.sh" "$fixture/saved
 status=0
 make --no-print-directory -C "$fixture/included" help "SHARED_TOOLING_ROOT=$fixture/unselected" \
     > "$fixture/missing-probe.log" 2>&1 || status=$?
-[[ "$status" == 2 && ! -s "$RELEASE_TEST_EVENTS" ]]
+[[ "$status" == 2 && ! -s "$RELEASE_TEST_EVENTS" ]] || exit 1
 mv "$fixture/saved-probe" "$fixture/included/vendor/scripts/ci/check-make-execution.sh"
 # All four entrypoints reject unsupported direct and inherited modes before
 # runner dispatch, even when the substituted runner would return failure.
@@ -146,7 +146,7 @@ for assignment in 'MFLAGS :=' 'override MFLAGS :='; do
     status=0
     make -i -C "$fixture/included" -f hidden.mk -f Makefile release-patch MAKEFLAGS= \
         > "$fixture/hidden-mflags.log" 2>&1 || status=$?
-    [[ "$status" == 2 && ! -s "$RELEASE_TEST_EVENTS" ]]
+    [[ "$status" == 2 && ! -s "$RELEASE_TEST_EVENTS" ]] || exit 1
 done
 # The root-snapshot checker must never follow a parent exported root or an
 # ordinary consumer assignment to an external runner. The sentinel has no effects
@@ -167,7 +167,7 @@ MAKE
 : > "$RELEASE_TEST_EVENTS"
 EXTERNAL_ROOT="$fixture/external" SHARED_TOOLING_ROOT="$fixture/external" \
     bash "$root/scripts/ci/check-release-commands.sh" "$fixture/root-consumer" "${make_inputs[@]}"
-[[ ! -s "$RELEASE_TEST_EVENTS" ]]
+[[ ! -s "$RELEASE_TEST_EVENTS" ]] || exit 1
 cat > "$fixture/root-parent.mk" <<'MAKE'
 export SHARED_TOOLING_ROOT := $(EXTERNAL_ROOT)
 export EXTERNAL_ROOT
@@ -177,7 +177,7 @@ MAKE
 make -j2 --no-print-directory -f "$fixture/root-parent.mk" test \
     EXTERNAL_ROOT="$fixture/external" CHECKER="$root/scripts/ci/check-release-commands.sh" \
     CONSUMER="$fixture/root-consumer" > "$fixture/root-parent.log" 2>&1
-[[ ! -s "$RELEASE_TEST_EVENTS" ]]
+[[ ! -s "$RELEASE_TEST_EVENTS" ]] || exit 1
 cat > "$fixture/consumer/Makefile" <<'MAKE'
 include tool-versions.env
 ifneq ($(word 2,$(filter release-patch release-minor release-major release-resume,$(MAKECMDGOALS))),)
@@ -216,7 +216,7 @@ for mode in ignore-failure wrong-version conflict; do
         echo "accepted broken adapter: $mode" >&2; exit 1
     fi
     retained="$(sed -n 's/^Release command check failed; fixture and logs retained: //p' "$fixture/$mode.log")"
-    [[ -d "$retained" && -f "$retained/patch-0.log" ]]
+    [[ -d "$retained" && -f "$retained/patch-0.log" ]] || exit 1
 done
 if bash "$root/scripts/ci/check-release-commands.sh" "$fixture/consumer" ../parent.mk > /dev/null 2>&1; then exit 1; fi
 echo 'Release command adoption, nested Make and retained failure tests passed'

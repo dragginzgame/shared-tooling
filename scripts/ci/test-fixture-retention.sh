@@ -67,6 +67,51 @@ for name in format-tools tool-commands rust-tools release-runner host-tools fixt
         fi
     done
 done
+# Contradict successful command results in actual fixtures. Bash 3.2 does not
+# apply errexit to a standalone [[ ... ]]; a completion flag alone cannot catch
+# a failed assertion followed by successful commands and normal cleanup.
+assertion_root="$fixture/assertion-source"
+mkdir -p "$assertion_root/scripts/ci" "$fixture/assertion-digests" "$fixture/assertion-disk"
+cp "$ROOT/scripts/ci/test-file-digests.sh" "$ROOT/scripts/ci/test-runner-disk-space.sh" "$assertion_root/scripts/ci/"
+export ASSERTION_CALLS="$fixture/digest-calls"
+cat > "$assertion_root/scripts/ci/verify-file-checksum.sh" <<'SCRIPT'
+#!/usr/bin/env bash
+printf '%s\n' "$1" >> "$ASSERTION_CALLS"
+if [[ "$1" == --print ]]; then
+    printf '%064d\n' 0
+else
+    # The mismatched printed digest must prevent reaching verification.
+    exit 23
+fi
+SCRIPT
+status=0
+TMPDIR="$fixture/assertion-digests" "$BASH" "$assertion_root/scripts/ci/test-file-digests.sh" \
+    > "$fixture/assertion-digests.log" 2>&1 || status=$?
+[[ "$status" == 1 && "$(cat "$ASSERTION_CALLS")" == --print ]] || exit 1
+set -- "$fixture/assertion-digests"/file-digests.*
+[[ $# == 1 && "$(cat "$1/file with spaces")" == abc ]] || exit 1
+
+export ASSERTION_DISK_CHECKER="$ROOT/scripts/ci/check-runner-disk-space.sh"
+cat > "$assertion_root/scripts/ci/check-runner-disk-space.sh" <<'SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+status=0
+"$BASH" "$ASSERTION_DISK_CHECKER" "$@" || status=$?
+if [[ "$status" == 0 && "${DISK_FIXTURE:-}" != '' && "$*" == *'before build'* ]]; then
+    # Capacity and command status are valid, but the observed path is wrong.
+    printf 'wrong workspace\n' > "$DISK_FIXTURE/df-path"
+fi
+exit "$status"
+SCRIPT
+status=0
+TMPDIR="$fixture/assertion-disk" "$BASH" "$assertion_root/scripts/ci/test-runner-disk-space.sh" \
+    > "$fixture/assertion-disk.log" 2>&1 || status=$?
+[[ "$status" == 1 ]] || exit 1
+set -- "$fixture/assertion-disk"/runner-disk-test.*
+[[ $# == 1 && "$(cat "$1/df-path")" == 'wrong workspace' &&
+    "$(cat "$1/workspace [one]/artifact")" == 'retained build/evidence input' ]] || exit 1
+grep -F 'before build: 4 MiB available; 4 MiB required' "$1/output.log" > /dev/null
+
 mkdir "$fixture/bin" "$fixture/cloc" "$fixture/portable"
 export RETENTION_REAL_BASH="$BASH"
 cat > "$fixture/bin/cloc" <<'SCRIPT'
@@ -185,7 +230,7 @@ cat > "$native/bin/cargo" <<'SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
 [[ "$1" != --version ]] || { echo "cargo fixture"; exit 0; }
-[[ $# == 9 && "$1" == install && "$6" == --root && "$8" == --target-dir && "$9" == "$7/build" ]]
+[[ $# == 9 && "$1" == install && "$6" == --root && "$8" == --target-dir && "$9" == "$7/build" ]] || exit 1
 mkdir -p "$9"
 printf 'retained Rust build output\n' > "$9/failed-build.txt"
 echo 'injected Cargo installation failure' >&2
@@ -199,7 +244,7 @@ for phase in install check; do
     PATH="$native/bin:$PATH" make --no-print-directory -C "$native" SHARED_TOOLING_ROOT="$ROOT" \
         IC_TOOL_PINS="$ROOT/ci/ic-tools.tsv" RUST_TOOL_VERSIONS="$ROOT/ci/tool-versions.env" "$target" \
         2>&1 | tee "$native/temp/rust-tools-$phase.log" > "$native/$phase.log" || status=$?
-    [[ "$status" == 2 && -f "$native/.tools/rust/build/failed-build.txt" ]]
+    [[ "$status" == 2 && -f "$native/.tools/rust/build/failed-build.txt" ]] || exit 1
     for compact in false true; do
         EVIDENCE_TEMP_ROOT="$native/temp" EVIDENCE_REPOSITORY_ROOT="$native" EVIDENCE_COMPACT="$compact" \
             EVIDENCE_ACTION_ROOT="$ROOT/.github/actions/retain-failure-evidence" \
@@ -231,11 +276,11 @@ for route in .tools .tools/rust .tools/rust/build; do
     tar -xzf "$(sed -n 's/^path=//p' "$linked/archive-output")" -C "$linked/unpacked"
     cmp "$linked/temp/rust-tools-check.log" "$linked/unpacked/rust-tools-check.log"
     if [[ "$route" == .tools/rust/build ]]; then
-        [[ -L "$linked/unpacked/$route" && "$(readlink "$linked/unpacked/$route")" == "$linked/outside" ]]
+        [[ -L "$linked/unpacked/$route" && "$(readlink "$linked/unpacked/$route")" == "$linked/outside" ]] || exit 1
     else
-        [[ ! -e "$linked/unpacked/.tools" ]]
+        [[ ! -e "$linked/unpacked/.tools" ]] || exit 1
     fi
-    [[ ! -e "$linked/unpacked/outside" ]]
+    [[ ! -e "$linked/unpacked/outside" ]] || exit 1
 done
 # Execute the actual compact download verifier against a payload with the four
 # current producer logs. Installer/selector checks above own tool qualification;
@@ -273,7 +318,7 @@ for damaged in none ic-tools-install ic-tools-check rust-tools-install rust-tool
     (cd "$compact"; RUNNER_TEMP="$compact/temp" EVIDENCE_CANDIDATE=ic-set.candidate \
         "$BASH" --noprofile --norc -e -o pipefail "$fixture/verify-compact.sh") \
         > "$compact/verify-$damaged.log" 2>&1 || status=$?
-    if [[ "$damaged" == none ]]; then [[ "$status" == 0 ]]; else [[ "$status" != 0 ]]; fi
+    if [[ "$damaged" == none ]]; then [[ "$status" == 0 ]] || exit 1; else [[ "$status" != 0 ]] || exit 1; fi
     rm -rf "$compact/temp/compact-tools-downloaded/payload"
     if [[ "$damaged" != none ]]; then cp "$compact/temp/portable-fixtures/native-retention/temp/$damaged.log" "$compact/data/$damaged.log"; fi
 done

@@ -108,7 +108,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-[[ -n "$output" && -n "$url" ]]
+[[ -n "$output" && -n "$url" ]] || exit 1
 cp "$INSTALLER_TEST_ARCHIVES/${url##*/}" "$output"
 # Model another process creating the destination after initial admission.
 if [[ -n "${INSTALLER_TEST_DIRECTORY_DESTINATION:-}" ]]; then
@@ -143,7 +143,7 @@ sccache_checksum="$(checksum_sha256 "$archives/$sccache_package.tar.gz")"
 PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     bash "$ROOT/scripts/ci/install-sccache.sh" --version 0.17.0 \
     --sha256 "$sccache_checksum" --install-dir "$FIXTURE/installed" >/dev/null
-[[ "$("$FIXTURE/installed/sccache" --version)" == 'sccache 0.17.0' ]]
+[[ "$("$FIXTURE/installed/sccache" --version)" == 'sccache 0.17.0' ]] || exit 1
 
 
 PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
@@ -151,7 +151,7 @@ PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     --version 1.7.12 \
     --sha256 "$actionlint_checksum" \
     --install-dir "$FIXTURE/installed" >/dev/null
-[[ "$("$FIXTURE/installed/actionlint" -version)" == "1.7.12" ]]
+[[ "$("$FIXTURE/installed/actionlint" -version)" == "1.7.12" ]] || exit 1
 
 # A directory introduced during download is not a publication container.
 if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
@@ -161,7 +161,7 @@ if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     > "$FIXTURE/changed-destination.log" 2>&1; then
     echo 'installer accepted a destination changed into a directory' >&2; exit 1
 fi
-[[ "$(cat "$FIXTURE/changed-destination/actionlint/actionlint")" == 'consumer-owned contents' ]]
+[[ "$(cat "$FIXTURE/changed-destination/actionlint/actionlint")" == 'consumer-owned contents' ]] || exit 1
 for attempt in "$FIXTURE/changed-destination/.actionlint-install."*; do
     cmp "$archives/actionlint_1.7.12_linux_amd64.tar.gz" "$attempt/actionlint_1.7.12_linux_amd64.tar.gz"
     cmp "$payloads/actionlint/actionlint" "$attempt/actionlint"
@@ -173,9 +173,9 @@ PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     bash "$ROOT/scripts/ci/install-actionlint.sh" --version 1.7.12 \
     --sha256 "$actionlint_checksum" --install-dir "$FIXTURE/changed-link" \
     > "$FIXTURE/changed-link.log" 2>&1
-[[ ! -L "$FIXTURE/changed-link/actionlint" ]]
+[[ ! -L "$FIXTURE/changed-link/actionlint" ]] || exit 1
 cmp "$payloads/actionlint/actionlint" "$FIXTURE/changed-link/actionlint"
-[[ "$(cat "$FIXTURE/changed-link/actionlint-target/actionlint")" == 'consumer-owned contents' ]]
+[[ "$(cat "$FIXTURE/changed-link/actionlint-target/actionlint")" == 'consumer-owned contents' ]] || exit 1
 
 # Missing publication prerequisites fail before creating or downloading tools.
 mkdir "$FIXTURE/no-perl"
@@ -184,7 +184,7 @@ ln -s "$FIXTURE/bin/uname" "$FIXTURE/no-perl/uname"
 if PATH="$FIXTURE/no-perl" bash "$ROOT/scripts/ci/install-actionlint.sh" \
     --version 1.7.12 --sha256 "$actionlint_checksum" --install-dir "$FIXTURE/unprepared" \
     > "$FIXTURE/no-perl.log" 2>&1; then exit 1; fi
-[[ ! -e "$FIXTURE/unprepared" ]]
+[[ ! -e "$FIXTURE/unprepared" ]] || exit 1
 grep -F 'Perl is required' "$FIXTURE/no-perl.log" > /dev/null
 
 PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
@@ -192,7 +192,7 @@ PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     --version 8.30.1 \
     --sha256 "$gitleaks_checksum" \
     --install-dir "$FIXTURE/installed" >/dev/null
-[[ "$("$FIXTURE/installed/gitleaks" version)" == "8.30.1" ]]
+[[ "$("$FIXTURE/installed/gitleaks" version)" == "8.30.1" ]] || exit 1
 
 PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     bash "$ROOT/scripts/ci/install-shellcheck.sh" \
@@ -207,7 +207,7 @@ for platform in Linux:x86_64 Linux:aarch64 Darwin:x86_64 Darwin:arm64; do
         INSTALLER_TEST_OS="${platform%:*}" INSTALLER_TEST_ARCH="${platform#*:}" \
         bash "$ROOT/scripts/ci/install-yq.sh" --version 4.47.2 --sha256 "$yq_checksum" \
         --install-dir "$FIXTURE/installed" >/dev/null
-    [[ "$("$FIXTURE/installed/yq" --version)" == 'yq (https://github.com/mikefarah/yq/) version v4.47.2' ]]
+    [[ "$("$FIXTURE/installed/yq" --version)" == 'yq (https://github.com/mikefarah/yq/) version v4.47.2' ]] || exit 1
 done
 for failure in version checksum; do
     version=4.47.2
@@ -220,7 +220,7 @@ for failure in version checksum; do
         exit 1
     fi
     # Failed installation must preserve the previously verified executable.
-    [[ "$("$FIXTURE/installed/yq" --version)" == 'yq (https://github.com/mikefarah/yq/) version v4.47.2' ]]
+    [[ "$("$FIXTURE/installed/yq" --version)" == 'yq (https://github.com/mikefarah/yq/) version v4.47.2' ]] || exit 1
 done
 
 cp "$FIXTURE/installed/yq" "$FIXTURE/original-yq"
@@ -240,12 +240,12 @@ printf 'keep directory contents\n' > "$FIXTURE/yq-directory/yq/existing"
 if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     bash "$ROOT/scripts/ci/install-yq.sh" --version 4.47.2 --sha256 "$yq_checksum" \
     --install-dir "$FIXTURE/yq-directory" > "$FIXTURE/yq-directory.log" 2>&1; then exit 1; fi
-[[ ! -e "$FIXTURE/yq-directory/yq/yq" && "$(cat "$FIXTURE/yq-directory/yq/existing")" == 'keep directory contents' ]]
+[[ ! -e "$FIXTURE/yq-directory/yq/yq" && "$(cat "$FIXTURE/yq-directory/yq/existing")" == 'keep directory contents' ]] || exit 1
 for version in 3.4.5 4.47.2-rc.1; do
     if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
         bash "$ROOT/scripts/ci/install-yq.sh" --version "$version" --sha256 "$yq_checksum" \
         --install-dir "$FIXTURE/yq-unsupported" > "$FIXTURE/yq-version.log" 2>&1; then exit 1; fi
-    [[ ! -e "$FIXTURE/yq-unsupported" ]]
+    [[ ! -e "$FIXTURE/yq-unsupported" ]] || exit 1
 done
 
 if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \

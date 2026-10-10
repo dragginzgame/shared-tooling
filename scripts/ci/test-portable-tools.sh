@@ -63,7 +63,7 @@ for destination in logs/sentinel failures/sentinel summary.md; do
     cmp "$FIXTURE/runner-parent/expected" "$FIXTURE/runner-parent/$destination"
 done
 for directory in logs failures; do
-    [[ "$(ls -A "$FIXTURE/runner-parent/$directory")" == sentinel ]]
+    [[ "$(ls -A "$FIXTURE/runner-parent/$directory")" == sentinel ]] || exit 1
 done
 echo 'Runner fixture preserves inherited parent logs and summary'
 bash "$ROOT/scripts/ci/test-runner-disk-space.sh"
@@ -130,9 +130,9 @@ SCCACHE_BIN="$FIXTURE/fake-sccache" \
     bash "$ROOT/scripts/ci/run-sccache.sh" rustc --version
 
 expected_runtime="$FIXTURE/repository/.tmp/sccache-runtime"
-[[ "$(<"$FIXTURE/result/socket")" == "$expected_runtime/server.sock" ]]
-[[ "$(<"$FIXTURE/result/tmpdir")" == "$expected_runtime/tmp" ]]
-[[ "$(<"$FIXTURE/result/arguments")" == "rustc --version" ]]
+[[ "$(<"$FIXTURE/result/socket")" == "$expected_runtime/server.sock" ]] || exit 1
+[[ "$(<"$FIXTURE/result/tmpdir")" == "$expected_runtime/tmp" ]] || exit 1
+[[ "$(<"$FIXTURE/result/arguments")" == "rustc --version" ]] || exit 1
 
 # Refused symlink selections must not create anything through the link.
 for selection in parent root child override trailing dot; do
@@ -152,12 +152,12 @@ for selection in parent root child override trailing dot; do
         bash "$ROOT/scripts/ci/run-sccache.sh" rustc --version > "$probe/refusal.log" 2>&1; then
         echo "accepted symlinked sccache path: $selection" >&2; exit 1
     fi
-    [[ -z "$(ls -A "$probe/outside")" && ! -e "$probe/result/arguments" ]]
+    [[ -z "$(ls -A "$probe/outside")" && ! -e "$probe/result/arguments" ]] || exit 1
 done
 SCCACHE_BIN="$FIXTURE/fake-sccache" SCCACHE_REPOSITORY_ROOT="$FIXTURE/repository" \
     SCCACHE_RUNTIME_DIR="$FIXTURE/explicit-runtime" SCCACHE_TEST_RESULT="$FIXTURE/result" \
     bash "$ROOT/scripts/ci/run-sccache.sh" --show-stats
-[[ "$(<"$FIXTURE/result/tmpdir")" == "$FIXTURE/explicit-runtime/tmp" ]]
+[[ "$(<"$FIXTURE/result/tmpdir")" == "$FIXTURE/explicit-runtime/tmp" ]] || exit 1
 
 for installer in install-actionlint.sh install-gitleaks.sh install-shellcheck.sh install-sccache.sh install-yq.sh; do
     bash "$ROOT/scripts/ci/$installer" --help >/dev/null 2>&1

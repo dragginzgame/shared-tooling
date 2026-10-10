@@ -7,11 +7,11 @@ ROOT="$0"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
-[[ "$(node --version)" == "v$(jq -er '.engines.node' "$ROOT/ci/frontend/package.json")" ]]
+[[ "$(node --version)" == "v$(jq -er '.engines.node' "$ROOT/ci/frontend/package.json")" ]] || exit 1
 export PRETTIER_BIN="$ROOT/ci/frontend/node_modules/.bin/prettier"
 export PRETTIER_VERSION
 PRETTIER_VERSION="$(jq -er '.packages["node_modules/prettier"].version' "$ROOT/ci/frontend/package-lock.json")"
-[[ "$("$PRETTIER_BIN" --version)" == "$PRETTIER_VERSION" ]]
+[[ "$("$PRETTIER_BIN" --version)" == "$PRETTIER_VERSION" ]] || exit 1
 # shellcheck source=/dev/null
 source "$ROOT/ci/tool-versions.env"
 bash "$ROOT/scripts/ci/check-format-tools.sh" "$SHARED_TOOLING_CARGO_SORT_VERSION"
@@ -90,19 +90,19 @@ cp docs/ic-tools.md "$fixture/unselected-before"
 printf 'const untracked={leave:"alone"};\n' > docs/untracked.ts
 cp docs/untracked.ts "$fixture/untracked-before"
 bash .githooks/pre-commit > "$fixture/format.log" 2>&1
-[[ "$(cat "$selected")" == "const value = { text: 'selected' }" ]]
-[[ "$(git show ":$selected")" == "$(cat "$selected")" ]]
-[[ "$(git show :crates/example/src/lib.rs)" == 'pub fn example() {}' ]]
-[[ "$(git show :docs/ic-tools.md)" == "$(git show HEAD:docs/ic-tools.md)" ]]
+[[ "$(cat "$selected")" == "const value = { text: 'selected' }" ]] || exit 1
+[[ "$(git show ":$selected")" == "$(cat "$selected")" ]] || exit 1
+[[ "$(git show :crates/example/src/lib.rs)" == 'pub fn example() {}' ]] || exit 1
+[[ "$(git show :docs/ic-tools.md)" == "$(git show HEAD:docs/ic-tools.md)" ]] || exit 1
 cmp docs/ic-tools.md "$fixture/unselected-before"
 cmp docs/untracked.ts "$fixture/untracked-before"
 cmp docs/generated.ts "$fixture/ignored-before"
 cmp package-lock.json "$fixture/lock-before"
-[[ -z "$(git ls-files -- docs/.prettierrc.json docs/untracked.ts)" ]]
-[[ "$(cat docs/.prettierrc.json)" == '{"semi": true, "singleQuote": false}' ]]
+[[ -z "$(git ls-files -- docs/.prettierrc.json docs/untracked.ts)" ]] || exit 1
+[[ "$(cat docs/.prettierrc.json)" == '{"semi": true, "singleQuote": false}' ]] || exit 1
 tree="$(git write-tree)"
 bash .githooks/pre-commit >> "$fixture/format.log" 2>&1
-[[ "$(git write-tree)" == "$tree" ]]
+[[ "$(git write-tree)" == "$tree" ]] || exit 1
 
 expect_failure() {
     if "$@" > "$fixture/refusal.log" 2>&1; then
@@ -116,18 +116,18 @@ git add crates/example/src/lib.rs "$selected"
 tree="$(git write-tree)"
 cp "$selected" "$fixture/broken-before"
 expect_failure bash .githooks/pre-commit
-[[ "$(git write-tree)" == "$tree" && "$(cat crates/example/src/lib.rs)" == 'pub fn example( ){}' ]]
+[[ "$(git write-tree)" == "$tree" && "$(cat crates/example/src/lib.rs)" == 'pub fn example( ){}' ]] || exit 1
 cmp "$selected" "$fixture/broken-before"
 # Partial source and configuration selections refuse before any index refresh.
 printf 'unstaged edit\n' >> "$selected"
 cp "$selected" "$fixture/partial-before"
 expect_failure bash .githooks/pre-commit
-[[ "$(git write-tree)" == "$tree" ]]
+[[ "$(git write-tree)" == "$tree" ]] || exit 1
 cmp "$selected" "$fixture/partial-before"
 cp "$fixture/broken-before" "$selected"
 printf '{"semi": true}\n' > .prettierrc.json
 expect_failure bash .githooks/pre-commit
-[[ "$(git write-tree)" == "$tree" ]]
+[[ "$(git write-tree)" == "$tree" ]] || exit 1
 git show :.prettierrc.json > .prettierrc.json
 # A successful real --check and a failed full-scope --check use the same adapter.
 rm docs/.prettierrc.json
@@ -144,7 +144,7 @@ printf 'const value={text:"not formatted"};\n' > docs/checked/view.tsx
 tree="$(git write-tree)"
 cp docs/checked/view.tsx "$fixture/check-before"
 expect_failure bash scripts/dev/format-frontend.sh --check docs/checked
-[[ "$(git write-tree)" == "$tree" ]]
+[[ "$(git write-tree)" == "$tree" ]] || exit 1
 cmp docs/checked/view.tsx "$fixture/check-before"
 cmp package-lock.json "$fixture/lock-before"
 echo "Real Prettier $PRETTIER_VERSION and Rust hook preservation checks passed ($(node --version))"

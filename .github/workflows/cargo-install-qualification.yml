@@ -12,6 +12,11 @@ defaults:
   run:
     shell: /bin/bash --noprofile --norc -e -o pipefail {0}
 
+concurrency:
+  # A newer run replaces queued and running checks for this workflow and ref.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   native-cargo-install:
     strategy:

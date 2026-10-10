@@ -42,7 +42,7 @@ for source in https://github.com/dragginzgame/shared-tooling.git git@github.com:
 done
 mv "$consumer/config/.shared-tooling.snapshot" "$consumer/.shared-tooling.snapshot"
 perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$export_parent" > "$fixture/export-root.json"
-[[ "$(jq -c .totals "$fixture/export.json")" == "$(jq -c .totals "$fixture/export-root.json")" ]]
+[[ "$(jq -c .totals "$fixture/export.json")" == "$(jq -c .totals "$fixture/export-root.json")" ]] || exit 1
 # Export/verify a real dotted manifest with records overlapping the default.
 # Its name must not require a special root option in the inventory.
 git -C "$consumer" checkout HEAD -- scripts/ci/archive-evidence.sh

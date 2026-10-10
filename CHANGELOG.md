@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.7]
+
+### Fixed
+
+- Fail mandatory portable assertions explicitly on Bash 3.2, so failed checks
+  cannot continue to report success or remove their evidence. Apply the same
+  admission checks before activating selected Cargo tools.
+  ([#107](https://github.com/dragginzgame/shared-tooling/issues/107))
+
+### Changed
+
+- Keep only the newest CI run per workflow and branch or PR, cancelling older
+  queued and running builds. Consumers adopt the same concurrency group in their
+  own workflows; cancelled revisions remain unqualified on unfinished hosts.
+  Release and deployment effects retain separate cancellation scope.
+  ([#108](https://github.com/dragginzgame/shared-tooling/issues/108))
+
 ## [0.3.6]
 
 ### Fixed

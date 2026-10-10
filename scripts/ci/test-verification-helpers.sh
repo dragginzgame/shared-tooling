@@ -22,7 +22,7 @@ cat > "$fixture/bin/cargo" <<'SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
 printf '%s\n' "$PWD" "$@" > "$VERIFY_HELPER_FIXTURE/arguments"
-[[ "$CARGO_TERM_COLOR" == never ]]
+[[ "$CARGO_TERM_COLOR" == never ]] || exit 1
 case "${VERIFY_TEST_MODE:-pass}" in
     pass) echo 'test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out' ;;
     empty) echo 'test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out' ;;
@@ -55,18 +55,18 @@ chmod +x "$fixture/bin/"*
 export PATH="$fixture/bin:$PATH" TMPDIR="$fixture/logs"
 cd "$fixture/workspace"
 bash "$ROOT/scripts/ci/run-nonempty-cargo-test.sh" --locked --offline -p fixture --lib > /dev/null
-[[ "$(head -n 1 "$fixture/arguments")" == "$PWD" ]]
+[[ "$(head -n 1 "$fixture/arguments")" == "$PWD" ]] || exit 1
 rg -x -- '--locked' "$fixture/arguments" >/dev/null
 rg -x -- '--offline' "$fixture/arguments" >/dev/null
 for mode in empty fail; do
     status=0
     VERIFY_TEST_MODE="$mode" bash "$ROOT/scripts/ci/run-nonempty-cargo-test.sh" --lib > "$fixture/output" 2>&1 || status=$?
     expected=3; [[ "$mode" != fail ]] || expected=7
-    [[ "$status" == "$expected" ]]
+    [[ "$status" == "$expected" ]] || exit 1
     rg -F 'Test output retained:' "$fixture/output" >/dev/null
 done
 logs=("$fixture/logs"/nonempty-cargo-test.*)
-[[ "${#logs[@]}" == 2 ]]
+[[ "${#logs[@]}" == 2 ]] || exit 1
 
 # Logging failure must not be hidden by a successful Cargo process.
 cat > "$fixture/bin/tee" <<'SCRIPT'
@@ -77,7 +77,7 @@ SCRIPT
 chmod +x "$fixture/bin/tee"
 status=0
 bash "$ROOT/scripts/ci/run-nonempty-cargo-test.sh" --lib > /dev/null 2>&1 || status=$?
-[[ "$status" == 8 ]]
+[[ "$status" == 8 ]] || exit 1
 
 commit=1111111111111111111111111111111111111111
 bash "$ROOT/scripts/ci/check-release-tag.sh" "$commit" 0.1.2

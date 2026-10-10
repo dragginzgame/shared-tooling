@@ -11,7 +11,7 @@ ROOT="$0"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 bin="$(bash "$ROOT/scripts/dev/install-ic-tools.sh" --check)"
-[[ "$(node --version)" == "v$(jq -er '.engines.node' "$ROOT/ci/frontend/package.json")" ]]
+[[ "$(node --version)" == "v$(jq -er '.engines.node' "$ROOT/ci/frontend/package.json")" ]] || exit 1
 parent="$(cd -P "${1%/*}/" && printf '%s/.' "$PWD")"
 parent="${parent%/.}"
 [[ "$parent" != *$'\n'* && "$parent" != *$'\r'* ]] || {

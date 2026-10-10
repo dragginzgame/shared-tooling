@@ -57,23 +57,25 @@ for selected in relative 'with spaces' -leading "$fixture/absolute" "$fixture/ne
     expected="$physical/${selected##*/}"
     status=0
     CDPATH="$fixture" bash "$ROOT/scripts/ci/qualify-cargo-install.sh" "$selected" > "$fixture/run.log" 2>&1 || status=$?
+    # Bash 3.2 writes the EXIT retention message inside the failed function's
+    # redirected log; newer Bash writes it to run.log. Either retains evidence.
     [[ "$status" == 97 && -s "$expected/rustc.txt" && -s "$expected/source.txt" &&
-       -d "$expected/prepare_upload" && ! -s "$expected/prepare_upload/install.log" ]]
+       -d "$expected/prepare_upload" && -f "$expected/prepare_upload/install.log" ]] || exit 1
     found=false
     while IFS= read -r -d '' argument; do
         [[ "$argument" != "$expected/prepare_upload/install" ]] || found=true
     done < "$QUALIFICATION_CALLS.arguments"
-    [[ "$found" == true ]]
+    [[ "$found" == true ]] || exit 1
     # Retrying must refuse the owned evidence root before even probing tools.
     : > "$QUALIFICATION_CALLS"
     status=0
     CDPATH="$fixture" bash "$ROOT/scripts/ci/qualify-cargo-install.sh" "$selected" > "$fixture/refusal.log" 2>&1 || status=$?
-    [[ "$status" == 2 && ! -s "$QUALIFICATION_CALLS" && -s "$expected/source.txt" ]]
+    [[ "$status" == 2 && ! -s "$QUALIFICATION_CALLS" && -s "$expected/source.txt" ]] || exit 1
 done
 ln -s missing "$fixture/dangling"
 status=0
 bash "$ROOT/scripts/ci/qualify-cargo-install.sh" "$fixture/dangling" > "$fixture/refusal.log" 2>&1 || status=$?
-[[ "$status" == 2 && ! -s "$QUALIFICATION_CALLS" && -L "$fixture/dangling" ]]
+[[ "$status" == 2 && ! -s "$QUALIFICATION_CALLS" && -L "$fixture/dangling" ]] || exit 1
 
 # Observed Cargo --debug receipts use dev or debug; release remains a mismatch.
 for profile in dev debug release; do
@@ -81,10 +83,10 @@ for profile in dev debug release; do
     status=0
     QUALIFICATION_PROFILE="$profile" bash "$ROOT/scripts/ci/qualify-cargo-install.sh" "$fixture/$profile" > "$fixture/profile.log" 2>&1 || status=$?
     if [[ "$profile" == release ]]; then
-        [[ "$status" == 1 && ! -e "$fixture/$profile/prepare_upload/binary.before" ]]
+        [[ "$status" == 1 && ! -e "$fixture/$profile/prepare_upload/binary.before" ]] || exit 1
         grep -F 'Cargo receipt does not match' "$fixture/profile.log" > /dev/null
     else
-        [[ "$status" == 97 && -s "$fixture/$profile/prepare_upload/observed.sha256" ]]
+        [[ "$status" == 97 && -s "$fixture/$profile/prepare_upload/observed.sha256" ]] || exit 1
     fi
 done
 echo 'Cargo qualification paths, receipt profiles, retained failure roots and early refusal passed (substitute Cargo)'
