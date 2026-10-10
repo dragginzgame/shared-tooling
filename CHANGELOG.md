@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.1]
+
+### Fixed
+
+- Refuse unsupported platforms and unavailable Rust/Cargo toolchains before
+  common tool setup downloads anything. Host-tool diagnostics identify the tool,
+  expected version, selected path and repair command while preserving byte
+  authentication, offline checks and retained artifacts.
+  ([#101](https://github.com/dragginzgame/shared-tooling/issues/101))
+
 ## [0.3.0]
 
 ### Breaking

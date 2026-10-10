@@ -228,8 +228,8 @@ colour_fixed() {
     # Apply the pastel scale to foreground text, preserving the terminal background.
     awk -v open="$1" -v closed="$2" 'BEGIN {
         p = closed / (open + closed);
-        if (p <= 0.5) { r=250; g=218+50*p; b=218-28*p }
-        else { r=250-68*(p-0.5); g=243-11*(p-0.5); b=204+30*(p-0.5) }
+        if (p <= 0.5) { r=242; g=196+64*p; b=196-32*p }
+        else { r=242-108*(p-0.5); g=228-8*(p-0.5); b=180+42*(p-0.5) }
         printf "\033[38;2;%d;%d;%dm", r, g, b;
     }'
 }

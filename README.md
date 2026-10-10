@@ -103,7 +103,8 @@ contributions.
 Use `make install-tools` for the complete common host, IC and Cargo toolsets,
 and `make tools-check` for offline verification. Every repository gets the same
 12 executables, including tools it does not currently use; setup runs host, IC
-and Rust steps in order. The [required tool inventory](docs/local-setup.md#required-tool-inventory)
+and Rust steps in order. Setup first checks platform support and the selected
+Rust/Cargo toolchain without downloads or installations. The [required tool inventory](docs/local-setup.md#required-tool-inventory)
 is the shared setup list for every repository. See [local setup](docs/local-setup.md)
 for Linux Mint/macOS bootstrap packages and shell PATH configuration. Make targets
 select the local binaries automatically; direct shell commands need the documented

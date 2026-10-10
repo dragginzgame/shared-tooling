@@ -76,6 +76,7 @@ for phase in install check; do
     cat > "$native/scripts/dev/install-ic-tools.sh" <<'SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
+[[ "${!#}" != --preflight ]] || exit 0
 mkdir -p .tools/ic-set.fixture
 printf 'retained installed input\n' > .tools/ic-set.fixture/payload
 selected=install
@@ -118,6 +119,7 @@ MAKE
 cat > "$native/bin/cargo" <<'SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
+[[ "$1" != --version ]] || { echo "cargo fixture"; exit 0; }
 [[ $# == 9 && "$1" == install && "$6" == --root && "$8" == --target-dir && "$9" == "$7/build" ]]
 mkdir -p "$9"
 printf 'retained Rust build output\n' > "$9/failed-build.txt"
@@ -130,7 +132,7 @@ for phase in install check; do
     [[ "$phase" != check ]] || target=rust-tools-check
     status=0
     PATH="$native/bin:$PATH" make --no-print-directory -C "$native" SHARED_TOOLING_ROOT="$ROOT" \
-        RUST_TOOL_VERSIONS="$ROOT/ci/tool-versions.env" "$target" \
+        IC_TOOL_PINS="$ROOT/ci/ic-tools.tsv" RUST_TOOL_VERSIONS="$ROOT/ci/tool-versions.env" "$target" \
         2>&1 | tee "$native/temp/rust-tools-$phase.log" > "$native/$phase.log" || status=$?
     [[ "$status" == 2 && -f "$native/.tools/rust/build/failed-build.txt" ]]
     for compact in false true; do
