@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.8]
+
+### Changed
+
+- Show the issue tracker's daily cutoff in Paris time, retaining the 06:00 reset
+  and daylight-saving handling.
+- Clarify how coordinated Rust crates can qualify their current package archives
+  before version bumps, while preserving registry publication checks.
+  ([#109](https://github.com/dragginzgame/shared-tooling/issues/109))
+
 ## [0.3.7]
 
 ### Fixed

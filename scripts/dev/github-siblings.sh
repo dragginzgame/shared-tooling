@@ -30,7 +30,7 @@ NO_COLOR or TERM=dumb disables colour; redirected reports are always plain.
 Fixed means closed, including duplicates and issues closed as not planned.
 Percent fixed = closed / (open + closed); no issues shows N/A.
 TODAY shows issues FIXED (currently closed, latest closure) and ADDED (created
-in any state) since 06:00 Europe/Monaco, including daylight-saving changes. Before 06:00, use the previous day's cutoff.
+in any state) since 06:00 Paris time, including daylight-saving changes. Before 06:00, use the previous day's cutoff.
 Failed observations show ERROR, never zero; totals then show TOTAL (partial).
 A partial/failed --once report exits nonzero. Watch mode retries next refresh.
 
@@ -171,7 +171,7 @@ measure_counts() {
 # Calendar arithmetic, not subtracting 24 hours: the cutoff can cross DST.
 # Perl's core POSIX functions use the same IANA timezone data on Linux/macOS.
 day_cutoff() {
-    TZ=Europe/Monaco perl -MPOSIX=mktime,strftime,tzset -e '
+    TZ=Europe/Paris perl -MPOSIX=mktime,strftime,tzset -e '
         tzset();
         my $now = shift;
         my @local = localtime($now);
@@ -259,7 +259,7 @@ render() {
     local number_width=4 percent_width=5 fixed_width issues_width prs_width pr_result_width open_width today_width today_group_width total_number_width row_number_width
     printf 'Sibling GitHub issues and pull requests | %s\n' "$(date '+%Y-%m-%d %H:%M:%S %Z')"
     printf 'Issues: OPEN / FIXED. PRs: OPEN includes drafts; CLOSED excludes merged.\n'
-    printf 'Fixed = closed issues. TODAY since %s (06:00 Europe/Monaco).\n' "$cutoff"
+    printf 'Fixed = closed issues. TODAY since %s (06:00 Paris time).\n' "$cutoff"
     printf 'Lowest percent fixed first. Refresh: %ss | q quit | r refresh\n\n' "$interval"
     : > "$scratch/rows"
     for ((i=0; i<repo_count; i++)); do

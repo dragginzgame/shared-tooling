@@ -464,7 +464,7 @@ the percentage even if they have PRs. PR `OPEN` includes drafts. PR `CLOSED`
 counts only requests closed without merging, following GitHub's
 [pull-request states](https://docs.github.com/en/graphql/reference/pulls#pullrequeststate).
 `TODAY / FIXED` counts currently closed issues whose latest closure was at or
-after 06:00 Europe/Monaco. `TODAY / ADDED` counts issues created since that same
+after 06:00 Paris time (`Europe/Paris`). `TODAY / ADDED` counts issues created since that same
 cutoff, whether currently open or closed. Before 06:00 it uses the previous calendar day's cutoff,
 including daylight-saving changes. Each refresh recalculates the cutoff;
 reopened issues do not count as fixed, and editing an old issue does not count
