@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.4.1]
+
+### Changed
+
+- Classify releases by their own consumer impact: adopting a breaking Shared
+  Tooling update does not require a library minor release when its published
+  contract remains unchanged. Contributor-only setup changes use patch notes;
+  public API, runtime and supported consumer build changes still need review.
+  ([#118](https://github.com/dragginzgame/shared-tooling/issues/118))
+
+### Fixed
+
+- Align the canonical version with 0.4.0 so snapshot exports identify the
+  delivered tooling release correctly.
+  ([#119](https://github.com/dragginzgame/shared-tooling/issues/119))
+
 ## [0.4.0]
 
 ### Breaking
