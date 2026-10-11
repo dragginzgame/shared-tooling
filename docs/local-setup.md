@@ -89,6 +89,26 @@ Fleet reports such as `make cloc-tooling` normally run in Shared Tooling; consum
 need not vendor those reporters or run their regression suites. See the
 [optional fleet selection](consuming-snapshots.md#local-ic-tool-adoption).
 
+## Shared executable storage
+
+Shared Tooling owns storage for the common executable sets. The agreed target
+is one verified installation per distinct tool selection in a per-user store,
+reused across checkouts. Each repository retains its own pins and command
+selection; changing one repository's selection must not change another's.
+Providing every common command does not require duplicating its binary in every
+checkout. Consumers must adopt the canonical implementation through reviewed
+snapshots rather than create independent stores or new bespoke `.tools`
+installers. Reviewed script snapshots remain repository-local.
+
+The shared store is not implemented in 0.4.2; implementation and qualification
+are tracked in [#120](https://github.com/dragginzgame/shared-tooling/issues/120).
+Adopting this guidance establishes ownership and the storage direction only.
+Until the canonical installers support shared storage, keep using their existing
+`.tools` paths and setup/check commands. Do not independently relocate binaries,
+point PATH at a sibling checkout, or delete retained installations and evidence.
+The implementation must cover offline checks, concurrent setup, native runtime
+libraries and evidence collection before consumers change their storage layout.
+
 ## Diagnosing a missing command
 
 Installing tools in Shared Tooling does not install them in another checkout.

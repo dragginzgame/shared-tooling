@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.2]
+
+### Changed
+
+- Establish Shared Tooling as the owner of shared executable storage. Consumers
+  must follow its canonical installers rather than add independent stores or
+  bespoke `.tools` installation logic. The intended per-user store will reuse
+  verified binaries across checkouts while preserving each repository's pins.
+  This release adds the policy; installers still use `.tools` pending
+  [#120](https://github.com/dragginzgame/shared-tooling/issues/120).
+
 ## [0.4.1]
 
 ### Changed

@@ -306,6 +306,14 @@ Consumer choices described in those guides remain subject to this baseline.
   prepared Rust toolchains and system bootstrap packages separately.
   Adopt `make/tools.mk` from the reviewed snapshot for these common commands
   and LOC reporting, replacing copied recipes; CI calls the same targets.
+- Shared Tooling owns common executable storage as well as installation commands.
+  The intended storage model shares identical verified installations per user
+  across checkouts while retaining each repository's pinned selection. Consumers
+  must not create independent stores or new bespoke `.tools` installers. Follow
+  the [shared storage adoption boundary](docs/local-setup.md#shared-executable-storage)
+  through reviewed canonical tooling; the current installers still use `.tools`
+  until shared storage is implemented. This policy does not authorize deleting
+  existing installations or replacing them with a mutable sibling PATH.
 - Provide the [common local IC executable setup](docs/ic-tools.md) through
   `make install-ic-tools` and offline `make ic-tools-check`. Keep the common tool
   names available under the checkout's `.tools/ic/bin`, with one reviewed pin
