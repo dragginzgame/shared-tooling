@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.12]
+
+### Fixed
+
+- Keep formatting-adoption checks working with relative or symlinked temporary
+  directories, preserving failure diagnostics in the selected location.
+  ([#116](https://github.com/dragginzgame/shared-tooling/issues/116))
+
 ## [0.3.11]
 
 ### Fixed
