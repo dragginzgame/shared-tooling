@@ -159,6 +159,14 @@ Consumer choices described in those guides remain subject to this baseline.
   a hard cut does not make an incompatible patch acceptable. Select the pending
   changelog version automatically under the common rules; changing package
   versions or executing a release remains an explicitly authorized consumer action.
+- Classify compatibility at the released package's own consumer boundary. An
+  upstream minor/hard cut does not automatically require downstream minor bumps.
+  Contributor-only CI, hooks, formatting, tool installation and local PATH changes
+  are compatible for a library whose published API, behavior and supported build
+  requirements remain unchanged. Shared Tooling's commands are its product
+  interface; adopting their changes does not turn them into a library API break.
+  Apply the [package-impact rules](rules/changelogs.md#classify-the-released-packages-own-impact),
+  including exposed dependency types and coordinated workspace versions.
 - Never reuse a wire/storage discriminator for an incompatible layout or interpret
   retained bytes under a new layout merely because both contracts use V1.
   A hard cut identifies the frozen format,

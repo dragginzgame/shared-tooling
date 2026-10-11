@@ -429,6 +429,12 @@ profile. Source-checkout builds and application executable overrides stay local.
 
 ### Rust installation adoption in 0.4.0
 
+This is a breaking installation contract for Shared Tooling. Consumer libraries
+whose published contracts remain unchanged should use compatible patch notes
+for adoption, even though contributors must reinstall tools and change PATH.
+Do not mirror Shared's minor bump. Assess independent product changes under the
+[package-impact rules](../rules/changelogs.md#classify-the-released-packages-own-impact).
+
 For the 0.4 Rust installation hard cut, also follow the
 [current slot and PATH contract](local-setup.md#rust-development-tools): refresh
 `scripts/dev/install-rust-tools.sh`, `make/tools.mk`, `.githooks/pre-commit`,

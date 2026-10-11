@@ -83,6 +83,10 @@ The proposal does not bump package metadata or execute a release. Select the
 matching release kind when invoking the explicitly authorized command; its computed
 candidate must agree with the pending heading and the complete batch's
 compatibility impact before finalization.
+Assess that impact at the released package's own boundary under the
+[package-impact rules](../rules/changelogs.md#classify-the-released-packages-own-impact).
+An upstream tooling hard cut does not by itself select `release-minor` for a
+consumer library; compatible internal tooling adoption uses patch notes.
 
 ## Artifact retention and exact push scope
 
