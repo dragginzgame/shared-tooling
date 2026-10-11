@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.2]
+
+### Fixed
+
+- Explain source conflicts in interrupted releases with exact plan and commit
+  identities, and document guarded recovery when consumer evidence proves
+  preparation never began.
+  ([#126](https://github.com/dragginzgame/shared-tooling/issues/126))
+- Distinguish Audit and Machete execution in shared-tool adoption guidance,
+  including Machete's inherited Cargo launcher context and failure propagation.
+  ([#123](https://github.com/dragginzgame/shared-tooling/issues/123))
+
 ## [0.6.1]
 
 ### Fixed
