@@ -318,7 +318,11 @@ No such file or directory: missing-input
 make[17]: *** nested-failure
 event[unit].*+?: product-failure
 LOG
-cp "$FIXTURE/diagnostics" "$FIXTURE/diagnostic-input"
+# Separate families beyond both neighboring context windows. Otherwise a
+# missing predicate can pass because another diagnostic selects its neighbors.
+# Keep the selected context below the runner's 160-line summary bound.
+awk 'NR > 1 { for (i = 0; i < 9; i++) print "ordinary-gap" } { print }' \
+    "$FIXTURE/diagnostics" > "$FIXTURE/diagnostic-input"
 cat > "$FIXTURE/neutral-context" <<'LOG'
 test error::tests::passing ... ok
 test error::tests::ignored ... ignored

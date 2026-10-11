@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.11]
+
+### Fixed
+
+- Align the canonical version with the delivered 0.3.10 changes so subsequent
+  snapshot exports report the intended source version.
+  ([#114](https://github.com/dragginzgame/shared-tooling/issues/114))
+
+### Testing
+
+- Isolate each validation diagnostic in summary regression checks so neighboring
+  errors cannot conceal a missing classifier rule.
+  ([#110](https://github.com/dragginzgame/shared-tooling/issues/110))
+
 ## [0.3.10]
 
 ### Fixed
