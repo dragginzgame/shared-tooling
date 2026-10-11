@@ -106,6 +106,25 @@ jobs:
             echo "$GITHUB_WORKSPACE/.tools/ic/bin"
             echo "$GITHUB_WORKSPACE/.tools/rust/common/bin"
           } >> "$GITHUB_PATH"
+      - name: Qualify native tool reuse across checkouts without downloads
+        shell: bash
+        run: |
+          sharing="$RUNNER_TEMP/portable-fixtures/shared-tools"
+          mkdir -p "$sharing/consumer" "$sharing/bin"
+          printf '#!/bin/sh\necho unexpected-download >&2\nexit 91\n' > "$sharing/bin/curl"
+          chmod +x "$sharing/bin/curl"
+          for kind in host ic; do
+            pins=(--versions "$GITHUB_WORKSPACE/ci/tool-versions.env")
+            if [[ "$kind" == ic ]]; then pins=(--pins "$GITHUB_WORKSPACE/ci/ic-tools.tsv"); fi
+            for mode in install check; do
+              options=()
+              if [[ "$mode" == check ]]; then options=(--check); fi
+              PATH="$sharing/bin:$PATH" bash "scripts/dev/install-$kind-tools.sh" \
+                --consumer "$sharing/consumer" "${pins[@]}" ${options[@]+"${options[@]}"} \
+                > "$sharing/$kind-$mode.log" 2>&1
+            done
+            test "$(cd ".tools/$kind" && pwd -P)" = "$(cd "$sharing/consumer/.tools/$kind" && pwd -P)"
+          done
       - name: Select the frontend fixture runtime
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:

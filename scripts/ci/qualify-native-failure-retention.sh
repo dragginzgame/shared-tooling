@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared companions: scripts/dev/tool-store.sh
 set -euo pipefail
 
 # Online CI-only negative qualification. Use the real installer, checksum guard
@@ -30,6 +31,7 @@ make --no-print-directory -C "$fixture/consumer" -f "$ROOT/make/tools.mk" \
 set -- "$fixture/consumer/.tools/"ic-set.*
 [[ $# == 1 && -d "$1" && ! -f "$1/files.sha256" ]] || exit 1
 candidate="$1"
+candidate="$(cd "$candidate" && pwd -P)"
 cmp "$pins" "$candidate/pins.tsv"
 host="$(cat "$candidate/host")"
 set -- "$candidate/downloads/quill/"*
@@ -43,8 +45,19 @@ bash "$ROOT/scripts/ci/verify-file-checksum.sh" sha256 "$digest" "$archive"
 # Exercise offline --check with actual native bytes and a damaged receipt. The
 # checksum guard must reject it before executable version probing. Preserve both
 # the install candidate and the deliberately invalid installed bundle.
-bundle="$fixture/consumer/.tools/ic-set.check"
-mkdir -p "$bundle/bin"
+# Select a deliberately damaged shared bundle at the real pins' identity.
+# This does not change the store's reusable current selection.
+# shellcheck source=scripts/dev/tool-store.sh
+source "$ROOT/scripts/dev/tool-store.sh"
+consumer="$fixture/consumer"
+records="$(awk -v records=1 -f "$ROOT/scripts/ci/ic-tool-pins.awk" "$original" | LC_ALL=C sort)"
+tool_store_init ic "$host
+$records"
+tool_store_acquire
+bundle="$(mktemp -d "$store_slot/set.XXXXXX")"
+tool_store_release
+mkdir -p "$bundle/bin" "$bundle/lib"
+ln -s "$bundle" "$fixture/consumer/.tools/ic-set.check"
 cp "$archive" "$bundle/bin/quill"
 chmod +x "$bundle/bin/quill"
 cp "$original" "$bundle/pins.tsv"
@@ -65,7 +78,7 @@ mkdir "$fixture/bin"
 cat > "$fixture/bin/cargo" <<'SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
-[[ $# == 9 && "$1" == install && "$6" == --root && "$8" == --target-dir && "$9" == "$7/build" ]] || exit 1
+[[ $# == 13 && "$1" == install && "$6" == --root && "$8" == --target-dir && "$9" == "$7/build" && "${10}" == --bin && "${12}" == --registry ]] || exit 1
 mkdir -p "$9"
 printf 'retained Rust build output\n' > "$9/failed-build.txt"
 echo 'injected Cargo installation failure' >&2
@@ -79,10 +92,11 @@ for phase in install check; do
     PATH="$fixture/bin:$PATH" make --no-print-directory -C "$fixture/consumer" -f "$ROOT/make/tools.mk" \
         SHARED_TOOLING_ROOT="$ROOT" RUST_TOOL_VERSIONS="$ROOT/ci/tool-versions.env" "$target" \
         2>&1 | tee "$fixture/temp/rust-tools-$phase.log" || status=$?
-    [[ "$status" == 2 && -s "$fixture/consumer/.tools/rust/build/failed-build.txt" ]] || exit 1
+    set -- "$fixture/consumer/.tools/rust/build/"cargo-attempt.*/build/failed-build.txt
+    [[ "$status" == 2 && $# == 1 && -s "$1" ]] || exit 1
 done
 grep -F 'injected Cargo installation failure' "$fixture/temp/rust-tools-install.log" >/dev/null
-grep -F 'missing or mismatched cargo-sort' "$fixture/temp/rust-tools-check.log" >/dev/null
+grep -F 'missing or mismatched common Rust tool set' "$fixture/temp/rust-tools-check.log" >/dev/null
 
 {
     printf 'source_commit=%s\nhost=%s\nrun_id=%s\nrun_attempt=%s\ninstall_status=2\ncheck_status=2\n' \
@@ -90,7 +104,7 @@ grep -F 'missing or mismatched cargo-sort' "$fixture/temp/rust-tools-check.log" 
     printf 'rust_install_status=2\nrust_check_status=2\nrust_cargo=substituted\n'
     # Bind local dirty-source runs as well as hosted committed-source runs.
     for path in scripts/ci/qualify-native-failure-retention.sh scripts/dev/install-ic-tools.sh scripts/dev/install-rust-tools.sh \
-        scripts/ci/ic-tool-pins.awk scripts/ci/verify-file-checksum.sh \
+        scripts/dev/tool-store.sh scripts/ci/ic-tool-pins.awk scripts/ci/verify-file-checksum.sh \
         scripts/ci/verify-evidence-checksums.sh scripts/ci/archive-evidence.sh make/tools.mk ci/ic-tools.tsv \
         ci/tool-versions.env .github/actions/retain-failure-evidence/action.yml; do
         printf '%s  %s\n' "$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$ROOT/$path")" "$path"
@@ -99,10 +113,16 @@ grep -F 'missing or mismatched cargo-sort' "$fixture/temp/rust-tools-check.log" 
 # The collector archives paths relative to each selected evidence root. Keep
 # the oracle outside the upload selection and verify original bytes after download.
 cd "$fixture"
-find consumer/.tools/ic-set.* consumer/.tools/rust/build temp -type f -print | LC_ALL=C sort > files.txt
+find consumer/.tools/rust/build temp -type f -print | LC_ALL=C sort > files.txt
 while IFS= read -r file; do
     printf '%s  %s\n' "$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$file")" "${file#*/}"
 done < files.txt > expected.sha256.tmp
+for retained in "$candidate" "$bundle"; do
+    find "$retained" -type f -print | LC_ALL=C sort > files.txt
+    while IFS= read -r file; do
+        printf '%s  %s\n' "$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$file")" "${file#"$store_root/"}"
+    done < files.txt >> expected.sha256.tmp
+done
 # The line-oriented checksum manifest deliberately excludes this filename.
 # The workflow separately checks its bytes/mode and the unfollowed link.
 printf 'retained unusual filename\n' > temp/portable-fixtures/$'line\nbreak:payload'

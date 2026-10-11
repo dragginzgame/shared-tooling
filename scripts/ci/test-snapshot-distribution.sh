@@ -559,7 +559,9 @@ git init -q "$selection_consumer"
 for path in scripts/ci/run-validation-targets.sh scripts/ci/check-make-execution.sh \
     scripts/ci/run-release.sh scripts/ci/next-release-version.sh \
     scripts/ci/test-release-runner.sh scripts/ci/finalize-release-changelog.awk \
-    scripts/ci/test-host-tools.sh scripts/ci/test-ic-tools.sh scripts/ci/test-tool-evidence.sh; do
+    scripts/ci/test-host-tools.sh scripts/ci/test-ic-tools.sh scripts/ci/test-tool-evidence.sh \
+    scripts/ci/test-tool-store.sh scripts/dev/tool-store.sh scripts/dev/install-host-tools.sh; do
+    mkdir -p "$source_root/${path%/*}" "$revision_root/${path%/*}"
     cp -p "$ROOT/$path" "$source_root/$path"
     cp -p "$ROOT/$path" "$revision_root/$path"
 done
@@ -657,6 +659,8 @@ done <<'COMPANIONS'
 scripts/ci/test-host-tools.sh scripts/ci/test-tool-evidence.sh
 scripts/ci/test-ic-tools.sh scripts/ci/test-tool-evidence.sh
 scripts/ci/test-tool-evidence.sh scripts/ci/select-tool-evidence.sh
+scripts/ci/test-tool-store.sh scripts/dev/tool-store.sh
+scripts/dev/install-host-tools.sh scripts/dev/tool-store.sh
 scripts/ci/test-cargo-metadata.sh scripts/ci/read-cargo-workspace-version.sh
 scripts/ci/test-cloc.sh scripts/dev/cloc.sh
 scripts/ci/test-cloc-tooling.sh scripts/dev/cloc-tooling.pl

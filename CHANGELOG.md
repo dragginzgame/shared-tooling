@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0]
+
+### Breaking
+
+- Share verified host and IC tool bundles across checkouts through a per-user
+  store. Existing command paths remain available through local references;
+  refresh installers and evidence collection, then rerun host/IC setup and
+  offline checks. Previous local bundles are preserved but no longer admitted
+  as active installations. Matching selections reuse binaries without downloads;
+  failed attempts and earlier selections remain available. Cargo-built tools
+  retain their current local storage. See the
+  [adoption instructions](docs/consuming-snapshots.md#shared-host-and-ic-storage-adoption-in-050).
+  ([#120](https://github.com/dragginzgame/shared-tooling/issues/120))
+
 ## [0.4.2]
 
 ### Changed
