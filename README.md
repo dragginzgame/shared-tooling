@@ -108,8 +108,10 @@ Rust/Cargo toolchain without downloads or installations. The [required tool inve
 is the shared setup list for every repository. See [local setup](docs/local-setup.md)
 for Linux Mint/macOS bootstrap packages and shell PATH configuration. Make targets
 select the local binaries automatically; direct shell commands need the documented
-PATH export in each checkout. Consumers include the reviewed snapshot's
-[`make/tools.mk`](make/tools.mk) for setup, offline verification and `make cloc`;
+PATH export in each checkout. Consumers use the reviewed snapshot's
+[`make/consumer.mk`](make/consumer.mk) as the common entrypoint for setup,
+offline verification, formatting, hooks and releases. The
+[Make interface](docs/make-interface.md) explains local inputs and custom formatters;
 the [adoption guide](docs/consuming-snapshots.md#local-ic-tool-adoption) lists its
 companion files and replaces copied Make recipes.
 

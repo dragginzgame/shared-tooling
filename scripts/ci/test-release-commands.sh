@@ -22,7 +22,7 @@ mkdir "$fixture/consumer" "$fixture/logs"
 export TMPDIR="$fixture/logs"
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 unset VALIDATION_REPOSITORY_ROOT VALIDATION_RUNNER_SNAPSHOT_PATH
-make_inputs=(make/tools.mk make/release.mk make/execution.mk scripts/ci/check-make-execution.sh)
+make_inputs=(make/consumer.mk make/tools.mk make/release.mk make/execution.mk scripts/ci/check-make-execution.sh)
 bash "$root/scripts/ci/check-release-commands.sh" "$root" "${make_inputs[@]}"
 # Both event paths and nested Make probes must survive the checker's cd.
 mkdir "$fixture/relative-temp"
@@ -163,7 +163,7 @@ done
 # ordinary consumer assignment to an external runner. The sentinel has no effects
 # beyond its marker; the actual release implementation is never installed here.
 mkdir -p "$fixture/external/scripts/ci" "$fixture/root-consumer/make"
-cp "$root/make/tools.mk" "$root/make/release.mk" "$root/make/execution.mk" "$fixture/root-consumer/make/"
+cp "$root/make/consumer.mk" "$root/make/tools.mk" "$root/make/release.mk" "$root/make/execution.mk" "$fixture/root-consumer/make/"
 mkdir -p "$fixture/root-consumer/scripts/ci"
 cp "$root/scripts/ci/check-make-execution.sh" "$fixture/root-consumer/scripts/ci/"
 cat > "$fixture/external/scripts/ci/run-release.sh" <<'SENTINEL'

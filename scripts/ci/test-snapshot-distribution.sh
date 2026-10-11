@@ -687,6 +687,8 @@ scripts/ci/test-rustsec-db.sh scripts/ci/prepare-rustsec-db.sh
 scripts/ci/test-tool-commands.sh make/tools.mk
 make/release.mk scripts/ci/run-release.sh
 make/rust-format.mk make/tools.mk
+make/consumer.mk make/rust-format.mk
+scripts/ci/test-make-consumer.sh make/consumer.mk
 make/execution.mk scripts/ci/check-make-execution.sh
 make/tools.mk make/execution.mk
 scripts/ci/test-make-format.sh make/tools.mk

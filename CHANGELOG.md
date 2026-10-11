@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.6.4]
+
+### Added
+
+- Provide one shared Make entrypoint for common setup, offline checks,
+  formatting, hook installation and releases. Custom workspace and frontend
+  formatters retain their local policy through paired command inputs, with
+  shared failure handling and concise output. See the
+  [consumer Make interface](docs/make-interface.md) for adoption.
+  ([#130](https://github.com/dragginzgame/shared-tooling/issues/130))
+
 ## [0.6.3]
 
 ### Fixed
