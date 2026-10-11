@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.1]
+
+### Fixed
+
+- Stop Cargo setup immediately on lock, validation or activation failures, with
+  the original failure status and retained evidence. Failed setup no longer
+  reports success or attempts activation without its locks.
+  ([#120](https://github.com/dragginzgame/shared-tooling/issues/120))
+- Compare build counts numerically so Cargo installation fixtures accept padded
+  macOS output; exercise padded counts on every host.
+  ([#124](https://github.com/dragginzgame/shared-tooling/issues/124))
+- Resolve tag-maintenance fixture paths consistently with the helper when
+  temporary directories use symlink aliases, including macOS temporary roots.
+  ([#127](https://github.com/dragginzgame/shared-tooling/issues/127))
+
 ## [0.6.0]
 
 ### Breaking

@@ -85,8 +85,10 @@ for context in trailing-slash directory-alias; do
         TMPDIR="$selected_tmp" bash "$ROOT/scripts/ci/$script.sh" \
             > "$FIXTURE/$script-$context.log" 2>&1
     done
+    TMPDIR="$selected_tmp" perl "$ROOT/scripts/ci/test-tag-maintenance.pl" \
+        > "$FIXTURE/test-tag-maintenance-$context.log" 2>&1
 done
-echo 'Tool fixtures passed with trailing-slash and aliased temporary roots'
+echo 'Tool and tag fixtures passed with trailing-slash and aliased temporary roots'
 bash "$ROOT/scripts/ci/test-evidence-checksums.sh"
 bash "$ROOT/scripts/ci/test-file-digests.sh"
 bash "$ROOT/scripts/ci/test-rustsec-db.sh"
