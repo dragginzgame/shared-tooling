@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared companions: scripts/ci/prepare-cargo-failure-fixture.sh
 set -euo pipefail
 ROOT="$0"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
@@ -226,27 +227,19 @@ include make/tools.mk
 install-host-tools install-ic-tools:
 	@:
 MAKE
-cat > "$native/bin/cargo" <<'SCRIPT'
-#!/usr/bin/env bash
-set -euo pipefail
-[[ "$1" != --version ]] || { echo "cargo fixture"; exit 0; }
-[[ $# == 13 && "$1" == install && "$6" == --root && "$8" == --target-dir && "$9" == "$7/build" ]] || exit 1
-mkdir -p "$9"
-printf 'retained Rust build output\n' > "$9/failed-build.txt"
-echo 'injected Cargo installation failure' >&2
-exit 23
-SCRIPT
-chmod +x "$native/bin/cargo"
+bash "$ROOT/scripts/ci/prepare-cargo-failure-fixture.sh" "$native/cargo-fixture"
+export SHARED_TOOLING_STORE="$native/store"
 for phase in install check; do
     target=install-tools
     [[ "$phase" != check ]] || target=rust-tools-check
     status=0
-    PATH="$native/bin:$PATH" make --no-print-directory -C "$native" SHARED_TOOLING_ROOT="$ROOT" \
+    PATH="$native/cargo-fixture/bin:$PATH" make --no-print-directory -C "$native" SHARED_TOOLING_ROOT="$ROOT" \
         IC_TOOL_PINS="$ROOT/ci/ic-tools.tsv" RUST_TOOL_VERSIONS="$ROOT/ci/tool-versions.env" "$target" \
         2>&1 | tee "$native/temp/rust-tools-$phase.log" > "$native/$phase.log" || status=$?
-    set -- "$native"/.tools/rust/build/cargo-attempt.*
+    set -- "$SHARED_TOOLING_STORE"/rust-*/set.*
     [[ "$status" == 2 && $# == 1 && -f "$1/build/failed-build.txt" ]] || exit 1
-    attempt="${1##*/}"
+    attempt="$1"
+    archived_attempt="${attempt#"$SHARED_TOOLING_STORE/"}"
     mkdir -p "$native/.tools/rust/fixture-1.0.0-bin-fixture-release/installed/build"
     printf 'retained admitted-slot evidence\n' > "$native/.tools/rust/fixture-1.0.0-bin-fixture-release/installed/build/evidence"
     for compact in false true; do
@@ -258,13 +251,13 @@ for phase in install check; do
         unpacked="$native/unpacked-$phase-$compact"
         mkdir "$unpacked"
         tar -xzf "$archive" -C "$unpacked"
-        cmp "$native/.tools/rust/build/$attempt/build/failed-build.txt" "$unpacked/.tools/rust/build/$attempt/build/failed-build.txt"
+        cmp "$attempt/build/failed-build.txt" "$unpacked/$archived_attempt/build/failed-build.txt"
         cmp "$native/.tools/rust/fixture-1.0.0-bin-fixture-release/installed/build/evidence" "$unpacked/.tools/rust/fixture-1.0.0-bin-fixture-release/installed/build/evidence"
         cmp "$native/temp/rust-tools-$phase.log" "$unpacked/rust-tools-$phase.log"
     done
 done
 grep -F 'injected Cargo installation failure' "$native/temp/rust-tools-install.log" >/dev/null
-grep -F 'missing or mismatched common Rust tool set' "$native/temp/rust-tools-check.log" >/dev/null
+grep -F 'missing or invalid shared Cargo tool' "$native/temp/rust-tools-check.log" >/dev/null
 # Final links are preserved without their targets. Redirected parents must
 # neither leak external files nor prevent collection of the original setup log.
 for route in .tools .tools/rust .tools/rust/build; do

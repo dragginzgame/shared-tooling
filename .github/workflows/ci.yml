@@ -125,6 +125,18 @@ jobs:
             done
             test "$(cd ".tools/$kind" && pwd -P)" = "$(cd "$sharing/consumer/.tools/$kind" && pwd -P)"
           done
+          # Cargo sharing uses the same prepared compiler and standard build
+          # environment. A second checkout must select the exact existing bytes.
+          CARGO_NET_OFFLINE=true bash scripts/dev/install-rust-tools.sh \
+            --consumer "$sharing/consumer" --versions "$GITHUB_WORKSPACE/ci/tool-versions.env" \
+            > "$sharing/rust-install.log" 2>&1
+          CARGO_NET_OFFLINE=true bash scripts/dev/install-rust-tools.sh \
+            --consumer "$sharing/consumer" --versions "$GITHUB_WORKSPACE/ci/tool-versions.env" --check \
+            > "$sharing/rust-check.log" 2>&1
+          for tool in cargo-sort cargo-sort-derives candid-extractor; do
+            test "$(perl -MCwd=abs_path -e 'print abs_path(shift)' ".tools/rust/common/bin/$tool")" = \
+                 "$(perl -MCwd=abs_path -e 'print abs_path(shift)' "$sharing/consumer/.tools/rust/common/bin/$tool")"
+          done
       - name: Select the frontend fixture runtime
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
@@ -159,6 +171,8 @@ jobs:
         if: ${{ !cancelled() && steps.retention.outcome == 'failure' }}
         id: retention-upload
         uses: ./.github/actions/retain-failure-evidence
+        env:
+          SHARED_TOOLING_STORE: ${{ runner.temp }}/portable-fixtures/native-retention/store
         with:
           name: native-retention-${{ matrix.os }}-${{ github.run_attempt }}
           temp-root: ${{ runner.temp }}/portable-fixtures/native-retention/temp

@@ -20,15 +20,14 @@ In a terminal, refresh every 60 seconds: q quits, r refreshes, Ctrl-C exits.
 --once prints one report (also the default when input/output is not a terminal).
 --interval selects 1..86400 seconds between completed refreshes.
 Grouped headings show ISSUES (OPEN, FIXED), TODAY (FIXED, ADDED), and PRS (OPEN, MERGED, CLOSED).
-FIXED shows closed / total, then percent in brackets; CLOSED PRs exclude merges.
+FIXED shows closed / total; CLOSED PRs exclude merges.
 Open PRs include drafts. Numeric padding starts at four characters and expands
 to fit repository counts. Totals grow independently; headings/errors also fit.
-Sort by percent fixed ascending, then open issues descending and name.
-Repositories with no issues follow ranked rows; failed rows appear last.
-Pale red-to-yellow-to-green row text marks completion in terminals.
+Sort by open issues descending, then name; failed rows appear last.
+Pale green-to-yellow-to-red row text marks increasing open issue counts,
+relative to the largest backlog in this report. Totals and errors stay uncoloured.
 NO_COLOR or TERM=dumb disables colour; redirected reports are always plain.
 Fixed means closed, including duplicates and issues closed as not planned.
-Percent fixed = closed / (open + closed); no issues shows N/A.
 TODAY shows issues FIXED (currently closed, latest closure) and ADDED (created
 in any state) since 06:00 Paris time, including daylight-saving changes. Before 06:00, use the previous day's cutoff.
 Failed observations show ERROR, never zero; totals then show TOTAL (partial).
@@ -150,23 +149,12 @@ format_count() {
     done
     printf '%s%s' "$value" "$grouped"
 }
-format_percent() {
-    local open="$1" closed="$2" total
-    total=$((open + closed))
-    if [[ "$total" -gt 0 ]]; then
-        awk -v closed="$closed" -v total="$total" 'BEGIN { printf "(%.1f%%)", 100 * closed / total }'
-    else
-        printf '(N/A)'
-    fi
-}
 measure_counts() {
-    local value formatted percent
+    local value formatted
     for value in "$@" "$(($1 + $2))"; do
         formatted="$(format_count "$value")"
         [[ ${#formatted} -le "$number_width" ]] || number_width=${#formatted}
     done
-    percent="$(format_percent "$1" "$2")"
-    [[ ${#percent} -le "$percent_width" ]] || percent_width=${#percent}
 }
 # Calendar arithmetic, not subtracting 24 hours: the cutoff can cross DST.
 # Perl's core POSIX functions use the same IANA timezone data on Linux/macOS.
@@ -224,12 +212,12 @@ count_today() {
     printf '%s\t%s' "$total_fixed" "$total_added"
 }
 
-colour_fixed() {
+colour_open() {
     # Apply the pastel scale to foreground text, preserving the terminal background.
-    awk -v open="$1" -v closed="$2" 'BEGIN {
-        p = closed / (open + closed);
-        if (p <= 0.5) { r=242; g=196+64*p; b=196-32*p }
-        else { r=242-108*(p-0.5); g=228-8*(p-0.5); b=180+42*(p-0.5) }
+    awk -v open="$1" -v maximum="$2" 'BEGIN {
+        p = maximum > 0 ? 1 - open / maximum : 1;
+        if (p <= 0.5) { r=238; g=180+80*p; b=180-40*p }
+        else { r=238-136*(p-0.5); g=220-12*(p-0.5); b=160+52*(p-0.5) }
         printf "\033[38;2;%d;%d;%dm", r, g, b;
     }'
 }
@@ -237,11 +225,11 @@ print_counts() {
     local name="$1" open="$2" closed="$3" total fixed foreground='' reset=''
     local number_width="${9:-$number_width}"
     total=$((open + closed))
-    printf -v fixed '%*s / %*s %-*s' "$number_width" "$(format_count "$closed")" \
-        "$number_width" "$(format_count "$total")" "$percent_width" "$(format_percent "$open" "$closed")"
+    printf -v fixed '%*s / %*s' "$number_width" "$(format_count "$closed")" \
+        "$number_width" "$(format_count "$total")"
     printf -v fixed '%*s' "$fixed_width" "$fixed"
-    if [[ "$colour" == true && "$total" -gt 0 ]]; then
-        foreground="$(colour_fixed "$open" "$closed")"
+    if [[ "$colour" == true && $# == 8 ]]; then
+        foreground="$(colour_open "$open" "$max_open")"
         reset=$'\033[39m'
     fi
     print_row "$name" "$(format_count "$open")" "$fixed" \
@@ -254,13 +242,13 @@ print_error() {
 }
 
 render() {
-    local i counts name open closed pr_open pr_merged pr_closed today added day_counts rank total_open=0 total_closed=0
+    local i counts name open closed pr_open pr_merged pr_closed today added day_counts total_open=0 total_closed=0
     local total_added=0 total_today=0 total_pr_open=0 total_pr_merged=0 total_pr_closed=0 successful=0 label=TOTAL
-    local number_width=4 percent_width=5 fixed_width issues_width prs_width pr_result_width open_width today_width today_group_width total_number_width row_number_width
+    local number_width=4 max_open=0 fixed_width issues_width prs_width pr_result_width open_width today_width today_group_width total_number_width row_number_width
     printf 'Sibling GitHub issues and pull requests | %s\n' "$(date '+%Y-%m-%d %H:%M:%S %Z')"
     printf 'Issues: OPEN / FIXED. PRs: OPEN includes drafts; CLOSED excludes merged.\n'
     printf 'Fixed = closed issues. TODAY since %s (06:00 Paris time).\n' "$cutoff"
-    printf 'Lowest percent fixed first. Refresh: %ss | q quit | r refresh\n\n' "$interval"
+    printf 'Most open issues first; colour scales by backlog. Refresh: %ss | q quit | r refresh\n\n' "$interval"
     : > "$scratch/rows"
     for ((i=0; i<repo_count; i++)); do
         if counts="$(jq -er --arg key "r$i" '
@@ -273,8 +261,8 @@ render() {
             read -r open closed pr_open pr_merged pr_closed <<< "$counts"
             read -r today added <<< "$day_counts"
             measure_counts "$open" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added"
-            rank="$(awk -v o="$open" -v c="$closed" 'BEGIN { if (o+c) printf "%.12f", c/(o+c); else print 2 }')"
-            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$rank" "$open" "${repos[$i]}" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added" >> "$scratch/rows"
+            [[ "$open" -le "$max_open" ]] || max_open="$open"
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$open" "${repos[$i]}" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added" >> "$scratch/rows"
             total_today=$((total_today + today))
             total_added=$((total_added + added))
             total_open=$((total_open + open))
@@ -284,7 +272,7 @@ render() {
             total_pr_closed=$((total_pr_closed + pr_closed))
             successful=$((successful + 1))
         else
-            printf '3\t%s\t%s\t%s\n' -1 "${repos[$i]}" ERROR >> "$scratch/rows"
+            printf '%s\t%s\t%s\n' -1 "${repos[$i]}" ERROR >> "$scratch/rows"
             status=1
         fi
     done
@@ -298,19 +286,19 @@ render() {
     if [[ "$successful" -lt "$repo_count" && "$open_width" -lt 5 ]]; then open_width=5; fi
     today_width="$total_number_width"
     [[ "$today_width" -ge 5 ]] || today_width=5
-    fixed_width=$((2 * total_number_width + 4 + percent_width))
+    fixed_width=$((2 * total_number_width + 3))
     issues_width=$((open_width + 2 + fixed_width))
     today_group_width=$((2 * today_width + 2))
     pr_result_width="$total_number_width"
     [[ "$pr_result_width" -ge 6 ]] || pr_result_width=6
     prs_width=$((open_width + 4 + 2 * pr_result_width))
-    sort -t $'\t' -k1,1n -k2,2nr -k3,3 "$scratch/rows" > "$scratch/sorted"
+    sort -t $'\t' -k1,1nr -k2,2 "$scratch/rows" > "$scratch/sorted"
     printf '%*s  %s  %s  %s\n' "$width" '' "$(center_text ISSUES "$issues_width")" \
         "$(center_text TODAY "$today_group_width")" "$(center_text PRS "$prs_width")"
     print_row REPOSITORY "$(center_text OPEN "$open_width")" "$(center_text FIXED "$fixed_width")" \
         "$(center_text FIXED "$today_width")" "$(center_text ADDED "$today_width")" "$(center_text OPEN "$open_width")" "$(center_text MERGED "$pr_result_width")" "$(center_text CLOSED "$pr_result_width")"
     print_separator
-    while IFS=$'\t' read -r rank open name closed pr_open pr_merged pr_closed today added; do
+    while IFS=$'\t' read -r open name closed pr_open pr_merged pr_closed today added; do
         if [[ "$open" == -1 ]]; then
             print_error "$name"
         else

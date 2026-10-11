@@ -19,6 +19,7 @@ fixture="$(cd -P "$selected" && printf '%s/.' "$PWD")"
 fixture="${fixture%/.}"
 trap 'printf "Cargo installation evidence retained: %s\n" "$fixture" >&2' EXIT
 export RUSTUP_AUTO_INSTALL=0
+export SHARED_TOOLING_STORE="$fixture/store"
 # shellcheck source=/dev/null
 source "$ROOT/ci/tool-versions.env"
 checksum="$ROOT/scripts/ci/verify-file-checksum.sh"
@@ -29,7 +30,7 @@ host="$(sed -n 's/^host: //p' "$fixture/rustc.txt")"
 [[ -n "$host" ]] || exit 1
 {
     git -C "$ROOT" rev-parse HEAD
-    for file in scripts/ci/qualify-cargo-install.sh scripts/dev/install-rust-tools.sh scripts/ci/verify-file-checksum.sh ci/tool-versions.env; do
+    for file in scripts/ci/qualify-cargo-install.sh scripts/dev/install-rust-tools.sh scripts/dev/cargo-tool-build.sh scripts/dev/tool-store.sh scripts/ci/verify-file-checksum.sh ci/tool-versions.env; do
         printf '%s  %s\n' "$(bash "$checksum" --print sha256 "$ROOT/$file")" "$file"
     done
 } > "$fixture/source.txt"

@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.6.0]
+
+### Breaking
+
+- Share Cargo-built tools across checkouts using a standard tool-build environment
+  and exact compiler, native environment, package and packaged-lock identities.
+  Refresh installers and evidence collection, then explicitly reinstall and check
+  common and selected Cargo tools. Application build settings remain local;
+  previous installations and failed build evidence are preserved. See the
+  [adoption instructions](docs/consuming-snapshots.md#shared-cargo-storage-adoption-in-060).
+  ([#120](https://github.com/dragginzgame/shared-tooling/issues/120))
+
+### Fixed
+
+- Retain and upload safe local failure evidence when shared-store admission fails,
+  with explicit incomplete-collection diagnostics rather than losing the archive.
+  ([#121](https://github.com/dragginzgame/shared-tooling/issues/121))
+- Report the exact shared installation lock when offline tool checks refuse
+  another checkout's active installation.
+  ([#120](https://github.com/dragginzgame/shared-tooling/issues/120))
+- Allow snapshot distribution checks to omit optional companion-pair cases for
+  unselected entrypoints, without requiring consumers to import fleet reporters.
+  ([#122](https://github.com/dragginzgame/shared-tooling/issues/122))
+
+### Changed
+
+- Document audit/machete extension adoption through the shared Cargo installer,
+  including quiet verified reuse and execution through the selected path.
+  ([#123](https://github.com/dragginzgame/shared-tooling/issues/123))
+- Rank the sibling GitHub dashboard by open issue count and colour repository
+  rows by their current backlog. Remove the lifetime percentage fixed; retain
+  closed/total counts, daily activity and pull-request totals.
+
 ## [0.5.0]
 
 ### Breaking

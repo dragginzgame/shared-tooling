@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/dev/tool-store.sh
+# Shared companions: scripts/dev/tool-store.sh scripts/ci/prepare-cargo-failure-fixture.sh
 set -euo pipefail
 
 # Online CI-only negative qualification. Use the real installer, checksum guard
@@ -17,6 +17,7 @@ ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 mkdir -p "$1/consumer" "$1/temp/portable-fixtures"
 fixture="$(cd "$1" && pwd -P)"
+export SHARED_TOOLING_STORE="$fixture/store"
 echo "Native failure evidence: $fixture"
 original="$ROOT/ci/ic-tools.tsv"
 pins="$fixture/temp/portable-fixtures/rejected-pins.tsv"
@@ -74,29 +75,19 @@ cmp "$original" "$bundle/pins.tsv"
 
 # The real Rust installer and Make entrypoints, with Cargo replaced at its
 # install boundary. No registry build/download is needed to qualify retention.
-mkdir "$fixture/bin"
-cat > "$fixture/bin/cargo" <<'SCRIPT'
-#!/usr/bin/env bash
-set -euo pipefail
-[[ $# == 13 && "$1" == install && "$6" == --root && "$8" == --target-dir && "$9" == "$7/build" && "${10}" == --bin && "${12}" == --registry ]] || exit 1
-mkdir -p "$9"
-printf 'retained Rust build output\n' > "$9/failed-build.txt"
-echo 'injected Cargo installation failure' >&2
-exit 23
-SCRIPT
-chmod +x "$fixture/bin/cargo"
+bash "$ROOT/scripts/ci/prepare-cargo-failure-fixture.sh" "$fixture/cargo-fixture"
 for phase in install check; do
     target=install-rust-tools
     [[ "$phase" != check ]] || target=rust-tools-check
     status=0
-    PATH="$fixture/bin:$PATH" make --no-print-directory -C "$fixture/consumer" -f "$ROOT/make/tools.mk" \
+    PATH="$fixture/cargo-fixture/bin:$PATH" make --no-print-directory -C "$fixture/consumer" -f "$ROOT/make/tools.mk" \
         SHARED_TOOLING_ROOT="$ROOT" RUST_TOOL_VERSIONS="$ROOT/ci/tool-versions.env" "$target" \
         2>&1 | tee "$fixture/temp/rust-tools-$phase.log" || status=$?
-    set -- "$fixture/consumer/.tools/rust/build/"cargo-attempt.*/build/failed-build.txt
+    set -- "$SHARED_TOOLING_STORE"/rust-*/set.*/build/failed-build.txt
     [[ "$status" == 2 && $# == 1 && -s "$1" ]] || exit 1
 done
 grep -F 'injected Cargo installation failure' "$fixture/temp/rust-tools-install.log" >/dev/null
-grep -F 'missing or mismatched common Rust tool set' "$fixture/temp/rust-tools-check.log" >/dev/null
+grep -F 'missing or invalid shared Cargo tool' "$fixture/temp/rust-tools-check.log" >/dev/null
 
 {
     printf 'source_commit=%s\nhost=%s\nrun_id=%s\nrun_attempt=%s\ninstall_status=2\ncheck_status=2\n' \
@@ -104,8 +95,8 @@ grep -F 'missing or mismatched common Rust tool set' "$fixture/temp/rust-tools-c
     printf 'rust_install_status=2\nrust_check_status=2\nrust_cargo=substituted\n'
     # Bind local dirty-source runs as well as hosted committed-source runs.
     for path in scripts/ci/qualify-native-failure-retention.sh scripts/dev/install-ic-tools.sh scripts/dev/install-rust-tools.sh \
-        scripts/dev/tool-store.sh scripts/ci/ic-tool-pins.awk scripts/ci/verify-file-checksum.sh \
-        scripts/ci/verify-evidence-checksums.sh scripts/ci/archive-evidence.sh make/tools.mk ci/ic-tools.tsv \
+        scripts/dev/tool-store.sh scripts/dev/cargo-tool-build.sh scripts/ci/prepare-cargo-failure-fixture.sh scripts/ci/ic-tool-pins.awk scripts/ci/verify-file-checksum.sh \
+        scripts/ci/verify-evidence-checksums.sh scripts/ci/archive-evidence.sh scripts/ci/select-tool-evidence.sh make/tools.mk ci/ic-tools.tsv \
         ci/tool-versions.env .github/actions/retain-failure-evidence/action.yml; do
         printf '%s  %s\n' "$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$ROOT/$path")" "$path"
     done
@@ -113,11 +104,11 @@ grep -F 'missing or mismatched common Rust tool set' "$fixture/temp/rust-tools-c
 # The collector archives paths relative to each selected evidence root. Keep
 # the oracle outside the upload selection and verify original bytes after download.
 cd "$fixture"
-find consumer/.tools/rust/build temp -type f -print | LC_ALL=C sort > files.txt
+find temp -type f -print | LC_ALL=C sort > files.txt
 while IFS= read -r file; do
     printf '%s  %s\n' "$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$file")" "${file#*/}"
 done < files.txt > expected.sha256.tmp
-for retained in "$candidate" "$bundle"; do
+for retained in "$candidate" "$bundle" "$SHARED_TOOLING_STORE"/rust-*/set.*; do
     find "$retained" -type f -print | LC_ALL=C sort > files.txt
     while IFS= read -r file; do
         printf '%s  %s\n' "$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$file")" "${file#"$store_root/"}"

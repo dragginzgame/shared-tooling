@@ -448,22 +448,22 @@ an authenticated GitHub CLI; prepare authentication with `gh auth login`.
 Rows show `REPOSITORY` first, then centered `ISSUES`, `TODAY` and `PRS` group
 headings. Issues have `OPEN` and `FIXED`; TODAY has `FIXED` and `ADDED`; PRs
 have `OPEN`, `MERGED` and `CLOSED`.
-`FIXED` is centered over the full closed / total and percentage value, such as
-`23 / 1,095 (2.1%)`. Numeric padding starts at four characters and expands to fit
+`FIXED` is centered over the closed / total value, such as
+`23 / 1,095`. Numeric padding starts at four characters and expands to fit
 the largest comma-separated repository count in that refresh. Totals grow
 independently, so a fleet total above 999 does not widen every repository's
-`FIXED` ratio: ` 400 /  486 (82.3%)` keeps two spaces after the slash.
+`FIXED` ratio: ` 400 /  486` keeps two spaces after the slash.
 Column headings and `ERROR` fit without shifting later columns. Counts remain
-right-aligned. Repositories sort by percentage fixed ascending, then open issues
-descending and name. Repositories with no issues follow ranked rows; failed
-observations come last. Entire repository and total rows use pale red–yellow–green
-text from 0% to 100% fixed, preserving the terminal background. `NO_COLOR` or
+right-aligned. Repositories sort by open issues descending, then name; failed
+observations come last. Entire repository rows use pale green–yellow–red text
+from zero open issues to the largest open backlog in that refresh, preserving
+the terminal background. Equal open counts get the same colour regardless of
+closed issue history; an all-zero backlog is green. Totals and errors stay
+uncoloured. `NO_COLOR` or
 `TERM=dumb` disables colour, and redirected
 reports remain plain text. Dashed separators distinguish the header and combined totals.
 Here **fixed means closed**, including duplicates and issues closed as not
-planned; the percentage is `closed / (open + closed) * 100`. Pull requests stay
-separate from that calculation, and repositories with no issues show `N/A` for
-the percentage even if they have PRs. PR `OPEN` includes drafts. PR `CLOSED`
+planned. Pull requests stay separate from issue counts. PR `OPEN` includes drafts. PR `CLOSED`
 counts only requests closed without merging, following GitHub's
 [pull-request states](https://docs.github.com/en/graphql/reference/pulls#pullrequeststate).
 `TODAY / FIXED` counts currently closed issues whose latest closure was at or

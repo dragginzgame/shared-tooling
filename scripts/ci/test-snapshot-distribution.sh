@@ -560,7 +560,8 @@ for path in scripts/ci/run-validation-targets.sh scripts/ci/check-make-execution
     scripts/ci/run-release.sh scripts/ci/next-release-version.sh \
     scripts/ci/test-release-runner.sh scripts/ci/finalize-release-changelog.awk \
     scripts/ci/test-host-tools.sh scripts/ci/test-ic-tools.sh scripts/ci/test-tool-evidence.sh \
-    scripts/ci/test-tool-store.sh scripts/dev/tool-store.sh scripts/dev/install-host-tools.sh; do
+    scripts/ci/test-tool-store.sh scripts/dev/tool-store.sh scripts/dev/install-host-tools.sh \
+    scripts/dev/cargo-tool-build.sh scripts/dev/install-rust-tools.sh; do
     mkdir -p "$source_root/${path%/*}" "$revision_root/${path%/*}"
     cp -p "$ROOT/$path" "$source_root/$path"
     cp -p "$ROOT/$path" "$revision_root/$path"
@@ -624,7 +625,15 @@ bash "$selection_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
 # Real installer fixture declarations must prevent the previously successful
 # incomplete export. Check both initial export and addition to an existing set.
 cp "$selection_consumer/config/selection" "$FIXTURE/selection-before-evidence"
+omitted_pairs=0
 while read -r entry missing; do
+    # Consumer snapshots may omit optional fixture/reporting entrypoints. Only
+    # test declarations for entries present here; a present entry must still
+    # refuse export without its required companion, even if that helper is absent.
+    if [[ ! -e "$ROOT/$entry" && ! -L "$ROOT/$entry" ]]; then
+        omitted_pairs=$((omitted_pairs + 1))
+        continue
+    fi
     mkdir -p "$source_root/${entry%/*}" "$revision_root/${entry%/*}"
     cp -p "$ROOT/$entry" "$source_root/$entry"
     cp -p "$ROOT/$entry" "$revision_root/$entry"
@@ -661,6 +670,7 @@ scripts/ci/test-ic-tools.sh scripts/ci/test-tool-evidence.sh
 scripts/ci/test-tool-evidence.sh scripts/ci/select-tool-evidence.sh
 scripts/ci/test-tool-store.sh scripts/dev/tool-store.sh
 scripts/dev/install-host-tools.sh scripts/dev/tool-store.sh
+scripts/dev/install-rust-tools.sh scripts/dev/cargo-tool-build.sh
 scripts/ci/test-cargo-metadata.sh scripts/ci/read-cargo-workspace-version.sh
 scripts/ci/test-cloc.sh scripts/dev/cloc.sh
 scripts/ci/test-cloc-tooling.sh scripts/dev/cloc-tooling.pl
@@ -682,6 +692,7 @@ make/tools.mk make/execution.mk
 scripts/ci/test-make-format.sh make/tools.mk
 scripts/dev/cloc-siblings.sh scripts/dev/cloc.sh
 COMPANIONS
+printf 'Snapshot companion cases: %s optional entries absent\n' "$omitted_pairs"
 
 # Complete focused selections must remain independently runnable, without
 # owner-only integration fixtures or unrelated production tools.
@@ -691,6 +702,8 @@ selection_args=(--file "$checksum_path" --file "$verifier_path")
 without_reporter=("${selection_args[@]}")
 for path in scripts/ci/test-format-tools.sh scripts/ci/check-format-tools.sh \
     scripts/ci/test-rust-tools.sh scripts/dev/install-rust-tools.sh \
+    scripts/dev/cargo-tool-build.sh scripts/dev/tool-store.sh scripts/dev/install-host-tools.sh scripts/dev/install-ic-tools.sh \
+    scripts/ci/ic-tool-pins.awk scripts/ci/verify-evidence-checksums.sh scripts/ci/select-tool-evidence.sh scripts/ci/archive-evidence.sh \
     scripts/ci/test-make-format.sh make/tools.mk make/rust-format.mk make/execution.mk scripts/ci/check-make-execution.sh scripts/ci/run-formatting.sh; do
     mkdir -p "$source_root/${path%/*}" "$revision_root/${path%/*}"
     cp -p "$ROOT/$path" "$source_root/$path"
