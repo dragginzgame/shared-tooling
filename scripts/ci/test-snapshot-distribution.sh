@@ -500,6 +500,59 @@ bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" \
     --consumer "$tracked_consumer" --manifest "$tracked_manifest" >/dev/null
 
 # Selection expansion reads dependency declarations from committed payloads.
+# Preview uses external scratch only, preserves the whole consumer including
+# its index, and walks all missing companions transitively (cycles terminate).
+preview_consumer="$FIXTURE/preview"
+git init -q "$preview_consumer"
+printf 'selected user input\n' > "$preview_consumer/local.txt"
+git -C "$preview_consumer" add local.txt
+cp -Rp "$preview_consumer" "$FIXTURE/preview-before"
+ln -s "$preview_consumer" "$FIXTURE/preview-alias"
+for temporary in "$source_root" "$preview_consumer" "$FIXTURE/preview-alias"; do
+    if TMPDIR="$temporary" PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+        --preview --source "$source_root" --consumer "$preview_consumer" \
+        --file "$checksum_path" --file "$verifier_path" > "$FIXTURE/preview-temp.log" 2>&1; then exit 1; fi
+    grep -F 'temporary directory must be outside source and consumer' "$FIXTURE/preview-temp.log" >/dev/null
+    diff -r "$FIXTURE/preview-before" "$preview_consumer"
+done
+for item in first second third; do
+    case "$item" in first) next='second.sh third.sh' ;; second) next=third.sh ;; third) next=first.sh ;; esac
+    printf '#!/usr/bin/env bash\n# Shared companions: %s\n' "$next" > "$source_root/$item.sh"
+    cp "$source_root/$item.sh" "$revision_root/$item.sh"
+done
+status=0
+PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --preview --source "$source_root" --consumer "$preview_consumer" --manifest nested/selection \
+    --file "$checksum_path" --file "$verifier_path" --file first.sh \
+    > "$FIXTURE/preview.out" 2> "$FIXTURE/preview.err" || status=$?
+[[ "$status" == 2 ]] || exit 1
+for item in second third; do
+    grep -F "$(printf 'ADD\trequired\t%s.sh' "$item")" "$FIXTURE/preview.out" >/dev/null
+done
+[[ "$(grep -c '^ADD' "$FIXTURE/preview.out")" == 5 ]] || exit 1
+diff -r "$FIXTURE/preview-before" "$preview_consumer"
+complete_preview=(--source "$source_root" --consumer "$preview_consumer" --manifest nested/selection
+    --file "$checksum_path" --file "$verifier_path" --file first.sh --file second.sh --file third.sh)
+PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --preview "${complete_preview[@]}" > "$FIXTURE/preview-complete.out"
+diff -r "$FIXTURE/preview-before" "$preview_consumer"
+PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    "${complete_preview[@]}" > "$FIXTURE/preview-applied.out"
+cp -Rp "$preview_consumer" "$FIXTURE/preview-adopted"
+PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --preview --source "$source_root" --consumer "$preview_consumer" --manifest nested/selection \
+    > "$FIXTURE/preview-keep.out"
+[[ "$(grep -c '^KEEP' "$FIXTURE/preview-keep.out")" == 5 ]] || exit 1
+diff -r "$FIXTURE/preview-adopted" "$preview_consumer"
+# Local edits remain conflicts during preview, with no partial report/apply.
+printf 'local edit\n' >> "$preview_consumer/first.sh"
+cp -Rp "$preview_consumer" "$FIXTURE/preview-dirty"
+if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --preview --source "$source_root" --consumer "$preview_consumer" --manifest nested/selection \
+    > "$FIXTURE/preview-conflict.out" 2> "$FIXTURE/preview-conflict.err"; then exit 1; fi
+[[ ! -s "$FIXTURE/preview-conflict.out" ]] || exit 1
+diff -r "$FIXTURE/preview-dirty" "$preview_consumer"
+
 selection_consumer="$FIXTURE/selection"
 mkdir "$selection_consumer"
 git init -q "$selection_consumer"
@@ -765,6 +818,12 @@ printf '0.2.9\n' > "$advance_source/VERSION"
 chmod -x "$advance_source/scripts/ci/sample.sh"
 git -C "$advance_source" add scripts/ci/sample.sh VERSION
 git -C "$advance_source" commit -qm 'Synthetic next snapshot'
+cp -Rp "$advance_seed" "$FIXTURE/advance-preview-before"
+bash "$ROOT/scripts/distribution/refresh-consumer.sh" --preview \
+    --source "$advance_source" --consumer "$advance_seed" > "$FIXTURE/advance-preview.log"
+grep -F "$(printf 'UPDATE\tselected\tscripts/ci/sample.sh')" "$FIXTURE/advance-preview.log" >/dev/null
+[[ "$(grep -c '^KEEP' "$FIXTURE/advance-preview.log")" == 2 ]] || exit 1
+diff -r "$FIXTURE/advance-preview-before" "$advance_seed"
 export SNAPSHOT_ADVANCE_SOURCE="$advance_source"
 cat > "$FIXTURE/advance-bin/git" <<'SCRIPT'
 #!/usr/bin/env bash

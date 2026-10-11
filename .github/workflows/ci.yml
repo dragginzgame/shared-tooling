@@ -104,7 +104,7 @@ jobs:
           {
             echo "$GITHUB_WORKSPACE/.tools/host/bin"
             echo "$GITHUB_WORKSPACE/.tools/ic/bin"
-            echo "$GITHUB_WORKSPACE/.tools/rust/bin"
+            echo "$GITHUB_WORKSPACE/.tools/rust/common/bin"
           } >> "$GITHUB_PATH"
       - name: Select the frontend fixture runtime
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6

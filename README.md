@@ -122,7 +122,7 @@ IC Testkit owns PocketIC setup, offline admission and server lifecycle; see the
 [ownership handoff](docs/ic-tools.md#pocketic-ownership-handoff).
 
 The aggregate includes `make install-rust-tools` and offline `make rust-tools-check`
-for pinned cargo-sort, cargo-sort-derives and candid-extractor under `.tools/rust/bin`.
+for pinned cargo-sort, cargo-sort-derives and candid-extractor under `.tools/rust/common/bin`.
 Prepare a declared Rust toolchain even for non-Rust repositories. See
 [Rust setup](docs/local-setup.md#rust-development-tools) and the
 [0.3.0 adoption steps](docs/consuming-snapshots.md#complete-toolset-adoption-in-030)
@@ -541,6 +541,8 @@ with `bash scripts/ci/check-portable-prerequisites.sh`; see
 clean Shared Tooling checkout and records its exact revision, content digests,
 and executable modes. A vendored
 `scripts/ci/verify-shared-tooling-snapshot.sh` checks consumer drift offline.
+Use `refresh-consumer.sh --preview` with the same selection arguments to review
+file changes and all required companion additions without changing the consumer.
 See [`docs/consuming-snapshots.md`](docs/consuming-snapshots.md).
 
 ## Consuming repositories

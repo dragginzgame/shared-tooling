@@ -88,6 +88,12 @@ this contract; the [release contract](../docs/releases.md) owns release executio
   not change manifests, lockfiles or release defaults, or authorize commits,
   tags, pushes, publication or deployment. Commit and PR authority follows the
   [contribution rules](contributions.md).
+  Requests such as "work on 0.4", "prepare 0.4" or "0.4 changelog" select the
+  work and notes only. Leave `VERSION`, the repository's own Cargo/npm package
+  versions and corresponding release metadata to the user's release flow unless
+  the user expressly delegates that exact edit or release operation. Do not
+  stage notes, create commits or tags, or run a release target merely to finish
+  ordinary changelog preparation.
 
 For a latest finalized release of `0.14.7`:
 

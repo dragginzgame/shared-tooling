@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.4.0]
+
+### Breaking
+
+- Install common Rust tools through the same verified, versioned slots as
+  consumer-selected Cargo executables. Refresh shared callers, change Rust PATH
+  entries to `.tools/rust/common/bin`, and rerun setup and offline checks.
+  Partial upgrades retain the previous complete set; older installations and
+  failed evidence remain available. See the
+  [adoption instructions](docs/consuming-snapshots.md#rust-installation-adoption-in-040).
+  ([#118](https://github.com/dragginzgame/shared-tooling/issues/118))
+
+### Added
+
+- Preview snapshot refreshes without changing the consumer, showing file changes
+  and all required companion additions before an explicit refresh.
+  ([#118](https://github.com/dragginzgame/shared-tooling/issues/118))
+
 ## [0.3.12]
 
 ### Fixed

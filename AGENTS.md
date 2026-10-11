@@ -16,5 +16,8 @@ overlay. Consumers adopt the baseline and keep their own `AGENTS.md`.
   diff. Do not run the portable script suite solely because prose changed.
 
 The common [contribution authority rules](rules/contributions.md) apply here.
+Staging, commits, version changes, tags and `make release-*` are user-owned by
+default. Ordinary fixes and continuation leave reviewable working-tree changes;
+they do not authorize `git add .`, `git commit` or release execution.
 An authorized PR includes its necessary branch, commits and branch push; merges,
 direct integration-branch pushes and releases require their own authorization.

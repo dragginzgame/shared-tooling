@@ -56,11 +56,22 @@ Consumer choices described in those guides remain subject to this baseline.
   Prefer owning-repository issues for sibling findings. Explicit scoped
   authorization is an exception to this read-only default, and remains valid
   through the necessary implementation and qualification of that change.
+- Staging, commits and release execution are user-owned by default. During
+  ordinary implementation, leave the real checkout's index, package/application
+  release versions and Git refs alone. Do not run `git add .`, `git add -A`,
+  `git commit`, version-bump helpers, `git tag`, pushes, `make release-*` or
+  mutating release adapters to finish a coding task. This includes release
+  recovery and indirect calls from scripts or Make targets. "Keep going",
+  "prepare the release", "work on 0.4" and "ready to push?" authorize no such
+  effects. Prepare source, numbered changelog notes and validation, then hand
+  them to the user. Explicit delegation follows the contribution rules below;
+  a maintainer-only local release boundary must not be bypassed by inference.
 - Follow the [contribution rules](rules/contributions.md): ordinary contributions
   from people and agents use branches and pull requests. Agents may create
   scoped commits when asked to commit or deliver a PR. A PR request includes the
   branch, commits, branch push and PR creation/update needed to deliver it;
   do not require the maintainer to commit first or approve each substep again.
+  This scoped PR exception does not authorize release versions or tags.
 - A PR request does not authorize merging, pushing directly to `main`, `master`
   or another integration/release branch, or rewriting shared history. Those
   effects require explicit authorization. Preserve branch protections and
@@ -223,8 +234,9 @@ Consumer choices described in those guides remain subject to this baseline.
   default; PR delivery prepares a review branch and validates the admitted merged
   commit afresh before tagging. Never select another policy to bypass a rejected
   push or branch protection.
-- These one-shot commands require an explicit request to run the selected release
-  for the selected repository and destination. That request authorizes the
+- These one-shot commands are user-operated by default. An agent needs explicit
+  delegation to run the selected release for the selected repository and
+  destination. That request authorizes the
   documented gate, version preparation and selected delivery effects. Direct
   delivery includes the release commit, tag and atomic branch/tag push; PR
   delivery includes the release branch/PR and, after separately authorized merge,
@@ -277,7 +289,9 @@ Consumer choices described in those guides remain subject to this baseline.
   including tools it does not currently use. The host set includes pinned jq,
   Mike Farah yq, ripgrep with PCRE2 and cloc under `.tools/host/bin`; the Cargo
   set includes cargo-sort, cargo-sort-derives and candid-extractor under
-  `.tools/rust/bin`. Aggregates run host, IC and Rust steps in order, stopping on
+  `.tools/rust/common/bin`. Common and selected Cargo tools share versioned-slot
+  receipt and byte admission; common PATH activation requires the complete set.
+  Aggregates run host, IC and Rust steps in order, stopping on
   failure. Consumer-specific setup/check targets extend the ordered lists in
   `make/tools.mk`, not unordered aggregate prerequisites. Make/CI callers select
   their own checkout's local paths; document interactive shell PATH setup,

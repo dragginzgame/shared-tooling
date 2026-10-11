@@ -18,7 +18,7 @@ finish() {
 }
 trap finish EXIT
 consumer="$fixture/consumer with spaces"
-mkdir -p "$consumer/vendor/make" "$consumer/vendor/scripts/ci" "$consumer/ci" "$consumer/.tools/rust/bin"
+mkdir -p "$consumer/vendor/make" "$consumer/vendor/scripts/ci" "$consumer/ci" "$consumer/.tools/rust/common/bin"
 cp "$root/make/tools.mk" "$root/make/rust-format.mk" "$root/make/execution.mk" "$consumer/vendor/make/"
 cp "$root/scripts/ci/check-format-tools.sh" "$root/scripts/ci/run-formatting.sh" "$root/scripts/ci/check-make-execution.sh" "$consumer/vendor/scripts/ci/"
 printf 'export SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\n' > "$consumer/ci/tool-versions.env"
@@ -31,7 +31,7 @@ format-tools-check fmt fmt-check: override SHARED_TOOLING_ROOT := $(CURDIR)/vend
 help:
 	@echo harmless
 MAKE
-cat > "$consumer/.tools/rust/bin/format-fixture-cargo" <<'CARGO'
+cat > "$consumer/.tools/rust/common/bin/format-fixture-cargo" <<'CARGO'
 #!/usr/bin/env bash
 set -eu
 if [[ "${JOBSERVER_TEST_REQUIRED:-0}" == 1 ]]; then
@@ -50,7 +50,7 @@ echo 'Finished: Cargo.toml is sorted already, no changes made'
 echo 'fixture stderr details' >&2
 [[ "$*" != "${FORMAT_TEST_FAIL:-}" ]] || exit 1
 CARGO
-chmod +x "$consumer/.tools/rust/bin/format-fixture-cargo"
+chmod +x "$consumer/.tools/rust/common/bin/format-fixture-cargo"
 export FORMAT_TEST_EVENTS="$fixture/events"
 export RUNNER_TEMP="$fixture"
 [[ "$(make --no-print-directory -C "$consumer")" == harmless ]] || exit 1
@@ -96,7 +96,7 @@ for failure in wrong missing sort; do
     : > "$FORMAT_TEST_EVENTS"
     case "$failure" in
         wrong) export FORMAT_TEST_VERSION=0.0.0 ;;
-        missing) mv "$consumer/.tools/rust/bin/format-fixture-cargo" "$fixture/cargo" ;;
+        missing) mv "$consumer/.tools/rust/common/bin/format-fixture-cargo" "$fixture/cargo" ;;
         sort) export FORMAT_TEST_FAIL='sort --workspace' ;;
     esac
     if PATH=/usr/bin:/bin make --no-print-directory -C "$consumer" fmt > "$fixture/$failure.log" 2>&1; then exit 1; fi
@@ -113,7 +113,7 @@ for failure in wrong missing sort; do
     else
         [[ ! -s "$FORMAT_TEST_EVENTS" ]] || exit 1
     fi
-    [[ "$failure" != missing ]] || mv "$fixture/cargo" "$consumer/.tools/rust/bin/format-fixture-cargo"
+    [[ "$failure" != missing ]] || mv "$fixture/cargo" "$consumer/.tools/rust/common/bin/format-fixture-cargo"
     unset FORMAT_TEST_VERSION FORMAT_TEST_FAIL
 done
 # Outer Make must reject unsafe modes, even when a prerequisite fails and Make
