@@ -15,6 +15,7 @@ PRETTIER_VERSION="$(jq -er '.packages["node_modules/prettier"].version' "$ROOT/c
 # shellcheck source=/dev/null
 source "$ROOT/ci/tool-versions.env"
 bash "$ROOT/scripts/ci/check-format-tools.sh" "$SHARED_TOOLING_CARGO_SORT_VERSION"
+[[ "$(cargo sort-derives --version)" == "cargo-sort-derives $SHARED_TOOLING_CARGO_SORT_DERIVES_VERSION" ]] || exit 1
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/frontend-format-test.XXXXXX")"
 fixture="$(cd "$fixture" && pwd -P)"
 # Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
@@ -46,10 +47,12 @@ cat > Makefile <<'MAKE'
 .PHONY: fmt fmt-check
 PRETTIER_VERSION = $(shell jq -er '.packages["node_modules/prettier"].version' package-lock.json)
 fmt:
+	cargo sort-derives
 	cargo sort --workspace
 	cargo fmt --all
 	PRETTIER_VERSION="$(PRETTIER_VERSION)" bash scripts/dev/format-frontend.sh --write docs
 fmt-check:
+	cargo sort-derives --check
 	cargo sort --workspace --check
 	cargo fmt --all -- --check
 	PRETTIER_VERSION="$(PRETTIER_VERSION)" bash scripts/dev/format-frontend.sh --check docs
@@ -70,6 +73,34 @@ version.workspace = true
 edition.workspace = true
 CARGO
 printf 'pub fn example( ){}\n' > crates/example/src/lib.rs
+# The pinned derive formatter expands dollar-prefixed paths as regex captures.
+# Its supported range markers protect complete macro definitions; surrounding
+# ordinary derives must still be sorted. Compile the actual refreshed payload
+# separately below, never inside the formatting hook.
+cat > crates/example/src/macros.rs <<'RUST'
+pub mod __reexports {
+    pub use std::{clone::Clone, fmt::Debug};
+}
+// sort-derives-disable-start
+#[macro_export]
+macro_rules! declare {
+    ($name:ident) => {
+        #[derive($crate::__reexports::Debug, $crate::__reexports::Clone)]
+        pub struct $name;
+    };
+}
+#[macro_export]
+macro_rules! declare_conditional {
+    ($name:ident) => {
+        #[cfg_attr(all(), derive($crate::__reexports::Debug, $crate::__reexports::Clone))]
+        pub struct $name;
+    };
+}
+// sort-derives-disable-end
+#[derive(Debug, Clone)]
+pub struct Ordinary;
+RUST
+sed 's/^#\[derive(Debug, Clone)\]/#[derive(Clone, Debug)]/' crates/example/src/macros.rs > "$fixture/expected-macros.rs"
 cp "$ROOT/ci/frontend/"package*.json .
 printf '{"semi": false, "singleQuote": true}\n' > .prettierrc.json
 printf 'docs/generated.ts\n' > .prettierignore
@@ -93,6 +124,22 @@ bash .githooks/pre-commit > "$fixture/format.log" 2>&1
 [[ "$(cat "$selected")" == "const value = { text: 'selected' }" ]] || exit 1
 [[ "$(git show ":$selected")" == "$(cat "$selected")" ]] || exit 1
 [[ "$(git show :crates/example/src/lib.rs)" == 'pub fn example() {}' ]] || exit 1
+git show :crates/example/src/macros.rs > "$fixture/staged-macros.rs"
+cmp "$fixture/expected-macros.rs" "$fixture/staged-macros.rs"
+cmp "$fixture/expected-macros.rs" crates/example/src/macros.rs
+rustc --edition 2021 --crate-name formatter_macros --crate-type rlib \
+    "$fixture/staged-macros.rs" -o "$fixture/libformatter_macros.rlib"
+cat > "$fixture/use-macros.rs" <<'RUST'
+formatter_macros::declare!(Direct);
+formatter_macros::declare_conditional!(Conditional);
+fn main() {
+    assert_eq!(format!("{:?}", Direct.clone()), "Direct");
+    assert_eq!(format!("{:?}", Conditional.clone()), "Conditional");
+}
+RUST
+rustc --edition 2021 "$fixture/use-macros.rs" \
+    --extern "formatter_macros=$fixture/libformatter_macros.rlib" -o "$fixture/use-macros"
+"$fixture/use-macros"
 [[ "$(git show :docs/ic-tools.md)" == "$(git show HEAD:docs/ic-tools.md)" ]] || exit 1
 cmp docs/ic-tools.md "$fixture/unselected-before"
 cmp docs/untracked.ts "$fixture/untracked-before"

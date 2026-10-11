@@ -15,12 +15,23 @@ finish() {
     exit "$status"
 }
 trap finish EXIT
+[[ "$fixture" == /* ]] || fixture="$PWD/$fixture"
+fixture="$(cd -P "$fixture" && printf '%s/.' "$PWD")"
+fixture="${fixture%/.}"
 mkdir "$fixture/consumer" "$fixture/logs"
 export TMPDIR="$fixture/logs"
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 unset VALIDATION_REPOSITORY_ROOT VALIDATION_RUNNER_SNAPSHOT_PATH
 make_inputs=(make/tools.mk make/release.mk make/execution.mk scripts/ci/check-make-execution.sh)
 bash "$root/scripts/ci/check-release-commands.sh" "$root" "${make_inputs[@]}"
+# Both event paths and nested Make probes must survive the checker's cd.
+mkdir "$fixture/relative-temp"
+ln -s "$fixture/relative-temp" "$fixture/temp-alias"
+for selected_tmp in relative-temp temp-alias; do
+    (cd "$fixture"; TMPDIR="$selected_tmp" bash "$root/scripts/ci/check-release-commands.sh" \
+        "$root" "${make_inputs[@]}") > "$fixture/$selected_tmp.log" 2>&1
+    [[ -z "$(ls -A "$fixture/relative-temp")" ]] || exit 1
+done
 # The include preserves defaults and consumer admission/environment even in a
 # nested snapshot. Only the runner is substituted; no release effects occur.
 mkdir -p "$fixture/included/vendor/make" "$fixture/included/vendor/scripts/ci"
@@ -211,12 +222,12 @@ for mode in ignore-failure wrong-version conflict; do
         wrong-version) sed 's/$(VERSION)/9.9.9/' "$fixture/good.mk" > "$fixture/consumer/Makefile" ;;
         conflict) sed '/^ifneq/,/^endif/d' "$fixture/good.mk" > "$fixture/consumer/Makefile" ;;
     esac
-    if bash "$root/scripts/ci/check-release-commands.sh" "$fixture/consumer" tool-versions.env \
+    if (cd "$fixture"; TMPDIR=temp-alias bash "$root/scripts/ci/check-release-commands.sh" "$fixture/consumer" tool-versions.env) \
         > "$fixture/$mode.log" 2>&1; then
         echo "accepted broken adapter: $mode" >&2; exit 1
     fi
     retained="$(sed -n 's/^Release command check failed; fixture and logs retained: //p' "$fixture/$mode.log")"
-    [[ -d "$retained" && -f "$retained/patch-0.log" ]] || exit 1
+    [[ "$retained" == "$fixture/relative-temp/"* && -f "$retained/patch-0.log" ]] || exit 1
 done
 if bash "$root/scripts/ci/check-release-commands.sh" "$fixture/consumer" ../parent.mk > /dev/null 2>&1; then exit 1; fi
 echo 'Release command adoption, nested Make and retained failure tests passed'

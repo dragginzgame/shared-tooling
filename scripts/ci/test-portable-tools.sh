@@ -81,7 +81,7 @@ for context in trailing-slash directory-alias; do
         trailing-slash) selected_tmp="$FIXTURE/tool-contexts/" ;;
         directory-alias) selected_tmp="$FIXTURE/tool-context-alias" ;;
     esac
-    for script in test-tool-commands test-rust-tools; do
+    for script in test-tool-commands test-rust-tools test-host-tools; do
         TMPDIR="$selected_tmp" bash "$ROOT/scripts/ci/$script.sh" \
             > "$FIXTURE/$script-$context.log" 2>&1
     done

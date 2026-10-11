@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.10]
+
+### Fixed
+
+- Normalize temporary fixture paths so host-tool checks accept symlinked roots
+  and release-command checks keep working with a relative temporary directory,
+  including their nested Make probes.
+  ([#111](https://github.com/dragginzgame/shared-tooling/issues/111),
+  [#112](https://github.com/dragginzgame/shared-tooling/issues/112))
+
+### Testing
+
+- Qualify the derive formatter's scoped macro-protection workaround through the
+  real formatting hook and downstream compilation. Document the required markers
+  and the preservation checks needed before adopting a permanent upstream fix.
+  ([#113](https://github.com/dragginzgame/shared-tooling/issues/113))
+
 ## [0.3.9]
 
 ### Fixed
