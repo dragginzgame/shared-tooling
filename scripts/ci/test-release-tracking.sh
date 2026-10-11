@@ -232,5 +232,77 @@ MAKE
     )
 done
 
+# Real Git admission of superseded local preparation; all effects stay in /tmp.
+for metadata in unchanged bumped; do
+    (
+        selected="$FIXTURE_ROOT/committed-preparation-$metadata"
+        mkdir -p "$selected"
+        "$REAL_GIT" init --quiet --bare "$selected/destination.git"
+        "$REAL_GIT" init --quiet -b main "$selected/work"
+        cd "$selected/work"
+        "$REAL_GIT" config user.name 'Release fixture'
+        "$REAL_GIT" config user.email 'fixture@example.invalid'
+        export RELEASE_RESTART_EVENTS="$selected/events"
+        printf '0.6.3\n' > version
+        cat > Makefile <<'MAKE'
+.PHONY: release-version release-preflight release-verify release-prepare-version release-prepared-check release-files release-commit-check release-committed-check release-tagged-check release-push-check
+release-version:
+	@cat version
+release-verify:
+	@printf '%s\n' '$(RELEASE_SOURCE)' >> "$$RELEASE_RESTART_EVENTS"
+	@test "$${RESTART_FAIL_VERIFY:-no}" != yes
+release-prepare-version:
+	@test "$${RESTART_FAIL_PREPARE:-no}" != yes
+	@printf '%s\n' '$(RELEASE_VERSION)' > version
+release-files:
+	@printf 'version\0'
+release-preflight release-prepared-check release-commit-check release-committed-check release-tagged-check release-push-check:
+	@:
+MAKE
+        "$REAL_GIT" add Makefile version
+        "$REAL_GIT" commit --quiet -m source
+        old_source="$("$REAL_GIT" rev-parse HEAD)"
+        "$REAL_GIT" remote add origin "$selected/destination.git"
+        "$REAL_GIT" push --quiet --set-upstream origin main
+        if RESTART_FAIL_PREPARE=yes bash "$ROOT/scripts/ci/run-release.sh" patch origin main > "$selected/interrupted.log" 2>&1; then exit 1; fi
+        cp .git/release-state/0.6.4.plan "$selected/saved-plan"
+        cp "$RELEASE_RESTART_EVENTS" "$selected/saved-validation"
+        printf 'retained build artifact\n' > "$selected/build.evidence"
+        if [[ "$metadata" == bumped ]]; then printf '0.6.4\n' > version; fi
+        printf 'committed source fix\n' > fix
+        "$REAL_GIT" add version fix
+        "$REAL_GIT" commit --quiet -m 'Committed preparation disposition'
+        current_source="$("$REAL_GIT" rev-parse HEAD)"
+        next=0.6.4
+        if [[ "$metadata" == bumped ]]; then
+            next=0.6.5
+            # A separately delivered earlier tag remains exactly as recorded.
+            "$REAL_GIT" tag -a v0.6.4 -m 'Manually finalized 0.6.4'
+            "$REAL_GIT" push --quiet --atomic origin main refs/tags/v0.6.4
+            old_tag="$("$REAL_GIT" rev-parse refs/tags/v0.6.4)"
+        fi
+        if RESTART_FAIL_VERIFY=yes bash "$ROOT/scripts/ci/run-release.sh" patch origin main > "$selected/failed-revalidation.log" 2>&1; then exit 1; fi
+        set -- .git/release-state/0.6.4.attempt.*/0.6.4.plan
+        [[ $# == 1 && -f "$1" ]] || exit 1
+        cmp "$selected/saved-plan" "$1"
+        [[ ! -e .git/release-state/0.6.4.plan && ! -e ".git/release-state/$next.plan" ]] || exit 1
+        [[ "$("$REAL_GIT" rev-parse HEAD)" == "$current_source" ]] || exit 1
+        bash "$ROOT/scripts/ci/run-release.sh" patch origin main > "$selected/released.log" 2>&1
+        printf '%s\n' "$old_source" "$current_source" "$current_source" > "$selected/expected-validation"
+        cmp "$selected/expected-validation" "$RELEASE_RESTART_EVENTS"
+        [[ "$(cat version)" == "$next" && "$("$REAL_GIT" log -1 --format=%s)" == "Release $next" ]] || exit 1
+        [[ "$("$REAL_GIT" --git-dir="$selected/destination.git" rev-parse refs/heads/main)" == "$("$REAL_GIT" rev-parse HEAD)" ]] || exit 1
+        [[ "$("$REAL_GIT" --git-dir="$selected/destination.git" rev-parse "refs/tags/v$next")" == "$("$REAL_GIT" rev-parse "refs/tags/v$next")" ]] || exit 1
+        [[ "$(tail -n 1 ".git/release-state/$next.plan")" == complete ]] || exit 1
+        if [[ "$metadata" == bumped ]]; then
+            [[ "$("$REAL_GIT" rev-parse refs/tags/v0.6.4)" == "$old_tag" ]] || exit 1
+            [[ "$("$REAL_GIT" --git-dir="$selected/destination.git" rev-parse refs/tags/v0.6.4)" == "$old_tag" ]] || exit 1
+        fi
+        cmp "$selected/saved-plan" "$1"
+        [[ "$(cat "$selected/build.evidence")" == 'retained build artifact' ]] || exit 1
+        echo "real Git committed preparation fixture passed: $metadata"
+    )
+done
+
 echo 'Native release tracking and recovery tests passed'
 fixture_complete=true

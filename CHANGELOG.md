@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.3]
+
+### Fixed
+
+- Restart interrupted direct preparation automatically after its metadata
+  disposition is committed in a clean descendant checkout. Standard release
+  targets preserve the old plan, select the requested increment from current
+  metadata and run fresh validation instead of blocking on the old source.
+  ([#126](https://github.com/dragginzgame/shared-tooling/issues/126))
+
 ## [0.6.2]
 
 ### Fixed
