@@ -147,29 +147,11 @@ elif [[ "$check" == true ]]; then
 fi
 [[ "$check" == false ]] || exit 1
 for command in curl perl tar; do command -v "$command" >/dev/null; done
-mkdir -p "$tool_root"
-lock="$tool_root/.host-tools.lock"
-mkdir "$lock" 2>/dev/null || { echo "host tool installation already locked: $lock" >&2; exit 1; }
-stage=""
-finish() {
-    local status=$?
-    rm -f "$lock/selected" "$lock/owner"
-    rmdir "$lock"
-    tool_store_release
-    if [[ "$status" != 0 && -n "$stage" ]]; then echo "Failed host tool installation retained: $stage" >&2; fi
-}
-trap finish EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM
-printf 'pid=%s\nconsumer=%s\n' "$$" "$consumer" > "$lock/owner"
-tool_store_acquire
-if bundle="$(tool_store_cached)" && verify "$bundle"; then
-    tool_store_reference "$bundle"
-    tool_store_activate "$bundle"
+tool_store_prepare_install verify
+if [[ -z "$stage" ]]; then
     printf '%s\n' "$active/bin"
     exit 0
 fi
-tool_store_new
 mkdir "$stage/bin"
 for tool in jq yq; do
     case "$tool" in

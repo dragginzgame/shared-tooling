@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.1]
+
+### Fixed
+
+- Host and IC tool installation now share lock, verified-cache reuse and cleanup
+  handling. A checkout cleanup failure still releases the shared lock, preserves
+  the original installation error and retains failed candidates for inspection.
+  Cleanup failures also fail the command when installation otherwise succeeded.
+
 ## [0.9.0]
 
 ### Changed

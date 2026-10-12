@@ -162,30 +162,11 @@ if [[ -L "$active" ]]; then
 fi
 [[ "$check" == false ]] || { echo 'IC tools missing, changed or selected with different pins; run make install-ic-tools' >&2; exit 1; }
 for command in curl tar gzip perl; do command -v "$command" >/dev/null; done
-mkdir -p "$tool_root"
-lock="$tool_root/.ic-tools.lock"
-mkdir "$lock" 2>/dev/null || { echo "IC tool installation already locked: $lock" >&2; exit 1; }
-stage=""
-link="$lock/selected"
-finish() {
-    local status=$?
-    rm -f "$link" "$lock/owner"
-    rmdir "$lock"
-    tool_store_release
-    if [[ "$status" != 0 && -n "$stage" ]]; then echo "Failed tool installation retained: $stage" >&2; fi
-}
-trap finish EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM
-printf 'pid=%s\nconsumer=%s\n' "$$" "$consumer" > "$lock/owner"
-tool_store_acquire
-if bundle="$(tool_store_cached)" && verify_bundle "$bundle"; then
-    tool_store_reference "$bundle"
-    tool_store_activate "$bundle"
+tool_store_prepare_install verify_bundle
+if [[ -z "$stage" ]]; then
     printf '%s\n' "$active/bin"
     exit 0
 fi
-tool_store_new
 mkdir "$stage/bin" "$stage/lib" "$stage/downloads"
 cp "$pins" "$stage/pins.tsv"
 validate_pins "$stage/pins.tsv" >/dev/null
