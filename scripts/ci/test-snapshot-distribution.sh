@@ -66,7 +66,7 @@ rev-parse:--show-toplevel)
     printf '%s%s\n' "$repository" "${SNAPSHOT_TEST_TOP_SUFFIX:-}"
     ;;
 rev-parse:HEAD)
-    printf '%s\n' 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    printf '%s\n' "${SNAPSHOT_TEST_REVISION:-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}"
     ;;
 status:--porcelain)
     if [[ "${SNAPSHOT_TEST_DIRTY:-}" == "true" ]]; then
@@ -251,6 +251,26 @@ awk -F '\t' '$1 == "# version" || $1 == "# entrypoint" || $1 !~ /^#/' \
 PATH="$FIXTURE/empty-path" "$BASH" "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" \
     --read-manifest "$FIXTURE/version-manifest" > "$FIXTURE/read-records"
 cmp "$FIXTURE/expected-records" "$FIXTURE/read-records"
+# Git object identities are full SHA-1 or SHA-256, never intermediate lengths.
+for width in 39 40 41 63 64 65; do
+    identity="$(printf "%0${width}d" 1)"
+    awk -F '\t' -v OFS='\t' -v identity="$identity" '$1=="revision" {$2=identity} {print}' \
+        "$FIXTURE/version-manifest" > "$FIXTURE/identity-manifest"
+    status=0
+    bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --read-manifest "$FIXTURE/identity-manifest" \
+        > "$FIXTURE/identity-records" 2> "$FIXTURE/identity-error" || status=$?
+    case "$width" in
+        40|64) [[ "$status" == 0 && "$(awk -F '\t' '$1=="revision" {print $2}' "$FIXTURE/identity-records")" == "$identity" ]] || exit 1 ;;
+        *)
+            [[ "$status" != 0 && ! -s "$FIXTURE/identity-records" ]] || exit 1
+            if SNAPSHOT_TEST_REVISION="$identity" PATH="$FIXTURE/bin:$PATH" \
+                bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+                --source "$source_root" --consumer "$consumer_root" > "$FIXTURE/identity-refresh.log" 2>&1; then exit 1; fi
+            cmp "$FIXTURE/version-manifest" "$consumer_root/.shared-tooling.snapshot"
+            cmp "$revision_root/scripts/ci/sample.sh" "$consumer_root/scripts/ci/sample.sh"
+            ;;
+    esac
+done
 # A failed open must never reuse an inherited value of the capture variable.
 # Root can still read mode-000 files; qualify this case on ordinary user hosts.
 cp "$FIXTURE/version-manifest" "$FIXTURE/unreadable-records"

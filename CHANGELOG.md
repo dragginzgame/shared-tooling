@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.4]
+
+### Fixed
+
+- Require complete 40- or 64-character Git identities in snapshots, refresh
+  observations and release recovery. Malformed intermediate-length IDs are
+  rejected before refresh or release effects, preserving existing evidence.
+  ([#133](https://github.com/dragginzgame/shared-tooling/issues/133))
+
 ## [0.9.3]
 
 ### Fixed

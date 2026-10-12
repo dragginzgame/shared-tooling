@@ -305,6 +305,25 @@ cp "$PR_TEST_EVENTS" "$PR_TEST_DATA/before-paginated-query"
 PR_TEST_PAGINATED=yes run_release 75
 cmp "$PR_TEST_EVENTS" "$PR_TEST_DATA/before-paginated-query"
 
+new_fixture malformed-pr-identity
+run_release 75
+cp .git/release-state/0.1.1.plan.pr.json "$PR_TEST_DATA/original-state"
+cp "$PR_TEST_EVENTS" "$PR_TEST_DATA/before-identity"
+for field in prepared merged; do
+    for width in 39 41 63 65; do
+        identity="$(printf "%0${width}d" 1)"
+        jq --arg field "$field" --arg identity "$identity" '.[$field]=$identity' \
+            "$PR_TEST_DATA/original-state" > .git/release-state/0.1.1.plan.pr.json
+        cp .git/release-state/0.1.1.plan.pr.json "$PR_TEST_DATA/bad-state"
+        run_release 1
+        cmp "$PR_TEST_EVENTS" "$PR_TEST_DATA/before-identity"
+        cmp .git/release-state/0.1.1.plan.pr.json "$PR_TEST_DATA/bad-state"
+        [[ -z "$(git tag)" ]] || exit 1
+    done
+done
+cp "$PR_TEST_DATA/original-state" .git/release-state/0.1.1.plan.pr.json
+run_release 75
+
 new_fixture changed-push-input
 run_release 75
 merge_pr squash
