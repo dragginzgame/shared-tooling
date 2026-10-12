@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.9.2]
+
+### Fixed
+
+- Reject NUL bytes in evidence checksum manifests before hashing any referenced
+  file, preventing malformed digests or paths from being silently rewritten by
+  Bash. Verification parses the same captured input and preserves the evidence.
+- Reject CR/LF in supplied and resolved consumer paths before tool setup,
+  configuration loading or preflight, including symlinks that previously hid an
+  invalid path from the host, IC and Rust installers.
+
 ## [0.9.1]
 
 ### Fixed

@@ -32,5 +32,31 @@ for path in "$checkout"/scripts/ci/*.sh "$checkout"/scripts/dev/*.sh; do
 done
 cp "$ROOT/scripts/ci/test-evidence-archive.sh" "$ROOT/scripts/ci/archive-evidence.sh" "$checkout/scripts/ci/"
 (cd "$checkout"; CDPATH="$fixture/decoy:$checkout" bash scripts/ci/test-evidence-archive.sh) > "$fixture/archive.log" 2>&1
+# Installer admission rejects both the supplied path and its physical target,
+# before sourcing consumer configuration, probing tools or preparing a store.
+mkdir "$fixture/valid" "$fixture/physical"$'\r'
+ln -s "$fixture/valid" "$fixture/alias"$'\n'
+ln -s "$fixture/valid" "$fixture/alias"$'\r'
+ln -s "$checkout" "$fixture/redirect"
+mkdir -p "$fixture/ancestor"$'\n'/child
+printf 'printf reached > %q\nexit 97\n' "$fixture/config-read" > "$fixture/versions.env"
+for consumer in "$checkout" "$fixture/physical"$'\r' "$fixture/alias"$'\n' \
+    "$fixture/alias"$'\r' "$fixture/redirect" "$fixture/ancestor"$'\n'/child; do
+    for kind in host ic rust; do
+        for mode in install check preflight; do
+            [[ "$kind:$mode" != host:preflight ]] || continue
+            args=(--consumer "$consumer")
+            if [[ "$kind" == ic ]]; then args+=(--pins "$ROOT/ci/ic-tools.tsv")
+            else args+=(--versions "$fixture/versions.env"); fi
+            [[ "$mode" == install ]] || args+=("--$mode")
+            if "$BASH" "$ROOT/scripts/dev/install-$kind-tools.sh" "${args[@]}" > "$fixture/path-refusal.log" 2>&1; then
+                echo 'installer accepted a CR/LF consumer path' >&2; exit 1
+            fi
+            [[ ! -e "$fixture/config-read" && ! -e "$consumer/.tools" ]] || {
+                echo 'invalid consumer path reached configuration or setup' >&2; exit 1;
+            }
+        done
+    done
+done
 echo 'Relative/absolute entry points, inherited CDPATH and newline checkout bootstrap passed'
 fixture_complete=true
