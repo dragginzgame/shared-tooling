@@ -163,6 +163,47 @@ common --preflight
 [[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
 refuse common --check
 [[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
+# User TOML policy retains its boolean type before any source/install dispatch.
+# The environment override remains an independent, explicitly selected contract.
+(
+    # shellcheck disable=SC2030 # This policy override is deliberately subshell-local.
+    export CARGO_HOME="$fixture/user-cargo"
+    unset CARGO_NET_OFFLINE
+    mkdir "$CARGO_HOME"
+    for value in '"true"' '"false\n"' 0 1 '[]' '{}' ; do
+        printf '[net]\noffline = %s\n' "$value" > "$CARGO_HOME/config.toml"
+        refuse common
+        [[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" && ! -e "$fixture/builds" ]] || exit 1
+    done
+    # Exercise accepted flags through the same owner, without building tools.
+    # shellcheck source=scripts/dev/tool-store.sh
+    source "$ROOT/scripts/dev/tool-store.sh"
+    # shellcheck source=scripts/dev/cargo-tool-build.sh
+    source "$ROOT/scripts/dev/cargo-tool-build.sh"
+    for value in missing false true; do
+        printf '[net]\n' > "$CARGO_HOME/config.toml"
+        [[ "$value" == missing ]] || printf 'offline = %s\n' "$value" >> "$CARGO_HOME/config.toml"
+        cargo_build_init
+        expected=''; [[ "$value" != true ]] || expected=--offline
+        [[ "${offline_args[*]-}" == "$expected" ]] || exit 1
+    done
+    printf '' > "$CARGO_HOME/config.toml"
+    cargo_build_init
+    [[ "${#offline_args[@]}" == 0 ]] || exit 1
+    # Cargo gives config precedence over config.toml when both exist.
+    printf '[net]\noffline = true\n' > "$CARGO_HOME/config.toml"
+    printf '[net]\noffline = false\n' > "$CARGO_HOME/config"
+    cargo_build_init
+    [[ "${#offline_args[@]}" == 0 ]] || exit 1
+    printf '[net]\noffline = "invalid"\n' > "$CARGO_HOME/config"
+    for CARGO_NET_OFFLINE in true 1 false 0; do
+        export CARGO_NET_OFFLINE
+        cargo_build_init
+        expected=''
+        case "$CARGO_NET_OFFLINE" in true|1) expected=--offline ;; esac
+        [[ "${offline_args[*]-}" == "$expected" ]] || exit 1
+    done
+)
 # Preserve previous physical installations; adopt new shared references explicitly.
 mkdir -p "$consumer/.tools/rust/previous/installed/build"
 printf 'old local evidence\n' > "$consumer/.tools/rust/previous/installed/build/payload"
@@ -170,6 +211,17 @@ RUSTFLAGS=invalid RUSTC_WRAPPER=/missing UNMODELLED_SECRET=must-not-propagate co
 [[ "$(wc -l < "$fixture/builds")" -eq 3 ]] || exit 1
 common --check
 first_binary="$(perl -MCwd=abs_path -e 'print abs_path(shift)' "$consumer/.tools/rust/common/bin/cargo-sort")"
+(
+    # shellcheck disable=SC2031 # Reapply the override independently for this subshell.
+    export CARGO_HOME="$fixture/user-cargo"
+    unset CARGO_NET_OFFLINE
+    before="$(readlink "$consumer/.tools/rust/common")"
+    for mode in setup check; do
+        if [[ "$mode" == setup ]]; then refuse common; else refuse common --check; fi
+        [[ "$(readlink "$consumer/.tools/rust/common")" == "$before" && ! -e "$consumer/.tools/rust/common.lock" ]] || exit 1
+        [[ "$(wc -l < "$fixture/builds")" -eq 3 ]] || exit 1
+    done
+)
 # A real staged hook uses these receipts without installing into its export.
 # Cargo/compiler binaries above are substitutes; receipt admission and Git are real.
 mkdir -p "$consumer/scripts/ci" "$consumer/scripts/dev" "$consumer/.githooks"

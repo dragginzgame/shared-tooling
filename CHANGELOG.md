@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.9.7]
+
+### Fixed
+
+- Reject non-boolean Cargo `net.offline` configuration before tool setup or
+  admission, while preserving explicit environment overrides. Refreshing this
+  build policy requires explicit Cargo-tool setup; earlier builds are retained.
+  ([#140](https://github.com/dragginzgame/shared-tooling/issues/140))
+- Compare the complete GitHub repository identity before preparing a PR release,
+  rejecting malformed responses without trimming newlines. Each raw observation
+  is retained across retries for diagnosis.
+  ([#139](https://github.com/dragginzgame/shared-tooling/issues/139))
+
 ## [0.9.6]
 
 ### Fixed

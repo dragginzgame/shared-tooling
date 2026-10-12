@@ -61,12 +61,11 @@ set -euo pipefail
 [[ "${PR_TEST_API_FAIL:-}" != yes ]] || exit 29
 [[ "$1" == api && "$2" == --hostname && "$3" == github.com ]] || exit 1
 shift 3
-method=GET; input=''; endpoint=''; selection=''; pages=no
+method=GET; input=''; endpoint=''; pages=no
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --method) method="$2"; shift 2 ;;
         --input) input="$2"; shift 2 ;;
-        --jq) selection="$2"; shift 2 ;;
         --paginate) pages=yes; shift ;;
         --include) shift ;;
         -f) case "$2" in state=all|head=example:release/v0.1.1|base=main) ;; *) exit 86 ;; esac; shift 2 ;;
@@ -76,7 +75,8 @@ while [[ $# -gt 0 ]]; do
 done
 case "$method:$endpoint" in
     GET:repos/example/project)
-        [[ "$selection" == .full_name ]] || exit 1; echo example/project ;;
+        if [[ -n "${PR_TEST_REPOSITORY_RESPONSE:-}" ]]; then cat "$PR_TEST_REPOSITORY_RESPONSE"
+        else echo '{"full_name":"example/project"}'; fi ;;
     GET:repos/example/project/pulls)
         [[ "$pages" == yes ]] || exit 1
         case "${PR_TEST_QUERY_RESPONSE:-valid}" in
@@ -193,6 +193,33 @@ merge_pr() {
     jq --arg merged "$merged" '.merged=true | .state="closed" | .merge_commit_sha=$merged' "$PR_TEST_DATA/pr.json" > "$PR_TEST_DATA/merged.json"
     mv "$PR_TEST_DATA/merged.json" "$PR_TEST_DATA/pr.json"
 }
+
+new_fixture repository-admission
+for response in newline double-newline wrong-type wrong-name array empty multiple malformed; do
+    case "$response" in
+        newline) printf '{"full_name":"example/project\\n"}\n' ;;
+        double-newline) printf '{"full_name":"example/project\\n\\n"}\n' ;;
+        wrong-type) echo '{"full_name":42}' ;;
+        wrong-name) echo '{"full_name":"example/other"}' ;;
+        array) echo '[{"full_name":"example/project"}]' ;;
+        empty) printf '' ;;
+        multiple) printf '{"full_name":"example/project"}\n{"full_name":"example/project"}\n' ;;
+        malformed) printf '{\n' ;;
+    esac > "$PR_TEST_DATA/response-$response"
+    PR_TEST_REPOSITORY_RESPONSE="$PR_TEST_DATA/response-$response" run_release 1
+    [[ ! -s "$PR_TEST_EVENTS" && "$(cat VERSION)" == 0.1.0 && "$(git rev-parse HEAD)" == "$source_commit" ]] || exit 1
+    [[ -z "$(git status --porcelain)$(git tag)" && ! -e .git/release-state/0.1.1.plan && ! -d .git/release-state/lock ]] || exit 1
+    [[ "$(git for-each-ref --format='%(refname)' refs/heads)" == refs/heads/main ]] || exit 1
+done
+# Each refusal retains the original JSON, including after a successful retry.
+run_release 75
+for response in newline double-newline wrong-type wrong-name array empty multiple malformed; do
+    found=false
+    for observation in .git/release-state/pr-repository.*; do
+        if cmp -s "$observation" "$PR_TEST_DATA/response-$response"; then found=true; break; fi
+    done
+    [[ "$found" == true ]] || exit 1
+done
 
 for shape in merge squash rebase; do
     new_fixture "$shape"
