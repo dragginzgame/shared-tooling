@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.8.1]
+
+### Fixed
+
+- Reject malformed snapshot fields consistently during refresh, verification and
+  tooling inventory, while preserving literal spaces in filenames.
+  ([#133](https://github.com/dragginzgame/shared-tooling/issues/133))
+- Retain both build-identity observations when the Cargo tool environment changes
+  during installation. Diagnostics identify changed fields and the evidence to
+  compare; activation still refuses and preserves the previous selection.
+  ([#134](https://github.com/dragginzgame/shared-tooling/issues/134))
+
 ## [0.8.0]
 
 ### Breaking

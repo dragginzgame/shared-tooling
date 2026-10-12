@@ -271,30 +271,30 @@ if [[ -e "$manifest" ]]; then
             entrypoints+=("$first")
             ;;
         '# version')
-            [[ "$first" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ && -z "$second" && -z "$third" && -z "$extra" ]] ||
+            [[ "$first" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ && "$manifest_line" == "$record"$'\t'"$first" ]] ||
                 fail "existing manifest has a malformed version annotation"
             manifest_version_count=$((manifest_version_count + 1))
             ;;
         '' | \#*) continue ;;
         format)
-            [[ "$first" == "1" && -z "$second" && -z "$third" && -z "$extra" ]] ||
+            [[ "$first" == "1" && "$manifest_line" == "$record"$'\t'"$first" ]] ||
                 fail "existing manifest has an unsupported format"
             manifest_format_count=$((manifest_format_count + 1))
             ;;
         source)
-            [[ -n "$first" && -z "$second" && -z "$third" && -z "$extra" ]] ||
+            [[ -n "$first" && "$manifest_line" == "$record"$'\t'"$first" ]] ||
                 fail "existing manifest has a malformed source record"
             manifest_source="$first"
             manifest_source_count=$((manifest_source_count + 1))
             ;;
         revision)
-            [[ "$first" =~ ^[0-9a-f]{40,64}$ && -z "$second" && -z "$third" && -z "$extra" ]] ||
+            [[ "$first" =~ ^[0-9a-f]{40,64}$ && "$manifest_line" == "$record"$'\t'"$first" ]] ||
                 fail "existing manifest has a malformed revision record"
             manifest_revision_count=$((manifest_revision_count + 1))
             manifest_revision="$first"
             ;;
         file)
-            [[ "$first" =~ ^[0-9a-f]{64}$ && "$second" =~ ^(-|x)$ && -n "$third" && -z "$extra" ]] ||
+            [[ "$first" =~ ^[0-9a-f]{64}$ && "$second" =~ ^(-|x)$ && -n "$third" && -z "$extra" && "$manifest_line" == "$record"$'\t'"$first"$'\t'"$second"$'\t'"$third" ]] ||
                 fail "existing manifest has a malformed file record"
             validate_relative_path "$third"
             [[ "$third" != "$MANIFEST_PATH" ]] || fail "manifest may not include itself"

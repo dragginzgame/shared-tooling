@@ -130,13 +130,13 @@ sub load_snapshot {
     die "symlinked snapshot root\n" if is_linked($base);
     my (%files, %headers, %entrypoints);
     for my $line (split /\n/, read_file($manifest)) {
-        if ($line =~ /^# entrypoint(?:\t|$)/) {
+        if ($line =~ /^\t*# entrypoint(?:\t|$)/) {
             die "malformed or duplicate snapshot entrypoint annotation\n"
                 unless $line =~ /^# entrypoint\t([^\t\r\n]+)$/ && !$entrypoints{$1}++;
             safe_path($1);
             next;
         }
-        if ($line =~ /^# version(?:\t|$)/) {
+        if ($line =~ /^\t*# version(?:\t|$)/) {
             die "malformed or duplicate snapshot version annotation\n"
                 unless $line =~ /^# version\t((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))$/ &&
                     !exists $headers{version};

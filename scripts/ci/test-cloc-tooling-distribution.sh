@@ -63,6 +63,61 @@ perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$export_parent" > "$fixture/exp
 expected_shared="$(jq '.totals.shared_loc * 2' "$fixture/export-root.json")"
 jq -e --argjson expected "$expected_shared" '.partial == false and .totals.shared_loc == $expected and .totals.local_loc == 0' "$fixture/export-nested.json" >/dev/null
 
+# All readers reject the same malformed records, including empty tab fields.
+# Only this disposable source receives a commit, to exercise a literal spaced path.
+spaced_path='scripts/ci/ spaced helper .sh'
+printf '#!/usr/bin/env bash\nprintf "fixture\\n"\n' > "$source_repo/$spaced_path"
+git -C "$source_repo" add -- "$spaced_path"
+git -C "$source_repo" -c core.hooksPath=/dev/null -c user.name=Fixture -c user.email=fixture@example.invalid \
+    commit -qm 'Add spaced fixture path'
+mkdir -p "$fixture/records/consumer"
+records="$fixture/records/consumer"
+git -C "$records" init -q
+git -C "$records" remote add origin https://github.com/dragginzgame/snapshot-fixture.git
+bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_repo" --consumer "$records" \
+    --entrypoint "${export_files[0]}" --entrypoint "${export_files[1]}" --entrypoint "$spaced_path" > "$fixture/records-export.log"
+git -C "$records" add -- scripts .shared-tooling.snapshot
+cp "$records/.shared-tooling.snapshot" "$fixture/valid.snapshot"
+bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$records" > "$fixture/records-verify.log"
+bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_repo" --consumer "$records" --preview > "$fixture/records-preview.log"
+perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$fixture/records" > "$fixture/records.json"
+jq -e '.partial == false' "$fixture/records.json" >/dev/null
+for record in format source revision file '# version' '# entrypoint'; do
+    for mutation in trailing empty extra leading; do
+        perl -e '
+            my ($kind, $mutation, $path) = @ARGV;
+            open my $in, "<", $path or die $!;
+            my $changed = 0;
+            while (my $line = <$in>) {
+                if (!$changed && index($line, "$kind\t") == 0) {
+                    chomp $line;
+                    $line .= "\t" if $mutation eq "trailing";
+                    $line =~ s/\t/\t\t/ if $mutation eq "empty";
+                    $line .= "\textra" if $mutation eq "extra";
+                    $line = "\t$line" if $mutation eq "leading";
+                    $line .= "\n";
+                    $changed = 1;
+                }
+                print $line;
+            }
+            die "missing fixture record" unless $changed;
+        ' "$record" "$mutation" "$fixture/valid.snapshot" > "$records/.shared-tooling.snapshot"
+        cp "$records/.shared-tooling.snapshot" "$fixture/malformed.snapshot"
+        if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$records" > "$fixture/malformed-verify.log" 2>&1; then
+            echo "verifier accepted $record/$mutation" >&2; exit 1
+        fi
+        if bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_repo" --consumer "$records" --preview > "$fixture/malformed-refresh.log" 2>&1; then
+            echo "refresh accepted $record/$mutation" >&2; exit 1
+        fi
+        if perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$fixture/records" > "$fixture/malformed-report.json" 2> "$fixture/malformed-report.log"; then
+            echo "report accepted $record/$mutation" >&2; exit 1
+        fi
+        jq -e '.partial == true' "$fixture/malformed-report.json" >/dev/null
+        cmp "$fixture/malformed.snapshot" "$records/.shared-tooling.snapshot"
+    done
+done
+cp "$fixture/valid.snapshot" "$records/.shared-tooling.snapshot"
+
 # Qualify the consumer fixture before commit, with only its declared companions
 # present in the worktree. In particular there is no distribution helper.
 adoption="$fixture/adoption"
