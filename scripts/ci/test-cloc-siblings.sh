@@ -135,6 +135,33 @@ cp -R "$zeta/.cargo" "$FIXTURE/empty-rust/empty/"
 output="$(bash "$ROOT/scripts/dev/cloc-siblings.sh" "$FIXTURE/empty-rust")"
 [[ "$(printf '%s\n' "$output" | awk 'END { print $1, $2, $3, $4, $5, $6 }')" == 'TOTAL 0 0 0.0% 0 0' ]] || exit 1
 
+# Use a substitute report to prove the aggregation boundary accepts structured
+# counts and rejects malformed totals while continuing with later repositories.
+cat > "$zeta/scripts/dev/cloc.sh" <<'STUB'
+#!/usr/bin/env bash
+set -eu
+[[ "$1" != --check-tools ]] || exit 0
+[[ "$1" == --json ]] || exit 90
+if [[ "${PWD##*/}" != zeta ]]; then
+    case "$CLOC_JSON_CASE" in
+        malformed) echo 'not JSON' ;;
+        multiple) echo '{"totals":{}} {"totals":{}}' ;;
+        missing) echo '{"totals":{"runtime_loc":0}}' ;;
+        negative) echo '{"totals":{"runtime_loc":-1,"test_loc":0,"test_fns":0,"inline_fns":0}}' ;;
+        string) echo '{"totals":{"runtime_loc":"1","test_loc":0,"test_fns":0,"inline_fns":0}}' ;;
+        fractional) echo '{"totals":{"runtime_loc":1.5,"test_loc":0,"test_fns":0,"inline_fns":0}}' ;;
+    esac
+else
+    printf '{"totals": {\n "inline_fns": 1, "test_fns": 1, "test_loc": 0, "runtime_loc": 2\n}}\n'
+fi
+STUB
+for malformed in malformed multiple missing negative string fractional; do
+    if CLOC_JSON_CASE="$malformed" bash "$zeta/scripts/dev/cloc-siblings.sh" "$parent" \
+        > "$FIXTURE/invalid-json.out" 2> "$FIXTURE/invalid-json.err"; then exit 1; fi
+    [[ "$(awk 'END { print $1,$2,$3,$4,$5,$6,$7 }' "$FIXTURE/invalid-json.out")" == 'TOTAL (partial) 2 0 0.0% 1 1' ]] || exit 1
+    grep -F 'invalid workspace totals' "$FIXTURE/invalid-json.err" >/dev/null
+done
+
 bash "$ROOT/scripts/dev/cloc-siblings.sh" --help >/dev/null
 for path in "$FIXTURE/absent" "$FIXTURE/elsewhere"; do
     if bash "$ROOT/scripts/dev/cloc-siblings.sh" "$path" >"$FIXTURE/invalid.out" 2>"$FIXTURE/invalid.err"; then

@@ -6,6 +6,7 @@ ROOT="$0"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
+export PATH="$ROOT/.tools/host/bin:$PATH"
 
 usage() {
     cat <<'EOF'
@@ -92,22 +93,26 @@ for repo in "${repos[@]}"; do
     fi
     # Enter the checkout so Cargo reads its own .cargo/config.toml. Reuse the
     # complete workspace report, publishing only its final totals on success.
-    if ! report="$(cd "$repo" && bash "$ROOT/scripts/dev/cloc.sh" "$repo")"; then
+    if ! report="$(cd "$repo" && bash "$ROOT/scripts/dev/cloc.sh" --json "$repo")"; then
         print_row "$name" ERROR ERROR ERROR ERROR ERROR
         echo "error: unable to count $repo" >&2
         status=1
         continue
     fi
-    read -r label runtime_loc test_loc test_pct test_fns inline_fns extra <<<"${report##*$'\n'}" || :
-    if [[ "$label" != TOTAL || -n "$extra" ||
-        ! "$runtime_loc" =~ ^[0-9]+$ || ! "$test_loc" =~ ^[0-9]+$ ||
-        ! "$test_pct" =~ ^[0-9]+\.[0-9]+%$ ||
-        ! "$test_fns" =~ ^[0-9]+$ || ! "$inline_fns" =~ ^[0-9]+$ ]]; then
+    if ! totals="$(jq -er -s '
+        if length != 1 then error("expected one LOC report") else .[0].totals end
+        | [.runtime_loc, .test_loc, .test_fns, .inline_fns]
+        | if all(.[]; type == "number" and . >= 0 and floor == .)
+          then @tsv else error("invalid LOC counts") end
+    ' <<< "$report")"; then
         print_row "$name" ERROR ERROR ERROR ERROR ERROR
         echo "error: invalid workspace totals for $repo" >&2
         status=1
         continue
     fi
+    IFS=$'\t' read -r runtime_loc test_loc test_fns inline_fns <<< "$totals"
+    test_pct="$(awk -v runtime="$runtime_loc" -v tests="$test_loc" \
+        'BEGIN { printf "%.1f%%", (runtime + tests > 0 ? 100 * tests / (runtime + tests) : 0) }')"
     print_row "$name" "$runtime_loc" "$test_loc" "$test_pct" "$test_fns" "$inline_fns"
     counted_repos=$((counted_repos + 1))
     total_runtime_loc=$((total_runtime_loc + runtime_loc))

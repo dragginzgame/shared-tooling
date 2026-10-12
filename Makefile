@@ -46,7 +46,7 @@ check-pins:
 		--npm-version "$$(jq -er '.engines.npm' ci/frontend/package.json)"
 
 check-doc-links:
-	perl scripts/ci/check-documentation-links.pl --root . *.md audits/*.md rules/*.md tasks/*.md docs/*.md docs/principles/*.md
+	perl scripts/ci/check-documentation-links.pl --root . *.md audits/*.md rules/*.md tasks/*.md docs/*.md docs/principles/*.md docs/changelog/*.md
 
 check-release-commands:
 	bash scripts/ci/check-release-commands.sh . make/consumer.mk make/tools.mk make/release.mk make/execution.mk scripts/ci/check-make-execution.sh

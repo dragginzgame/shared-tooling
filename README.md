@@ -231,6 +231,13 @@ Or pass an explicit checkout path:
 /path/to/shared-tooling/scripts/dev/cloc.sh /path/to/repository
 ```
 
+Add `--json` for automation, including with `--manifest PATH`. On success it
+emits one document containing the selected `manifest`, a `crates` array and
+`totals`. Rows carry numeric `runtime_loc`, `test_loc`, `test_pct`, `test_fns` and
+`inline_fns`; crate rows also carry `crate`. Percentages use the same one-decimal
+rounding as the table. Failure returns nonzero without a partial JSON document.
+The sibling report consumes these counts and keeps its existing table format.
+
 The report discovers Cargo workspace members from `cargo metadata`; package
 names and directory layouts do not need to follow a shared prefix. Metadata
 inspection is locked and offline; it does not update the selected dependency
