@@ -703,7 +703,7 @@ git init -q "$focused_consumer"
 selection_args=(--file "$checksum_path" --file "$verifier_path")
 without_reporter=("${selection_args[@]}")
 for path in scripts/ci/test-format-tools.sh scripts/ci/check-format-tools.sh \
-    scripts/ci/test-rust-tools.sh scripts/dev/install-rust-tools.sh \
+    scripts/ci/test-rust-tools.sh scripts/dev/install-rust-tools.sh .githooks/pre-commit \
     scripts/dev/cargo-tool-build.sh scripts/dev/tool-store.sh scripts/dev/install-host-tools.sh scripts/dev/install-ic-tools.sh \
     scripts/ci/ic-tool-pins.awk scripts/ci/verify-evidence-checksums.sh scripts/ci/select-tool-evidence.sh scripts/ci/archive-evidence.sh \
     scripts/ci/test-make-format.sh make/tools.mk make/rust-format.mk make/execution.mk scripts/ci/check-make-execution.sh scripts/ci/run-formatting.sh; do

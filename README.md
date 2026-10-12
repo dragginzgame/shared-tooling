@@ -332,7 +332,8 @@ prefix, retains complete and condensed failure logs, and writes a GitHub step
 summary when one is available. Pass `--fail-fast` to stop after the first
 failed target.
 
-Vendor `scripts/ci/check-make-execution.sh` alongside the runner. It rejects
+Vendor `scripts/ci/check-make-execution.sh` and `scripts/ci/verify-file-checksum.sh`
+alongside the runner. The execution check rejects
 inherited Make ignore-errors, dry-run, question, touch and version-only modes before validation;
 normal Make variables and parallel-job settings remain available to targets.
 The complete argument list is checked before dispatch: arguments must be named
@@ -346,6 +347,34 @@ most 18 digits. Invalid depth refuses before logs or targets are created.
 scripts/ci/run-validation-targets.sh fmt-check shellcheck test
 scripts/ci/run-validation-targets.sh --fail-fast preflight test
 ```
+
+Opt into prepared-input checkpoints with repeated `--input` options before the
+targets, after explicit preparation has selected the files:
+
+```bash
+scripts/ci/run-validation-targets.sh --fail-fast \
+  --input Cargo.toml --input Cargo.lock --input testing/Cargo.lock \
+  fmt-check check test
+```
+
+Declare each relevant regular file relative to the selected repository root;
+symlinks, escaping paths and missing/unreadable files refuse. SHA-256 identities
+are checked before and after every target. A change or observation error stops
+later dispatch even without `--fail-fast`, reports the path and requires fresh
+preparation and a complete new gate. An already-failed target keeps its original
+status and output. Initial and observed identities stay in the announced unique
+log directory on failure, alongside failure diagnostics; preparation, dependency
+updates and retries are never automatic.
+
+Nested loggers in the same physical checkout inherit the original checkpoint.
+They may add explicitly declared inputs, but cannot refresh an inherited hash.
+A logger in another checkout starts independently. `VALIDATION_INPUT_ROOT` and
+`VALIDATION_INPUT_BASELINE` are internal inherited context, not consumer inputs.
+Consumers still own graph selection and stage order. Put the logger at the
+actual stage boundaries: wrapping a single target that runs a private Make loop
+only checks before/after that entire loop. Checkpoints detect persistent drift;
+they do not isolate running commands from concurrent edits or replace the release
+runner's source-identity checks.
 
 The script defaults to the repository containing its vendored copy. Set
 `VALIDATION_REPOSITORY_ROOT` and `VALIDATION_FAILURE_LOG_DIR` when invoking it

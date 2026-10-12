@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.6.5]
+
+### Fixed
+
+- Admit prepared Rust-tool receipts during staged formatting while checking the
+  exported pins and compiler. Missing or mismatched selections still refuse
+  without installation or changes to the commit payload.
+  ([#130](https://github.com/dragginzgame/shared-tooling/issues/130))
+- Let validation gates declare prepared inputs and stop subsequent stages when
+  those inputs change or cannot be read. Nested gates retain the same checkpoint;
+  failures preserve logs, input identities and the original target status.
+  ([#129](https://github.com/dragginzgame/shared-tooling/issues/129))
+- Document and qualify Make fixtures that substitute command effects without
+  replacing shared recipes, avoiding repeated recipe-override warnings while
+  retaining ordering and failure checks. Consumer fixture adoption remains local.
+  ([#128](https://github.com/dragginzgame/shared-tooling/issues/128))
+
 ## [0.6.4]
 
 ### Added
