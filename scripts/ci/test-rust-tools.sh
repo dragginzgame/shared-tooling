@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/dev/install-rust-tools.sh scripts/dev/cargo-tool-build.sh scripts/dev/tool-store.sh scripts/ci/select-tool-evidence.sh scripts/ci/archive-evidence.sh .githooks/pre-commit
+# Shared companions: scripts/dev/install-rust-tools.sh scripts/dev/cargo-tool-build.sh scripts/dev/tool-store.sh scripts/ci/cargo-tool-cache-key.sh scripts/ci/select-tool-evidence.sh scripts/ci/archive-evidence.sh .githooks/pre-commit
 set -euo pipefail
 ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
@@ -163,6 +163,39 @@ common --preflight
 [[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
 refuse common --check
 [[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
+# The CI cache key shares the installer identity and performs no setup. Exercise
+# changes in a private copy so no production source is modified by qualification.
+mkdir -p "$fixture/cache-source/scripts/dev" "$fixture/cache-source/scripts/ci" "$fixture/cache-source/ci"
+for file in scripts/ci/cargo-tool-cache-key.sh scripts/ci/verify-file-checksum.sh \
+    scripts/dev/cargo-tool-build.sh scripts/dev/tool-store.sh scripts/dev/install-rust-tools.sh; do
+    cp "$ROOT/$file" "$fixture/cache-source/$file"
+done
+cache_owner="$fixture/cache-source/scripts/ci/cargo-tool-cache-key.sh"
+cache_pins="$fixture/cache-source/ci/tool-versions.env"
+cp "$fixture/versions" "$cache_pins"
+cache_before="$(bash "$cache_owner" "$cache_pins")"
+[[ "$cache_before" == key=*$'\n'root="$SHARED_TOOLING_STORE" ]] || exit 1
+[[ "$(bash "$cache_owner" "$cache_pins")" == "$cache_before" && ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
+printf '\n# Changed pins\n' >> "$cache_pins"
+[[ "$(bash "$cache_owner" "$cache_pins")" != "$cache_before" ]] || exit 1
+cp "$fixture/versions" "$cache_pins"
+for file in scripts/dev/cargo-tool-build.sh scripts/dev/install-rust-tools.sh; do
+    printf '\n# Changed cache input\n' >> "$fixture/cache-source/$file"
+    [[ "$(bash "$cache_owner" "$cache_pins")" != "$cache_before" ]] || exit 1
+    cp "$ROOT/$file" "$fixture/cache-source/$file"
+done
+printf 'changed compiler\n' > "$fixture/compiler-version"
+[[ "$(bash "$cache_owner" "$cache_pins")" != "$cache_before" ]] || exit 1
+printf 'fixture rustc\n' > "$fixture/compiler-version"
+printf 'changed native environment\n' > "$fixture/changed-native"
+[[ "$(bash "$cache_owner" "$cache_pins")" != "$cache_before" ]] || exit 1
+rm "$fixture/changed-native"
+[[ "$(ImageVersion=fixture-changed-image bash "$cache_owner" "$cache_pins")" != "$cache_before" ]] || exit 1
+[[ "$(bash "$cache_owner" "$cache_pins")" == "$cache_before" ]] || exit 1
+refuse bash "$cache_owner"
+rm "$cache_pins"
+refuse bash "$cache_owner" "$cache_pins"
+[[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" && ! -e "$fixture/builds" ]] || exit 1
 # User TOML policy retains its boolean type before any source/install dispatch.
 # The environment override remains an independent, explicitly selected contract.
 (
@@ -310,6 +343,13 @@ find "$consumer/.tools/rust" "$held_slot" -print | sort > "$fixture/after-held"
 cmp "$fixture/before-held" "$fixture/after-held"
 rm "$held_slot/install.lock/owner"
 rmdir "$held_slot/install.lock"
+# A CI cache restores physical shared generations, never checkout selections.
+# Round-trip all builds/receipts/source bytes before the existing cold-checkout
+# reuse control; its no-info/build-count assertions prove no download or rebuild.
+(cd "$SHARED_TOOLING_STORE" && tar -czf "$fixture/cargo-tools-cache.tar.gz" cargo-cache rust-*)
+mv "$SHARED_TOOLING_STORE" "$fixture/store-before-restore"
+(umask 077; mkdir "$SHARED_TOOLING_STORE")
+tar -xzf "$fixture/cargo-tools-cache.tar.gz" -C "$SHARED_TOOLING_STORE"
 consumer="$fixture/b"
 touch "$fixture/no-info"
 CARGO_NET_OFFLINE=true common

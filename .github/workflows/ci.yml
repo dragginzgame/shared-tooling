@@ -96,6 +96,26 @@ jobs:
         shell: bash
         run: |
           echo /bin >> "$GITHUB_PATH"
+      - name: Prepare host tools and identify Cargo build cache
+        id: tool-cache-key
+        shell: bash
+        run: |
+          make --no-print-directory install-host-tools
+          make --no-print-directory host-tools-check
+          export PATH="$GITHUB_WORKSPACE/.tools/host/bin:$PATH"
+          bash scripts/ci/cargo-tool-cache-key.sh ci/tool-versions.env >> "$GITHUB_OUTPUT"
+      - name: Restore Cargo tool builds
+        id: tool-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        timeout-minutes: 3
+        continue-on-error: true
+        env:
+          SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+        with:
+          path: |
+            ${{ steps.tool-cache-key.outputs.root }}/cargo-cache
+            ${{ steps.tool-cache-key.outputs.root }}/rust-*
+          key: cargo-tools-${{ runner.os }}-${{ runner.arch }}-${{ steps.tool-cache-key.outputs.key }}
       - name: Prepare and check the complete common toolset
         shell: bash
         run: |
@@ -137,6 +157,18 @@ jobs:
             test "$(perl -MCwd=abs_path -e 'print abs_path(shift)' ".tools/rust/common/bin/$tool")" = \
                  "$(perl -MCwd=abs_path -e 'print abs_path(shift)' "$sharing/consumer/.tools/rust/common/bin/$tool")"
           done
+      # Save immediately after real setup/reuse checks: a later cancelled test
+      # run must not force the next push to rebuild identical tools. PRs only read.
+      - name: Save verified Cargo tool builds
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.tool-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        timeout-minutes: 3
+        continue-on-error: true
+        with:
+          path: |
+            ${{ steps.tool-cache-key.outputs.root }}/cargo-cache
+            ${{ steps.tool-cache-key.outputs.root }}/rust-*
+          key: cargo-tools-${{ runner.os }}-${{ runner.arch }}-${{ steps.tool-cache-key.outputs.key }}
       - name: Select the frontend fixture runtime
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:

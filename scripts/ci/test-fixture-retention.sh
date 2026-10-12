@@ -122,7 +122,10 @@ SCRIPT
 # Write the absolute interpreter directly: BSD sed replacement can join lines.
 printf '#!%s\n' "$BASH" > "$fixture/bin/bash"
 cat >> "$fixture/bin/bash" <<'SCRIPT'
-case "${1:-}" in */verify-file-checksum.sh) exit 24 ;; esac
+case "${1:-}" in
+    */verify-file-checksum.sh) [[ "${RETENTION_TIMED_FAILURE:-}" == yes ]] || exit 24 ;;
+    */test-portable-prerequisites.sh) [[ "${RETENTION_TIMED_FAILURE:-}" != yes ]] || exit 23 ;;
+esac
 exec "$RETENTION_REAL_BASH" "$@"
 SCRIPT
 chmod +x "$fixture/bin/"*
@@ -145,11 +148,46 @@ TMPDIR="$fixture/portable" PATH="$fixture/bin:$PATH" \
 set -- "$fixture/portable"/shared-tooling-test.*
 [[ $# == 1 && -f "$1/input.txt" ]] || exit 1
 
+# Timing a child fixture must preserve its original failure and stop the suite.
+mkdir "$fixture/portable-timed"
+status=0
+RETENTION_TIMED_FAILURE=yes TMPDIR="$fixture/portable-timed" PATH="$fixture/bin:$PATH" \
+    "$BASH" "$ROOT/scripts/ci/test-portable-tools.sh" > "$fixture/portable-timed.log" 2>&1 || status=$?
+[[ "$status" == 23 ]] || exit 1
+set -- "$fixture/portable-timed"/shared-tooling-test.*
+[[ $# == 1 && -f "$1/input.txt" && -s "$1/timings.tsv" ]] || exit 1
+[[ "$(wc -l < "$1/timings.tsv")" -eq 1 ]] || exit 1
+IFS=$'\t' read -r timed_name timed_seconds timed_status < "$1/timings.tsv"
+[[ "$timed_name" == test-portable-prerequisites.sh && "$timed_seconds" =~ ^[0-9]+$ && "$timed_status" == 23 ]] || exit 1
+grep -F "$(cat "$1/timings.tsv")" "$fixture/portable-timed.log" > /dev/null
+
 # Exercise the actual workflow's native qualification commands with a failed
 # installer substitute, then check the final collector selects its evidence.
 # This checks local ordering/paths; GitHub's upload service is qualified by CI.
 yq -o json '.' "$ROOT/.github/workflows/ci.yml" > "$fixture/workflow.json"
 yq -o json '.' "$ROOT/.github/actions/retain-failure-evidence/action.yml" > "$fixture/collector.json"
+# Cache transport is optional; setup/admission and the complete gate never are.
+# A main-only save follows native reuse, and carries the exact restore selection.
+# shellcheck disable=SC2016 # GitHub expressions are literal workflow inputs.
+jq -e --arg save_condition "\${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.tool-cache.outputs.cache-hit != 'true' }}" '
+  .jobs["portable-regression"].steps | to_entries |
+  map(select(.value.uses? | strings | startswith("actions/cache/restore@"))) as $restore |
+  map(select(.value.uses? | strings | startswith("actions/cache/save@"))) as $save |
+  map(select(.value.run? | strings | contains("make --no-print-directory install-tools"))) as $setup |
+  map(select(.value.run? | strings | contains("CARGO_NET_OFFLINE=true bash scripts/dev/install-rust-tools.sh"))) as $reuse |
+  map(select(.value.run? | strings | contains("bash scripts/ci/test-portable-tools.sh"))) as $gate |
+  ($restore | length) == 1 and ($save | length) == 1 and
+  ($setup | length) == 1 and ($reuse | length) == 1 and ($gate | length) == 1 and
+  $restore[0].key < $setup[0].key and $setup[0].key < $reuse[0].key and
+  $reuse[0].key < $save[0].key and $save[0].key < $gate[0].key and
+  $save[0].value.if == $save_condition and
+  $restore[0].value.with.key == $save[0].value.with.key and
+  $restore[0].value.with.path == $save[0].value.with.path and
+  $restore[0].value.with.path == "${{ steps.tool-cache-key.outputs.root }}/cargo-cache\n${{ steps.tool-cache-key.outputs.root }}/rust-*\n" and
+  $restore[0].value.with["restore-keys"] == null and
+  $restore[0].value["timeout-minutes"] <= 3 and $save[0].value["timeout-minutes"] <= 3 and
+  all($setup[], $reuse[], $gate[]; .value.if == null and .value["continue-on-error"] != true)
+' "$fixture/workflow.json" > /dev/null
 # A failed regression gate must still fail the job and reach failure collection.
 jq -e '
   .jobs["portable-regression"] as $job |

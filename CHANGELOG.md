@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.9.8]
+
+### Changed
+
+- Reuse verified Cargo tool builds between matching native CI runs while
+  retaining complete setup/admission and all three host gates. Save reusable
+  builds before the test suite so a later cancellation need not repeat setup.
+  Portable tests now report individual fixture durations and failure statuses.
+  ([#142](https://github.com/dragginzgame/shared-tooling/issues/142))
+
 ## [0.9.7]
 
 ### Fixed

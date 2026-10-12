@@ -12,11 +12,22 @@ fixture_complete=false
 finish() {
     local status=$?
     [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    if [[ -f "$FIXTURE/timings.tsv" ]]; then
+        printf '\nPortable fixture timings (name, seconds, exit status):\n'
+        cat "$FIXTURE/timings.tsv"
+    fi
     if [[ "$status" == 0 ]]; then rm -rf "$FIXTURE"
     else printf "Failed portable-tools fixture retained: %s\n" "$FIXTURE" >&2; fi
     exit "$status"
 }
 trap finish EXIT
+
+run_fixture() {
+    local start="$SECONDS" status=0
+    "$@" || status=$?
+    printf '%s\t%s\t%s\n' "${2##*/}" "$((SECONDS - start))" "$status" >> "$FIXTURE/timings.tsv"
+    return "$status"
+}
 
 for script in \
     "$ROOT"/scripts/ci/*.sh \
@@ -41,14 +52,14 @@ if bash "$ROOT/scripts/ci/verify-file-checksum.sh" \
     exit 1
 fi
 
-bash "$ROOT/scripts/ci/test-portable-prerequisites.sh"
-bash "$ROOT/scripts/ci/test-script-paths.sh"
-bash "$ROOT/scripts/ci/test-cargo-install-qualification.sh"
-bash "$ROOT/scripts/ci/test-evidence-archive.sh"
-bash "$ROOT/scripts/ci/test-artifact-discovery.sh"
-bash "$ROOT/scripts/ci/test-gh-ci.sh"
-bash "$ROOT/scripts/ci/test-github-siblings.sh"
-bash "$ROOT/scripts/ci/test-maintenance-task.sh"
+run_fixture bash "$ROOT/scripts/ci/test-portable-prerequisites.sh"
+run_fixture bash "$ROOT/scripts/ci/test-script-paths.sh"
+run_fixture bash "$ROOT/scripts/ci/test-cargo-install-qualification.sh"
+run_fixture bash "$ROOT/scripts/ci/test-evidence-archive.sh"
+run_fixture bash "$ROOT/scripts/ci/test-artifact-discovery.sh"
+run_fixture bash "$ROOT/scripts/ci/test-gh-ci.sh"
+run_fixture bash "$ROOT/scripts/ci/test-github-siblings.sh"
+run_fixture bash "$ROOT/scripts/ci/test-maintenance-task.sh"
 # A parent gate may retain its own logs and GitHub summary. The runner fixture
 # must select its own destinations without changing those parent-owned outputs.
 mkdir -p "$FIXTURE/runner-parent/logs" "$FIXTURE/runner-parent/failures"
@@ -59,7 +70,7 @@ done
 VALIDATION_LOG_DIR="$FIXTURE/runner-parent/logs" \
     VALIDATION_FAILURE_LOG_DIR="$FIXTURE/runner-parent/failures" \
     GITHUB_STEP_SUMMARY="$FIXTURE/runner-parent/summary.md" \
-    bash "$ROOT/scripts/ci/test-validation-target-runner.sh"
+    run_fixture bash "$ROOT/scripts/ci/test-validation-target-runner.sh"
 for destination in logs/sentinel failures/sentinel summary.md; do
     cmp "$FIXTURE/runner-parent/expected" "$FIXTURE/runner-parent/$destination"
 done
@@ -67,15 +78,15 @@ for directory in logs failures; do
     [[ "$(ls -A "$FIXTURE/runner-parent/$directory")" == sentinel ]] || exit 1
 done
 echo 'Runner fixture preserves inherited parent logs and summary'
-bash "$ROOT/scripts/ci/test-runner-disk-space.sh"
-bash "$ROOT/scripts/ci/test-installers.sh"
-bash "$ROOT/scripts/ci/test-tool-downloads.sh"
-bash "$ROOT/scripts/ci/test-ic-tools.sh"
-bash "$ROOT/scripts/ci/test-host-tools.sh"
-bash "$ROOT/scripts/ci/test-rust-tools.sh"
-bash "$ROOT/scripts/ci/test-tool-commands.sh"
-bash "$ROOT/scripts/ci/test-make-format.sh"
-bash "$ROOT/scripts/ci/test-make-consumer.sh"
+run_fixture bash "$ROOT/scripts/ci/test-runner-disk-space.sh"
+run_fixture bash "$ROOT/scripts/ci/test-installers.sh"
+run_fixture bash "$ROOT/scripts/ci/test-tool-downloads.sh"
+run_fixture bash "$ROOT/scripts/ci/test-ic-tools.sh"
+run_fixture bash "$ROOT/scripts/ci/test-host-tools.sh"
+run_fixture bash "$ROOT/scripts/ci/test-rust-tools.sh"
+run_fixture bash "$ROOT/scripts/ci/test-tool-commands.sh"
+run_fixture bash "$ROOT/scripts/ci/test-make-format.sh"
+run_fixture bash "$ROOT/scripts/ci/test-make-consumer.sh"
 # Make/Cargo select physical paths independently of the caller's TMPDIR spelling.
 mkdir "$FIXTURE/tool-contexts"
 ln -s "$(cd "$FIXTURE/tool-contexts" && pwd -P)" "$FIXTURE/tool-context-alias"
@@ -85,41 +96,41 @@ for context in trailing-slash directory-alias; do
         directory-alias) selected_tmp="$FIXTURE/tool-context-alias" ;;
     esac
     for script in test-tool-commands test-rust-tools test-host-tools; do
-        TMPDIR="$selected_tmp" bash "$ROOT/scripts/ci/$script.sh" \
+        TMPDIR="$selected_tmp" run_fixture bash "$ROOT/scripts/ci/$script.sh" \
             > "$FIXTURE/$script-$context.log" 2>&1
     done
-    TMPDIR="$selected_tmp" perl "$ROOT/scripts/ci/test-tag-maintenance.pl" \
+    TMPDIR="$selected_tmp" run_fixture perl "$ROOT/scripts/ci/test-tag-maintenance.pl" \
         > "$FIXTURE/test-tag-maintenance-$context.log" 2>&1
 done
 echo 'Tool and tag fixtures passed with trailing-slash and aliased temporary roots'
-bash "$ROOT/scripts/ci/test-evidence-checksums.sh"
-bash "$ROOT/scripts/ci/test-file-digests.sh"
-bash "$ROOT/scripts/ci/test-rustsec-db.sh"
-perl "$ROOT/scripts/ci/test-local-lock-versions.pl"
-perl "$ROOT/scripts/ci/test-tag-maintenance.pl"
-bash "$ROOT/scripts/ci/test-verification-helpers.sh"
-perl "$ROOT/scripts/ci/test-documentation-links.pl"
-bash "$ROOT/scripts/ci/test-crates-io-version.sh"
-bash "$ROOT/scripts/ci/test-cargo-tool-versions.sh"
-bash "$ROOT/scripts/ci/test-release-commands.sh"
-bash "$ROOT/scripts/ci/test-dependency-pins.sh"
-bash "$ROOT/scripts/ci/test-npm-pins.sh"
-bash "$ROOT/scripts/ci/test-cargo-metadata.sh"
-bash "$ROOT/scripts/ci/test-format-tools.sh"
-bash "$ROOT/scripts/ci/test-git-hooks.sh"
-bash "$ROOT/scripts/ci/test-cloc.sh"
-bash "$ROOT/scripts/ci/test-cloc-siblings.sh"
-bash "$ROOT/scripts/ci/test-cloc-tooling.sh"
-bash "$ROOT/scripts/ci/test-cloc-tooling-distribution.sh"
-bash "$ROOT/scripts/ci/test-cloc-fixture-contexts.sh"
-bash "$ROOT/scripts/ci/test-fixture-retention.sh"
-bash "$ROOT/scripts/ci/test-snapshot-distribution.sh"
-bash "$ROOT/scripts/ci/test-snapshot-retirement.sh"
-bash "$ROOT/scripts/ci/test-release-runner.sh"
-bash "$ROOT/scripts/ci/test-release-tracking.sh"
-bash "$ROOT/scripts/ci/test-release-pr.sh"
-bash "$ROOT/scripts/ci/test-release-metadata.sh"
-bash "$ROOT/scripts/ci/test-release-source.sh"
+run_fixture bash "$ROOT/scripts/ci/test-evidence-checksums.sh"
+run_fixture bash "$ROOT/scripts/ci/test-file-digests.sh"
+run_fixture bash "$ROOT/scripts/ci/test-rustsec-db.sh"
+run_fixture perl "$ROOT/scripts/ci/test-local-lock-versions.pl"
+run_fixture perl "$ROOT/scripts/ci/test-tag-maintenance.pl"
+run_fixture bash "$ROOT/scripts/ci/test-verification-helpers.sh"
+run_fixture perl "$ROOT/scripts/ci/test-documentation-links.pl"
+run_fixture bash "$ROOT/scripts/ci/test-crates-io-version.sh"
+run_fixture bash "$ROOT/scripts/ci/test-cargo-tool-versions.sh"
+run_fixture bash "$ROOT/scripts/ci/test-release-commands.sh"
+run_fixture bash "$ROOT/scripts/ci/test-dependency-pins.sh"
+run_fixture bash "$ROOT/scripts/ci/test-npm-pins.sh"
+run_fixture bash "$ROOT/scripts/ci/test-cargo-metadata.sh"
+run_fixture bash "$ROOT/scripts/ci/test-format-tools.sh"
+run_fixture bash "$ROOT/scripts/ci/test-git-hooks.sh"
+run_fixture bash "$ROOT/scripts/ci/test-cloc.sh"
+run_fixture bash "$ROOT/scripts/ci/test-cloc-siblings.sh"
+run_fixture bash "$ROOT/scripts/ci/test-cloc-tooling.sh"
+run_fixture bash "$ROOT/scripts/ci/test-cloc-tooling-distribution.sh"
+run_fixture bash "$ROOT/scripts/ci/test-cloc-fixture-contexts.sh"
+run_fixture bash "$ROOT/scripts/ci/test-fixture-retention.sh"
+run_fixture bash "$ROOT/scripts/ci/test-snapshot-distribution.sh"
+run_fixture bash "$ROOT/scripts/ci/test-snapshot-retirement.sh"
+run_fixture bash "$ROOT/scripts/ci/test-release-runner.sh"
+run_fixture bash "$ROOT/scripts/ci/test-release-tracking.sh"
+run_fixture bash "$ROOT/scripts/ci/test-release-pr.sh"
+run_fixture bash "$ROOT/scripts/ci/test-release-metadata.sh"
+run_fixture bash "$ROOT/scripts/ci/test-release-source.sh"
 
 mkdir -p "$FIXTURE/repository" "$FIXTURE/result"
 cat >"$FIXTURE/fake-sccache" <<'SCRIPT'
