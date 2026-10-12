@@ -26,8 +26,8 @@ pr_select() {
         jq -e --arg repository "$pr_repository" '
           type == "object" and keys == ["attempted","merged","number","prepared","repository"] and
           .repository == $repository and (.attempted | type == "boolean") and
-          (.number == "" or (.number | test("^[1-9][0-9]*$"))) and
-          all(.prepared,.merged; type == "string" and (. == "" or test("^([0-9a-f]{40}|[0-9a-f]{64})$")))
+          (.number | type == "string" and (. == "" or test("\\A[1-9][0-9]*\\z"))) and
+          all(.prepared,.merged; type == "string" and (. == "" or test("\\A([0-9a-f]{40}|[0-9a-f]{64})\\z")))
         ' "$pr_state" >/dev/null || fail 'PR identity file is invalid'
         prepared_commit="$(jq -r .prepared "$pr_state")"
         merged_commit="$(jq -r .merged "$pr_state")"
@@ -128,7 +128,8 @@ pr_query() {
         --arg commit "$prepared_commit" --argjson number "$pr_number" '
           .number == $number and .base.repo.full_name == $repository and .head.repo.full_name == $repository and
           .base.ref == $base and .head.ref == $head and .head.sha == $commit and
-          (.merged | type == "boolean") and (.state == "open" or .state == "closed")
+          (.merged | type == "boolean") and (.state == "open" or .state == "closed") and
+          (if .merged then (.merge_commit_sha | type == "string" and test("\\A([0-9a-f]{40}|[0-9a-f]{64})\\z")) else true end)
         ' "$pr_details" >/dev/null || fail 'release PR payload or destination changed'
     pr_store
 }
@@ -190,7 +191,9 @@ pr_review() {
         exit 75
     fi
     local observed
-    observed="$(jq -er '.merge_commit_sha | select(type == "string" and test("^([0-9a-f]{40}|[0-9a-f]{64})$"))' "$pr_details")"
+    # pr_query admits the complete JSON string before any state write or shell
+    # extraction; a regex dollar anchor would also admit a trailing newline.
+    observed="$(jq -er '.merge_commit_sha' "$pr_details")"
     [[ -z "$merged_commit" || "$merged_commit" == "$observed" ]] || fail 'merged release commit changed'
     merged_commit="$observed"
     pr_store

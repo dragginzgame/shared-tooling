@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.6]
+
+### Fixed
+
+- Reject newline-suffixed PR release identities before saving recovery state or
+  accepting a merged commit. Malformed saved records and API observations remain
+  available for diagnosis; valid same-release reconciliation stays supported.
+  ([#139](https://github.com/dragginzgame/shared-tooling/issues/139))
+
 ## [0.9.5]
 
 ### Fixed

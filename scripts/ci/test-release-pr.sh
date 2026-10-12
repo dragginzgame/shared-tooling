@@ -324,6 +324,51 @@ done
 cp "$PR_TEST_DATA/original-state" .git/release-state/0.1.1.plan.pr.json
 run_release 75
 
+# A trailing LF can match a regex dollar anchor and then disappear during Bash
+# command substitution. Reject the original JSON bytes before rewriting state.
+cp .git/release-state/0.1.1.plan "$PR_TEST_DATA/before-plan"
+for field in prepared merged number; do
+    jq --arg field "$field" '
+        .[$field] = ((if $field == "merged" then .prepared else .[$field] end) + "\n")
+    ' "$PR_TEST_DATA/original-state" > .git/release-state/0.1.1.plan.pr.json
+    cp .git/release-state/0.1.1.plan.pr.json "$PR_TEST_DATA/bad-state"
+    run_release 1
+    cmp "$PR_TEST_EVENTS" "$PR_TEST_DATA/before-identity"
+    cmp .git/release-state/0.1.1.plan.pr.json "$PR_TEST_DATA/bad-state"
+    cmp .git/release-state/0.1.1.plan "$PR_TEST_DATA/before-plan"
+    [[ -z "$(git tag)" && ! -d .git/release-state/lock ]] || exit 1
+done
+cp "$PR_TEST_DATA/original-state" .git/release-state/0.1.1.plan.pr.json
+run_release 75
+
+new_fixture malformed-merge-response
+run_release 75
+merge_pr squash
+cp "$PR_TEST_DATA/pr.json" "$PR_TEST_DATA/valid-merge"
+cp .git/release-state/0.1.1.plan.pr.json "$PR_TEST_DATA/original-state"
+cp "$PR_TEST_EVENTS" "$PR_TEST_DATA/before-merge"
+for phase in pr-review pr-validate; do
+    # Exercise initial observation and reconciliation of an already saved merge.
+    if [[ "$phase" == pr-validate ]]; then
+        jq --arg merged "$merged" '.merged=$merged' "$PR_TEST_DATA/original-state" > "$PR_TEST_DATA/next-state"
+        mv "$PR_TEST_DATA/next-state" "$PR_TEST_DATA/original-state"
+        sed '$s/.*/pr-validate/' .git/release-state/0.1.1.plan > "$PR_TEST_DATA/next-plan"
+        mv "$PR_TEST_DATA/next-plan" .git/release-state/0.1.1.plan
+    fi
+    cp .git/release-state/0.1.1.plan "$PR_TEST_DATA/before-plan"
+    for suffix in $'\n' $'\n\n' $'\r\n'; do
+        cp "$PR_TEST_DATA/original-state" .git/release-state/0.1.1.plan.pr.json
+        jq --arg suffix "$suffix" '.merge_commit_sha += $suffix' "$PR_TEST_DATA/valid-merge" > "$PR_TEST_DATA/pr.json"
+        run_release 1
+        cmp "$PR_TEST_EVENTS" "$PR_TEST_DATA/before-merge"
+        cmp .git/release-state/0.1.1.plan.pr.json "$PR_TEST_DATA/original-state"
+        cmp .git/release-state/0.1.1.plan "$PR_TEST_DATA/before-plan"
+        [[ -z "$(git tag)" && ! -d .git/release-state/lock ]] || exit 1
+    done
+done
+cp "$PR_TEST_DATA/valid-merge" "$PR_TEST_DATA/pr.json"
+run_release 0
+
 new_fixture changed-push-input
 run_release 75
 merge_pr squash
