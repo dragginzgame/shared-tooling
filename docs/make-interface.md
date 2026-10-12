@@ -127,7 +127,7 @@ recipe warnings rather than filtering them from every invocation.
 
 1. Refresh the [recorded snapshot](consuming-snapshots.md), selecting
    `make/consumer.mk` as an entrypoint. The exporter derives its companion closure;
-   preview reports all additions, updates and explicit retirements. Include other
+   preview reports all additions, updates and automatic retirements. Include other
    locally used commands and governance roots; this entrypoint is not their inventory.
 2. Replace the separate shared includes and equivalent local hook/snapshot-check
    recipes. Retain stronger prerequisites, target environment and extra snapshot

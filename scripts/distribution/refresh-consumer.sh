@@ -12,18 +12,17 @@ STAGING_DIR=""
 preview=false
 requested_files=()
 added_files=()
-retire_files=()
 
 usage() {
     cat >&2 <<'USAGE'
-usage: refresh-consumer.sh [--preview] [--source <shared-tooling-checkout>] --consumer <repository> [--manifest <relative-path>] [--entrypoint <relative-path>]... [--add-entrypoint <relative-path>]... [--retire-file <relative-path>]...
+usage: refresh-consumer.sh [--preview] [--source <shared-tooling-checkout>] --consumer <repository> [--manifest <relative-path>] [--entrypoint <relative-path>]... [--add-entrypoint <relative-path>]...
 
 Use --entrypoint to select the complete set of roots, initially or on refresh.
 Otherwise refresh reuses the manifest's recorded entrypoints. --add-entrypoint
 extends that selection. Required companions and integrity tools are derived.
 --preview leaves the consumer untouched and reports additions, updates and
-retirements. Exit 2 means obsolete files need explicit --retire-file selections.
-Retirement only removes unchanged, previously owned files outside the new closure.
+retirements. Refresh automatically removes unchanged, previously owned files
+outside the new closure. Select directly used helpers as entrypoints to keep them.
 USAGE
 }
 
@@ -173,11 +172,6 @@ while [[ $# -gt 0 ]]; do
     --add-entrypoint)
         [[ $# -ge 2 ]] || { usage; exit 2; }
         added_files[${#added_files[@]}]="$2"
-        shift 2
-        ;;
-    --retire-file)
-        [[ $# -ge 2 ]] || { usage; exit 2; }
-        retire_files[${#retire_files[@]}]="$2"
         shift 2
         ;;
     -h | --help)
@@ -490,13 +484,12 @@ for index in "${!files[@]}"; do
         fail "previous snapshot revision is not an available commit"
 done
 
-# Every stale payload needs exact, explicit retirement. Prove ownership against
+# Retire stale payloads automatically. Prove ownership against
 # the previous committed source even when Git considers the consumer clean.
 # An absent owned file is a safe interrupted-deletion retry, not authority to
 # remove any replacement, parent directory, tool generation or evidence.
 obsolete=()
 retirement_states=()
-retirement_required=false
 for previous_index in "${!previous_files[@]}"; do
     path="${previous_files[$previous_index]}"
     selected=false
@@ -520,15 +513,6 @@ for previous_index in "${!previous_files[@]}"; do
             fail "retirement has local mode changes: $path"
         fi
     fi
-    selected=false
-    for existing in ${retire_files[@]+"${retire_files[@]}"}; do [[ "$existing" != "$path" ]] || selected=true; done
-    if [[ "$selected" == false ]]; then retirement_required=true; fi
-done
-for path in ${retire_files[@]+"${retire_files[@]}"}; do
-    validate_relative_path "$path"
-    selected=false
-    for existing in ${obsolete[@]+"${obsolete[@]}"}; do [[ "$existing" != "$path" ]] || selected=true; done
-    [[ "$selected" == true ]] || fail "--retire-file is not an obsolete owned payload: $path"
 done
 
 # Detect changes made while committed payloads and companions were prepared,
@@ -562,14 +546,10 @@ if [[ "$preview" == true ]]; then
         printf '%s\t%s\t%s\n' "$action" "$selection" "$path"
     done
     for path in ${obsolete[@]+"${obsolete[@]}"}; do
-        selection=required
-        for existing in ${retire_files[@]+"${retire_files[@]}"}; do [[ "$existing" != "$path" ]] || selection=approved; done
-        printf 'REMOVE\t%s\t%s\n' "$selection" "$path"
+        printf 'REMOVE\tobsolete\t%s\n' "$path"
     done
-    [[ "$retirement_required" == false ]] || exit 2
     exit 0
 fi
-[[ "$retirement_required" == false ]] || fail "obsolete payloads require explicit --retire-file selections; inspect --preview"
 
 # Prepare a custom manifest's parent before replacing any consumer files.
 mkdir -p "$(dirname "$manifest")" || fail "cannot create consumer manifest directory"

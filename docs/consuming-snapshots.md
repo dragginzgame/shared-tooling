@@ -15,8 +15,8 @@ This replaces the `--file` / `--add-file` CLI and manually completed file roster
 On first adoption, pass the complete intended entrypoint set with the new
 exporter, including locally used helpers, tests and governance documents. Existing
 payload records remain ownership evidence; they are never guessed to be roots.
-Review `--preview` before applying. An omitted previous payload requires its own
-explicit `--retire-file` selection and unchanged-source proof before removal.
+Review `--preview` before applying. As of 0.8.0, omitted previous payloads are
+removed automatically after unchanged-source proof; see the retirement rules below.
 Consumers can keep every existing payload by explicitly selecting all of them,
 then narrow roots in a later reviewed adoption.
 
@@ -119,8 +119,8 @@ companion closure is resolved again from the new selected revision:
   --consumer /path/to/consumer
 ```
 
-Review the resulting consumer diff normally. Refresh only deletes explicitly
-selected obsolete payloads under the retirement rules below. It does not commit,
+Review the resulting consumer diff normally. Refresh automatically deletes
+unchanged obsolete payloads under the retirement rules below. It does not commit,
 stage, push, install tools, publish, deploy or clean build/evidence artifacts.
 
 A previous export need not be committed before refreshing it again. An unchanged
@@ -192,30 +192,31 @@ and destination admission checks as refresh. A `TMPDIR` inside either checkout
 It prints source version/revision,
 the manifest path, and tab-separated `ADD`, `UPDATE`, `KEEP` or `REMOVE` rows.
 The second column distinguishes `selected` roots from `required` companions.
-For removal, it distinguishes `required` retirement approval from explicitly
-`approved` retirement. Companion discovery follows committed declarations
+Removal rows use `obsolete` for unchanged prior payloads outside the new selection.
+Companion discovery follows committed declarations
 transitively, including cycles, and reports the complete payload in one pass.
 Changes include executable-mode differences. Local conflicts still refuse.
 
-Exit 0 means the proposed refresh is admitted; exit 2 with a completed preview
-means listed obsolete files need explicit `--retire-file` selections. Other
-admission failures return nonzero without a completed preview. Review the entire
-diff, then rerun without `--preview` and with the same selection/retirement inputs.
+Exit 0 means the proposed refresh is admitted, including any listed removals.
+Admission failures return nonzero without a completed preview. Review the entire
+diff, then rerun without `--preview` and with the same entrypoint selection.
 This is an observation, not saved authorization or validation: apply rechecks
 the actual source and consumer.
 
 ### Retiring obsolete payloads
 
-When a selected root no longer needs a companion, or roots are deliberately
-replaced, preview lists previous payloads outside the new closure. Applying stops
-until each has an explicit `--retire-file relative/path`. A requested path still
-required by another root, or absent from the prior ownership roster, is refused.
+As of 0.8.0, refresh retires unchanged obsolete payloads automatically; the
+`--retire-file` option is removed. Update refresh commands to omit it. When a
+selected root no longer needs a companion, or roots are deliberately replaced,
+preview lists previous payloads outside the new closure. Applying removes those
+files without a separate approval step. Files still required by any root remain;
+files absent from the prior ownership roster are never retirement candidates.
 Before removing anything, refresh verifies the prior manifest's digest and mode
 against its available committed source, then checks actual consumer bytes, mode,
 index and path identity. Local edits, staged changes, redirected paths and forged
 ownership records refuse; a clean consumer Git status alone is insufficient.
 
-Before approving retirement, check local callers and other snapshot manifests.
+Before refreshing, check local callers and other snapshot manifests.
 The exporter derives ownership only from the selected manifest; it does not scan
 other bundles or infer consumer-owned dependencies. Keep a still-used file as an
 entrypoint, or coordinate its callers and other bundles before removing it.
@@ -226,9 +227,9 @@ The manifest is published last. If interrupted, retain the old manifest, inspect
 the partial diff and rerun against the same source with the same selections.
 Already absent owned retirements and already installed exact payloads are safe
 to reconcile. Concurrent editors are not locked out: stop other modifications
-and validation during refresh, and verify before resuming. After successful
-publication, omit consumed retirement options on future refreshes; they no
-longer identify owned payloads. No retirement journal or cleanup daemon is added.
+and validation during refresh, and verify before resuming. Repeating a completed
+refresh is harmless: removed paths are no longer in its ownership roster.
+No retirement journal or cleanup daemon is added.
 
 The optional `scripts/ci/test-installers.sh` fixture exercises all five CI
 installer wrappers: actionlint, gitleaks, ShellCheck, yq and sccache. Selecting
@@ -668,12 +669,13 @@ hashes and modes match, not that provenance or consumer behavior was qualified.
 The JSON output retains full revisions and each manifest's drifted paths.
 
 To retire unnecessary fleet copies, review their local callers first, update
-Make/CI/help references, then select the remaining entrypoints and explicitly
-retire obsolete payloads through the exporter. Preserve ownership records until
+Make/CI/help references, then select the remaining entrypoints and refresh through
+the exporter. Preserve ownership records until
 that refresh completes. Candidates are `cloc-tooling.pl`, `cloc-siblings.sh` and their
 dedicated tests; keep `cloc.sh` for the consumer's own workspace. Preserve
 checksum/verifier helpers used by other selected tools, local integration checks
-and historical evidence. Snapshot refresh never prunes files automatically.
+and historical evidence. Automatic retirement is limited to verified unchanged
+payloads outside the selected closure.
 This is a consumer-owned selection change, not permission for another repository
 to edit its files. Fleet reports and their regression coverage remain maintained
 and tested in Shared Tooling.

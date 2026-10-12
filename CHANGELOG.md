@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.8.0]
+
+### Breaking
+
+- Snapshot refresh automatically removes unchanged, previously owned files outside
+  the selected entrypoints and their dependencies. Remove `--retire-file` from
+  refresh commands; preview lists removals without requiring individual approvals.
+  Select directly used helpers as entrypoints to retain them. Ownership, local-edit,
+  staging and concurrency checks still protect retirement and interrupted retries.
+  ([#131](https://github.com/dragginzgame/shared-tooling/issues/131))
+
 ## [0.7.0]
 
 ### Breaking

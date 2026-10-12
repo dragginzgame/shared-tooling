@@ -28,15 +28,17 @@ done
 printf '0.7.0\n' > "$source_root/VERSION"
 printf '#!/bin/sh\n# Shared companions: obsolete.sh\n' > "$source_root/root.sh"
 printf '#!/bin/sh\necho obsolete\n' > "$source_root/obsolete.sh"
+printf '#!/bin/sh\necho directly-used\n' > "$source_root/kept.sh"
 chmod +x "$source_root/obsolete.sh"
 git -C "$source_root" add .
 git -C "$source_root" commit -qm initial
 old_revision="$(git -C "$source_root" rev-parse HEAD)"
 git init -q "$seed"
 bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_root" \
-    --consumer "$seed" --entrypoint root.sh > "$FIXTURE/initial.log"
+    --consumer "$seed" --entrypoint root.sh --entrypoint kept.sh > "$FIXTURE/initial.log"
 [[ -f "$seed/obsolete.sh" ]] || exit 1
 printf 'unrelated\n' > "$seed/unrelated"
+cp -p "$seed/obsolete.sh" "$seed/unowned.sh"
 git -C "$seed" add unrelated
 printf '#!/bin/sh\n# Shared companions: current.sh\n' > "$source_root/root.sh"
 printf '#!/bin/sh\necho current\n' > "$source_root/current.sh"
@@ -52,13 +54,12 @@ mv "$consumer/old-manifest" "$consumer/.shared-tooling.snapshot"
 if bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_root" \
     --consumer "$consumer" > "$FIXTURE/unselected.log" 2>&1; then exit 1; fi
 bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_root" \
-    --consumer "$consumer" --entrypoint root.sh --retire-file obsolete.sh > "$FIXTURE/adopt.log"
+    --consumer "$consumer" --entrypoint root.sh --entrypoint kept.sh > "$FIXTURE/adopt.log"
 [[ ! -e "$consumer/obsolete.sh" && -f "$consumer/current.sh" ]] || exit 1
 
-for state in unchanged absent edited committed mode staged symlink forged unavailable unowned required; do
+for state in unchanged absent edited committed mode staged symlink directory forged unavailable; do
     consumer="$FIXTURE/$state"
     cp -Rp "$seed" "$consumer"
-    retire=obsolete.sh
     case "$state" in
         absent) rm "$consumer/obsolete.sh"; cp -p "$source_root/root.sh" "$consumer/root.sh" ;;
         edited) printf '# local\n' >> "$consumer/obsolete.sh" ;;
@@ -70,6 +71,7 @@ for state in unchanged absent edited committed mode staged symlink forged unavai
         mode) chmod -x "$consumer/obsolete.sh" ;;
         staged) git -C "$consumer" add obsolete.sh ;;
         symlink) mv "$consumer/obsolete.sh" "$consumer/kept"; ln -s kept "$consumer/obsolete.sh" ;;
+        directory) rm "$consumer/obsolete.sh"; mkdir "$consumer/obsolete.sh" ;;
         forged)
             printf '# local\n' >> "$consumer/obsolete.sh"
             digest="$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$consumer/obsolete.sh")"
@@ -79,31 +81,28 @@ for state in unchanged absent edited committed mode staged symlink forged unavai
         unavailable)
             sed "s/$old_revision/1111111111111111111111111111111111111111/" "$consumer/.shared-tooling.snapshot" > "$consumer/missing"
             mv "$consumer/missing" "$consumer/.shared-tooling.snapshot" ;;
-        unowned) retire=unrelated ;;
-        required) retire=root.sh ;;
     esac
     cp -Rp "$consumer" "$FIXTURE/before-$state"
-    if [[ "$state" == unchanged ]]; then
-        status=0
-        bash "$ROOT/scripts/distribution/refresh-consumer.sh" --preview --source "$source_root" \
-            --consumer "$consumer" > "$FIXTURE/preview.log" 2>&1 || status=$?
-        [[ "$status" == 2 ]] || exit 1
-        grep -F "$(printf 'REMOVE\trequired\tobsolete.sh')" "$FIXTURE/preview.log" >/dev/null
-        diff -r "$FIXTURE/before-$state" "$consumer"
-        if bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_root" \
-            --consumer "$consumer" > "$FIXTURE/unauthorized.log" 2>&1; then exit 1; fi
-        diff -r "$FIXTURE/before-$state" "$consumer"
-        bash "$ROOT/scripts/distribution/refresh-consumer.sh" --preview --source "$source_root" \
-            --consumer "$consumer" --retire-file obsolete.sh > "$FIXTURE/approved.log"
-        grep -F "$(printf 'REMOVE\tapproved\tobsolete.sh')" "$FIXTURE/approved.log" >/dev/null
-        diff -r "$FIXTURE/before-$state" "$consumer"
+    status=0
+    bash "$ROOT/scripts/distribution/refresh-consumer.sh" --preview --source "$source_root" \
+        --consumer "$consumer" > "$FIXTURE/preview-$state.log" 2>&1 || status=$?
+    if [[ "$state" == unchanged || "$state" == absent ]]; then
+        [[ "$status" == 0 ]] || exit 1
+        grep -F "$(printf 'REMOVE\tobsolete\tobsolete.sh')" "$FIXTURE/preview-$state.log" >/dev/null
+        grep -F "$(printf 'KEEP\tselected\tkept.sh')" "$FIXTURE/preview-$state.log" >/dev/null
+    else
+        [[ "$status" != 0 ]] || exit 1
     fi
+    diff -r "$FIXTURE/before-$state" "$consumer"
     git -C "$consumer" write-tree > "$FIXTURE/index-before"
     status=0
     bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_root" \
-        --consumer "$consumer" --retire-file "$retire" > "$FIXTURE/$state.log" 2>&1 || status=$?
+        --consumer "$consumer" > "$FIXTURE/$state.log" 2>&1 || status=$?
     if [[ "$state" == unchanged || "$state" == absent ]]; then
         [[ "$status" == 0 && ! -e "$consumer/obsolete.sh" && -f "$consumer/current.sh" ]] || exit 1
+        cmp "$seed/kept.sh" "$consumer/kept.sh"
+        cmp "$seed/unowned.sh" "$consumer/unowned.sh"
+        cmp "$seed/unrelated" "$consumer/unrelated"
         bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer" >/dev/null
         bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_root" \
             --consumer "$consumer" > "$FIXTURE/$state-repeat.log"
@@ -147,7 +146,7 @@ for race in identity index manifest symlink; do
     if SNAPSHOT_RACE="$race" SNAPSHOT_RACE_CONSUMER="$consumer" \
         SNAPSHOT_RACE_MARKER="$FIXTURE/seen-$race" SNAPSHOT_RACE_EXPECTED="$FIXTURE/expected-$race" \
         PATH="$FIXTURE/bin:$PATH" bash "$ROOT/scripts/distribution/refresh-consumer.sh" \
-        --source "$source_root" --consumer "$consumer" --retire-file obsolete.sh \
+        --source "$source_root" --consumer "$consumer" \
         > "$FIXTURE/race-$race.log" 2>&1; then exit 1; fi
     [[ -f "$FIXTURE/seen-$race" ]] || exit 1
     diff -r --exclude=.git --exclude='.shared-tooling-refresh.*' "$FIXTURE/expected-$race" "$consumer"
@@ -175,19 +174,21 @@ SCRIPT
 chmod +x "$FIXTURE/bin/rm"
 status=0
 PATH="$FIXTURE/bin:$PATH" bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_root" \
-    --consumer "$consumer" --retire-file obsolete.sh > "$FIXTURE/interrupted.log" 2>&1 || status=$?
+    --consumer "$consumer" > "$FIXTURE/interrupted.log" 2>&1 || status=$?
 [[ "$status" == 19 && ! -e "$consumer/obsolete.sh" ]] || exit 1
 cmp "$seed/.shared-tooling.snapshot" "$consumer/.shared-tooling.snapshot"
 bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_root" \
-    --consumer "$consumer" --retire-file obsolete.sh > "$FIXTURE/reconciled.log"
+    --consumer "$consumer" > "$FIXTURE/reconciled.log"
 bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer" >/dev/null
 # Replace the complete root selection, retiring a root and its former companion.
 consumer="$FIXTURE/reselected"
 cp -Rp "$seed" "$consumer"
 bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_root" \
-    --consumer "$consumer" --entrypoint current.sh --retire-file root.sh --retire-file obsolete.sh \
+    --consumer "$consumer" --entrypoint current.sh \
     > "$FIXTURE/reselected.log"
 [[ ! -e "$consumer/root.sh" && ! -e "$consumer/obsolete.sh" && -f "$consumer/current.sh" ]] || exit 1
+[[ ! -e "$consumer/kept.sh" ]] || exit 1
+cmp "$seed/unowned.sh" "$consumer/unowned.sh"
 grep -F "$(printf '# entrypoint\tcurrent.sh')" "$consumer/.shared-tooling.snapshot" >/dev/null
 for annotation in $'# entrypoint\t' $'# entrypoint\tcurrent.sh' $'# entrypoint\tunowned.sh' $'# entrypoint\t../escape' $'# entrypoint\tcurrent.sh\t' $'# entrypoint\t\tcurrent.sh'; do
     cp "$consumer/.shared-tooling.snapshot" "$FIXTURE/valid-manifest"
