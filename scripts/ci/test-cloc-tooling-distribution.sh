@@ -33,7 +33,7 @@ for source in https://github.com/dragginzgame/shared-tooling.git git@github.com:
     rm -f "$consumer/config/.shared-tooling.snapshot"
     bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_repo" \
         --consumer "$consumer" --manifest config/.shared-tooling.snapshot \
-        --file "${export_files[0]}" --file "${export_files[1]}" --file "${export_files[2]}" > "$fixture/export.log"
+        --entrypoint "${export_files[0]}" --entrypoint "${export_files[1]}" --entrypoint "${export_files[2]}" > "$fixture/export.log"
     bash "$consumer/scripts/ci/verify-shared-tooling-snapshot.sh" --manifest config/.shared-tooling.snapshot > "$fixture/verify.log"
     perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$export_parent" > "$fixture/export.json"
     jq -e --arg version "$source_version" '.partial == false and .totals.shared_loc > 0 and .totals.local_loc == 0 and
@@ -48,7 +48,7 @@ perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$export_parent" > "$fixture/exp
 git -C "$consumer" checkout HEAD -- scripts/ci/archive-evidence.sh
 bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_repo" \
     --consumer "$consumer" --manifest .shared-tooling.archives.snapshot \
-    --file "${export_files[0]}" --file "${export_files[1]}" --file scripts/ci/archive-evidence.sh > "$fixture/dotted-export.log"
+    --entrypoint "${export_files[0]}" --entrypoint "${export_files[1]}" --entrypoint scripts/ci/archive-evidence.sh > "$fixture/dotted-export.log"
 bash "$consumer/scripts/ci/verify-shared-tooling-snapshot.sh" --manifest .shared-tooling.archives.snapshot > "$fixture/dotted-verify.log"
 perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$export_parent" > "$fixture/export-dotted.json"
 jq -e '.partial == false and .totals.shared_loc > 0 and .totals.local_loc == 0 and

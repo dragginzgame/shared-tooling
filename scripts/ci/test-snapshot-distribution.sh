@@ -107,9 +107,9 @@ if PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" \
     --consumer "$consumer_root" \
-    --file scripts/ci/verify-file-checksum.sh \
-    --file scripts/ci/verify-shared-tooling-snapshot.sh \
-    --file ignored.txt >/dev/null 2>&1; then
+    --entrypoint scripts/ci/verify-file-checksum.sh \
+    --entrypoint scripts/ci/verify-shared-tooling-snapshot.sh \
+    --entrypoint ignored.txt >/dev/null 2>&1; then
     echo "snapshot distribution test failed: a file absent from the source revision was accepted" >&2
     exit 1
 fi
@@ -117,24 +117,13 @@ fi
 [[ ! -e "$consumer_root/scripts" ]] || exit 1
 [[ ! -e "$consumer_root/ignored.txt" ]] || exit 1
 
-if PATH="$FIXTURE/bin:$PATH" \
-    bash "$source_root/scripts/distribution/refresh-consumer.sh" \
-    --source "$source_root" \
-    --consumer "$consumer_root" \
-    --file scripts/ci/sample.sh >/dev/null 2>&1; then
-    echo "snapshot distribution test failed: incomplete verifier set was accepted" >&2
-    exit 1
-fi
-[[ ! -e "$consumer_root/.shared-tooling.snapshot" ]] || exit 1
-[[ ! -e "$consumer_root/scripts/ci/sample.sh" ]] || exit 1
-
 if ! SNAPSHOT_TEST_SOURCE_DRIFT=true PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" \
     --consumer "$consumer_root" \
-    --file scripts/ci/verify-file-checksum.sh \
-    --file scripts/ci/verify-shared-tooling-snapshot.sh \
-    --file scripts/ci/sample.sh >"$FIXTURE/initial-refresh.log" 2>&1; then
+    --entrypoint scripts/ci/verify-file-checksum.sh \
+    --entrypoint scripts/ci/verify-shared-tooling-snapshot.sh \
+    --entrypoint scripts/ci/sample.sh >"$FIXTURE/initial-refresh.log" 2>&1; then
     cat "$FIXTURE/initial-refresh.log" >&2
     exit 1
 fi
@@ -392,8 +381,8 @@ PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$nested_consumer" \
     --manifest 'config/shared tools/snapshot' \
-    --file scripts/ci/verify-file-checksum.sh \
-    --file scripts/ci/verify-shared-tooling-snapshot.sh >/dev/null
+    --entrypoint scripts/ci/verify-file-checksum.sh \
+    --entrypoint scripts/ci/verify-shared-tooling-snapshot.sh >/dev/null
 PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$nested_consumer" \
@@ -414,8 +403,8 @@ if PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$blocked_consumer" \
     --manifest config/shared.snapshot \
-    --file scripts/ci/verify-file-checksum.sh \
-    --file scripts/ci/verify-shared-tooling-snapshot.sh >/dev/null 2>&1; then
+    --entrypoint scripts/ci/verify-file-checksum.sh \
+    --entrypoint scripts/ci/verify-shared-tooling-snapshot.sh >/dev/null 2>&1; then
     echo "snapshot distribution test failed: a blocked manifest parent was accepted" >&2
     exit 1
 fi
@@ -463,7 +452,7 @@ for state in staged unstaged deleted unavailable; do
         bash "$source_root/scripts/distribution/refresh-consumer.sh" \
         --source "$source_root" --consumer "$tracked_consumer" \
         --manifest "$tracked_manifest" \
-        --file "$checksum_path" --file "$verifier_path" > "$FIXTURE/$state.log" 2>&1; then
+        --entrypoint "$checksum_path" --entrypoint "$verifier_path" > "$FIXTURE/$state.log" 2>&1; then
         echo "snapshot distribution test failed: $state consumer state was overwritten" >&2
         exit 1
     fi
@@ -491,7 +480,7 @@ PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$tracked_consumer" \
     --manifest "$tracked_manifest" \
-    --file "$checksum_path" --file "$verifier_path" >/dev/null
+    --entrypoint "$checksum_path" --entrypoint "$verifier_path" >/dev/null
 cmp "$FIXTURE/consumer-readme" "$tracked_consumer/README.md"
 cmp "$revision_root/$checksum_path" "$tracked_consumer/$checksum_path"
 cmp "$revision_root/$verifier_path" "$tracked_consumer/$verifier_path"
@@ -511,7 +500,7 @@ ln -s "$preview_consumer" "$FIXTURE/preview-alias"
 for temporary in "$source_root" "$preview_consumer" "$FIXTURE/preview-alias"; do
     if TMPDIR="$temporary" PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
         --preview --source "$source_root" --consumer "$preview_consumer" \
-        --file "$checksum_path" --file "$verifier_path" > "$FIXTURE/preview-temp.log" 2>&1; then exit 1; fi
+        --entrypoint "$checksum_path" --entrypoint "$verifier_path" > "$FIXTURE/preview-temp.log" 2>&1; then exit 1; fi
     grep -F 'temporary directory must be outside source and consumer' "$FIXTURE/preview-temp.log" >/dev/null
     diff -r "$FIXTURE/preview-before" "$preview_consumer"
 done
@@ -523,16 +512,16 @@ done
 status=0
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --preview --source "$source_root" --consumer "$preview_consumer" --manifest nested/selection \
-    --file "$checksum_path" --file "$verifier_path" --file first.sh \
+    --entrypoint "$checksum_path" --entrypoint "$verifier_path" --entrypoint first.sh \
     > "$FIXTURE/preview.out" 2> "$FIXTURE/preview.err" || status=$?
-[[ "$status" == 2 ]] || exit 1
+[[ "$status" == 0 ]] || exit 1
 for item in second third; do
     grep -F "$(printf 'ADD\trequired\t%s.sh' "$item")" "$FIXTURE/preview.out" >/dev/null
 done
 [[ "$(grep -c '^ADD' "$FIXTURE/preview.out")" == 5 ]] || exit 1
 diff -r "$FIXTURE/preview-before" "$preview_consumer"
 complete_preview=(--source "$source_root" --consumer "$preview_consumer" --manifest nested/selection
-    --file "$checksum_path" --file "$verifier_path" --file first.sh --file second.sh --file third.sh)
+    --entrypoint first.sh)
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --preview "${complete_preview[@]}" > "$FIXTURE/preview-complete.out"
 diff -r "$FIXTURE/preview-before" "$preview_consumer"
@@ -566,25 +555,15 @@ for path in scripts/ci/run-validation-targets.sh scripts/ci/check-make-execution
     cp -p "$ROOT/$path" "$source_root/$path"
     cp -p "$ROOT/$path" "$revision_root/$path"
 done
-if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
-    --source "$source_root" --consumer "$selection_consumer" \
-    --file "$checksum_path" --file "$verifier_path" --file scripts/ci/run-validation-targets.sh \
-    > "$FIXTURE/missing-companion.log" 2>&1; then exit 1; fi
-[[ ! -e "$selection_consumer/scripts" && ! -e "$selection_consumer/.shared-tooling.snapshot" ]] || exit 1
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$selection_consumer" --manifest config/selection \
-    --file "$checksum_path" --file "$verifier_path" > "$FIXTURE/selection-initial.log"
+    --entrypoint "$checksum_path" --entrypoint "$verifier_path" > "$FIXTURE/selection-initial.log"
 cp "$selection_consumer/config/selection" "$FIXTURE/selection-before"
-if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
-    --source "$source_root" --consumer "$selection_consumer" --manifest config/selection \
-    --add-file scripts/ci/run-validation-targets.sh > "$FIXTURE/missing-addition.log" 2>&1; then exit 1; fi
-cmp "$FIXTURE/selection-before" "$selection_consumer/config/selection"
-[[ ! -e "$selection_consumer/scripts/ci/run-validation-targets.sh" ]] || exit 1
 printf 'unrelated input\n' > "$selection_consumer/local.txt"
 for attempt in first retry; do
     PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
         --source "$source_root" --consumer "$selection_consumer" --manifest config/selection \
-        --add-file scripts/ci/run-validation-targets.sh --add-file scripts/ci/check-make-execution.sh \
+        --add-entrypoint scripts/ci/run-validation-targets.sh \
         > "$FIXTURE/selection-$attempt.log"
     if [[ "$attempt" == first ]]; then cp "$selection_consumer/config/selection" "$FIXTURE/selection-after"; fi
 done
@@ -603,67 +582,42 @@ cmp "$FIXTURE/selection-after" "$selection_consumer/config/selection"
 # Direct-only runner selection remains complete without the optional PR helper.
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$selection_consumer" --manifest config/selection \
-    --add-file scripts/ci/run-release.sh --add-file scripts/ci/next-release-version.sh \
+    --add-entrypoint scripts/ci/run-release.sh --add-entrypoint scripts/ci/next-release-version.sh \
     > "$FIXTURE/selection-direct.log"
 [[ ! -e "$selection_consumer/scripts/ci/release-pr.sh" ]] || exit 1
-# The consumer simulation has a complete explicit selection without owner-only
-# native tracking fixtures. Missing changelog support still refuses atomically.
-cp "$selection_consumer/config/selection" "$FIXTURE/selection-before-simulation"
-if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
-    --source "$source_root" --consumer "$selection_consumer" --manifest config/selection \
-    --add-file scripts/ci/test-release-runner.sh > "$FIXTURE/missing-simulation-companion.log" 2>&1; then exit 1; fi
-grep -F 'requires selected companion: scripts/ci/finalize-release-changelog.awk' "$FIXTURE/missing-simulation-companion.log" >/dev/null
-cmp "$FIXTURE/selection-before-simulation" "$selection_consumer/config/selection"
-[[ ! -e "$selection_consumer/scripts/ci/test-release-runner.sh" ]] || exit 1
+# Derive fixture companions without importing optional owner-only tests.
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$selection_consumer" --manifest config/selection \
-    --add-file scripts/ci/test-release-runner.sh --add-file scripts/ci/finalize-release-changelog.awk \
+    --add-entrypoint scripts/ci/test-release-runner.sh \
     > "$FIXTURE/selection-simulation.log"
 [[ ! -e "$selection_consumer/scripts/ci/test-release-tracking.sh" ]] || exit 1
+[[ -f "$selection_consumer/scripts/ci/finalize-release-changelog.awk" ]] || exit 1
 bash "$selection_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
     --consumer "$selection_consumer" --manifest config/selection >/dev/null
-# Real installer fixture declarations must prevent the previously successful
-# incomplete export. Check both initial export and addition to an existing set.
-cp "$selection_consumer/config/selection" "$FIXTURE/selection-before-evidence"
+# Resolve actual maintained companion declarations from the selected revision.
+fixture_directories=()
+for directory in scripts make .githooks .github; do
+    [[ ! -d "$ROOT/$directory" ]] || fixture_directories+=("$directory")
+done
+(cd "$ROOT" && rg --files --hidden "${fixture_directories[@]}") > "$FIXTURE/companion-sources"
+while IFS= read -r path; do
+    mkdir -p "$source_root/$(dirname "$path")" "$revision_root/$(dirname "$path")"
+    [[ -e "$source_root/$path" ]] || cp -p "$ROOT/$path" "$source_root/$path"
+    [[ -e "$revision_root/$path" ]] || cp -p "$ROOT/$path" "$revision_root/$path"
+done < "$FIXTURE/companion-sources"
 omitted_pairs=0
 while read -r entry missing; do
-    # Consumer snapshots may omit optional fixture/reporting entrypoints. Only
-    # test declarations for entries present here; a present entry must still
-    # refuse export without its required companion, even if that helper is absent.
     if [[ ! -e "$ROOT/$entry" && ! -L "$ROOT/$entry" ]]; then
         omitted_pairs=$((omitted_pairs + 1))
         continue
     fi
-    mkdir -p "$source_root/${entry%/*}" "$revision_root/${entry%/*}"
-    cp -p "$ROOT/$entry" "$source_root/$entry"
-    cp -p "$ROOT/$entry" "$revision_root/$entry"
-    label="${entry##*/}"
-    for mode in initial addition; do
-        selected_consumer="$selection_consumer"
-        # The release runner is already selected in this addition fixture.
-        # A present companion is not an incomplete export; initial still tests it.
-        if [[ "$mode" == addition && -f "$selected_consumer/$missing" ]]; then continue; fi
-        selection_args=(--manifest config/selection --add-file "$entry")
-        if [[ "$mode" == initial ]]; then
-            selected_consumer="$FIXTURE/incomplete-$label"
-            git init -q "$selected_consumer"
-            selection_args=(--file "$checksum_path" --file "$verifier_path" --file "$entry")
-        fi
-        if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
-            --source "$source_root" --consumer "$selected_consumer" "${selection_args[@]}" \
-            > "$FIXTURE/missing-$label-$mode.log" 2>&1; then
-            echo "snapshot distribution test failed: exported $entry without $missing ($mode)" >&2
-            exit 1
-        fi
-        grep -F "requires selected companion: $missing" "$FIXTURE/missing-$label-$mode.log" >/dev/null
-        if [[ "$mode" == initial ]]; then
-            [[ ! -e "$selected_consumer/scripts" && ! -e "$selected_consumer/.shared-tooling.snapshot" ]] || exit 1
-        else
-            cmp "$FIXTURE/selection-before-evidence" "$selected_consumer/config/selection"
-            [[ ! -e "$selected_consumer/$entry" ]] || exit 1
-            bash "$ROOT/$verifier_path" --consumer "$selected_consumer" --manifest config/selection >/dev/null
-        fi
-    done
+    selected_consumer="$FIXTURE/closure-${entry##*/}"
+    git init -q "$selected_consumer"
+    PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+        --preview --source "$source_root" --consumer "$selected_consumer" \
+        --entrypoint "$entry" > "$FIXTURE/closure.out"
+    grep -F "$(printf 'ADD\trequired\t%s' "$missing")" "$FIXTURE/closure.out" >/dev/null
+    [[ ! -e "$selected_consumer/scripts" && ! -e "$selected_consumer/.shared-tooling.snapshot" ]] || exit 1
 done <<'COMPANIONS'
 scripts/ci/test-host-tools.sh scripts/ci/test-tool-evidence.sh
 scripts/ci/test-ic-tools.sh scripts/ci/test-tool-evidence.sh
@@ -700,7 +654,7 @@ printf 'Snapshot companion cases: %s optional entries absent\n' "$omitted_pairs"
 # owner-only integration fixtures or unrelated production tools.
 focused_consumer="$FIXTURE/focused-fixtures"
 git init -q "$focused_consumer"
-selection_args=(--file "$checksum_path" --file "$verifier_path")
+selection_args=(--entrypoint "$checksum_path" --entrypoint "$verifier_path")
 without_reporter=("${selection_args[@]}")
 for path in scripts/ci/test-format-tools.sh scripts/ci/check-format-tools.sh \
     scripts/ci/test-rust-tools.sh scripts/dev/install-rust-tools.sh .githooks/pre-commit \
@@ -710,16 +664,15 @@ for path in scripts/ci/test-format-tools.sh scripts/ci/check-format-tools.sh \
     mkdir -p "$source_root/${path%/*}" "$revision_root/${path%/*}"
     cp -p "$ROOT/$path" "$source_root/$path"
     cp -p "$ROOT/$path" "$revision_root/$path"
-    selection_args+=(--file "$path")
-    if [[ "$path" != scripts/ci/run-formatting.sh ]]; then without_reporter+=(--file "$path"); fi
+    selection_args+=(--entrypoint "$path")
+    if [[ "$path" != scripts/ci/run-formatting.sh ]]; then without_reporter+=(--entrypoint "$path"); fi
 done
 missing_reporter="$FIXTURE/missing-format-reporter"
 git init -q "$missing_reporter"
-if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$missing_reporter" "${without_reporter[@]}" \
-    > "$FIXTURE/missing-format-reporter.log" 2>&1; then exit 1; fi
-grep -F 'requires selected companion: scripts/ci/run-formatting.sh' "$FIXTURE/missing-format-reporter.log" >/dev/null
-[[ ! -e "$missing_reporter/.shared-tooling.snapshot" && ! -e "$missing_reporter/scripts" ]] || exit 1
+    > "$FIXTURE/derived-format-reporter.log"
+[[ -f "$missing_reporter/scripts/ci/run-formatting.sh" ]] || exit 1
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$focused_consumer" "${selection_args[@]}" \
     > "$FIXTURE/focused-fixtures-export.log"
@@ -727,9 +680,7 @@ for entry in test-format-tools test-rust-tools test-make-format; do
     bash "$focused_consumer/scripts/ci/$entry.sh" > "$FIXTURE/exported-$entry.log" 2>&1
 done
 bash "$ROOT/$verifier_path" --consumer "$focused_consumer" >/dev/null
-# CI installer fixtures require every wrapper, even when the consumer only
-# uses a subset in production. Omit each dependency from an otherwise complete
-# selection so no earlier missing edge can hide a missing declaration.
+# CI installer fixtures derive every wrapper even when production uses a subset.
 installer_paths=(scripts/ci/test-installers.sh scripts/ci/install-ci-tool.sh)
 for tool in actionlint gitleaks shellcheck yq sccache; do
     installer_paths+=("scripts/ci/install-$tool.sh")
@@ -738,40 +689,8 @@ for path in "${installer_paths[@]}"; do
     cp -p "$ROOT/$path" "$source_root/$path"
     cp -p "$ROOT/$path" "$revision_root/$path"
 done
-for tool in actionlint gitleaks shellcheck yq sccache; do
-    missing="scripts/ci/install-$tool.sh"
-    for mode in initial addition; do
-        selected_consumer="$selection_consumer"
-        selection_args=(--manifest config/selection)
-        option=--add-file
-        if [[ "$mode" == initial ]]; then
-            selected_consumer="$FIXTURE/incomplete-ci-$tool"
-            git init -q "$selected_consumer"
-            selection_args=(--file "$checksum_path" --file "$verifier_path")
-            option=--file
-        fi
-        for path in "${installer_paths[@]}"; do
-            [[ "$path" == "$missing" ]] || selection_args+=("$option" "$path")
-        done
-        if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
-            --source "$source_root" --consumer "$selected_consumer" "${selection_args[@]}" \
-            > "$FIXTURE/missing-ci-$tool-$mode.log" 2>&1; then
-            echo "snapshot distribution test failed: CI fixture exported without $missing ($mode)" >&2
-            exit 1
-        fi
-        grep -F "requires selected companion: $missing" "$FIXTURE/missing-ci-$tool-$mode.log" >/dev/null
-        if [[ "$mode" == initial ]]; then
-            [[ ! -e "$selected_consumer/scripts" && ! -e "$selected_consumer/.shared-tooling.snapshot" ]] || exit 1
-        else
-            cmp "$FIXTURE/selection-before-evidence" "$selected_consumer/config/selection"
-            bash "$ROOT/$verifier_path" --consumer "$selected_consumer" --manifest config/selection >/dev/null
-            [[ "$(cat "$selected_consumer/local.txt")" == 'unrelated input' ]] || exit 1
-            for path in "${installer_paths[@]}"; do [[ ! -e "$selected_consumer/$path" ]] || exit 1; done
-        fi
-    done
-done
 selection_args=(--manifest config/selection)
-for path in "${installer_paths[@]}"; do selection_args+=(--add-file "$path"); done
+for path in "${installer_paths[@]}"; do selection_args+=(--add-entrypoint "$path"); done
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$selection_consumer" "${selection_args[@]}" \
     > "$FIXTURE/complete-ci-installers.log"
@@ -781,7 +700,7 @@ cp "$selection_consumer/config/selection" "$FIXTURE/selection-before-conflict"
 printf 'consumer-owned file\n' > "$selection_consumer/scripts/ci/sample.sh"
 if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$selection_consumer" --manifest config/selection \
-    --add-file scripts/ci/sample.sh > "$FIXTURE/addition-conflict.log" 2>&1; then exit 1; fi
+    --add-entrypoint scripts/ci/sample.sh > "$FIXTURE/addition-conflict.log" 2>&1; then exit 1; fi
 cmp "$FIXTURE/selection-before-conflict" "$selection_consumer/config/selection"
 [[ "$(cat "$selection_consumer/scripts/ci/sample.sh")" == 'consumer-owned file' ]] || exit 1
 
@@ -797,7 +716,7 @@ while IFS= read -r path; do
     mkdir -p "$source_root/$(dirname "$path")" "$revision_root/$(dirname "$path")"
     cp -p "$ROOT/$path" "$source_root/$path"
     cp -p "$ROOT/$path" "$revision_root/$path"
-    governance_args+=(--file "$path")
+    governance_args+=(--entrypoint "$path")
     case "$path" in *.md) governance_docs+=("$path") ;; esac
 done < "$ROOT/scripts/distribution/governance-files.txt"
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
@@ -829,7 +748,7 @@ git -C "$advance_source" add scripts VERSION
 git -C "$advance_source" commit -qm 'Synthetic previous snapshot'
 git init -q "$advance_seed"
 bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$advance_source" --consumer "$advance_seed" \
-    --file "$checksum_path" --file "$verifier_path" --file scripts/ci/sample.sh > "$FIXTURE/advance-initial.log"
+    --entrypoint "$checksum_path" --entrypoint "$verifier_path" --entrypoint scripts/ci/sample.sh > "$FIXTURE/advance-initial.log"
 printf 'unrelated staged input\n' > "$advance_seed/unrelated"
 git -C "$advance_seed" add unrelated
 printf '#!/usr/bin/env bash\nprintf "new snapshot\\n"\n' > "$advance_source/scripts/ci/sample.sh"

@@ -74,6 +74,17 @@ for annotation in $'# version\t0.02.8' $'# version\t' $'# version\t0.2.8\textra'
     jq -e '.partial and (.repositories[0].error | contains("version annotation"))' "$fixture/bad-version.json" >/dev/null
 done
 cp "$fixture/version-manifest" "$repo/.shared-tooling.snapshot"
+# Selection annotations must not hide malformed or unowned roots from the fleet report.
+printf '# entrypoint\tscripts/ci/a.sh\n' >> "$repo/.shared-tooling.snapshot"
+perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$parent" > "$fixture/entrypoint.json"
+jq -e '.partial == false and .repositories[0].snapshot_manifests[0].integrity == "ok"' "$fixture/entrypoint.json" >/dev/null
+for annotation in $'# entrypoint\tmissing.sh' $'# entrypoint\t' $'# entrypoint\tscripts/ci/a.sh\textra' $'# entrypoint\tscripts/ci/a.sh\n# entrypoint\tscripts/ci/a.sh'; do
+    cp "$fixture/version-manifest" "$repo/.shared-tooling.snapshot"
+    printf '%s\n' "$annotation" >> "$repo/.shared-tooling.snapshot"
+    if perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$parent" > "$fixture/bad-root.json" 2> "$fixture/bad-root.err"; then exit 1; fi
+    jq -e '.partial and (.repositories[0].error | contains("entrypoint"))' "$fixture/bad-root.json" >/dev/null
+done
+cp "$fixture/version-manifest" "$repo/.shared-tooling.snapshot"
 # Integrity includes selected documents and missing/linked files outside LOC.
 mkdir "$repo/docs"
 printf 'Selected documentation.\n' > "$repo/docs/guide.md"

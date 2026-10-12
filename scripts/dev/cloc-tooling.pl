@@ -128,8 +128,14 @@ sub load_snapshot {
         $base = $selection eq $checkout ? '.' : substr($selection, length($checkout) + 1);
     }
     die "symlinked snapshot root\n" if is_linked($base);
-    my (%files, %headers);
+    my (%files, %headers, %entrypoints);
     for my $line (split /\n/, read_file($manifest)) {
+        if ($line =~ /^# entrypoint(?:\t|$)/) {
+            die "malformed or duplicate snapshot entrypoint annotation\n"
+                unless $line =~ /^# entrypoint\t([^\t\r\n]+)$/ && !$entrypoints{$1}++;
+            safe_path($1);
+            next;
+        }
         if ($line =~ /^# version(?:\t|$)/) {
             die "malformed or duplicate snapshot version annotation\n"
                 unless $line =~ /^# version\t((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))$/ &&
@@ -155,6 +161,9 @@ sub load_snapshot {
         ($headers{revision} // '') =~ /^[a-f0-9]{40,64}$/ &&
         ($headers{source} // '') =~ m{^(?:https://github\.com/|git\@github\.com:|ssh://git\@github\.com/)dragginzgame/shared-tooling(?:\.git)?$};
     my %resolved = map { ($base eq '.' ? $_ : "$base/$_") => $files{$_} } keys %files;
+    for my $entrypoint (keys %entrypoints) {
+        die "snapshot entrypoint is not a declared payload\n" unless exists $files{$entrypoint};
+    }
     die "empty snapshot file set\n" unless keys %resolved;
     return (\%resolved, {path => $manifest, revision => $headers{revision}, root => $base,
         version => $headers{version}, source => $headers{source}, files => [sort keys %resolved]});

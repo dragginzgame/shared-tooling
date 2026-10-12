@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0]
+
+### Breaking
+
+- Select snapshot entrypoints and derive their required shared files automatically.
+  Replace `--file` / `--add-file` with `--entrypoint` / `--add-entrypoint`; existing
+  snapshots need one explicit root selection. Preview reports the complete change,
+  including obsolete files that require individual retirement approval and verified
+  ownership. Interrupted refreshes preserve exact-source retry and local conflicts.
+  See [adoption and retirement](docs/consuming-snapshots.md#entrypoint-selection-in-070).
+  ([#131](https://github.com/dragginzgame/shared-tooling/issues/131))
+
 ## [0.6.6]
 
 ### Fixed
