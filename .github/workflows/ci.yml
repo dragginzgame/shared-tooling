@@ -177,8 +177,18 @@ jobs:
           name: native-retention-${{ matrix.os }}-${{ github.run_attempt }}
           temp-root: ${{ runner.temp }}/portable-fixtures/native-retention/temp
           repository-root: ${{ runner.temp }}/portable-fixtures/native-retention/consumer
-      - name: Download the uploaded native failure evidence
+      - name: Wait for native failure evidence discovery
         if: ${{ !cancelled() && steps.retention-upload.outputs.artifact-id != '' }}
+        id: retention-discovery
+        timeout-minutes: 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVIDENCE_REPOSITORY: ${{ github.repository }}
+          EVIDENCE_RUN: ${{ github.run_id }}
+          EVIDENCE_ARTIFACT: ${{ steps.retention-upload.outputs.artifact-id }}
+        run: bash scripts/ci/wait-for-artifact.sh "$EVIDENCE_REPOSITORY" "$EVIDENCE_RUN" "$EVIDENCE_ARTIFACT"
+      - name: Download the uploaded native failure evidence
+        if: ${{ !cancelled() && steps.retention-discovery.outcome == 'success' }}
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           artifact-ids: ${{ steps.retention-upload.outputs.artifact-id }}
@@ -224,8 +234,18 @@ jobs:
           temp-root: ${{ runner.temp }}/portable-fixtures/native-retention/temp
           repository-root: ${{ github.workspace }}
           compact-successful-tools: 'true'
-      - name: Download compact native tool evidence
+      - name: Wait for compact native evidence discovery
         if: ${{ !cancelled() && steps.compact-upload.outputs.artifact-id != '' }}
+        id: compact-discovery
+        timeout-minutes: 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVIDENCE_REPOSITORY: ${{ github.repository }}
+          EVIDENCE_RUN: ${{ github.run_id }}
+          EVIDENCE_ARTIFACT: ${{ steps.compact-upload.outputs.artifact-id }}
+        run: bash scripts/ci/wait-for-artifact.sh "$EVIDENCE_REPOSITORY" "$EVIDENCE_RUN" "$EVIDENCE_ARTIFACT"
+      - name: Download compact native tool evidence
+        if: ${{ !cancelled() && steps.compact-discovery.outcome == 'success' }}
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
           artifact-ids: ${{ steps.compact-upload.outputs.artifact-id }}

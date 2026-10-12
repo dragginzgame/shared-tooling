@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.9.5]
+
+### Fixed
+
+- Wait for newly uploaded CI evidence to become visible through bounded,
+  exact-ID discovery retries. Downloads retain the pinned transport, strict
+  digest checks and independent payload verification; exhausted discovery fails
+  without repeating the upload or selecting another artifact.
+  ([#63](https://github.com/dragginzgame/shared-tooling/issues/63))
+
 ## [0.9.4]
 
 ### Fixed
