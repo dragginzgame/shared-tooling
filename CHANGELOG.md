@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.3]
+
+### Fixed
+
+- Retry transient host and IC asset-download failures within bounded attempt and
+  time limits. Permanent download errors and checksum failures remain terminal;
+  failed candidates and previous tool selections are retained.
+  ([#138](https://github.com/dragginzgame/shared-tooling/issues/138))
+
 ## [0.9.2]
 
 ### Fixed

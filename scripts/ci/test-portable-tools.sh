@@ -68,6 +68,7 @@ done
 echo 'Runner fixture preserves inherited parent logs and summary'
 bash "$ROOT/scripts/ci/test-runner-disk-space.sh"
 bash "$ROOT/scripts/ci/test-installers.sh"
+bash "$ROOT/scripts/ci/test-tool-downloads.sh"
 bash "$ROOT/scripts/ci/test-ic-tools.sh"
 bash "$ROOT/scripts/ci/test-host-tools.sh"
 bash "$ROOT/scripts/ci/test-rust-tools.sh"
