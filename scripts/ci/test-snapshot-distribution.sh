@@ -650,6 +650,34 @@ scripts/dev/cloc-siblings.sh scripts/dev/cloc.sh
 COMPANIONS
 printf 'Snapshot companion cases: %s optional entries absent\n' "$omitted_pairs"
 
+# A minimal Make export runs its real offline commands without separately
+# selecting their installers. Only pin catalogs and product inputs stay local.
+minimal_consumer="$FIXTURE/minimal-make"
+git init -q "$minimal_consumer"
+PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$minimal_consumer" --entrypoint make/consumer.mk > "$FIXTURE/minimal-export.log"
+printf 'include make/consumer.mk\n' > "$minimal_consumer/Makefile"
+[[ ! -e "$minimal_consumer/ci/tool-versions.env" && ! -e "$minimal_consumer/ci/ic-tools.tsv" &&
+   ! -e "$minimal_consumer/scripts/dev/cloc-tooling.pl" ]]
+mkdir "$minimal_consumer/ci"
+cp "$ROOT/ci/tool-versions.env" "$ROOT/ci/ic-tools.tsv" "$minimal_consumer/ci/"
+for target in host-tools-check ic-tools-check rust-tools-check cloc; do
+    status=0
+    SHARED_TOOLING_STORE="$FIXTURE/minimal-store" make -s -C "$minimal_consumer" "$target" \
+        > "$FIXTURE/minimal-$target.log" 2>&1 || status=$?
+    [[ "$status" == 2 ]]
+    case "$target" in
+        host-tools-check) diagnostic='reason=missing-bundle' ;;
+        ic-tools-check) diagnostic='missing' ;;
+        rust-tools-check) diagnostic='tool store directory must be physical' ;;
+        cloc) diagnostic='Cargo workspace manifest not found' ;;
+    esac
+    grep -F "$diagnostic" "$FIXTURE/minimal-$target.log" >/dev/null
+    if grep -F 'No such file or directory' "$FIXTURE/minimal-$target.log"; then exit 1; fi
+done
+make -s -C "$minimal_consumer" shared-tooling-check > "$FIXTURE/minimal-integrity.log"
+[[ ! -e "$minimal_consumer/.tools" && ! -e "$FIXTURE/minimal-store" ]]
+
 # Complete focused selections must remain independently runnable, without
 # owner-only integration fixtures or unrelated production tools.
 focused_consumer="$FIXTURE/focused-fixtures"
@@ -832,6 +860,58 @@ for state in unchanged partial edited mode staged symlink forged unavailable man
     if git -C "$consumer" rev-parse --verify HEAD >/dev/null 2>&1; then exit 1; fi
     cmp "$advance_seed/$checksum_path" "$consumer/$checksum_path"
     cmp "$advance_seed/$verifier_path" "$consumer/$verifier_path"
+done
+
+# Fail in the middle of a payload copy, and mutate destination/index while a
+# replacement is prepared. Neither failure may overwrite the admitted old file.
+mkdir "$FIXTURE/copy-bin"
+export SNAPSHOT_REAL_CP
+SNAPSHOT_REAL_CP="$(command -v cp)"
+cat > "$FIXTURE/copy-bin/cp" <<'SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$#" == 3 && "$1" == -p && "$2" == */files/scripts/ci/sample.sh ]]; then
+    if [[ "$SNAPSHOT_COPY_CASE" == interrupted ]]; then
+        printf 'partial replacement\n' > "$3"
+        exit 23
+    fi
+    "$SNAPSHOT_REAL_CP" "$@"
+    if [[ "$SNAPSHOT_COPY_CASE" == payload-race ]]; then
+        printf '# concurrent edit\n' >> "$SNAPSHOT_COPY_CONSUMER/scripts/ci/sample.sh"
+        "$SNAPSHOT_REAL_CP" -p "$SNAPSHOT_COPY_CONSUMER/scripts/ci/sample.sh" "$SNAPSHOT_COPY_CONSUMER/expected-sample"
+    else
+        "$REAL_GIT" -C "$SNAPSHOT_COPY_CONSUMER" add scripts/ci/sample.sh
+        "$REAL_GIT" -C "$SNAPSHOT_COPY_CONSUMER" write-tree > "$SNAPSHOT_COPY_CONSUMER/expected-index"
+    fi
+    exit 0
+fi
+exec "$SNAPSHOT_REAL_CP" "$@"
+SCRIPT
+chmod +x "$FIXTURE/copy-bin/cp"
+for state in interrupted payload-race index-race; do
+    consumer="$FIXTURE/copy-$state"
+    cp -Rp "$advance_seed" "$consumer"
+    cp -p "$consumer/scripts/ci/sample.sh" "$consumer/expected-sample"
+    git -C "$consumer" write-tree > "$consumer/expected-index"
+    status=0
+    SNAPSHOT_COPY_CASE="$state" SNAPSHOT_COPY_CONSUMER="$consumer" PATH="$FIXTURE/copy-bin:$PATH" \
+        bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$advance_source" --consumer "$consumer" \
+        > "$FIXTURE/copy-$state.log" 2>&1 || status=$?
+    [[ "$status" != 0 ]]
+    [[ "$state" != interrupted || "$status" == 23 ]]
+    cmp "$consumer/expected-sample" "$consumer/scripts/ci/sample.sh"
+    [[ -x "$consumer/scripts/ci/sample.sh" ]]
+    cmp "$advance_seed/.shared-tooling.snapshot" "$consumer/.shared-tooling.snapshot"
+    [[ "$(git -C "$consumer" write-tree)" == "$(cat "$consumer/expected-index")" ]]
+    [[ -z "$(find "$consumer" -name '.shared-tooling-payload.*')" ]]
+    if [[ "$state" == interrupted ]]; then
+        bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$advance_source" --consumer "$consumer" \
+            > "$FIXTURE/copy-retry.log"
+        cmp "$advance_source/scripts/ci/sample.sh" "$consumer/scripts/ci/sample.sh"
+        [[ ! -x "$consumer/scripts/ci/sample.sh" ]]
+        bash "$ROOT/$verifier_path" --consumer "$consumer" >/dev/null
+        [[ "$(git -C "$consumer" write-tree)" == "$(cat "$consumer/expected-index")" ]]
+    fi
 done
 
 echo "snapshot distribution test passed"

@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.8.3]
+
+### Fixed
+
+- Reject redirected Cargo build-observation files before writing diagnostics,
+  preserving outside files, failed evidence and the previous tool selection.
+  ([#136](https://github.com/dragginzgame/shared-tooling/issues/136))
+- Formatting admission now uses the selected Rust tool catalog consistently with
+  installation, including when host and Rust pins live in separate files.
+  ([#135](https://github.com/dragginzgame/shared-tooling/issues/135))
+- Minimal Make snapshots include their common installers and default LOC helper.
+  Snapshot refresh replaces individual payloads atomically so an interrupted copy
+  can be retried without leaving truncated destinations; local-edit and index
+  conflict checks remain enforced.
+  ([#131](https://github.com/dragginzgame/shared-tooling/issues/131))
+- Keep successful ripgrep PCRE2 capability checks quiet while retaining failure
+  diagnostics.
+
 ## [0.8.2]
 
 ### Added
