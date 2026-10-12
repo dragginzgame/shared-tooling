@@ -11,7 +11,7 @@ include make/consumer.mk
         release-version release-preflight release-verify \
         release-prepare-version release-prepared-check release-files \
         release-commit-check release-committed-check release-tagged-check release-push-check \
-        release-merged-preflight
+        release-merged-preflight check-cargo-tool-versions
 
 help:
 	@echo "Current local version: make version"
@@ -22,6 +22,7 @@ help:
 	@echo "Local IC executables: install-ic-tools; offline verification: ic-tools-check"
 	@echo "Complete common host, IC and Rust toolset: install-tools; offline verification: tools-check"
 	@echo "Pinned Cargo tools: install-rust-tools; offline verification: rust-tools-check"
+	@echo "Cargo tool freshness (online, read-only): check-cargo-tool-versions"
 	@echo "Full gate: ci (explicit request or configured CI)"
 	@echo "Maintainer releases: release-patch, release-minor, release-major"
 	@echo "Delivery: direct by default; RELEASE_DELIVERY=pr selects review then merged validation/tag"
@@ -29,6 +30,9 @@ help:
 
 tasks:
 	@cat tasks/README.md
+
+check-cargo-tool-versions:
+	@perl scripts/dev/check-cargo-tool-versions.pl --versions "$(RUST_TOOL_VERSIONS)"
 
 check-shell:
 	$(SHELLCHECK) scripts/ci/*.sh scripts/dev/*.sh scripts/distribution/*.sh scripts/release/*.sh .githooks/pre-commit

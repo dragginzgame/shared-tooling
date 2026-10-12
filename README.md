@@ -44,7 +44,7 @@ Tooling rules and checks; it would not create a second engineering baseline.
 ## Repeatable maintenance
 
 Open the [task catalog](tasks/README.md) or run `make tasks`. Shared Tooling owns
-repeatable cargo-machete, MSRV, Rust freshness, CI/issue, snapshot and dependency
+repeatable cargo-machete, MSRV, Rust/Cargo tool freshness, CI/issue, snapshot and dependency
 advisory checks, plus bounded code and tooling-duplication audits. Each definition
 explains its scope, procedure and evidence; consumers keep their local inputs.
 
@@ -52,6 +52,12 @@ The [local agent schedule](tasks/local-schedule.md) runs a maintenance pass ever
 three days once explicitly enabled, retaining reports and coordinating findings
 through owning GitHub issues. It does not automatically edit sibling source or
 upgrade dependencies. Task definitions remain readable and runnable on demand.
+
+Run `make check-cargo-tool-versions` for a read-only online comparison of common
+Cargo pins, this checkout's selected tools and user-level Cargo installations.
+The [Cargo tool freshness task](tasks/cargo-tool-versions.md) documents JSON output,
+alternative catalogs and retained evidence. Missing or outdated installations
+are distinct from a current pin; the command never installs or rewrites anything.
 
 ## Shared principles
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.8.2]
+
+### Added
+
+- Check Cargo tool freshness with `make check-cargo-tool-versions`: compare shared
+  pins, checkout selections and user-installed packages with current non-yanked
+  stable releases. Report missing tools and unavailable registry observations
+  separately, retaining response evidence without installing or changing pins.
+
 ## [0.8.1]
 
 ### Fixed
