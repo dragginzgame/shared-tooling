@@ -155,6 +155,16 @@ printf '# verifier placement fixture\n' > "$repo/vendor/shared/scripts/ci/verify
 perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$parent" > "$fixture/nested.json"
 jq -e '.totals.total_loc == 11 and .totals.shared_loc == 3 and
   .totals.local_loc == 8 and (.repositories[0].snapshot_manifests | length) == 3' "$fixture/nested.json" >/dev/null
+# Inspected verifiers are data, including when the report delegates parsing.
+export SNAPSHOT_READER_EXECUTED="$fixture/inspected-reader-executed"
+cat > "$repo/vendor/shared/scripts/ci/verify-shared-tooling-snapshot.sh" <<'UNTRUSTED'
+: > "$SNAPSHOT_READER_EXECUTED"
+exit 99
+UNTRUSTED
+perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$parent" > "$fixture/untrusted-reader.json"
+jq -e '.partial == false and .totals.shared_loc == 3' "$fixture/untrusted-reader.json" >/dev/null
+[[ ! -e "$SNAPSHOT_READER_EXECUTED" ]] || exit 1
+printf '# verifier placement fixture\n' > "$repo/vendor/shared/scripts/ci/verify-shared-tooling-snapshot.sh"
 # Byte-identical but unrecorded copies stay local; modified snapshot files too.
 printf 'printf "changed\\n"\n' >> "$repo/scripts/ci/a.sh"
 perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$parent" > "$fixture/drift.json" 2> "$fixture/drift.err"

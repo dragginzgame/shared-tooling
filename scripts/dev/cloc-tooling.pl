@@ -1,4 +1,5 @@
 #!/usr/bin/env perl
+# Shared companions: scripts/ci/verify-shared-tooling-snapshot.sh
 use strict;
 use warnings;
 use Cwd qw(abs_path getcwd);
@@ -128,43 +129,35 @@ sub load_snapshot {
         $base = $selection eq $checkout ? '.' : substr($selection, length($checkout) + 1);
     }
     die "symlinked snapshot root\n" if is_linked($base);
-    my (%files, %headers, %entrypoints);
-    for my $line (split /\n/, read_file($manifest)) {
-        if ($line =~ /^\t*# entrypoint(?:\t|$)/) {
-            die "malformed or duplicate snapshot entrypoint annotation\n"
-                unless $line =~ /^# entrypoint\t([^\t\r\n]+)$/ && !$entrypoints{$1}++;
-            safe_path($1);
-            next;
-        }
-        if ($line =~ /^\t*# version(?:\t|$)/) {
-            die "malformed or duplicate snapshot version annotation\n"
-                unless $line =~ /^# version\t((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))$/ &&
-                    !exists $headers{version};
-            $headers{version} = $1;
-            next;
-        }
-        next if $line =~ /^\s*(?:#|$)/;
+    # Invoke only our reviewed reader, never code in the inspected checkout.
+    # Merge its diagnostics into the pipe so a failed repository retains the
+    # actual admission error in JSON as well as the human report.
+    my $pid = open my $reader, '-|';
+    die "cannot start snapshot reader: $!\n" unless defined $pid;
+    if (!$pid) {
+        open STDERR, '>&', STDOUT or die "redirect reader diagnostics: $!\n";
+        exec 'bash', "$root/scripts/ci/verify-shared-tooling-snapshot.sh", '--read-manifest', $manifest;
+        die "cannot execute snapshot reader: $!\n";
+    }
+    my $records = do { local $/; <$reader> // '' };
+    close $reader or die "invalid snapshot manifest $manifest:\n$records";
+    my (%files, %headers);
+    for my $line (split /\n/, $records) {
         my ($kind, @values) = split /\t/, $line, -1;
         if ($kind eq 'file') {
-            die "malformed or duplicate snapshot file\n" unless @values == 3 &&
-                $values[0] =~ /^[a-f0-9]{64}$/ && $values[1] =~ /^(?:x|-)$/ &&
-                length($values[2]) && !exists $files{$values[2]};
             safe_path($values[2]);
             $files{$values[2]} = { hash => $values[0], mode => $values[1] };
-        } else {
-            die "malformed snapshot header\n" unless @values == 1 &&
-                $kind =~ /^(?:format|revision|source)$/ && !exists $headers{$kind};
+        } elsif ($kind eq '# version') {
+            $headers{version} = $values[0];
+        } elsif ($kind ne '# entrypoint') {
             $headers{$kind} = $values[0];
         }
     }
-    die "unsupported shared snapshot identity\n" unless ($headers{format} // '') eq '1' &&
-        ($headers{revision} // '') =~ /^[a-f0-9]{40,64}$/ &&
-        ($headers{source} // '') =~ m{^(?:https://github\.com/|git\@github\.com:|ssh://git\@github\.com/)dragginzgame/shared-tooling(?:\.git)?$};
+    # Fleet attribution is stricter than syntax: only this upstream owns Shared
+    # LOC. Refresh instead binds source identity to its explicitly selected repo.
+    die "unsupported shared snapshot identity\n" unless
+        $headers{source} =~ m{^(?:https://github\.com/|git\@github\.com:|ssh://git\@github\.com/)dragginzgame/shared-tooling(?:\.git)?$};
     my %resolved = map { ($base eq '.' ? $_ : "$base/$_") => $files{$_} } keys %files;
-    for my $entrypoint (keys %entrypoints) {
-        die "snapshot entrypoint is not a declared payload\n" unless exists $files{$entrypoint};
-    }
-    die "empty snapshot file set\n" unless keys %resolved;
     return (\%resolved, {path => $manifest, revision => $headers{revision}, root => $base,
         version => $headers{version}, source => $headers{source}, files => [sort keys %resolved]});
 }

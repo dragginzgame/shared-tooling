@@ -243,6 +243,40 @@ for version in missing 01.2.3 $'0.2.8\n\n'; do
 done
 printf '0.2.8' > "$revision_root/VERSION"
 
+# Syntax admission needs neither payload files nor a checksum backend. Emit the
+# admitted records only after the complete input passes, preserving order/bytes.
+mkdir "$FIXTURE/empty-path"
+awk -F '\t' '$1 == "# version" || $1 == "# entrypoint" || $1 !~ /^#/' \
+    "$FIXTURE/version-manifest" > "$FIXTURE/expected-records"
+PATH="$FIXTURE/empty-path" "$BASH" "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" \
+    --read-manifest "$FIXTURE/version-manifest" > "$FIXTURE/read-records"
+cmp "$FIXTURE/expected-records" "$FIXTURE/read-records"
+# A failed open must never reuse an inherited value of the capture variable.
+# Root can still read mode-000 files; qualify this case on ordinary user hosts.
+cp "$FIXTURE/version-manifest" "$FIXTURE/unreadable-records"
+chmod 000 "$FIXTURE/unreadable-records"
+if [[ ! -r "$FIXTURE/unreadable-records" ]]; then
+    if manifest_contents="$(cat "$FIXTURE/version-manifest")" \
+        bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --read-manifest "$FIXTURE/unreadable-records" \
+        > "$FIXTURE/unreadable-records.out" 2> "$FIXTURE/unreadable-records.err"; then exit 1; fi
+    [[ ! -s "$FIXTURE/unreadable-records.out" ]] || exit 1
+fi
+for invalid in unknown duplicate unowned nul; do
+    cp "$FIXTURE/version-manifest" "$FIXTURE/invalid-records"
+    case "$invalid" in
+        unknown) printf 'unexpected\tvalue\n' >> "$FIXTURE/invalid-records" ;;
+        duplicate) printf 'format\t1\n' >> "$FIXTURE/invalid-records" ;;
+        unowned) printf '# entrypoint\tmissing.sh\n' >> "$FIXTURE/invalid-records" ;;
+        nul) printf '\0' >> "$FIXTURE/invalid-records" ;;
+    esac
+    if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --read-manifest "$FIXTURE/invalid-records" \
+        > "$FIXTURE/invalid-records.out" 2> "$FIXTURE/invalid-records.err"; then exit 1; fi
+    [[ ! -s "$FIXTURE/invalid-records.out" ]] || exit 1
+done
+if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --read-manifest "$FIXTURE/version-manifest" \
+    --consumer "$consumer_root" > "$FIXTURE/mixed-mode.out" 2> "$FIXTURE/mixed-mode.err"; then exit 1; fi
+[[ ! -s "$FIXTURE/mixed-mode.out" ]] || exit 1
+
 # The checksum helper is inspected data, never verification authority. Neither
 # helper-only corruption nor corruption of both helper and payload may pass.
 export SNAPSHOT_HELPER_EXECUTED="$FIXTURE/helper-executed"

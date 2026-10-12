@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.9.0]
+
+### Changed
+
+- Use one manifest reader for snapshot refresh, integrity verification and fleet
+  tooling reports, preventing their format checks from drifting. Existing
+  snapshots, refresh commands and drift reporting remain supported.
+  ([#133](https://github.com/dragginzgame/shared-tooling/issues/133))
+- Expose validated manifest records through
+  `verify-shared-tooling-snapshot.sh --read-manifest FILE`. Malformed input emits
+  no records; payload integrity and ownership remain separate checks.
+
+### Fixed
+
+- Reject NUL bytes before splitting snapshot records so invalid bytes cannot be
+  silently discarded. Validation and parsing use the same captured manifest.
+
 ## [0.8.4]
 
 ### Added

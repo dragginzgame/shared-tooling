@@ -106,6 +106,11 @@ for record in format source revision file '# version' '# entrypoint'; do
         if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$records" > "$fixture/malformed-verify.log" 2>&1; then
             echo "verifier accepted $record/$mutation" >&2; exit 1
         fi
+        if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --read-manifest "$records/.shared-tooling.snapshot" \
+            > "$fixture/malformed-records.out" 2> "$fixture/malformed-records.log"; then
+            echo "record reader accepted $record/$mutation" >&2; exit 1
+        fi
+        [[ ! -s "$fixture/malformed-records.out" ]] || exit 1
         if bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_repo" --consumer "$records" --preview > "$fixture/malformed-refresh.log" 2>&1; then
             echo "refresh accepted $record/$mutation" >&2; exit 1
         fi
@@ -123,7 +128,8 @@ cp "$fixture/valid.snapshot" "$records/.shared-tooling.snapshot"
 adoption="$fixture/adoption"
 git clone -q --shared --no-checkout "$ROOT" "$adoption"
 mkdir -p "$adoption/scripts/ci" "$adoption/scripts/dev"
-cp "$ROOT/scripts/ci/test-cloc-tooling.sh" "$ROOT/scripts/ci/verify-file-checksum.sh" "$adoption/scripts/ci/"
+cp "$ROOT/scripts/ci/test-cloc-tooling.sh" "$ROOT/scripts/ci/verify-file-checksum.sh" \
+    "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" "$adoption/scripts/ci/"
 cp "$ROOT/scripts/dev/cloc-tooling.pl" "$adoption/scripts/dev/"
 bash "$adoption/scripts/ci/test-cloc-tooling.sh" > "$fixture/adoption.log" 2>&1
 echo 'Tooling LOC exporter integration and uncommitted consumer fixture passed'

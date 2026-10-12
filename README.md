@@ -585,6 +585,9 @@ with `bash scripts/ci/check-portable-prerequisites.sh`; see
 clean Shared Tooling checkout and records its exact revision, content digests,
 and executable modes. A vendored
 `scripts/ci/verify-shared-tooling-snapshot.sh` checks consumer drift offline.
+Its `--read-manifest FILE` mode supplies validated records to refresh and fleet
+reporting without executing inspected code. This reads metadata only; use the
+ordinary verification command to check payload integrity.
 Use `refresh-consumer.sh --preview` with the same selection arguments to review
 file changes and all required companion additions without changing the consumer.
 See [`docs/consuming-snapshots.md`](docs/consuming-snapshots.md).
