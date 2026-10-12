@@ -73,15 +73,14 @@ version.workspace = true
 edition.workspace = true
 CARGO
 printf 'pub fn example( ){}\n' > crates/example/src/lib.rs
-# The pinned derive formatter expands dollar-prefixed paths as regex captures.
-# Its supported range markers protect complete macro definitions; surrounding
-# ordinary derives must still be sorted. Compile the actual refreshed payload
-# separately below, never inside the formatting hook.
+# Exercise unprotected macro paths through the actual formatter and hook.
+# Both derive forms and surrounding ordinary derives must sort while preserving
+# literal $crate paths. Compile the refreshed payload separately below, never
+# inside the formatting hook.
 cat > crates/example/src/macros.rs <<'RUST'
 pub mod __reexports {
     pub use std::{clone::Clone, fmt::Debug};
 }
-// sort-derives-disable-start
 #[macro_export]
 macro_rules! declare {
     ($name:ident) => {
@@ -96,11 +95,13 @@ macro_rules! declare_conditional {
         pub struct $name;
     };
 }
-// sort-derives-disable-end
 #[derive(Debug, Clone)]
 pub struct Ordinary;
 RUST
-sed 's/^#\[derive(Debug, Clone)\]/#[derive(Clone, Debug)]/' crates/example/src/macros.rs > "$fixture/expected-macros.rs"
+# shellcheck disable=SC2016 # $crate is a literal Rust macro path, not a shell variable.
+sed -e 's/^#\[derive(Debug, Clone)\]/#[derive(Clone, Debug)]/' \
+    -e 's/::Debug, \$crate::__reexports::Clone/::Clone, $crate::__reexports::Debug/g' \
+    crates/example/src/macros.rs > "$fixture/expected-macros.rs"
 cp "$ROOT/ci/frontend/"package*.json .
 printf '{"semi": false, "singleQuote": true}\n' > .prettierrc.json
 printf 'docs/generated.ts\n' > .prettierignore

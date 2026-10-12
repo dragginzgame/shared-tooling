@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.6]
+
+### Fixed
+
+- Select `cargo-sort-derives` 0.14.1 to preserve literal `$crate` paths during
+  direct and conditional derive sorting. Real-hook coverage now checks
+  unprotected exported macros and compiles them from a separate crate.
+  Consumers adopting the pin must explicitly prepare the new tool with Rust
+  1.88 or newer and qualify their macros before removing workaround markers;
+  library MSRVs are unchanged.
+  ([#113](https://github.com/dragginzgame/shared-tooling/issues/113))
+
 ## [0.6.5]
 
 ### Fixed
