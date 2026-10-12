@@ -68,6 +68,26 @@ for name in format-tools tool-commands rust-tools release-runner host-tools fixt
         fi
     done
 done
+# Exercise the Rust fixture's real Git guard and EXIT owner without dispatching
+# its installer body. Expected-failure handling must not hide forbidden effects.
+for operation in commit commit-tree tag push; do
+    awk '
+        { print }
+        /^export PATH="\$fixture\/commands:\$PATH"$/ { found=1; exit }
+        END { if (!found) exit 1 }
+    ' "$ROOT/scripts/ci/test-rust-tools.sh" > "$fixture/exit-source/scripts/ci/git-guard.sh"
+    cat >> "$fixture/exit-source/scripts/ci/git-guard.sh" <<'PROBE'
+printf '%s\n' "$fixture" > "$RETENTION_EXIT_PATH"
+if git -C "$fixture" -c user.name=Fixture "$1"; then exit 99; fi
+fixture_complete=true
+PROBE
+    status=0
+    TMPDIR="$fixture" "$BASH" "$fixture/exit-source/scripts/ci/git-guard.sh" "$operation" \
+        > "$fixture/git-guard-$operation.log" 2>&1 || status=$?
+    [[ "$status" == 1 ]] || exit 1
+    retained="$(cat "$RETENTION_EXIT_PATH")"
+    [[ "$(cat "$retained/forbidden-git")" == "forbidden fixture Git command: $operation" ]] || exit 1
+done
 # Contradict successful command results in actual fixtures. Bash 3.2 does not
 # apply errexit to a standalone [[ ... ]]; a completion flag alone cannot catch
 # a failed assertion followed by successful commands and normal cleanup.

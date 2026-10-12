@@ -10,6 +10,10 @@ fixture_complete=false
 finish() {
     local status=$?
     [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    if [[ -s "$fixture/forbidden-git" ]]; then
+        cat "$fixture/forbidden-git" >&2
+        status=1
+    fi
     if [[ "$status" == 0 ]]; then rm -rf "$fixture"
     else printf 'Failed Rust tool fixture retained: %s\n' "$fixture" >&2; fi
     exit "$status"
@@ -21,6 +25,23 @@ export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TEMPLATE_DIR="$fixt
 mkdir -p "$fixture/compiler/bin" "$fixture/assets" "$fixture/a" "$fixture/b"
 # Always exercise BSD-style padded counts, including on Linux.
 mkdir "$fixture/commands"
+printf '#!%s\nfixture=%q\nreal_git=%q\n' "$BASH" "$fixture" "$(command -v git)" > "$fixture/commands/git"
+cat >> "$fixture/commands/git" <<'STUB'
+args=("$@")
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -C|-c|--git-dir|--work-tree|--namespace) shift 2 ;;
+        -*) shift ;;
+        *) break ;;
+    esac
+done
+case "${1:-}" in
+    commit|commit-tree|tag|push)
+        printf 'forbidden fixture Git command: %s\n' "$1" >> "$fixture/forbidden-git"
+        exit 79 ;;
+esac
+exec "$real_git" "${args[@]}"
+STUB
 printf '#!%s\nreal_wc=%q\n' "$BASH" "$(command -v wc)" > "$fixture/commands/wc"
 cat >> "$fixture/commands/wc" <<'STUB'
 if [[ "$*" == -l ]]; then
@@ -159,6 +180,9 @@ refuse() {
 common() { bash "$installer" --consumer "$consumer" --versions "$fixture/versions" "$@"; }
 hook() (cd "$consumer" && bash .githooks/pre-commit)
 consumer="$fixture/a"
+# Direct compiler identity checks must use the fixture's prepared context too.
+# The invoking consumer may select an entirely different Rust toolchain.
+cd "$consumer"
 common --preflight
 [[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
 refuse common --check
@@ -267,7 +291,6 @@ for file in install-rust-tools cargo-tool-build tool-store; do
 done
 cp "$fixture/versions" "$consumer/pins"
 printf '.tools/\n' > "$consumer/.gitignore"
-printf 'original\n' > "$consumer/README.md"
 printf 'formatted\n' > "$consumer/selected.rs"
 cat > "$consumer/Makefile" <<'MAKE'
 fmt:
@@ -276,19 +299,39 @@ fmt:
 	@printf 'formatted\n' > selected.rs
 MAKE
 git init -q "$consumer"
+# Borrow immutable history; only this disposable repository's refs/index change.
+source_commit="$(git -C "$ROOT" rev-parse HEAD)"
+source_objects="$(git -C "$ROOT" rev-parse --git-path objects)"
+case "$source_objects" in /*) ;; *) source_objects="$ROOT/$source_objects" ;; esac
+printf '%s\n' "$source_objects" > "$consumer/.git/objects/info/alternates"
+git -C "$consumer" update-ref HEAD "$source_commit"
+# Keep only the fixture payload and an unchanged tracked README in its index.
+# Other source paths are staged deletions, never formatter inputs.
+git -C "$consumer" reset -q HEAD -- README.md
+git -C "$consumer" checkout-index -- README.md
 git -C "$consumer" add .gitignore .githooks scripts pins README.md selected.rs Makefile
-git -C "$consumer" -c user.name=Fixture -c user.email=fixture@example.invalid \
-    -c core.hooksPath=/dev/null commit -qm fixture
 printf 'working-only README\n' > "$consumer/README.md"
 printf 'retained evidence\n' > "$consumer/untracked-evidence"
 printf 'unformatted\n' > "$consumer/selected.rs"
 git -C "$consumer" add selected.rs
-# Unstaged catalog changes cannot select the tools used on the staged source.
+# Selected catalog edits must reject partial staging without changing any bytes.
+hook_tree="$(git -C "$consumer" write-tree)"
 printf 'exit 99\n' > "$consumer/pins"
-(cd "$consumer" && bash .githooks/pre-commit) > "$fixture/hook.log" 2>&1
-[[ "$(git -C "$consumer" show :selected.rs)" == formatted ]]
-[[ "$(cat "$consumer/pins")" == 'exit 99' && "$(cat "$consumer/README.md")" == 'working-only README' ]]
+refuse hook
+grep -F 'partially staged file: pins' "$fixture/refused.log" >/dev/null
+[[ "$(git -C "$consumer" write-tree)" == "$hook_tree" && "$(cat "$consumer/selected.rs")" == unformatted ]] || exit 1
+# Independently admit the staged catalog against the real checkout's receipts;
+# unrelated working catalog bytes must never select the exported tools.
+mkdir "$fixture/staged-inputs"
+git -C "$consumer" checkout-index --all --prefix="$fixture/staged-inputs/"
+SHARED_TOOLING_FORMAT_WORKTREE="$fixture/staged-inputs" SHARED_TOOLING_FORMAT_TOOLS_FROM="$consumer" \
+    bash "$installer" --consumer "$fixture/staged-inputs" --versions "$fixture/staged-inputs/pins" --check
+[[ ! -e "$fixture/staged-inputs/.tools" && "$(cat "$consumer/pins")" == 'exit 99' ]] || exit 1
 cp "$fixture/versions" "$consumer/pins"
+(cd "$consumer" && bash .githooks/pre-commit) > "$fixture/hook.log" 2>&1
+[[ "$(git -C "$consumer" show :selected.rs)" == formatted ]] || exit 1
+[[ "$(cat "$consumer/README.md")" == 'working-only README' ]] || exit 1
+[[ "$(git -C "$consumer" show :README.md)" == "$(git -C "$consumer" show HEAD:README.md)" ]] || exit 1
 printf 'unformatted\n' > "$consumer/selected.rs"
 git -C "$consumer" add selected.rs
 hook_tree="$(git -C "$consumer" write-tree)"
@@ -297,7 +340,7 @@ cp "$receipt" "$fixture/receipt.saved"
 printf '{}\n' > "$receipt"
 refuse hook
 cp "$fixture/receipt.saved" "$receipt"
-[[ "$(git -C "$consumer" write-tree)" == "$hook_tree" && "$(cat "$consumer/selected.rs")" == unformatted ]]
+[[ "$(git -C "$consumer" write-tree)" == "$hook_tree" && "$(cat "$consumer/selected.rs")" == unformatted ]] || exit 1
 # Changed staged pins and compiler context require fresh explicit preparation.
 printf 'SHARED_TOOLING_CARGO_SORT_VERSION=99.9.0\n' >> "$consumer/pins"
 git -C "$consumer" add pins
@@ -307,7 +350,7 @@ git -C "$consumer" add pins
 printf 'changed compiler\n' > "$fixture/compiler-version"
 refuse hook
 printf 'fixture rustc\n' > "$fixture/compiler-version"
-[[ "$(git -C "$consumer" write-tree)" == "$hook_tree" && "$(cat "$consumer/untracked-evidence")" == 'retained evidence' ]]
+[[ "$(git -C "$consumer" write-tree)" == "$hook_tree" && "$(cat "$consumer/untracked-evidence")" == 'retained evidence' ]] || exit 1
 printf 'unprepared staged compiler\n' > "$consumer/rust-toolchain.toml"
 git -C "$consumer" add rust-toolchain.toml
 refuse hook
@@ -555,5 +598,6 @@ for leaf in build-identity.observed.json native-environment.observed.txt; do
     rm "$fixture/redirect-observation" "$fixture/change-build"
     cp "$fixture/original-compiler" "$fixture/compiler-version"
 done
+[[ "$(git -C "$fixture/a" rev-parse HEAD)" == "$source_commit" && ! -s "$fixture/forbidden-git" ]] || exit 1
 echo 'Shared Cargo installation, standard environment, identities, retention and offline checks passed'
 fixture_complete=true

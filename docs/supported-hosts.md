@@ -182,6 +182,17 @@ CI jobs may prepare only their own declared prerequisites without claiming a
 complete developer installation. Linux ARM64 remains host-set-only because the
 IC set lacks a matching Quill asset.
 
+The standalone `scripts/ci/test-rust-tools.sh` uses substitute Cargo/compiler
+executables in its own prepared directory, including when invoked by absolute
+path from a consumer with `rust-toolchain.toml`. It borrows the source checkout's
+existing Git commit and tracked `README.md` through a read-only object reference;
+only disposable fixture refs, indexes and working files change. It creates no
+commits or tags and performs no pushes. Forbidden Git attempts are recorded and
+fail the fixture even when an expected-failure case consumes their exit status.
+Real staged hook, partial-staging, receipt and exported-input isolation checks
+remain part of this same entrypoint. This contract does not cover the separate
+release-history fixtures in Shared Tooling's full suite.
+
 The hook regression fixture also requires `jq` and the `cargo-sort` version from
 `ci/tool-versions.env` (`2.1.4`). CI installs it before offline tests; local
 validation requires it to be prepared beforehand and never installs it implicitly.

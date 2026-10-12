@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.9.9]
+
+### Fixed
+
+- Rust-tool qualification now isolates its prepared compiler context from the
+  invoking consumer's toolchain and reuses existing Git history without creating
+  commits. Real staging, hook and receipt checks remain covered, with forbidden
+  Git effects recorded even during expected failures.
+  ([#143](https://github.com/dragginzgame/shared-tooling/issues/143),
+  [#144](https://github.com/dragginzgame/shared-tooling/issues/144))
+
 ## [0.9.8]
 
 ### Changed

@@ -758,8 +758,16 @@ PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consum
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$focused_consumer" "${selection_args[@]}" \
     > "$FIXTURE/focused-fixtures-export.log"
+# After exporting into the empty consumer, supply read-only history for hook
+# qualification. Do not seed HEAD before refresh: missing tracked paths would
+# correctly be rejected as local deletions by the adoption guard.
+focused_objects="$(git -C "$ROOT" rev-parse --git-path objects)"
+case "$focused_objects" in /*) ;; *) focused_objects="$ROOT/$focused_objects" ;; esac
+printf '%s\n' "$focused_objects" > "$focused_consumer/.git/objects/info/alternates"
+git -C "$focused_consumer" update-ref HEAD "$(git -C "$ROOT" rev-parse HEAD)"
+printf '[toolchain]\nchannel = "fixture-unprepared"\n' > "$focused_consumer/rust-toolchain.toml"
 for entry in test-format-tools test-rust-tools test-make-format; do
-    bash "$focused_consumer/scripts/ci/$entry.sh" > "$FIXTURE/exported-$entry.log" 2>&1
+    (cd "$focused_consumer" && bash "scripts/ci/$entry.sh") > "$FIXTURE/exported-$entry.log" 2>&1
 done
 bash "$ROOT/$verifier_path" --consumer "$focused_consumer" >/dev/null
 # CI installer fixtures derive every wrapper even when production uses a subset.

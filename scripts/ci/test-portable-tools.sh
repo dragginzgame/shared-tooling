@@ -83,7 +83,10 @@ run_fixture bash "$ROOT/scripts/ci/test-installers.sh"
 run_fixture bash "$ROOT/scripts/ci/test-tool-downloads.sh"
 run_fixture bash "$ROOT/scripts/ci/test-ic-tools.sh"
 run_fixture bash "$ROOT/scripts/ci/test-host-tools.sh"
-run_fixture bash "$ROOT/scripts/ci/test-rust-tools.sh"
+# Consumer-root invocation must not leak its compiler selection into substitutes.
+mkdir "$FIXTURE/rust-consumer"
+printf '[toolchain]\nchannel = "fixture-unprepared"\n' > "$FIXTURE/rust-consumer/rust-toolchain.toml"
+(cd "$FIXTURE/rust-consumer" && run_fixture bash "$ROOT/scripts/ci/test-rust-tools.sh")
 run_fixture bash "$ROOT/scripts/ci/test-tool-commands.sh"
 run_fixture bash "$ROOT/scripts/ci/test-make-format.sh"
 run_fixture bash "$ROOT/scripts/ci/test-make-consumer.sh"
