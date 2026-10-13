@@ -18,10 +18,10 @@ finish() {
 }
 trap finish EXIT
 consumer="$fixture/consumer with spaces"
-mkdir -p "$consumer/vendor/make" "$consumer/vendor/scripts/ci" "$consumer/ci" "$consumer/.tools/rust/common/bin"
+mkdir -p "$consumer/vendor/make" "$consumer/vendor/scripts/ci" "$consumer/ci" "$consumer/vendor/ci" "$consumer/.tools/rust/common/bin"
 cp "$root/make/tools.mk" "$root/make/rust-format.mk" "$root/make/execution.mk" "$consumer/vendor/make/"
 cp "$root/scripts/ci/check-format-tools.sh" "$root/scripts/ci/run-formatting.sh" "$root/scripts/ci/check-make-execution.sh" "$consumer/vendor/scripts/ci/"
-printf 'export SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\n' > "$consumer/ci/tool-versions.env"
+printf 'export SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\n' > "$consumer/vendor/ci/tool-versions.env"
 cat > "$consumer/Makefile" <<'MAKE'
 SHARED_TOOLING_ROOT ?= $(CURDIR)/vendor
 FORMAT_CARGO := format-fixture-cargo

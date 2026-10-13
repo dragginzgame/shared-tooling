@@ -650,7 +650,7 @@ bash "$selection_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
     --consumer "$selection_consumer" --manifest config/selection >/dev/null
 # Resolve actual maintained companion declarations from the selected revision.
 fixture_directories=()
-for directory in scripts make .githooks .github; do
+for directory in scripts make ci .githooks .github; do
     [[ ! -d "$ROOT/$directory" ]] || fixture_directories+=("$directory")
 done
 (cd "$ROOT" && rg --files --hidden "${fixture_directories[@]}") > "$FIXTURE/companion-sources"
@@ -678,6 +678,10 @@ scripts/ci/test-ic-tools.sh scripts/ci/test-tool-evidence.sh
 scripts/ci/test-tool-evidence.sh scripts/ci/select-tool-evidence.sh
 scripts/ci/test-tool-store.sh scripts/dev/tool-store.sh
 scripts/dev/install-host-tools.sh scripts/dev/tool-store.sh
+scripts/dev/install-host-tools.sh ci/tool-versions.env
+scripts/dev/install-ic-tools.sh ci/ic-tools.tsv
+scripts/dev/install-rust-tools.sh ci/tool-versions.env
+scripts/dev/check-cargo-tool-versions.pl ci/tool-versions.env
 scripts/dev/install-rust-tools.sh scripts/dev/cargo-tool-build.sh
 scripts/ci/test-cargo-metadata.sh scripts/ci/read-cargo-workspace-version.sh
 scripts/ci/test-cloc.sh scripts/dev/cloc.sh
@@ -705,16 +709,15 @@ COMPANIONS
 printf 'Snapshot companion cases: %s optional entries absent\n' "$omitted_pairs"
 
 # A minimal Make export runs its real offline commands without separately
-# selecting their installers. Only pin catalogs and product inputs stay local.
+# selecting their installers or catalogs. Product inputs stay local.
 minimal_consumer="$FIXTURE/minimal-make"
 git init -q "$minimal_consumer"
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$minimal_consumer" --entrypoint make/consumer.mk > "$FIXTURE/minimal-export.log"
 printf 'include make/consumer.mk\n' > "$minimal_consumer/Makefile"
-[[ ! -e "$minimal_consumer/ci/tool-versions.env" && ! -e "$minimal_consumer/ci/ic-tools.tsv" &&
-   ! -e "$minimal_consumer/scripts/dev/cloc-tooling.pl" ]]
-mkdir "$minimal_consumer/ci"
-cp "$ROOT/ci/tool-versions.env" "$ROOT/ci/ic-tools.tsv" "$minimal_consumer/ci/"
+cmp "$ROOT/ci/tool-versions.env" "$minimal_consumer/ci/tool-versions.env"
+cmp "$ROOT/ci/ic-tools.tsv" "$minimal_consumer/ci/ic-tools.tsv"
+[[ ! -e "$minimal_consumer/scripts/dev/cloc-tooling.pl" ]]
 for target in host-tools-check ic-tools-check rust-tools-check cloc; do
     status=0
     SHARED_TOOLING_STORE="$FIXTURE/minimal-store" make -s -C "$minimal_consumer" "$target" \

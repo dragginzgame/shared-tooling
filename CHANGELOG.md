@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0]
+
+### Breaking
+
+- Reviewed snapshots now own the default common tool catalogs. Setup, formatting,
+  freshness checks and failure-evidence collection no longer discover consumer
+  catalogs implicitly; host overrides no longer change Rust selections. Adopt
+  the catalog companions and explicitly select any qualified exceptions before
+  running setup. Tool versions and shared binary storage are unchanged.
+  [Adoption guide](docs/consuming-snapshots.md#common-catalog-ownership-in-0100).
+  ([#153](https://github.com/dragginzgame/shared-tooling/issues/153))
+
 ## [0.9.16]
 
 ### Fixed
