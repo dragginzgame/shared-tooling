@@ -296,6 +296,11 @@ production modes stay explicit inputs rather than unconditional companions.
 Fixtures using `scripts/ci/fixture-lifecycle.sh` include it through their companion
 declarations. It removes successful fixture directories and preserves failures,
 including premature exits; production entrypoints do not acquire this test helper.
+Callers resolve the created fixture directory to an absolute physical path before
+registering their trap or changing working directory; clear `CDPATH` for that
+resolution. They own the directory, completion assertion and diagnostic label.
+The helper reports cleanup failure even when invoked from a conditional, and
+retains the original nonzero status if reporting fails. Sourcing it has no effects.
 The release runner also includes `scripts/ci/check-release-tag.sh` so direct and
 PR release paths use the same annotated-tag and exact-commit checks.
 

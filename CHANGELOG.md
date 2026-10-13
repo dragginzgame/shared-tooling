@@ -1,6 +1,21 @@
 # Changelog
 
+## [0.11.2]
+
+### Fixed
+
+- Fixture cleanup reports removal failures and preserves the original failure
+  status when diagnostics also fail. Temporary directories remain anchored to
+  their physical location across working-directory and symlink changes.
+  ([#166](https://github.com/dragginzgame/shared-tooling/issues/166))
+
 ## [0.11.1]
+
+### Fixed
+
+- Cargo metadata checks preserve failed Git/version-reader status even when a
+  producer emits valid-looking output; source object admission precedes scratch
+  export ([#167](https://github.com/dragginzgame/shared-tooling/issues/167)).
 
 ### Changed
 

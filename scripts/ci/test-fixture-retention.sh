@@ -6,6 +6,8 @@ ROOT="$0"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/fixture-retention-test.XXXXXX")"
+fixture="$(CDPATH="" cd -P -- "$fixture" && printf '%s/.' "$PWD")"
+fixture="${fixture%/.}"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture_complete=false
@@ -61,6 +63,80 @@ for name in format-tools tool-commands rust-tools release-runner host-tools fixt
         else
             [[ -d "$retained" && "$(cat "$retained/exit-evidence")" == 'retained evidence' ]] || exit 1
         fi
+    done
+done
+# Qualify cleanup independently of errexit: a caller can invoke its EXIT helper
+# from a conditional, and diagnostics can fail after the original operation.
+cat > "$fixture/cleanup-probe.sh" <<'PROBE'
+#!/usr/bin/env bash
+set -euo pipefail
+source "$1"
+directory="$2"
+mode="$3"
+fixture_complete=true
+trap 'fixture_finish "$?" "$directory" "Cleanup probe retained" || exit 99' EXIT
+case "$mode" in
+    cleanup-failure) rm() { return 37; } ;;
+    false-cleanup) rm() { return 0; } ;;
+    reporting-failure) printf() { return 41; }; exit 23 ;;
+    both-failures) rm() { return 37; }; printf() { return 41; } ;;
+    relative) ;;
+esac
+PROBE
+for mode in cleanup-failure false-cleanup reporting-failure both-failures relative; do
+    directory="$fixture/cleanup-$mode"
+    mkdir "$directory"
+    printf 'payload\n' > "$directory/payload"
+    selected="$directory"
+    case "$mode" in
+        cleanup-failure|both-failures) expected=37 ;;
+        reporting-failure) expected=23 ;;
+        false-cleanup) expected=1 ;;
+        relative) expected=1; selected="cleanup-$mode" ;;
+    esac
+    status=0
+    (cd "$fixture" && "$BASH" "$fixture/cleanup-probe.sh" \
+        "$ROOT/scripts/ci/fixture-lifecycle.sh" "$selected" "$mode") \
+        > "$fixture/cleanup-$mode.log" 2>&1 || status=$?
+    [[ "$status" == "$expected" && "$(cat "$directory/payload")" == payload ]] || exit 1
+done
+# Exercise actual caller setup through its trap, then change cwd and retarget a
+# TMPDIR alias. Cleanup must still address only the directory that was created.
+mkdir "$fixture/physical parent" "$fixture/decoy" "$fixture/changed-cwd"
+printf 'unrelated evidence\n' > "$fixture/decoy/payload"
+export RETENTION_ALIAS="$fixture/tmp-alias" RETENTION_DECOY="$fixture/decoy"
+export RETENTION_CHANGED_CWD="$fixture/changed-cwd"
+for name in format-tools release-runner fixture-retention; do
+    awk '
+        { print }
+        /^trap .* EXIT$/ { found=1; exit }
+        END { if (!found) exit 1 }
+    ' "$ROOT/scripts/ci/test-$name.sh" > "$fixture/exit-source/scripts/ci/anchor-probe.sh"
+    cat >> "$fixture/exit-source/scripts/ci/anchor-probe.sh" <<'PROBE'
+directory="${fixture:-${FIXTURE_ROOT:-}}"
+printf '%s\n' "$directory" > "$RETENTION_EXIT_PATH"
+printf 'retained evidence\n' > "$directory/payload"
+cd "$RETENTION_CHANGED_CWD"
+rm "$RETENTION_ALIAS"
+ln -s "$RETENTION_DECOY" "$RETENTION_ALIAS"
+if [[ "$1" == failed ]]; then exit 23; fi
+fixture_complete=true
+PROBE
+    for outcome in completed failed; do
+        rm -f "$RETENTION_ALIAS"
+        ln -s "$fixture/physical parent" "$RETENTION_ALIAS"
+        status=0
+        (cd "$fixture" && CDPATH="$fixture" TMPDIR=tmp-alias "$BASH" \
+            "$fixture/exit-source/scripts/ci/anchor-probe.sh" "$outcome") \
+            > "$fixture/anchor-$name-$outcome.log" 2>&1 || status=$?
+        retained="$(cat "$RETENTION_EXIT_PATH")"
+        [[ "$retained" == "$fixture/physical parent/"* ]] || exit 1
+        if [[ "$outcome" == completed ]]; then
+            [[ "$status" == 0 && ! -e "$retained" ]] || exit 1
+        else
+            [[ "$status" == 23 && "$(cat "$retained/payload")" == 'retained evidence' ]] || exit 1
+        fi
+        [[ "$(cat "$fixture/decoy/payload")" == 'unrelated evidence' ]] || exit 1
     done
 done
 # Exercise the Rust fixture's real Git guard and EXIT owner without dispatching

@@ -9,7 +9,8 @@ ROOT="${ROOT%/.}"
 # Synthetic workspaces own their output paths, not the enclosing consumer.
 unset CARGO_TARGET_DIR
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-cloc-siblings-test.XXXXXX")"
-FIXTURE="$(cd "$FIXTURE" && pwd -P)"
+FIXTURE="$(CDPATH="" cd -P -- "$FIXTURE" && printf '%s/.' "$PWD")"
+FIXTURE="${FIXTURE%/.}"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture_complete=false
