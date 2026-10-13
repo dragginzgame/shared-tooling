@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.9.13]
+
+### Fixed
+
+- CI inspection refuses a failed or empty current-branch observation instead of
+  silently selecting unrelated runs. Explicit branch, commit and run selections
+  remain available, including run inspection outside a checkout.
+  ([#148](https://github.com/dragginzgame/shared-tooling/issues/148))
+
+## [0.9.12]
+
+### Changed
+
+- Authorized development and validation include fetching missing Cargo sources
+  for the existing lockfile without another maintainer approval. Explicit offline
+  settings remain authoritative; dependency upgrades, executable-tool setup and
+  release operations retain their separate authority.
+  ([#147](https://github.com/dragginzgame/shared-tooling/issues/147))
+
 ## [0.9.11]
 
 ### Fixed
