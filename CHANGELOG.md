@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.11]
+
+### Fixed
+
+- Tool installation preserves filesystem errors and their exit status when
+  acquiring a shared-store or checkout lock. Existing lock paths are distinguished
+  from other acquisition failures, without retrying or removing another owner's
+  lock or retained tools.
+  ([#145](https://github.com/dragginzgame/shared-tooling/issues/145))
+- Cargo tool setup preserves the original source-acquisition failure status for
+  both common tools and selected package executables, stopping before build or
+  activation and retaining existing tools and evidence.
+  ([#146](https://github.com/dragginzgame/shared-tooling/issues/146))
+
 ## [0.9.10]
 
 ### Changed
