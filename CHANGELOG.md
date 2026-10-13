@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.9.10]
+
+### Changed
+
+- Maintainer reports separate genuine symbol deletions from moves and renames,
+  and include scoped Rust, type and documentation change counts with explicit
+  zeroes. Counting guidance distinguishes physical line churn from semantic
+  removals and keeps detailed inventories in the final Codex handoff.
+  ([#141](https://github.com/dragginzgame/shared-tooling/issues/141))
+
 ## [0.9.9]
 
 ### Fixed
