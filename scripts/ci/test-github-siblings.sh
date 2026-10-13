@@ -120,16 +120,36 @@ cp "$GITHUB_SIBLINGS_TEST_CALLS" "$fixture/expected-calls"
 (cd "$fixture" && CDPATH="$fixture" run --once projects)
 cmp "$GITHUB_SIBLINGS_TEST_CALLS" "$fixture/expected-calls"
 
-# A trailing newline must not select the ordinary parent with the same prefix.
-newline_parent="$fixture/projects"$'\n'
-git init -q "$newline_parent/shared-tooling"
-git -C "$newline_parent/shared-tooling" remote add origin https://github.com/dragginzgame/shared-tooling
-touch "$newline_parent/shared-tooling/AGENTS.md"
-run --once "$newline_parent"
-grep -F 'name: "shared-tooling"' "$GITHUB_SIBLINGS_TEST_CALLS"
-if grep -E 'name: "(alpha|beta|zero)"|r1:' "$GITHUB_SIBLINGS_TEST_CALLS"; then exit 1; fi
-awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
-grep -Fx 'dragginzgame/shared-tooling 2,500 7,500 / 10,000 0 0 12 1,500 20' "$fixture/rows"
+# Reject raw, normalized-away and resolved forbidden directory components.
+for suffix in $'\n' $'\r'; do
+    invalid_parent="$fixture/projects$suffix"
+    mkdir -p "$invalid_parent"
+    ln -s "$invalid_parent" "$fixture/invalid-alias"
+    for selected in "$invalid_parent" "$invalid_parent/../projects" "$fixture/invalid-alias"; do
+        status=0
+        run --once "$selected" || status=$?
+        [[ "$status" == 1 && ! -s "$GITHUB_SIBLINGS_TEST_CALLS" ]] || exit 1
+        grep -Fx 'error: directory paths must not contain CR or LF' "$fixture/output"
+    done
+    checkout "bad$suffix" https://github.com/dragginzgame/bad
+    status=0
+    run --once "$fixture/projects" || status=$?
+    [[ "$status" == 1 && ! -s "$GITHUB_SIBLINGS_TEST_CALLS" ]] || exit 1
+    grep -Fx 'error: directory paths must not contain CR or LF' "$fixture/output"
+    rm -rf "$fixture/projects/bad$suffix"
+    mkdir -p "$invalid_parent/scripts/dev"
+    cp "$script" "$invalid_parent/scripts/dev/"
+    for selected in "$invalid_parent" "$fixture/invalid-alias"; do
+        status=0
+        bash "$selected/scripts/dev/github-siblings.sh" --once "$fixture/projects" > "$fixture/output" 2>&1 || status=$?
+        [[ "$status" == 1 && ! -s "$GITHUB_SIBLINGS_TEST_CALLS" ]] || exit 1
+        grep -Fx 'error: directory paths must not contain CR or LF' "$fixture/output"
+    done
+    rm "$fixture/invalid-alias"
+done
+ln -s "$fixture/projects" "$fixture/valid alias"
+run --once "$fixture/valid alias"
+cmp "$GITHUB_SIBLINGS_TEST_CALLS" "$fixture/expected-calls"
 
 # Nonterminal invocation reports once even without --once.
 run --interval 1 "$fixture/projects"

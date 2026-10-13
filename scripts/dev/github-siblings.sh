@@ -1,10 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+reject_line_breaks() {
+    case "$1" in
+        *$'\r'*|*$'\n'*) echo 'error: directory paths must not contain CR or LF' >&2; exit 1 ;;
+    esac
+}
+
 ROOT="$0"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
+reject_line_breaks "${ROOT%/*}"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
+reject_line_breaks "$ROOT"
 export PATH="$ROOT/.tools/host/bin:$PATH"
 export LC_ALL=C
 
@@ -61,8 +69,10 @@ while [[ $# -gt 0 ]]; do
 done
 parent="${parent:-$ROOT/..}"
 [[ "$parent" == /* ]] || parent="$PWD/$parent"
+reject_line_breaks "$parent"
 parent="$(cd -P "$parent" && printf '%s/.' "$PWD")"
 parent="${parent%/.}"
+reject_line_breaks "$parent"
 for tool in git gh jq sort awk perl; do
     command -v "$tool" >/dev/null 2>&1 || { echo "error: missing tool: $tool" >&2; exit 1; }
 done
@@ -76,6 +86,7 @@ width=24
 query='query($since: DateTime!) {'
 for checkout in "${parent%/}"/*; do
     [[ -d "$checkout" && ! -L "$checkout" && -e "$checkout/.git" && -f "$checkout/AGENTS.md" ]] || continue
+    reject_line_breaks "$checkout"
     remote="$(git -C "$checkout" remote get-url origin 2>/dev/null)" || continue
     case "$remote" in
         https://github.com/*) identity="${remote#https://github.com/}" ;;

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.10.2]
+
+### Fixed
+
+- The GitHub sibling dashboard rejects directory paths containing line breaks,
+  including resolved aliases, before submitting a report query.
+  ([#155](https://github.com/dragginzgame/shared-tooling/issues/155))
+
 ## [0.10.1]
 
 ### Fixed
