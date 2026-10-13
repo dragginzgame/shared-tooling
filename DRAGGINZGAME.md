@@ -377,6 +377,11 @@ Consumer choices described in those guides remain subject to this baseline.
 - Keep shell wrappers small and declare dependencies and effects. Use the
   project's maintained implementation language for substantial tooling. Do not
   add Python tooling. Fail on invalid inputs rather than hiding broken assumptions.
+- Do not use directory paths containing carriage returns or newlines (CR/LF)
+  for checkouts, tooling, state or artifacts. Reject those inputs before trimming
+  or normalizing them, and check resolved directory aliases as well. Never repair
+  an invalid path by stripping characters: that can select a different directory.
+  This restriction does not prohibit ordinary spaces in paths.
 - CI/release tools use [reviewed snapshots](docs/consuming-snapshots.md), not symlinks
   or mutable sibling/network sources. Do not patch vendored copies; fix upstream
   or keep an explicit consumer-owned adapter outside the snapshot.

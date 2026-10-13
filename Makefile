@@ -23,7 +23,7 @@ help:
 	@echo "Complete common host, IC and Rust toolset: install-tools; offline verification: tools-check"
 	@echo "Pinned Cargo tools: install-rust-tools; offline verification: rust-tools-check"
 	@echo "Cargo tool freshness (online, read-only): check-cargo-tool-versions"
-	@echo "Full gate: ci (explicit request or configured CI)"
+	@echo "Full delivery gate: ci (required before handing off code changes)"
 	@echo "Maintainer releases: release-patch, release-minor, release-major"
 	@echo "Delivery: direct by default; RELEASE_DELIVERY=pr selects review then merged validation/tag"
 	@echo "Recovery: rerun the normal release target; saved releases reconcile automatically"

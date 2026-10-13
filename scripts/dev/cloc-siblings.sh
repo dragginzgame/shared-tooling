@@ -33,10 +33,20 @@ if [[ "${1:-}" == -h || "${1:-}" == --help ]]; then
     exit 0
 fi
 
-if ! parent_root="$(cd "${1:-$ROOT/..}" 2>/dev/null && pwd -P)"; then
+parent_root="${1:-$ROOT/..}"
+[[ "$parent_root" == /* ]] || parent_root="$PWD/$parent_root"
+case "$parent_root" in
+    *$'\n'*|*$'\r'*) echo 'error: parent directory contains line breaks' >&2; exit 1 ;;
+esac
+# Preserve the resolved bytes until admission, including through directory aliases.
+if ! parent_root="$(cd -P "$parent_root" 2>/dev/null && printf '%s/.' "$PWD")"; then
     echo "error: parent directory not found: ${1:-$ROOT/..}" >&2
     exit 1
 fi
+parent_root="${parent_root%/.}"
+case "$parent_root" in
+    *$'\n'*|*$'\r'*) echo 'error: resolved parent directory contains line breaks' >&2; exit 1 ;;
+esac
 if ! command -v git >/dev/null 2>&1; then
     echo 'error: git not found in PATH' >&2
     exit 1

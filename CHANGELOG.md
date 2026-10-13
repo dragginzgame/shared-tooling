@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.9.16]
+
+### Fixed
+
+- LOC reports reject directory paths containing line breaks, including resolved
+  aliases, before they can select a different checkout or print misleading totals.
+  ([#151](https://github.com/dragginzgame/shared-tooling/issues/151))
+- Release lock failures preserve the filesystem error and exit status, and
+  distinguish an existing lock from other acquisition failures.
+  ([#152](https://github.com/dragginzgame/shared-tooling/issues/152))
+
 ## [0.9.15]
 
 ### Fixed

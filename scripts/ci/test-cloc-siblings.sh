@@ -77,7 +77,35 @@ printf '[build]\ntarget-dir = "target"\n' > "$zeta/.cargo/config.toml"
 printf '#[test]\nfn another_test() {}\n' >"$zeta/src/lib.rs"
 cp "$ROOT/scripts/dev/cloc.sh" "$ROOT/scripts/dev/cloc-siblings.sh" "$zeta/scripts/dev/"
 
+# Reject line breaks before they can select the ordinary parent as a decoy.
+for suffix in $'\n' $'\r'; do
+    invalid_parent="$parent$suffix"
+    mkdir -p "$invalid_parent"
+    printf '[workspace]\n' > "$invalid_parent/Cargo.toml"
+    ln -s "$invalid_parent" "$FIXTURE/invalid-alias"
+    for selected in "$invalid_parent" "$FIXTURE/invalid-alias"; do
+        for script in cloc-siblings.sh cloc.sh; do
+            if bash "$ROOT/scripts/dev/$script" "$selected" > "$FIXTURE/path.out" 2> "$FIXTURE/path.err"; then
+                echo 'line-break directory was accepted' >&2; exit 1
+            fi
+            [[ ! -s "$FIXTURE/path.out" ]] || exit 1
+            grep -F 'line breaks' "$FIXTURE/path.err" >/dev/null
+        done
+        if bash "$ROOT/scripts/dev/cloc.sh" --manifest "$selected/Cargo.toml" \
+            > "$FIXTURE/path.out" 2> "$FIXTURE/path.err"; then exit 1; fi
+        [[ ! -s "$FIXTURE/path.out" ]] || exit 1
+        grep -F 'line breaks' "$FIXTURE/path.err" >/dev/null
+    done
+    rm "$FIXTURE/invalid-alias"
+done
+
 output="$(bash "$ROOT/scripts/dev/cloc-siblings.sh" "$parent")"
+# Absolute operands prevent CDPATH output from becoming part of the parent.
+relative_output="$(cd "$FIXTURE" && CDPATH="$FIXTURE" bash "$ROOT/scripts/dev/cloc-siblings.sh" 'parent [projects]')"
+[[ "$relative_output" == "$output" ]] || exit 1
+ln -s "$parent" "$FIXTURE/valid-alias"
+alias_output="$(bash "$ROOT/scripts/dev/cloc-siblings.sh" "$FIXTURE/valid-alias")"
+[[ "$alias_output" == "$output" ]] || exit 1
 [[ "$(printf '%s\n' "$output" | wc -l | tr -d ' ')" == 7 ]] || exit 1
 [[ "$(printf '%s\n' "$output" | awk 'NR == 3 { print $1, $2, $3, $4, $5, $6 }')" == '.notes N/A N/A N/A N/A N/A' ]] || exit 1
 [[ "$(printf '%s\n' "$output" | awk 'NR == 4 { print $(NF-4), $(NF-3), $(NF-2), $(NF-1), $NF }')" == '4 2 33.3% 2 1' ]] || exit 1
