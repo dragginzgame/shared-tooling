@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.11.3]
+
+### Added
+
+- Add shared read-only Cargo publication admission for clean source, stable
+  workspace version, matching local/pushed release tag and confirmed registry
+  absence. Consumers retain package policy, upload and recovery ownership.
+  ([#165](https://github.com/dragginzgame/shared-tooling/issues/165))
+
 ## [0.11.2]
 
 ### Fixed
