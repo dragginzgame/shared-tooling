@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.15]
+
+### Fixed
+
+- Maintenance checks and runs reject directory paths containing line breaks,
+  including resolved aliases, before probing the CLI or writing state. Existing
+  reports and scheduling timestamps remain untouched on refusal.
+  ([#150](https://github.com/dragginzgame/shared-tooling/issues/150))
+
 ## [0.9.14]
 
 ### Fixed
