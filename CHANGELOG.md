@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.10.1]
+
+### Fixed
+
+- Cargo CI caches remain reusable after unrelated pin, comment or record-order
+  changes in literal tool catalogs. Cargo selections and build identities still
+  invalidate caches; complex catalogs retain conservative byte-based keys.
+  ([#154](https://github.com/dragginzgame/shared-tooling/issues/154))
+
 ## [0.10.0]
 
 ### Breaking
