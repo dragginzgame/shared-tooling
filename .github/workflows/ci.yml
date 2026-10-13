@@ -32,15 +32,15 @@ jobs:
         run: |
           source ci/tool-versions.env
           tool_dir="$RUNNER_TEMP/shared-tooling-bin"
-          actionlint_bin="$(bash scripts/ci/install-actionlint.sh \
+          actionlint_bin="$(bash scripts/ci/install-ci-tool.sh actionlint \
             --version "$SHARED_TOOLING_ACTIONLINT_VERSION" \
             --sha256 "$SHARED_TOOLING_ACTIONLINT_SHA256_LINUX_AMD64" \
             --install-dir "$tool_dir")"
-          shellcheck_bin="$(bash scripts/ci/install-shellcheck.sh \
+          shellcheck_bin="$(bash scripts/ci/install-ci-tool.sh shellcheck \
             --version "$SHARED_TOOLING_SHELLCHECK_VERSION" \
             --sha256 "$SHARED_TOOLING_SHELLCHECK_SHA256_LINUX_X86_64" \
             --install-dir "$tool_dir")"
-          gitleaks_bin="$(bash scripts/ci/install-gitleaks.sh \
+          gitleaks_bin="$(bash scripts/ci/install-ci-tool.sh gitleaks \
             --version "$SHARED_TOOLING_GITLEAKS_VERSION" \
             --sha256 "$SHARED_TOOLING_GITLEAKS_SHA256_LINUX_X64" \
             --install-dir "$tool_dir")"
@@ -90,7 +90,7 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y xz-utils
+          sudo apt-get install -y xz-utils zip unzip
       - name: Select system Bash on macOS
         if: runner.os == 'macOS'
         shell: bash
@@ -209,27 +209,16 @@ jobs:
           name: native-retention-${{ matrix.os }}-${{ github.run_attempt }}
           temp-root: ${{ runner.temp }}/portable-fixtures/native-retention/temp
           repository-root: ${{ runner.temp }}/portable-fixtures/native-retention/consumer
-      - name: Wait for native failure evidence discovery
+      - name: Download native failure evidence by exact ID
         if: ${{ !cancelled() && steps.retention-upload.outputs.artifact-id != '' }}
-        id: retention-discovery
-        timeout-minutes: 2
+        timeout-minutes: 3
         env:
           GH_TOKEN: ${{ github.token }}
           EVIDENCE_REPOSITORY: ${{ github.repository }}
           EVIDENCE_RUN: ${{ github.run_id }}
           EVIDENCE_ARTIFACT: ${{ steps.retention-upload.outputs.artifact-id }}
-        run: bash scripts/ci/wait-for-artifact.sh "$EVIDENCE_REPOSITORY" "$EVIDENCE_RUN" "$EVIDENCE_ARTIFACT"
-      - name: Download the uploaded native failure evidence
-        if: ${{ !cancelled() && steps.retention-discovery.outcome == 'success' }}
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
-        with:
-          artifact-ids: ${{ steps.retention-upload.outputs.artifact-id }}
-          github-token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          run-id: ${{ github.run_id }}
-          digest-mismatch: error
-          path: ${{ runner.temp }}/native-retention-downloaded
-          merge-multiple: true
+          EVIDENCE_DIGEST: ${{ steps.retention-upload.outputs.artifact-digest }}
+        run: bash scripts/ci/download-evidence.sh "$EVIDENCE_REPOSITORY" "$EVIDENCE_RUN" "$EVIDENCE_ARTIFACT" "$EVIDENCE_DIGEST" "$RUNNER_TEMP/native-retention-downloaded"
       - name: Verify native failure status and uploaded payload
         if: ${{ !cancelled() && steps.retention.outcome != 'skipped' }}
         env:
@@ -266,27 +255,16 @@ jobs:
           temp-root: ${{ runner.temp }}/portable-fixtures/native-retention/temp
           repository-root: ${{ github.workspace }}
           compact-successful-tools: 'true'
-      - name: Wait for compact native evidence discovery
+      - name: Download compact evidence by exact ID
         if: ${{ !cancelled() && steps.compact-upload.outputs.artifact-id != '' }}
-        id: compact-discovery
-        timeout-minutes: 2
+        timeout-minutes: 3
         env:
           GH_TOKEN: ${{ github.token }}
           EVIDENCE_REPOSITORY: ${{ github.repository }}
           EVIDENCE_RUN: ${{ github.run_id }}
           EVIDENCE_ARTIFACT: ${{ steps.compact-upload.outputs.artifact-id }}
-        run: bash scripts/ci/wait-for-artifact.sh "$EVIDENCE_REPOSITORY" "$EVIDENCE_RUN" "$EVIDENCE_ARTIFACT"
-      - name: Download compact native tool evidence
-        if: ${{ !cancelled() && steps.compact-discovery.outcome == 'success' }}
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
-        with:
-          artifact-ids: ${{ steps.compact-upload.outputs.artifact-id }}
-          github-token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          run-id: ${{ github.run_id }}
-          digest-mismatch: error
-          path: ${{ runner.temp }}/compact-tools-downloaded
-          merge-multiple: true
+          EVIDENCE_DIGEST: ${{ steps.compact-upload.outputs.artifact-digest }}
+        run: bash scripts/ci/download-evidence.sh "$EVIDENCE_REPOSITORY" "$EVIDENCE_RUN" "$EVIDENCE_ARTIFACT" "$EVIDENCE_DIGEST" "$RUNNER_TEMP/compact-tools-downloaded"
       - name: Verify compact native tool evidence and retained candidate
         if: ${{ !cancelled() && steps.compact-upload.outputs.artifact-id != '' }}
         env:

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/install-actionlint.sh scripts/ci/install-gitleaks.sh scripts/ci/install-shellcheck.sh scripts/ci/install-yq.sh scripts/ci/install-sccache.sh
+# Shared companions: scripts/ci/install-ci-tool.sh
 set -euo pipefail
 
 ROOT="$0"
@@ -141,13 +141,13 @@ shellcheck_checksum="$(checksum_sha256 "$archives/shellcheck-v0.11.0.linux.x86_6
 sccache_checksum="$(checksum_sha256 "$archives/$sccache_package.tar.gz")"
 
 PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
-    bash "$ROOT/scripts/ci/install-sccache.sh" --version 0.17.0 \
+    bash "$ROOT/scripts/ci/install-ci-tool.sh" sccache --version 0.17.0 \
     --sha256 "$sccache_checksum" --install-dir "$FIXTURE/installed" >/dev/null
 [[ "$("$FIXTURE/installed/sccache" --version)" == 'sccache 0.17.0' ]] || exit 1
 
 
 PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
-    bash "$ROOT/scripts/ci/install-actionlint.sh" \
+    bash "$ROOT/scripts/ci/install-ci-tool.sh" actionlint \
     --version 1.7.12 \
     --sha256 "$actionlint_checksum" \
     --install-dir "$FIXTURE/installed" >/dev/null
@@ -156,7 +156,7 @@ PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
 # A directory introduced during download is not a publication container.
 if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     INSTALLER_TEST_DIRECTORY_DESTINATION="$FIXTURE/changed-destination/actionlint" \
-    bash "$ROOT/scripts/ci/install-actionlint.sh" --version 1.7.12 \
+    bash "$ROOT/scripts/ci/install-ci-tool.sh" actionlint --version 1.7.12 \
     --sha256 "$actionlint_checksum" --install-dir "$FIXTURE/changed-destination" \
     > "$FIXTURE/changed-destination.log" 2>&1; then
     echo 'installer accepted a destination changed into a directory' >&2; exit 1
@@ -170,7 +170,7 @@ done
 # A late symlink is replaced as an entry; its target remains untouched.
 PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     INSTALLER_TEST_LINK_DESTINATION="$FIXTURE/changed-link/actionlint" \
-    bash "$ROOT/scripts/ci/install-actionlint.sh" --version 1.7.12 \
+    bash "$ROOT/scripts/ci/install-ci-tool.sh" actionlint --version 1.7.12 \
     --sha256 "$actionlint_checksum" --install-dir "$FIXTURE/changed-link" \
     > "$FIXTURE/changed-link.log" 2>&1
 [[ ! -L "$FIXTURE/changed-link/actionlint" ]] || exit 1
@@ -181,21 +181,21 @@ cmp "$payloads/actionlint/actionlint" "$FIXTURE/changed-link/actionlint"
 mkdir "$FIXTURE/no-perl"
 ln -s "$(command -v bash)" "$FIXTURE/no-perl/bash"
 ln -s "$FIXTURE/bin/uname" "$FIXTURE/no-perl/uname"
-if PATH="$FIXTURE/no-perl" bash "$ROOT/scripts/ci/install-actionlint.sh" \
+if PATH="$FIXTURE/no-perl" bash "$ROOT/scripts/ci/install-ci-tool.sh" actionlint \
     --version 1.7.12 --sha256 "$actionlint_checksum" --install-dir "$FIXTURE/unprepared" \
     > "$FIXTURE/no-perl.log" 2>&1; then exit 1; fi
 [[ ! -e "$FIXTURE/unprepared" ]] || exit 1
 grep -F 'Perl is required' "$FIXTURE/no-perl.log" > /dev/null
 
 PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
-    bash "$ROOT/scripts/ci/install-gitleaks.sh" \
+    bash "$ROOT/scripts/ci/install-ci-tool.sh" gitleaks \
     --version 8.30.1 \
     --sha256 "$gitleaks_checksum" \
     --install-dir "$FIXTURE/installed" >/dev/null
 [[ "$("$FIXTURE/installed/gitleaks" version)" == "8.30.1" ]] || exit 1
 
 PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
-    bash "$ROOT/scripts/ci/install-shellcheck.sh" \
+    bash "$ROOT/scripts/ci/install-ci-tool.sh" shellcheck \
     --version 0.11.0 \
     --sha256 "$shellcheck_checksum" \
     --install-dir "$FIXTURE/installed" >/dev/null
@@ -205,7 +205,7 @@ yq_checksum="$(checksum_sha256 "$archives/yq_linux_amd64")"
 for platform in Linux:x86_64 Linux:aarch64 Darwin:x86_64 Darwin:arm64; do
     PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
         INSTALLER_TEST_OS="${platform%:*}" INSTALLER_TEST_ARCH="${platform#*:}" \
-        bash "$ROOT/scripts/ci/install-yq.sh" --version 4.47.2 --sha256 "$yq_checksum" \
+        bash "$ROOT/scripts/ci/install-ci-tool.sh" yq --version 4.47.2 --sha256 "$yq_checksum" \
         --install-dir "$FIXTURE/installed" >/dev/null
     [[ "$("$FIXTURE/installed/yq" --version)" == 'yq (https://github.com/mikefarah/yq/) version v4.47.2' ]] || exit 1
 done
@@ -214,7 +214,7 @@ for failure in version checksum; do
     digest="$yq_checksum"
     if [[ "$failure" == version ]]; then version=4.47.1; else digest=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff; fi
     if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
-        bash "$ROOT/scripts/ci/install-yq.sh" --version "$version" --sha256 "$digest" \
+        bash "$ROOT/scripts/ci/install-ci-tool.sh" yq --version "$version" --sha256 "$digest" \
         --install-dir "$FIXTURE/installed" >/dev/null 2>&1; then
         echo "installer test failed: yq accepted a $failure mismatch" >&2
         exit 1
@@ -225,7 +225,7 @@ done
 
 cp "$FIXTURE/installed/yq" "$FIXTURE/original-yq"
 if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" INSTALLER_YQ_STATUS=17 \
-    bash "$ROOT/scripts/ci/install-yq.sh" --version 4.47.2 --sha256 "$yq_checksum" \
+    bash "$ROOT/scripts/ci/install-ci-tool.sh" yq --version 4.47.2 --sha256 "$yq_checksum" \
     --install-dir "$FIXTURE/installed" > "$FIXTURE/yq-status.log" 2>&1; then exit 1; fi
 cmp "$FIXTURE/original-yq" "$FIXTURE/installed/yq"
 retained=0
@@ -238,18 +238,18 @@ done
 mkdir -p "$FIXTURE/yq-directory/yq"
 printf 'keep directory contents\n' > "$FIXTURE/yq-directory/yq/existing"
 if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
-    bash "$ROOT/scripts/ci/install-yq.sh" --version 4.47.2 --sha256 "$yq_checksum" \
+    bash "$ROOT/scripts/ci/install-ci-tool.sh" yq --version 4.47.2 --sha256 "$yq_checksum" \
     --install-dir "$FIXTURE/yq-directory" > "$FIXTURE/yq-directory.log" 2>&1; then exit 1; fi
 [[ ! -e "$FIXTURE/yq-directory/yq/yq" && "$(cat "$FIXTURE/yq-directory/yq/existing")" == 'keep directory contents' ]] || exit 1
 for version in 3.4.5 4.47.2-rc.1; do
     if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
-        bash "$ROOT/scripts/ci/install-yq.sh" --version "$version" --sha256 "$yq_checksum" \
+        bash "$ROOT/scripts/ci/install-ci-tool.sh" yq --version "$version" --sha256 "$yq_checksum" \
         --install-dir "$FIXTURE/yq-unsupported" > "$FIXTURE/yq-version.log" 2>&1; then exit 1; fi
     [[ ! -e "$FIXTURE/yq-unsupported" ]] || exit 1
 done
 
 if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
-    bash "$ROOT/scripts/ci/install-actionlint.sh" \
+    bash "$ROOT/scripts/ci/install-ci-tool.sh" actionlint \
     --version 1.7.1 \
     --sha256 "$actionlint_checksum" \
     --install-dir "$FIXTURE/mismatch" >/dev/null 2>&1; then
@@ -258,7 +258,7 @@ if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
 fi
 
 if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
-    bash "$ROOT/scripts/ci/install-actionlint.sh" \
+    bash "$ROOT/scripts/ci/install-ci-tool.sh" actionlint \
     --version 1.7.12 \
     --sha256 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff \
     --install-dir "$FIXTURE/bad-checksum" >/dev/null 2>&1; then
@@ -277,7 +277,7 @@ for tool in actionlint gitleaks shellcheck sccache; do
     cp "$FIXTURE/installed/$tool" "$FIXTURE/original"
     : > "$INSTALLER_SCCACHE_EXECUTIONS"
     if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
-        bash "$ROOT/scripts/ci/install-$tool.sh" --version "$version" \
+        bash "$ROOT/scripts/ci/install-ci-tool.sh" "$tool" --version "$version" \
         --sha256 ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff \
         --install-dir "$FIXTURE/installed" > "$FIXTURE/rejected" 2>&1; then exit 1; fi
     cmp "$FIXTURE/original" "$FIXTURE/installed/$tool"
@@ -306,7 +306,7 @@ for tool in actionlint gitleaks shellcheck sccache; do
         digest="$(checksum_sha256 "$archives/$wrong_archive")"
     fi
     if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
-        bash "$ROOT/scripts/ci/install-$tool.sh" --version 9.9.9 --sha256 "$digest" \
+        bash "$ROOT/scripts/ci/install-ci-tool.sh" "$tool" --version 9.9.9 --sha256 "$digest" \
         --install-dir "$FIXTURE/installed" > "$FIXTURE/rejected" 2>&1; then exit 1; fi
     cmp "$FIXTURE/original" "$FIXTURE/installed/$tool"
 done
@@ -319,7 +319,7 @@ for failure in status version; do
     if [[ "$failure" == status ]]; then probe_status=7; else reported_version=0.17.00; fi
     if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
         INSTALLER_SCCACHE_STATUS="$probe_status" INSTALLER_SCCACHE_VERSION="$reported_version" \
-        bash "$ROOT/scripts/ci/install-sccache.sh" --version 0.17.0 --sha256 "$sccache_checksum" \
+        bash "$ROOT/scripts/ci/install-ci-tool.sh" sccache --version 0.17.0 --sha256 "$sccache_checksum" \
         --install-dir "$FIXTURE/installed" > "$FIXTURE/rejected" 2>&1; then exit 1; fi
     cmp "$FIXTURE/original-sccache" "$FIXTURE/installed/sccache"
 done
@@ -328,7 +328,7 @@ done
 for host in Linux:aarch64 Darwin:x86_64 Darwin:arm64; do
     if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
         INSTALLER_TEST_OS="${host%:*}" INSTALLER_TEST_ARCH="${host#*:}" \
-        bash "$ROOT/scripts/ci/install-sccache.sh" --version 0.17.0 --sha256 "$sccache_checksum" \
+        bash "$ROOT/scripts/ci/install-ci-tool.sh" sccache --version 0.17.0 --sha256 "$sccache_checksum" \
         --install-dir "$FIXTURE/unsupported-$host" > "$FIXTURE/rejected" 2>&1; then exit 1; fi
     [[ ! -e "$FIXTURE/unsupported-$host" ]] || exit 1
 done
@@ -351,7 +351,7 @@ for host in Linux:aarch64 Darwin:x86_64 Darwin:arm64; do
         esac
         PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
             INSTALLER_TEST_OS="${host%:*}" INSTALLER_TEST_ARCH="${host#*:}" \
-            bash "$ROOT/scripts/ci/install-$tool.sh" --version "$version" --sha256 "$digest" \
+            bash "$ROOT/scripts/ci/install-ci-tool.sh" "$tool" --version "$version" --sha256 "$digest" \
             --install-dir "$FIXTURE/installed" >/dev/null
     done
 done

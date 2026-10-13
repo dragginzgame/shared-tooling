@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.11.0]
+
+### Breaking
+
+- CI binary installation now uses `install-ci-tool.sh TOOL ...`; the five
+  per-tool forwarding scripts are removed. Replace their command paths and
+  snapshot entrypoints when adopting this revision. Pins and installation
+  arguments are unchanged.
+  ([#161](https://github.com/dragginzgame/shared-tooling/issues/161))
+
+### Added
+
+- Add coordinated Cargo workspace release-metadata preparation and selected-commit
+  checks. Consumers retain source/cache/tool admission, package policy, staging
+  and release effects; failed preparation restores exact metadata and retains
+  originals. Registry lock selections remain unchanged.
+
+- Add a read-only Node/npm prerequisite checker for caller-selected package roots
+  and executables, including exact tool versions and root manifest/lock agreement.
+
+### Fixed
+
+- Evidence readback downloads the exact uploaded artifact directly and retries
+  temporary HTTP 404 responses at the download boundary. Upload digests and
+  repository/run identity remain mandatory; all attempts are retained.
+  ([#158](https://github.com/dragginzgame/shared-tooling/issues/158))
+
+- CI inspection rejects invalid run identities and conflicting selectors instead
+  of silently ignoring a requested run, search filter or log inspection.
+  ([#157](https://github.com/dragginzgame/shared-tooling/issues/157))
+- Tooling LOC inventories reject line breaks in parent and explicit snapshot
+  paths before normalization or tool probes, including resolved aliases.
+  ([#156](https://github.com/dragginzgame/shared-tooling/issues/156))
+
 ## [0.10.2]
 
 ### Fixed

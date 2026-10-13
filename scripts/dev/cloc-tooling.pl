@@ -10,7 +10,18 @@ use File::Temp qw(tempdir);
 use FindBin qw($RealBin);
 use JSON::PP;
 
-my $root = abs_path("$RealBin/../..");
+sub operational_path {
+    my ($path) = @_;
+    $path = getcwd() . "/$path" unless $path =~ m{^/};
+    die "directory paths must not contain CR or LF\n" if $path =~ /[\r\n]/;
+    my $resolved = abs_path($path);
+    die "directory paths must not contain CR or LF\n"
+        if defined $resolved && $resolved =~ /[\r\n]/;
+    return $resolved;
+}
+
+operational_path(dirname($0));
+my $root = operational_path("$RealBin/../..");
 my ($json, $parent) = (0, undef);
 my %snapshot_roots;
 my %used_snapshot_roots;
@@ -53,7 +64,7 @@ while (@ARGV) {
     elsif ($arg eq '--snapshot-root') {
         @ARGV >= 2 or die usage();
         my ($manifest, $selected) = splice @ARGV, 0, 2;
-        $manifest = abs_path($manifest); $selected = abs_path($selected);
+        $manifest = operational_path($manifest); $selected = operational_path($selected);
         die "snapshot selection must name an existing manifest and root\n"
             unless defined $manifest && -f $manifest && defined $selected && -d $selected;
         die "duplicate snapshot root selection\n" if exists $snapshot_roots{$manifest};
@@ -62,7 +73,7 @@ while (@ARGV) {
     elsif ($arg !~ /^-/ && !defined $parent) { $parent = $arg; }
     else { die usage(); }
 }
-$parent = abs_path($parent // "$root/..");
+$parent = operational_path($parent // "$root/..");
 die "parent directory not found\n" unless defined $parent && -d $parent;
 $ENV{LC_ALL} = 'C';
 $ENV{GIT_OPTIONAL_LOCKS} = '0';

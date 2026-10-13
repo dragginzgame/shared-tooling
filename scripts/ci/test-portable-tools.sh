@@ -56,7 +56,7 @@ run_fixture bash "$ROOT/scripts/ci/test-portable-prerequisites.sh"
 run_fixture bash "$ROOT/scripts/ci/test-script-paths.sh"
 run_fixture bash "$ROOT/scripts/ci/test-cargo-install-qualification.sh"
 run_fixture bash "$ROOT/scripts/ci/test-evidence-archive.sh"
-run_fixture bash "$ROOT/scripts/ci/test-artifact-discovery.sh"
+run_fixture bash "$ROOT/scripts/ci/test-evidence-download.sh"
 run_fixture bash "$ROOT/scripts/ci/test-gh-ci.sh"
 run_fixture bash "$ROOT/scripts/ci/test-github-siblings.sh"
 run_fixture bash "$ROOT/scripts/ci/test-maintenance-task.sh"
@@ -133,6 +133,7 @@ run_fixture bash "$ROOT/scripts/ci/test-release-runner.sh"
 run_fixture bash "$ROOT/scripts/ci/test-release-tracking.sh"
 run_fixture bash "$ROOT/scripts/ci/test-release-pr.sh"
 run_fixture bash "$ROOT/scripts/ci/test-release-metadata.sh"
+run_fixture bash "$ROOT/scripts/ci/test-cargo-release-metadata.sh"
 run_fixture bash "$ROOT/scripts/ci/test-release-source.sh"
 
 mkdir -p "$FIXTURE/repository" "$FIXTURE/result"
@@ -180,9 +181,9 @@ SCCACHE_BIN="$FIXTURE/fake-sccache" SCCACHE_REPOSITORY_ROOT="$FIXTURE/repository
     bash "$ROOT/scripts/ci/run-sccache.sh" --show-stats
 [[ "$(<"$FIXTURE/result/tmpdir")" == "$FIXTURE/explicit-runtime/tmp" ]] || exit 1
 
-for installer in install-actionlint.sh install-gitleaks.sh install-shellcheck.sh install-sccache.sh install-yq.sh; do
-    bash "$ROOT/scripts/ci/$installer" --help >/dev/null 2>&1
-    if bash "$ROOT/scripts/ci/$installer" \
+for installer in actionlint gitleaks shellcheck sccache yq; do
+    bash "$ROOT/scripts/ci/install-ci-tool.sh" "$installer" --help >/dev/null 2>&1
+    if bash "$ROOT/scripts/ci/install-ci-tool.sh" "$installer" \
         --version 1.0.0 --sha256 invalid >/dev/null 2>&1; then
         echo "portable tools test failed: $installer accepted an invalid checksum" >&2
         exit 1
@@ -190,6 +191,13 @@ for installer in install-actionlint.sh install-gitleaks.sh install-shellcheck.sh
 done
 
 bash "$ROOT/scripts/dev/gh-ci.sh" --help >/dev/null 2>&1
+
+# Node belongs to opt-in browser consumers, not portable shell prerequisites.
+if command -v node >/dev/null 2>&1; then
+    run_fixture node "$ROOT/scripts/ci/test-node-tools.mjs"
+else
+    printf 'Node prerequisite tests skipped: Node is not selected on this host.\n'
+fi
 
 echo "portable tools tests passed"
 fixture_complete=true

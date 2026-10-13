@@ -20,6 +20,9 @@ The top undated changelog entry describes the next proposed release. Standard
 release preparation updates both files; Git tags establish published release
 identity independently.
 
+Opt-in browser consumers can reuse the [Node/npm prerequisite checker](docs/node-tools.md)
+while retaining their package roots, pins and setup ownership.
+
 ## Repository fleet ownership
 
 Shared Tooling owns consistency across the Dragginzgame repositories: shared
@@ -459,13 +462,13 @@ consumer continues to own version policy.
 
 The sccache binary installer currently selects only the reviewed Linux x86-64
 asset. It retains failed candidates and uses the same shared installation
-implementation as actionlint, Gitleaks, ShellCheck and standalone yq. Each entry
-point requires `scripts/ci/install-ci-tool.sh` in its snapshot. All reject failed
+command as actionlint, Gitleaks, ShellCheck and standalone yq. Select
+`scripts/ci/install-ci-tool.sh` in its snapshot. All reject failed
 version probes and directory destinations, retain failed candidates and replace
 the executable with a rename on the destination filesystem.
 
 ```bash
-scripts/ci/install-actionlint.sh \
+scripts/ci/install-ci-tool.sh actionlint \
   --version 1.7.12 \
   --sha256 <platform-sha256>
 ```
@@ -542,6 +545,8 @@ implicit branch filter; add `--branch` explicitly to narrow it. `--all-workflows
 lists runs without the default `CI` workflow filter. The list is bounded by
 `--limit`, includes pending and failed runs, and is not a complete CI verdict.
 Increase the limit when necessary and inspect listed runs with `--run ID --logs`.
+Run IDs must be positive integers. `--run` cannot be combined with list or search
+filters, and `--list --logs` is rejected rather than silently omitting the logs.
 `--failed` deliberately searches historical failures, which may have been
 superseded by later successes. Existing branch/workflow defaults remain unchanged.
 Select another repository through the GitHub CLI's `GH_REPO` environment variable;

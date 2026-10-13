@@ -773,11 +773,8 @@ for entry in test-format-tools test-rust-tools test-make-format; do
     (cd "$focused_consumer" && bash "scripts/ci/$entry.sh") > "$FIXTURE/exported-$entry.log" 2>&1
 done
 bash "$ROOT/$verifier_path" --consumer "$focused_consumer" >/dev/null
-# CI installer fixtures derive every wrapper even when production uses a subset.
+# CI installer fixtures use the same public entry point as production.
 installer_paths=(scripts/ci/test-installers.sh scripts/ci/install-ci-tool.sh)
-for tool in actionlint gitleaks shellcheck yq sccache; do
-    installer_paths+=("scripts/ci/install-$tool.sh")
-done
 for path in "${installer_paths[@]}"; do
     cp -p "$ROOT/$path" "$source_root/$path"
     cp -p "$ROOT/$path" "$revision_root/$path"

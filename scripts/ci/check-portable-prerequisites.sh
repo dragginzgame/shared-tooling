@@ -8,7 +8,7 @@ ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 [[ $# == 0 ]] || { echo 'usage: check-portable-prerequisites.sh' >&2; exit 2; }
 missing=0
-for tool in bash git make curl tar gzip xz perl shasum cargo jq yq rg cloc; do
+for tool in bash git make curl tar gzip xz zip unzip perl shasum cargo jq yq rg cloc; do
     if ! command -v "$tool" >/dev/null 2>&1; then
         printf 'Missing portable-test prerequisite: %s\n' "$tool" >&2
         missing=1

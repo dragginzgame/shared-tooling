@@ -19,6 +19,40 @@ trap finish EXIT
 parent="$fixture/parent projects"
 repo="$parent/a consumer"
 mkdir -p "$parent"
+# Invalid operational selections must fail before any Git probe or inventory
+# allocation, even when normalization would erase the offending component.
+mkdir -p "$fixture/probes" "$fixture/empty-temp"
+cat > "$fixture/probes/git" <<'SCRIPT'
+#!/usr/bin/env bash
+echo 'unexpected Git probe' >&2
+exit 93
+SCRIPT
+chmod +x "$fixture/probes/git"
+refuse_path() {
+    local status=0
+    PATH="$fixture/probes:$PATH" TMPDIR="$fixture/empty-temp" perl "$@" \
+        > "$fixture/path.out" 2> "$fixture/path.err" || status=$?
+    [[ "$status" != 0 && ! -s "$fixture/path.out" ]] || exit 1
+    grep -Fx 'directory paths must not contain CR or LF' "$fixture/path.err" >/dev/null
+    if grep -F 'unexpected Git probe' "$fixture/path.err"; then exit 1; fi
+    [[ -z "$(ls -A "$fixture/empty-temp")" ]] || exit 1
+}
+for suffix in $'\n' $'\r'; do
+    invalid="$fixture/invalid$suffix"
+    mkdir -p "$invalid/scripts/dev"
+    touch "$invalid/manifest" "$fixture/manifest"
+    ln -s "$invalid" "$fixture/path-alias"
+    for selected in "$invalid" "$invalid/.." "$fixture/path-alias"; do
+        refuse_path "$ROOT/scripts/dev/cloc-tooling.pl" "$selected"
+        refuse_path "$ROOT/scripts/dev/cloc-tooling.pl" --snapshot-root "$fixture/manifest" "$selected" "$parent"
+        refuse_path "$ROOT/scripts/dev/cloc-tooling.pl" --snapshot-root "$selected/manifest" "$fixture" "$parent"
+    done
+    cp "$ROOT/scripts/dev/cloc-tooling.pl" "$invalid/scripts/dev/"
+    refuse_path "$invalid/scripts/dev/cloc-tooling.pl" "$parent"
+    refuse_path "$fixture/path-alias/scripts/dev/cloc-tooling.pl" "$parent"
+    (cd "$invalid" && refuse_path "$ROOT/scripts/dev/cloc-tooling.pl" .)
+    rm "$fixture/path-alias"
+done
 # Reuse existing commit objects; no fixture commits or consumer commands run.
 git clone -q --shared --no-checkout "$ROOT" "$repo"
 # A legal repository name must not collide with the report's temporary files.
@@ -48,6 +82,9 @@ revision="$(git -C "$ROOT" rev-parse HEAD)"
 printf 'format\t1\nsource\thttps://github.com/dragginzgame/shared-tooling.git\nrevision\t%s\nfile\t%s\t-\tscripts/ci/a.sh\n' \
     "$revision" "$hash" > "$repo/.shared-tooling.snapshot"
 perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$parent" > "$fixture/counts.json"
+ln -s "$parent" "$fixture/valid alias"
+perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$fixture/valid alias" > "$fixture/alias.json"
+cmp "$fixture/counts.json" "$fixture/alias.json"
 jq -e '
   .partial == false and (.repositories | length) == 2 and
   .totals == {ci_loc:5,other_loc:4,total_loc:9,shared_loc:1,local_loc:8,data_lines:4} and
