@@ -547,12 +547,14 @@ superseded by later successes. Existing branch/workflow defaults remain unchange
 Select another repository through the GitHub CLI's `GH_REPO` environment variable;
 commit revisions still resolve in the current local checkout.
 
-`--logs` reports unavailable failed-step evidence if GitHub returns an empty log
-for a failed, cancelled or unfinished run. Completed successful, neutral or skipped
-runs may legitimately have no failed-step logs. Failed observations retain their
-output and diagnostics in the printed temporary directory, and failed fetches
-preserve their original exit status. This inspection does not rerun CI or turn
-nonempty logs into a green-gate verdict.
+`--logs` pins the repository, run and attempt before fetching evidence. If GitHub
+returns empty failed-step logs for a completed failed or timed-out attempt, it
+fetches full logs only for that attempt's failed or timed-out jobs. These are
+labelled by job; the original observation and recovered logs remain in the printed
+temporary directory. Empty logs for cancelled or unfinished attempts, unavailable
+job logs and API errors remain failures; partial output and fetch status are retained.
+Completed successful, neutral or skipped runs may legitimately have no failed-step
+logs. This inspection does not rerun CI or turn nonempty logs into a green-gate verdict.
 
 Agents also recognize `check CI`, `check issues` and `check for work` through the
 [maintenance rules](rules/agent-maintenance.md). To enable automatic checks during

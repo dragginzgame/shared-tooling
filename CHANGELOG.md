@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.14]
+
+### Fixed
+
+- CI inspection retrieves the selected attempt's failed-job logs when GitHub
+  returns empty failed-step logs, retaining the original and recovered evidence.
+  Missing logs and API failures remain explicit inspection failures.
+  ([#149](https://github.com/dragginzgame/shared-tooling/issues/149))
+
 ## [0.9.13]
 
 ### Fixed
