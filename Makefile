@@ -11,7 +11,7 @@ include make/consumer.mk
         release-version release-preflight release-verify \
         release-prepare-version release-prepared-check release-files \
         release-commit-check release-committed-check release-tagged-check release-push-check \
-        release-merged-preflight check-cargo-tool-versions
+        release-merged-preflight check-cargo-tool-versions check-tool-catalogs
 
 help:
 	@echo "Current local version: make version"
@@ -23,6 +23,7 @@ help:
 	@echo "Complete common host, IC and Rust toolset: install-tools; offline verification: tools-check"
 	@echo "Pinned Cargo tools: install-rust-tools; offline verification: rust-tools-check"
 	@echo "Cargo tool freshness (online, read-only): check-cargo-tool-versions"
+	@echo "Caller catalog agreement (offline, opt-in): check-tool-catalogs TOOL_CATALOG_BINDINGS=path"
 	@echo "Full delivery gate: ci (required before handing off code changes)"
 	@echo "Maintainer releases: release-patch, release-minor, release-major"
 	@echo "Delivery: direct by default; RELEASE_DELIVERY=pr selects review then merged validation/tag"
@@ -33,6 +34,11 @@ tasks:
 
 check-cargo-tool-versions:
 	@perl scripts/dev/check-cargo-tool-versions.pl --versions "$(RUST_TOOL_VERSIONS)"
+
+TOOL_CATALOG_CONSUMER ?= .
+TOOL_CATALOG_BINDINGS ?= ci/tool-catalog-bindings.json
+check-tool-catalogs:
+	@perl scripts/ci/check-tool-catalogs.pl --consumer "$(TOOL_CATALOG_CONSUMER)" --bindings "$(TOOL_CATALOG_BINDINGS)"
 
 check-shell:
 	$(SHELLCHECK) scripts/ci/*.sh scripts/dev/*.sh scripts/distribution/*.sh scripts/release/*.sh .githooks/pre-commit

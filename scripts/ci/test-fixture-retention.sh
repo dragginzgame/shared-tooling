@@ -22,14 +22,16 @@ for input in src/lib.rs Cargo.toml Makefile README.md .githooks/pre-commit scrip
     printf 'retained input\n' > "$fixture/exit-input/$input"
 done
 export RETENTION_EXIT_PATH="$fixture/exit-path"
-for name in format-tools tool-commands rust-tools release-runner host-tools fixture-retention check-formatting-hooks; do
+for name in format-tools tool-commands rust-tools release-runner host-tools ic-tools fixture-retention check-formatting-hooks; do
     source="$ROOT/scripts/ci/test-$name.sh"
     probe_args=()
     if [[ "$name" == check-formatting-hooks ]]; then
         source="$ROOT/scripts/ci/$name.sh"
         probe_args=("$fixture/exit-input" src/lib.rs Cargo.toml --no-dependency-tables)
     fi
-    for failure in nounset nounset-function command nonzero premature completed failed-completion; do
+    failures=(nounset nounset-function command nonzero premature completed failed-completion)
+    [[ "$name" != ic-tools ]] || failures+=(cleanup-failure)
+    for failure in "${failures[@]}"; do
         # shellcheck disable=SC2016 # Expanded by the disposable child fixture.
         case "$failure" in
             nounset) injection='unset RETENTION_UNBOUND; printf "%s\n" "$RETENTION_UNBOUND"'; expected=1 ;;
@@ -39,6 +41,7 @@ for name in format-tools tool-commands rust-tools release-runner host-tools fixt
             premature) injection='exit 0'; expected=1 ;;
             completed) injection='fixture_complete=true; exit 0'; expected=0 ;;
             failed-completion) injection='fixture_complete=true; exit 23'; expected=23 ;;
+            cleanup-failure) injection='rm() { return 37; }; fixture_complete=true; exit 0'; expected=37 ;;
         esac
         # Pass literal shell source through ENVIRON, not awk -v escape decoding.
         RETENTION_INJECTION="$injection" awk '
@@ -57,6 +60,10 @@ for name in format-tools tool-commands rust-tools release-runner host-tools fixt
             ${probe_args[@]+"${probe_args[@]}"} \
             > "$fixture/exit-$name-$failure.log" 2>&1 || status=$?
         [[ "$status" == "$expected" ]] || exit 1
+        if [[ "$failure" == cleanup-failure ]]; then
+            grep -F 'IC fixture cleanup started:' "$fixture/exit-$name-$failure.log" > /dev/null
+            grep -E 'IC fixture cleanup finished: [0-9]+s, status 37' "$fixture/exit-$name-$failure.log" > /dev/null
+        fi
         retained="$(cat "$RETENTION_EXIT_PATH")"
         [[ -n "$retained" ]] || exit 1
         if [[ "$expected" == 0 ]]; then [[ ! -e "$retained" ]] || exit 1

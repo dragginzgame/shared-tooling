@@ -126,6 +126,9 @@ evidence. All fixtures remain sequential and all three hosts run the complete
 suite. Compare cold/warm setup and fixture timings on matching hosted inputs;
 local timings and cache fixtures do not establish a hosted speed-up or explain
 runner queue capacity.
+The IC-tool fixture also prints cleanup start, elapsed seconds and exit status
+after successful assertions. A start without an end identifies an interrupted
+cleanup; use native evidence before attributing a timeout or claiming a speed-up.
 
 Shared Tooling's portable scripts do not support Windows or non-Bash shells.
 This does not prohibit a consumer from supporting additional hosts or shells

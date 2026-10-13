@@ -671,6 +671,9 @@ while read -r entry missing; do
     grep -F "$(printf 'ADD\trequired\t%s' "$missing")" "$FIXTURE/closure.out" >/dev/null
     [[ ! -e "$selected_consumer/scripts" && ! -e "$selected_consumer/.shared-tooling.snapshot" ]] || exit 1
 done <<'COMPANIONS'
+scripts/ci/check-tool-catalogs.pl scripts/ci/ic-tool-pins.awk
+scripts/ci/cargo-tool-cache-key.sh scripts/ci/tool-catalog-records.pl
+scripts/ci/test-tool-catalogs.pl scripts/ci/check-tool-catalogs.pl
 scripts/ci/check-publication.sh scripts/ci/check-crates-io-version.sh
 scripts/ci/test-publication.sh scripts/ci/check-publication.sh
 scripts/ci/run-release.sh scripts/ci/check-release-tag.sh

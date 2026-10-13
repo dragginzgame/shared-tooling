@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.11.4]
+
+### Added
+
+- Add pure literal Cargo workspace-version rendering with exact previous-value
+  admission, byte preservation and no metadata writes. Consumers retain TOML
+  admission, candidate checks and release recovery
+  ([#159](https://github.com/dragginzgame/shared-tooling/issues/159)).
+
+- Add offline comparison of workflow callers' host, Rust and IC catalogs,
+  distinguishing declared bindings from recorded CLI observations and reporting
+  unresolved selections explicitly. The maintenance/CI check is opt-in and
+  leaves consumer pins, installation and release gates unchanged.
+  ([#168](https://github.com/dragginzgame/shared-tooling/issues/168))
+
+### Changed
+
+- IC-tool fixtures report cleanup start, elapsed time and exit status to help
+  locate macOS post-success stalls, while retaining failed attempts.
+  ([#164](https://github.com/dragginzgame/shared-tooling/issues/164))
+
 ## [0.11.3]
 
 ### Added
