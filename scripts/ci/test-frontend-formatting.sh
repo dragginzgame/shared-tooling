@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared companions: scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 
 # Explicit npm ci preparation is separate; this test only uses installed tools.
@@ -18,16 +19,10 @@ bash "$ROOT/scripts/ci/check-format-tools.sh" "$SHARED_TOOLING_CARGO_SORT_VERSIO
 [[ "$(cargo sort-derives --version)" == "cargo-sort-derives $SHARED_TOOLING_CARGO_SORT_DERIVES_VERSION" ]] || exit 1
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/frontend-format-test.XXXXXX")"
 fixture="$(cd "$fixture" && pwd -P)"
-# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+# shellcheck source=scripts/ci/fixture-lifecycle.sh
+source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture_complete=false
-finish() {
-    local status=$?
-    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
-    if [[ "$status" == 0 ]]; then rm -rf -- "$fixture"
-    else echo "Frontend fixture retained: $fixture" >&2; fi
-    exit "$status"
-}
-trap finish EXIT
+trap 'fixture_finish "$?" "$fixture" "Frontend fixture retained"' EXIT
 mkdir "$fixture/templates" "$fixture/repo"
 export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TEMPLATE_DIR="$fixture/templates"
 objects="$(git -C "$ROOT" rev-parse --git-path objects)"

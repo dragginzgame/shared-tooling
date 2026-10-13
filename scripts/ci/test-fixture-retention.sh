@@ -1,25 +1,20 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/prepare-cargo-failure-fixture.sh
+# Shared companions: scripts/ci/prepare-cargo-failure-fixture.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 ROOT="$0"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/fixture-retention-test.XXXXXX")"
-# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+# shellcheck source=scripts/ci/fixture-lifecycle.sh
+source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture_complete=false
-finish() {
-    local status=$?
-    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
-    if [[ "$status" == 0 ]]; then rm -rf "$fixture"
-    else echo "Retention fixtures retained: $fixture" >&2; fi
-    exit "$status"
-}
-trap finish EXIT
+trap 'fixture_finish "$?" "$fixture" "Retention fixtures retained"' EXIT
 # Inject exits into disposable copies of actual fixtures immediately after their
 # EXIT trap. No installer, release, or nested test body is dispatched. Exercise
 # cleanup/status handling using this invocation's Bash (including 3.2).
 mkdir -p "$fixture/exit-source/scripts/ci"
+cp "$ROOT/scripts/ci/fixture-lifecycle.sh" "$fixture/exit-source/scripts/ci/"
 mkdir -p "$fixture/exit-input/src" "$fixture/exit-input/.githooks" "$fixture/exit-input/scripts/dev" "$fixture/exit-input/scripts/ci"
 for input in src/lib.rs Cargo.toml Makefile README.md .githooks/pre-commit scripts/dev/install-git-hooks.sh scripts/ci/check-make-execution.sh; do
     printf 'retained input\n' > "$fixture/exit-input/$input"
@@ -93,7 +88,7 @@ done
 # a failed assertion followed by successful commands and normal cleanup.
 assertion_root="$fixture/assertion-source"
 mkdir -p "$assertion_root/scripts/ci" "$fixture/assertion-digests" "$fixture/assertion-disk"
-cp "$ROOT/scripts/ci/test-file-digests.sh" "$ROOT/scripts/ci/test-runner-disk-space.sh" "$assertion_root/scripts/ci/"
+cp "$ROOT/scripts/ci/test-file-digests.sh" "$ROOT/scripts/ci/test-runner-disk-space.sh" "$ROOT/scripts/ci/fixture-lifecycle.sh" "$assertion_root/scripts/ci/"
 export ASSERTION_CALLS="$fixture/digest-calls"
 cat > "$assertion_root/scripts/ci/verify-file-checksum.sh" <<'SCRIPT'
 #!/usr/bin/env bash
@@ -152,7 +147,7 @@ chmod +x "$fixture/bin/"*
 # Isolate the report from this checkout's prepared host set so the failing
 # cloc substitute exercises retention even when local tools take precedence.
 mkdir -p "$fixture/source/scripts/ci" "$fixture/source/scripts/dev"
-cp "$ROOT/scripts/ci/test-cloc.sh" "$fixture/source/scripts/ci/"
+cp "$ROOT/scripts/ci/test-cloc.sh" "$ROOT/scripts/ci/fixture-lifecycle.sh" "$fixture/source/scripts/ci/"
 cp "$ROOT/scripts/dev/cloc.sh" "$fixture/source/scripts/dev/"
 status=0
 TMPDIR="$fixture/cloc" PATH="$fixture/bin:$PATH" CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0 \

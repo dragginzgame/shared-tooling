@@ -17,6 +17,8 @@ finish() {
 trap finish EXIT
 REAL_CARGO="$(command -v cargo)"
 export REAL_CARGO
+REAL_GIT="$(command -v git)"
+export REAL_GIT
 mkdir "$fixture/bin"
 cat > "$fixture/bin/cargo" <<'STUB'
 #!/usr/bin/env bash
@@ -35,6 +37,18 @@ case "$1" in
 esac
 STUB
 chmod +x "$fixture/bin/cargo"
+cat > "$fixture/bin/git" <<'GIT'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "${GIT_FAILURE:-}" == type && "$*" == cat-file\ -t\ * ]]; then
+    printf 'commit\n'; exit 43
+fi
+if [[ "${GIT_FAILURE:-}" == export && "$1" == archive ]]; then
+    "$REAL_GIT" "$@"; exit 43
+fi
+exec "$REAL_GIT" "$@"
+GIT
+chmod +x "$fixture/bin/git"
 export PATH="$fixture/bin:$PATH"
 export RELEASE_PREVIOUS=1.2.3 RELEASE_VERSION=1.2.4 RELEASE_DATE=2026-10-13
 helper="$ROOT/scripts/ci/cargo-release-metadata.sh"
@@ -100,5 +114,10 @@ mv secondary/Cargo.toml secondary/current-manifest.retained
 RELEASE_COMMIT="$commit" bash "$helper" check primary
 [[ "$(git rev-parse HEAD)" == "$commit" && "$(git write-tree)" == "$index_before" ]]
 [[ "$(cat Cargo.toml)" == 'broken current metadata' && ! -e secondary/Cargo.toml ]]
+for failure in type export; do
+    status=0
+    GIT_FAILURE="$failure" RELEASE_COMMIT="$commit" bash "$helper" check primary > "$fixture/git-$failure.log" 2>&1 || status=$?
+    [[ "$status" == 43 ]] || { echo 'failed Git output was accepted or its status lost' >&2; exit 1; }
+done
 echo 'Cargo metadata preparation, restoration, workspace admission and selected-commit checks passed (version/sort tools substituted).'
 complete=true

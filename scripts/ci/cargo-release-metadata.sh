@@ -58,7 +58,8 @@ inherited_members() {
 case "$operation" in
     prepare)
         regular_metadata .
-        [[ "$(bash "$reader" Cargo.toml)" == "${RELEASE_PREVIOUS:?}" ]] || exit 1
+        observed_version="$(bash "$reader" Cargo.toml)"
+        [[ "$observed_version" == "${RELEASE_PREVIOUS:?}" ]] || exit 1
         backup="$(mktemp -d "${TMPDIR:-/tmp}/cargo-release-backup.XXXXXX")"
         files=(Cargo.toml Cargo.lock CHANGELOG.md)
         for path in "${files[@]}"; do cp -p "$path" "$backup/$path"; done
@@ -104,13 +105,19 @@ case "$operation" in
         cp "$backup/candidate.lock" Cargo.lock
         cp "$backup/candidate.notes" CHANGELOG.md
         cargo metadata --locked --offline --format-version 1 > "$backup/prepared.json"
-        [[ "$(bash "$reader" Cargo.toml)" == "$RELEASE_VERSION" ]] || exit 1
+        observed_version="$(bash "$reader" Cargo.toml)"
+        [[ "$observed_version" == "$RELEASE_VERSION" ]] || exit 1
         lock_packages . "$RELEASE_VERSION" > "$backup/prepared-packages"
         workspace_packages "$backup/prepared.json" "$RELEASE_VERSION" "$backup/prepared-packages"
         complete=true
         ;;
     check)
         selected_root="$(pwd -P)"
+        if [[ -n "${RELEASE_COMMIT:-}" ]]; then
+            [[ "$RELEASE_COMMIT" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]] || exit 1
+            object_type="$(git cat-file -t "$RELEASE_COMMIT")"
+            [[ "$object_type" == commit ]] || exit 1
+        fi
         temporary="$(mktemp -d "${TMPDIR:-/tmp}/cargo-release-check.XXXXXX")"
         complete=false
         finish_check() {
@@ -122,14 +129,13 @@ case "$operation" in
         }
         trap finish_check EXIT
         if [[ -n "${RELEASE_COMMIT:-}" ]]; then
-            [[ "$RELEASE_COMMIT" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]] || exit 1
-            [[ "$(git cat-file -t "$RELEASE_COMMIT")" == commit ]] || exit 1
             selected_root="$temporary/source"
             mkdir "$selected_root"
             git archive --format=tar "$RELEASE_COMMIT" | tar -xf - -C "$selected_root"
         fi
         regular_metadata "$selected_root"
-        [[ "$(bash "$reader" "$selected_root/Cargo.toml")" == "${RELEASE_VERSION:?}" ]] || exit 1
+        observed_version="$(bash "$reader" "$selected_root/Cargo.toml")"
+        [[ "$observed_version" == "${RELEASE_VERSION:?}" ]] || exit 1
         awk -v heading="## [$RELEASE_VERSION] - ${RELEASE_DATE:?}" \
             '$0 == heading { count++ } END { if (count != 1) exit 1 }' "$selected_root/CHANGELOG.md"
         lock_packages "$selected_root" "$RELEASE_VERSION" > "$temporary/local-packages"

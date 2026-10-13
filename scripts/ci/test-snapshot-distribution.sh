@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared companions: scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 
 ROOT="$0"
@@ -6,16 +7,10 @@ ROOT="$0"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-snapshot-test.XXXXXX")"
-# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+# shellcheck source=scripts/ci/fixture-lifecycle.sh
+source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture_complete=false
-finish() {
-    local status=$?
-    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
-    if [[ "$status" == 0 ]]; then rm -rf "$FIXTURE"
-    else printf "Failed snapshot-distribution fixture retained: %s\n" "$FIXTURE" >&2; fi
-    exit "$status"
-}
-trap finish EXIT
+trap 'fixture_finish "$?" "$FIXTURE" "Failed snapshot-distribution fixture retained"' EXIT
 # Match refresh-consumer physical paths when TMPDIR contains a host alias.
 FIXTURE="$(cd "$FIXTURE" && pwd -P)"
 REAL_GIT="$(command -v git)"
@@ -601,6 +596,7 @@ mkdir "$selection_consumer"
 git init -q "$selection_consumer"
 for path in scripts/ci/run-validation-targets.sh scripts/ci/check-make-execution.sh \
     scripts/ci/run-release.sh scripts/ci/next-release-version.sh \
+    scripts/ci/check-release-tag.sh scripts/ci/fixture-lifecycle.sh \
     scripts/ci/test-release-runner.sh scripts/ci/finalize-release-changelog.awk \
     scripts/ci/test-host-tools.sh scripts/ci/test-ic-tools.sh scripts/ci/test-tool-evidence.sh \
     scripts/ci/test-tool-store.sh scripts/dev/tool-store.sh scripts/dev/install-host-tools.sh \
@@ -673,6 +669,8 @@ while read -r entry missing; do
     grep -F "$(printf 'ADD\trequired\t%s' "$missing")" "$FIXTURE/closure.out" >/dev/null
     [[ ! -e "$selected_consumer/scripts" && ! -e "$selected_consumer/.shared-tooling.snapshot" ]] || exit 1
 done <<'COMPANIONS'
+scripts/ci/run-release.sh scripts/ci/check-release-tag.sh
+scripts/ci/test-release-runner.sh scripts/ci/fixture-lifecycle.sh
 scripts/ci/test-host-tools.sh scripts/ci/test-tool-evidence.sh
 scripts/ci/test-ic-tools.sh scripts/ci/test-tool-evidence.sh
 scripts/ci/test-tool-evidence.sh scripts/ci/select-tool-evidence.sh

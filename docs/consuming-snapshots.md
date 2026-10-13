@@ -293,6 +293,11 @@ also declare their required helpers. Review fixture dependencies when selecting
 tests, not only production entrypoints. The PR fixture requires the PR helper
 even though direct release delivery does not. Caller-owned pin files and optional
 production modes stay explicit inputs rather than unconditional companions.
+Fixtures using `scripts/ci/fixture-lifecycle.sh` include it through their companion
+declarations. It removes successful fixture directories and preserves failures,
+including premature exits; production entrypoints do not acquire this test helper.
+The release runner also includes `scripts/ci/check-release-tag.sh` so direct and
+PR release paths use the same annotated-tag and exact-commit checks.
 
 Run `test-snapshot-distribution.sh` from Shared Tooling for upstream exporter and
 governance qualification. Consumers should normally omit that integration fixture

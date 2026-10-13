@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.11.1]
+
+### Changed
+
+- Release recovery uses the shared annotated-tag checker, keeping exact commit
+  identity checks consistent across release paths.
+- Standalone fixtures share successful cleanup and failed-evidence retention.
+  Snapshot refresh includes the required helper automatically.
+
 ## [0.11.0]
 
 ### Breaking

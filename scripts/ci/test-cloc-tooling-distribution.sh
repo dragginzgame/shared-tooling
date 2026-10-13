@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared companions: scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 # Upstream integration only: consumers vendor test-cloc-tooling.sh instead.
 ROOT="$0"
@@ -6,16 +7,10 @@ ROOT="$0"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/cloc-tooling-distribution.XXXXXX")"
-# Bash 3.2 can enter EXIT with status zero after nounset; require completion too.
+# shellcheck source=scripts/ci/fixture-lifecycle.sh
+source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture_complete=false
-finish() {
-    local status=$?
-    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
-    if [[ "$status" == 0 ]]; then rm -rf "$fixture"
-    else printf "Failed tooling distribution fixture retained: %s\n" "$fixture" >&2; fi
-    exit "$status"
-}
-trap finish EXIT
+trap 'fixture_finish "$?" "$fixture" "Failed tooling distribution fixture retained"' EXIT
 
 # Export actual committed scripts, verify, then inventory the same bytes.
 # Existing objects suffice; no fixture commits or network access are needed.
@@ -128,7 +123,7 @@ cp "$fixture/valid.snapshot" "$records/.shared-tooling.snapshot"
 adoption="$fixture/adoption"
 git clone -q --shared --no-checkout "$ROOT" "$adoption"
 mkdir -p "$adoption/scripts/ci" "$adoption/scripts/dev"
-cp "$ROOT/scripts/ci/test-cloc-tooling.sh" "$ROOT/scripts/ci/verify-file-checksum.sh" \
+cp "$ROOT/scripts/ci/test-cloc-tooling.sh" "$ROOT/scripts/ci/verify-file-checksum.sh" "$ROOT/scripts/ci/fixture-lifecycle.sh" \
     "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" "$adoption/scripts/ci/"
 cp "$ROOT/scripts/dev/cloc-tooling.pl" "$adoption/scripts/dev/"
 bash "$adoption/scripts/ci/test-cloc-tooling.sh" > "$fixture/adoption.log" 2>&1
