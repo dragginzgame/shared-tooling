@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.13.0]
+
+### Added
+
+- Share fixture-directory allocation and physical-path anchoring, preserving
+  failed allocations for diagnosis and keeping cleanup policy with callers
+  ([#189 — Share fixture-directory allocation](https://github.com/dragginzgame/shared-tooling/issues/189)).
+
 ## [0.12.9]
 
 ### Fixed
