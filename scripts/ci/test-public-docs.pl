@@ -47,6 +47,11 @@ for my $pair (['struct','a struct'], ['enum','an enum'], ['trait','a trait'], ['
     isnt(key("pub $keyword First {}", "pub $keyword First {}", $kind), key("pub $keyword Second {}", "pub $keyword Second {}", $kind), "$keyword uses declared name");
 }
 like(key('pub static mut COUNTER: u64 = 0;', 'pub static mut COUNTER: u64 = 0;', 'a static'), qr/::COUNTER$/, 'static name');
+isnt(key('pub struct r#type;', 'pub struct r#type;', 'a struct'), key('pub struct r#match;', 'pub struct r#match;', 'a struct'), 'raw type names remain distinct');
+is(key('pub struct r#Request { pub r#type: u64 }', 'pub r#type: u64'), 'struct Request::a struct field::type', 'raw owner and field names');
+is(key('impl r#Request { pub fn r#match() {} }', 'pub fn r#match()', 'a method'), key('impl Request { pub fn r#match() {} }', 'pub fn r#match()', 'a method'), 'raw impl spelling does not change owner identity');
+isnt(key('pub enum Error { r#type { value: u64 } }', 'value: u64'), key('pub enum Error { r#match { value: u64 } }', 'value: u64'), 'raw lowercase variants retain namespaces');
+isnt(key('pub enum Error { first { value: u64 } }', 'value: u64'), key('pub enum Error { second { value: u64 } }', 'value: u64'), 'lowercase variants retain namespaces');
 like(key('macro_rules! exported { () => {} }', 'macro_rules! exported { () => {} }', 'a macro'), qr/::exported$/, 'macro name');
 like(key('impl Request { pub const fn with_sort() {} }', 'pub const fn with_sort()', 'a method'), qr/::with_sort$/, 'const method');
 is(key('const X: &str = r#"{fake}"#; /* outer /* {nested} */ end */ pub struct Real { pub value: u64 }', 'pub value: u64'), 'struct Real::a struct field::value', 'raw literals and nested comments');

@@ -19,7 +19,7 @@ sub read_bytes {
 sub tokens {
     my ($source) = @_;
     my @tokens;
-    while ($source =~ m{//[^\n]*|/\*|(?:br|r)(\#*)"|b?"(?:\\.|[^"\\])*"|b?'(?:\\.|[^'\\])'|[A-Za-z_][A-Za-z_0-9]*|[^\s]}sg) {
+    while ($source =~ m{//[^\n]*|/\*|(?:br|r)(\#*)"|b?"(?:\\.|[^"\\])*"|b?'(?:\\.|[^'\\])'|(?:r\#)?[A-Za-z_][A-Za-z_0-9]*|[^\s]}sg) {
         my ($token, $hashes) = ($&, $1);
         next if $token =~ m{^//};
         if ($token eq '/*') {
@@ -54,17 +54,24 @@ sub owner_path {
             my $owner;
             for my $kind ($token eq '{' ? qw(struct enum trait mod) : ('struct')) {
                 for my $i (0 .. $#header - 1) {
-                    if ($header[$i] eq $kind) { $owner = "$kind $header[$i + 1]"; last; }
+                    if ($header[$i] eq $kind) {
+                        (my $name = $header[$i + 1]) =~ s/^r#//;
+                        $owner = "$kind $name";
+                        last;
+                    }
                 }
                 last if defined $owner;
             }
             if (!defined $owner && $token eq '{') {
                 for my $i (0 .. $#header) {
-                    if ($header[$i] eq 'impl') { $owner = join ' ', @header[$i .. $#header]; last; }
+                    if ($header[$i] eq 'impl') {
+                        $owner = join ' ', map { my $part = $_; $part =~ s/^r#//; $part } @header[$i .. $#header];
+                        last;
+                    }
                 }
             }
             if (!defined $owner && @scopes && defined $scopes[-1] && $scopes[-1] =~ /^enum /) {
-                my @names = grep /^[A-Z]\w*$/, @header;
+                my @names = map { my $name = $_; $name =~ s/^r#//; $name } grep /^(?:r#)?[A-Za-z_]\w*$/, @header;
                 $owner = "variant $names[-1]" if @names;
             }
             push @scopes, $owner;
@@ -101,9 +108,9 @@ sub item_key {
         'a constant'=>'const', 'a static'=>'static', 'a module'=>'mod', 'a struct'=>'struct',
         'an enum'=>'enum', 'a trait'=>'trait', 'a union'=>'union', 'a type alias'=>'type', 'an associated type'=>'type');
     my $symbol;
-    if (my $keyword = $keywords{$kind}) { ($symbol) = $declaration =~ /\b\Q$keyword\E\s+(?:mut\s+)?(\w+)/; }
-    elsif ($kind eq 'a macro') { ($symbol) = $declaration =~ /\b(?:macro_rules!|macro)\s+(\w+)/; }
-    elsif ($kind eq 'a struct field' || $kind eq 'a variant') { ($symbol) = $declaration =~ /(?:pub(?:\([^)]*\))?\s+)?(\w+)/; }
+    if (my $keyword = $keywords{$kind}) { ($symbol) = $declaration =~ /\b\Q$keyword\E\s+(?:mut\s+)?(?:r#)?(\w+)/; }
+    elsif ($kind eq 'a macro') { ($symbol) = $declaration =~ /\b(?:macro_rules!|macro)\s+(?:r#)?(\w+)/; }
+    elsif ($kind eq 'a struct field' || $kind eq 'a variant') { ($symbol) = $declaration =~ /(?:pub(?:\([^)]*\))?\s+)?(?:r#)?(\w+)/; }
     else { die "unsupported missing-doc item kind: $kind\n"; }
     die "missing-doc declaration has no supported item name\n" unless defined $symbol;
     return join '::', $span->{file_name}, owner_path($prefix), $kind, $symbol;

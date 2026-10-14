@@ -26,6 +26,7 @@ cat > "$fixture/src/lib.rs" <<'RUST'
 //! Fixture crate.
 pub struct First;
 pub struct Second;
+pub struct r#type;
 RUST
 cd "$fixture"
 cargo generate-lockfile --offline
@@ -39,6 +40,7 @@ cat > src/lib.rs <<'RUST'
 pub struct First;
 pub struct Second;
 pub struct Third;
+pub struct r#match;
 RUST
 cargo doc --locked --offline --no-deps --message-format=json > after.jsonl 2> after.log
 status=0
@@ -48,6 +50,8 @@ grep -Fq 'newly undocumented item' comparison.log
 grep -Fq '::a struct::Third' comparison.log
 grep -Fq 'remove resolved baseline item' comparison.log
 grep -Fq '::a struct::First' comparison.log
+grep -Fq '::a struct::match' comparison.log
+grep -Fq '::a struct::type' comparison.log
 cmp saved-baseline.json baseline.json
 fixture_complete=true
 printf 'Real rustdoc declaration identity and unchanged-count debt fixtures passed\n'

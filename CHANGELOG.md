@@ -9,6 +9,9 @@
   ([#181 — Extract item-level rustdoc debt comparison](https://github.com/dragginzgame/shared-tooling/issues/181)).
 - Identify declarations by their names rather than Rust keywords, preventing
   unrelated documentation from offsetting newly undocumented types/modules.
+- Keep raw Rust identifiers and lowercase variant field namespaces distinct,
+  so equal warning counts cannot hide replacement debt
+  ([#181 — Extract item-level rustdoc debt comparison](https://github.com/dragginzgame/shared-tooling/issues/181)).
 
 ```bash
 perl scripts/ci/check-public-docs.pl target/rustdoc.jsonl ci/docs-baseline.json
