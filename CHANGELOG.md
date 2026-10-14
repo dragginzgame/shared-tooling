@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.12.6]
+
+### Added
+
+- Provide opt-in item-level rustdoc debt comparison and its regression fixtures;
+  consumers retain Cargo execution and their own debt baseline
+  ([#181](https://github.com/dragginzgame/shared-tooling/issues/181)).
+
+```bash
+python3 scripts/ci/check-public-docs.py target/rustdoc.jsonl ci/docs-baseline.json
+```
+
 ## [0.12.5]
 
 ### Changed

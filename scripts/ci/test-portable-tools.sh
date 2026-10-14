@@ -52,6 +52,7 @@ if bash "$ROOT/scripts/ci/verify-file-checksum.sh" \
     exit 1
 fi
 
+run_fixture python3 -B "$ROOT/scripts/ci/test_public_docs.py"
 run_fixture bash "$ROOT/scripts/ci/test-portable-prerequisites.sh"
 run_fixture bash "$ROOT/scripts/ci/test-script-paths.sh"
 run_fixture bash "$ROOT/scripts/ci/test-cargo-install-qualification.sh"
