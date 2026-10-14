@@ -1,14 +1,28 @@
 # Changelog
 
+## [0.13.3]
+
+### Fixed
+
+- Reject impossible dates in saved release plans through shared stable-version
+  and Gregorian UTC-date admission. Preserve exact u64 components and the
+  increment helper's stricter signed arithmetic headroom
+  ([#193 — Own release version and calendar-date admission](https://github.com/dragginzgame/shared-tooling/issues/193)).
+
+## [0.13.2]
+
+### Added
+
+- Share fixture completion checks independently of cleanup, so qualification
+  runners can reject incomplete execution while retaining successful evidence.
+  Preserve original failure statuses and reject invalid status values
+  ([#192 — Share fixture completion admission](https://github.com/dragginzgame/shared-tooling/issues/192)).
+
 ## [0.13.1]
 
 These notes are pending PR integration; the changes below are not yet on `main`.
 
 ### Added
-
-- Admit exact u64 stable-release version components and Gregorian UTC dates
-  through a reusable pure helper. Keep increment headroom with the runner
-  ([#193 — Own release version and calendar-date admission](https://github.com/dragginzgame/shared-tooling/issues/193)).
 
 - Provide opt-in, item-level rustdoc debt comparison using Perl. Preserve caller
   ownership of Cargo execution and baselines; distinguish raw identifiers,
