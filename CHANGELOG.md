@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.13.1]
+
+These notes are pending PR integration; the changes below are not yet on `main`.
+
+### Added
+
+- Provide opt-in, item-level rustdoc debt comparison using Perl. Preserve caller
+  ownership of Cargo execution and baselines; distinguish raw identifiers,
+  Unicode owners and lowercase variant fields so equal warning counts cannot
+  hide replacement debt
+  ([#181 — Extract item-level rustdoc debt comparison](https://github.com/dragginzgame/shared-tooling/issues/181)).
+- Provide selected-source Rust type-documentation layout checks, including raw
+  and Unicode names, indented declarations and multiline attributes. Reject
+  unreadable subtrees instead of reporting success for an incomplete scan
+  ([#187 — Share opt-in Rust type documentation checks](https://github.com/dragginzgame/shared-tooling/issues/187)).
+
+### Changed
+
+- Extend fixture-exit probes for consumer root names and diagnostic failures,
+  preserving original failure status and retained evidence
+  ([#174 — Share fixture exit and retained-evidence probes](https://github.com/dragginzgame/shared-tooling/issues/174)).
+
 ## [0.13.0]
 
 ### Added
