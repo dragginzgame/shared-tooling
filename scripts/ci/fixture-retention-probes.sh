@@ -39,7 +39,9 @@ fixture_probe_exit() {
         }
         END { if (!injected) exit 1 }
     ' "$source" > "$directory/probe.sh" || return
-    RETENTION_SOURCE_ROOT="$source_root" RETENTION_EXIT_PATH="$exit_path" \
+    # A disposable source owns its root; inherited aliases must not select it.
+    env -u fixture -u TEST_ROOT -u FIXTURE -u FIXTURE_ROOT -u scratch \
+        RETENTION_SOURCE_ROOT="$source_root" RETENTION_EXIT_PATH="$exit_path" \
         TMPDIR="$probe_root" "$BASH" "$directory/probe.sh" "$@" \
         > "$probe_root/$name-$failure.log" 2>&1 || status=$?
     [[ "$status" == "$expected" ]] || return 1

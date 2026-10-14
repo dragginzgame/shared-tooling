@@ -51,8 +51,9 @@ fixture_complete=false
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 trap 'fixture_finish "\$?" "\$$root_name" "Consumer probe retained"' EXIT
 PROBE
-    fixture_probe_exits "$fixture/consumer-root.sh" "$fixture" "$ROOT" "$root_name" || exit 1
-    fixture_probe_exit "$fixture/consumer-root.sh" "$fixture" "$ROOT" "$root_name" diagnostic || exit 1
+    TEST_ROOT="$fixture/unrelated-root" fixture_probe_exits "$fixture/consumer-root.sh" "$fixture" "$ROOT" "$root_name" || exit 1
+    TEST_ROOT="$fixture/unrelated-root" fixture_probe_exit "$fixture/consumer-root.sh" "$fixture" "$ROOT" "$root_name" diagnostic || exit 1
+    [[ ! -e "$fixture/unrelated-root" ]] || exit 1
 done
 
 # Conditional callers must not mask a mismatch or continue to later cases.
