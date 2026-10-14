@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.9]
+
+### Fixed
+
+- Keep fixture timing labels accurate for commands with interpreter flags, and
+  verify failure propagation without depending on portable-suite ordering.
+
 ## [0.12.8]
 
 ### Fixed
