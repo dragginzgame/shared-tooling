@@ -6,6 +6,10 @@ These notes are pending PR integration; the changes below are not yet on `main`.
 
 ### Added
 
+- Admit exact u64 stable-release version components and Gregorian UTC dates
+  through a reusable pure helper. Keep increment headroom with the runner
+  ([#193 — Own release version and calendar-date admission](https://github.com/dragginzgame/shared-tooling/issues/193)).
+
 - Provide opt-in, item-level rustdoc debt comparison using Perl. Preserve caller
   ownership of Cargo execution and baselines; distinguish raw identifiers,
   Unicode owners and lowercase variant fields so equal warning counts cannot

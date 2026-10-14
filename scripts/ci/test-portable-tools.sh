@@ -122,6 +122,7 @@ run_fixture test-fixture-retention.sh bash "$ROOT/scripts/ci/test-fixture-retent
 run_fixture test-snapshot-distribution.sh bash "$ROOT/scripts/ci/test-snapshot-distribution.sh"
 run_fixture test-snapshot-retirement.sh bash "$ROOT/scripts/ci/test-snapshot-retirement.sh"
 run_fixture test-release-runner.sh bash "$ROOT/scripts/ci/test-release-runner.sh"
+run_fixture test-release-inputs.sh bash "$ROOT/scripts/ci/test-release-inputs.sh"
 run_fixture test-release-tracking.sh bash "$ROOT/scripts/ci/test-release-tracking.sh"
 run_fixture test-release-pr.sh bash "$ROOT/scripts/ci/test-release-pr.sh"
 run_fixture test-release-metadata.sh bash "$ROOT/scripts/ci/test-release-metadata.sh"
