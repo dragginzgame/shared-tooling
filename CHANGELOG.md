@@ -4,6 +4,11 @@
 
 ### Changed
 
+- Share retained-success fixture qualification and formatter-log selection with
+  consumer CI; retain caller archive layout, source identity and Git custody.
+- Run generic release-source admission fixtures independently of repository
+  layout so consumers can adopt the canonical tests.
+
 - Prepare coordinated Cargo metadata with the literal root-version renderer,
   preserving unrelated manifest bytes, file modes and external lock selections.
   Remove implicit Cargo-edit/Cargo-sort mutation; consumer ordering checks remain

@@ -62,6 +62,25 @@ if fixture_probe_prefix "$fixture/consumer.sh" "$fixture/invalid.sh" ROOT 'bad;n
 FIXTURE_PROBE_DIRECTORY_VARIABLE=fixture
 export FIXTURE_PROBE_DIRECTORY_VARIABLE
 
+# A diagnostic fixture may intentionally keep its successful result.
+cat > "$fixture/retained-owner.sh" <<'PROBE'
+#!/usr/bin/env bash
+set -euo pipefail
+fixture="$(mktemp -d "${TMPDIR:-/tmp}/retained-owner.XXXXXX")"
+fixture_complete=false
+finish() {
+    local status=$?
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    exit "$status"
+}
+trap finish EXIT
+PROBE
+for outcome in nounset premature retained-completed failed-completion; do
+    fixture_probe_exit "$fixture/retained-owner.sh" "$fixture" "$ROOT" retained "$outcome" || exit 1
+done
+# Retention is a caller assertion; a deleting owner cannot qualify this case.
+if FIXTURE_PROBE_ROOT_VARIABLE=repository_root FIXTURE_PROBE_DIRECTORY_VARIABLE=temporary_root fixture_probe_exit "$fixture/consumer.sh" "$fixture" "$ROOT" wrong-retention retained-completed; then exit 1; fi
+
 # Conditional callers must not mask a mismatch or continue to later cases.
 cat > "$fixture/wrong-owner.sh" <<'PROBE'
 #!/usr/bin/env bash

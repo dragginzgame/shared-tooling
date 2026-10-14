@@ -42,6 +42,7 @@ fixture_probe_exit() {
         nonzero) injection='exit 23'; expected=23 ;;
         premature) injection='exit 0'; expected=1 ;;
         completed) injection='fixture_complete=true; exit 0'; expected=0 ;;
+        retained-completed) injection='fixture_complete=true; exit 0'; expected=0 ;;
         failed-completion) injection='fixture_complete=true; exit 23'; expected=23 ;;
         cleanup-failure) injection='rm() { return 37; }; fixture_complete=true; exit 0'; expected=37 ;;
         *) printf 'Unknown retention probe: %s\n' "$failure" >&2; return 2 ;;
@@ -59,7 +60,7 @@ fixture_probe_exit() {
     [[ "$status" == "$expected" ]] || return 1
     retained="$(cat "$exit_path")" || return
     [[ "$retained" == "$probe_root/"* ]] || return 1
-    if [[ "$expected" == 0 ]]; then
+    if [[ "$expected" == 0 && "$failure" != retained-completed ]]; then
         [[ ! -e "$retained" ]] || return 1
     else
         [[ -d "$retained" && "$(cat "$retained/exit-evidence")" == 'retained evidence' ]] || return 1
