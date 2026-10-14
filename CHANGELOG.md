@@ -1,10 +1,25 @@
 # Changelog
 
-## [0.12.9]
+## [0.13.1]
 
 - Extend shared fixture-exit probes to consumer root names and diagnostic
   failures, retaining original status and failed evidence
   ([#174 — Share fixture exit and retained-evidence probes](https://github.com/dragginzgame/shared-tooling/issues/174)).
+
+## [0.13.0]
+
+### Added
+
+- Share fixture-directory allocation and physical-path anchoring, preserving
+  failed allocations for diagnosis and keeping cleanup policy with callers
+  ([#189 — Share fixture-directory allocation](https://github.com/dragginzgame/shared-tooling/issues/189)).
+
+## [0.12.9]
+
+### Fixed
+
+- Keep fixture timing labels accurate for commands with interpreter flags, and
+  verify failure propagation without depending on portable-suite ordering.
 
 ## [0.12.8]
 
