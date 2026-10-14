@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.12.8]
+## [0.12.9]
 
 ### Added
 
@@ -13,6 +13,19 @@
 ```bash
 python3 scripts/ci/check-public-docs.py target/rustdoc.jsonl ci/docs-baseline.json
 ```
+
+### Fixed
+
+- Report explicit fixture names with interpreter flags and qualify failure
+  propagation independently of portable-suite ordering.
+
+## [0.12.8]
+
+### Fixed
+
+- Include the publication guide when refreshing existing release-documentation
+  snapshots, without enabling publication commands
+  ([#176 — Export the publication guide](https://github.com/dragginzgame/shared-tooling/issues/176)).
 
 ## [0.12.7]
 
