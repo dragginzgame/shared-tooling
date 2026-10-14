@@ -1,21 +1,72 @@
 # Changelog
 
-## [0.13.1]
+## [0.14.0]
 
 ### Added
 
-- Provide opt-in item-level rustdoc debt comparison and its regression fixtures;
-  consumers retain Cargo execution and their own debt baseline
-  ([#181 — Extract item-level rustdoc debt comparison](https://github.com/dragginzgame/shared-tooling/issues/181)).
-- Identify declarations by their names rather than Rust keywords, preventing
-  unrelated documentation from offsetting newly undocumented types/modules.
-- Keep raw Rust identifiers, Unicode owners and lowercase variant fields distinct,
-  so equal warning counts cannot hide replacement debt
-  ([#181 — Extract item-level rustdoc debt comparison](https://github.com/dragginzgame/shared-tooling/issues/181)).
+- Deliver the item-level rustdoc debt checker previously described as pending
+  in 0.13.1. Compare exact declaration identities, including raw identifiers,
+  Unicode owners and variant fields; keep Cargo execution and baselines local
+  ([#181 — Extract caller-owned rustdoc item-debt comparison](https://github.com/dragginzgame/shared-tooling/issues/181)).
 
-```bash
-perl scripts/ci/check-public-docs.pl target/rustdoc.jsonl ci/docs-baseline.json
-```
+## [0.13.3]
+
+Pending integration: the changes below are in
+[PR #194 — Release version and date admission](https://github.com/dragginzgame/shared-tooling/pull/194)
+and [PR #191 — Release prose and change observation](https://github.com/dragginzgame/shared-tooling/pull/191),
+and are not yet on `main`.
+
+### Fixed
+
+- Reject impossible dates in saved release plans through shared stable-version
+  and Gregorian UTC-date admission. Preserve exact u64 components and the
+  increment helper's stricter signed arithmetic headroom
+  ([#193 — Own release version and calendar-date admission](https://github.com/dragginzgame/shared-tooling/issues/193)).
+- Bind release-change collection to the verified base commit, so a moving tag
+  cannot silently change the comparison. Qualify the collector's failure and
+  tag-movement cases under Bash 3.2 as well as current Bash.
+- Include the release-input helper in snapshot qualification and restore the
+  unreadable-manifest fixture's permissions so later failures retain archivable
+  evidence.
+
+### Added
+
+- Share complete NUL-separated release-change collection, publishing paths only
+  after both tracked and untracked Git observations succeed. Keep package-impact
+  policy with consumers.
+- Share the optional release-prose advisory, keeping missing inputs and reader
+  failures non-blocking and release decisions with callers.
+
+## [0.13.2]
+
+### Added
+
+- Share fixture completion checks independently of cleanup, so qualification
+  runners can reject incomplete execution while retaining successful evidence.
+  Preserve original failure statuses and reject invalid status values
+  ([#192 — Share fixture completion admission](https://github.com/dragginzgame/shared-tooling/issues/192)).
+
+## [0.13.1]
+
+These notes are pending PR integration; the changes below are not yet on `main`.
+
+### Added
+
+- Provide opt-in, item-level rustdoc debt comparison using Perl. Preserve caller
+  ownership of Cargo execution and baselines; distinguish raw identifiers,
+  Unicode owners and lowercase variant fields so equal warning counts cannot
+  hide replacement debt
+  ([#181 — Extract item-level rustdoc debt comparison](https://github.com/dragginzgame/shared-tooling/issues/181)).
+- Provide selected-source Rust type-documentation layout checks, including raw
+  and Unicode names, indented declarations and multiline attributes. Reject
+  unreadable subtrees instead of reporting success for an incomplete scan
+  ([#187 — Share opt-in Rust type documentation checks](https://github.com/dragginzgame/shared-tooling/issues/187)).
+
+### Changed
+
+- Extend fixture-exit probes for consumer root names and diagnostic failures,
+  preserving original failure status and retained evidence
+  ([#174 — Share fixture exit and retained-evidence probes](https://github.com/dragginzgame/shared-tooling/issues/174)).
 
 ## [0.13.0]
 
