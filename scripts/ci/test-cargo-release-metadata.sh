@@ -31,8 +31,9 @@ case "$1" in
         if [[ "${CASE:-}" == interrupt ]] && grep -q 'version = "1.2.4"' Cargo.toml; then
             kill -TERM "$PPID"; exit 1
         fi
-        if [[ "${CASE:-}" == graph-failure ]]; then
-            "$REAL_CARGO" "$@"
+        if [[ "${CASE:-}" == graph-failure || "${CASE:-}" == graph-empty-failure ]]; then
+            [[ "$CASE" != graph-failure ]] || "$REAL_CARGO" "$@"
+            echo 'injected offline metadata failure' >&2
             exit 37
         fi
         if [[ "${CASE:-}" == check-failure || "${CASE:-}" == restore-failure ]] && grep -q 'version = "1.2.4"' Cargo.toml; then exit 25; fi
@@ -203,12 +204,15 @@ make_workspace "$root"
 rm "$root/CHANGELOG.md"
 (cd "$root" && bash "$helper" check-graph primary)
 for file in Cargo.toml Cargo.lock; do cp -p "$root/$file" "$root/$file.before"; done
-status=0
-(cd "$root" && CASE=graph-failure bash "$helper" check-graph primary) > "$fixture/graph-failure.log" 2>&1 || status=$?
-[[ "$status" == 37 ]] || exit 1
-for file in Cargo.toml Cargo.lock; do cmp "$root/$file" "$root/$file.before"; done
+for mode in graph-failure graph-empty-failure; do
+    status=0
+    (cd "$root" && CASE="$mode" bash "$helper" check-graph primary) > "$fixture/$mode.log" 2>&1 || status=$?
+    [[ "$status" == 37 ]] || exit 1
+    grep -q 'injected offline metadata failure' "$fixture/$mode.log"
+    for file in Cargo.toml Cargo.lock; do cmp "$root/$file" "$root/$file.before"; done
+done
 [[ ! -e "$root/CHANGELOG.md" ]] || exit 1
-for mode in mixed-version extra-lock missing-lock unknown-primary; do
+for mode in mixed-version resolved-primary-version stale-primary stale-secondary extra-lock missing-lock unknown-primary; do
     root="$fixture/graph-$mode"
     make_workspace "$root"
     rm "$root/CHANGELOG.md"
@@ -217,6 +221,18 @@ for mode in mixed-version extra-lock missing-lock unknown-primary; do
         mixed-version)
             perl -pi -e 's/version.workspace = true/version = "1.2.2"/' "$root/secondary/Cargo.toml"
             (cd "$root" && "$REAL_CARGO" generate-lockfile --offline >/dev/null)
+            ;;
+        resolved-primary-version)
+            perl -pi -e 's/version.workspace = true/version = "1.2.2"/' "$root/primary/Cargo.toml"
+            (cd "$root" && "$REAL_CARGO" generate-lockfile --offline >/dev/null)
+            ;;
+        stale-primary|stale-secondary)
+            package="${mode#stale-}"
+            FIXTURE_PACKAGE="$package" perl -0pi -e '
+                my $name = $ENV{FIXTURE_PACKAGE};
+                s/(\[\[package\]\]\nname = "\Q$name\E"\nversion = ")[^"]+("\n)/${1}999.0.0$2/
+                    or die "fixture package missing\n";
+            ' "$root/Cargo.lock"
             ;;
         extra-lock) printf '\n[[package]]\nname = "outside"\nversion = "1.2.3"\n' >> "$root/Cargo.lock" ;;
         missing-lock) perl -0pi -e 's/\[\[package\]\]\nname = "secondary"\nversion = "1.2.3"\n//' "$root/Cargo.lock" ;;

@@ -16,6 +16,12 @@
 - Discard failed tool-selector output for payload admission while retaining its
   original status/output and safe local evidence in partial archives.
 
+### Testing
+
+- Own empty/plausible Cargo failure, stale library/probe lock identity and coherent
+  wrong-primary graph regressions, preserving exact failure status and input bytes
+  ([#171](https://github.com/dragginzgame/shared-tooling/issues/171)).
+
 ## [0.12.7]
 
 ### Added
