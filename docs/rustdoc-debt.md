@@ -1,8 +1,9 @@
 # Item-level rustdoc debt
 
-`scripts/ci/check-public-docs.py` compares Cargo/rustdoc JSONL missing-doc warnings
-with an explicitly selected JSON baseline of item identities. Requires Python 3.9
-or newer. It runs no Cargo command, installer, network request or source edit.
+`scripts/ci/check-public-docs.pl` compares Cargo/rustdoc JSONL missing-doc warnings
+with an explicitly selected JSON baseline of item identities. It uses Perl and
+its core JSON::PP module, and runs no Cargo command, installer, network request
+or source edit.
 Select the helper as a snapshot entrypoint; this guide is its declared companion.
 
 Run from the source checkout so relative diagnostic paths name the intended
@@ -12,7 +13,7 @@ not proof that compilation completed successfully. Preserve failed compiler logs
 before invoking the comparison. For an already admitted diagnostic file:
 
 ```bash
-python3 scripts/ci/check-public-docs.py target/rustdoc.jsonl ci/docs-baseline.json
+perl scripts/ci/check-public-docs.pl target/rustdoc.jsonl ci/docs-baseline.json
 ```
 
 Identities include source path, owner scopes, item kind and declared name.
@@ -30,7 +31,7 @@ warning shape and source custody remain consumer qualification obligations.
 Baseline creation/replacement is a separately selected operation:
 
 ```bash
-python3 scripts/ci/check-public-docs.py target/rustdoc.jsonl ci/docs-baseline.json \
+perl scripts/ci/check-public-docs.pl target/rustdoc.jsonl ci/docs-baseline.json \
   --write-baseline
 ```
 
@@ -41,7 +42,7 @@ as `struct` or `mod`. Adoption requires explicit review of any
 changed baseline identities; no fallback identities or automatic rewrite exists.
 
 Query retains its Cargo wrapper, current debt file and section-style type-doc
-checker; those have separate contracts. Shared's Python identity/CLI fixtures
+checker; those have separate contracts. Shared's Perl identity/CLI fixtures
 use synthetic admitted compiler records and temporary sources. The separate `test-public-docs.sh` fixture runs actual locked,
 offline Cargo/rustdoc on a dependency-free crate to qualify declaration names and
 unchanged-count debt replacement. Consumers still qualify their own compiler

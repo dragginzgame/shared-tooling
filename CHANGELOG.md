@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.12.9]
+## [0.13.1]
 
 ### Added
 
@@ -11,13 +11,23 @@
   unrelated documentation from offsetting newly undocumented types/modules.
 
 ```bash
-python3 scripts/ci/check-public-docs.py target/rustdoc.jsonl ci/docs-baseline.json
+perl scripts/ci/check-public-docs.pl target/rustdoc.jsonl ci/docs-baseline.json
 ```
+
+## [0.13.0]
+
+### Added
+
+- Share fixture-directory allocation and physical-path anchoring, preserving
+  failed allocations for diagnosis and keeping cleanup policy with callers
+  ([#189 — Share fixture-directory allocation](https://github.com/dragginzgame/shared-tooling/issues/189)).
+
+## [0.12.9]
 
 ### Fixed
 
-- Report explicit fixture names with interpreter flags and qualify failure
-  propagation independently of portable-suite ordering.
+- Keep fixture timing labels accurate for commands with interpreter flags, and
+  verify failure propagation without depending on portable-suite ordering.
 
 ## [0.12.8]
 

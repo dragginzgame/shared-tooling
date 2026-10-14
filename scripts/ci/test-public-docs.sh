@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/check-public-docs.py scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/check-public-docs.pl scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 root="${BASH_SOURCE[0]}"
 [[ "$root" == /* ]] || root="$PWD/$root"
@@ -30,8 +30,8 @@ RUST
 cd "$fixture"
 cargo generate-lockfile --offline
 cargo doc --locked --offline --no-deps --message-format=json > before.jsonl 2> before.log
-python3 "$root/scripts/ci/check-public-docs.py" before.jsonl baseline.json --write-baseline
-python3 "$root/scripts/ci/check-public-docs.py" before.jsonl baseline.json
+perl "$root/scripts/ci/check-public-docs.pl" before.jsonl baseline.json --write-baseline
+perl "$root/scripts/ci/check-public-docs.pl" before.jsonl baseline.json
 cp baseline.json saved-baseline.json
 cat > src/lib.rs <<'RUST'
 //! Fixture crate.
@@ -42,7 +42,7 @@ pub struct Third;
 RUST
 cargo doc --locked --offline --no-deps --message-format=json > after.jsonl 2> after.log
 status=0
-python3 "$root/scripts/ci/check-public-docs.py" after.jsonl baseline.json > comparison.log 2>&1 || status=$?
+perl "$root/scripts/ci/check-public-docs.pl" after.jsonl baseline.json > comparison.log 2>&1 || status=$?
 [[ "$status" == 1 ]] || { cat comparison.log >&2; exit 1; }
 grep -Fq 'newly undocumented item' comparison.log
 grep -Fq '::a struct::Third' comparison.log

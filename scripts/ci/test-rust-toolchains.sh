@@ -4,7 +4,7 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/../.." && pwd -P)"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$root/scripts/ci/fixture-lifecycle.sh"
-fixture="$(mktemp -d "${TMPDIR:-/tmp}/rust-toolchains.XXXXXX")"
+fixture="$(fixture_create "${TMPDIR:-/tmp}/rust-toolchains.XXXXXX")"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Rust toolchain fixture retained"' EXIT
 
