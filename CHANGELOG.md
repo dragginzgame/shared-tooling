@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.12.2]
+
+### Changed
+
+- Consolidate tool evidence selection and archive orchestration in a shared
+  collector used by the failure-retention action; callers retain log selections,
+  outer Git custody, uploads and retention.
+- Own generic Cargo metadata edge-case coverage for historical note bytes,
+  dated/conflicting notes, missing release selections and incomplete restoration.
+
+### Fixed
+
+- Correct ShellCheck handling of deliberately deferred variable expansion in
+  retention probes, restoring the CI lint gate without changing probe behavior.
+
 ## [0.12.1]
 
 ### Added

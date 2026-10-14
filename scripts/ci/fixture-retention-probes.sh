@@ -6,6 +6,8 @@ fixture_probe_exit() {
     local source="$1" probe_root="$2" source_root="$3" name="$4" failure="$5"
     shift 5
     local injection expected status=0 retained
+    # Expand probe variables only when the generated child script executes.
+    # shellcheck disable=SC2016
     case "$failure" in
         nounset) injection='unset RETENTION_UNBOUND; printf "%s\n" "$RETENTION_UNBOUND"'; expected=1 ;;
         nounset-function) injection='unset RETENTION_UNBOUND; probe_unbound() { echo "$RETENTION_UNBOUND"; }; probe_unbound'; expected=1 ;;

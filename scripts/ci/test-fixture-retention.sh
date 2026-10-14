@@ -19,6 +19,7 @@ trap 'fixture_finish "$?" "$fixture" "Retention fixtures retained"' EXIT
 # cleanup/status handling using this invocation's Bash (including 3.2).
 mkdir -p "$fixture/exit-source/scripts/ci"
 cp "$ROOT/scripts/ci/fixture-lifecycle.sh" "$fixture/exit-source/scripts/ci/"
+cp "$ROOT/scripts/ci/fixture-retention-probes.sh" "$fixture/exit-source/scripts/ci/"
 mkdir -p "$fixture/exit-input/src" "$fixture/exit-input/.githooks" "$fixture/exit-input/scripts/dev" "$fixture/exit-input/scripts/ci"
 for input in src/lib.rs Cargo.toml Makefile README.md .githooks/pre-commit scripts/dev/install-git-hooks.sh scripts/ci/check-make-execution.sh; do
     printf 'retained input\n' > "$fixture/exit-input/$input"
@@ -38,6 +39,24 @@ for name in format-tools tool-commands rust-tools release-runner host-tools ic-t
         grep -E 'IC fixture cleanup finished: [0-9]+s, status 37' "$fixture/$name-cleanup-failure.log" > /dev/null
     fi
 done
+
+# Conditional callers must not mask a mismatch or continue to later cases.
+cat > "$fixture/wrong-owner.sh" <<'PROBE'
+#!/usr/bin/env bash
+set -euo pipefail
+fixture="$(mktemp -d "${TMPDIR:-/tmp}/contradicted-owner.XXXXXX")"
+printf 'called\n' >> "$RETENTION_ASSERTION_EVENTS"
+trap 'exit 23' EXIT
+PROBE
+status=0
+RETENTION_ASSERTION_EVENTS="$fixture/probe-events" fixture_probe_exits \
+    "$fixture/wrong-owner.sh" "$fixture" "$ROOT" contradicted > "$fixture/contradicted.log" 2>&1 || status=$?
+[[ "$status" == 1 && "$(cat "$fixture/probe-events")" == called ]] || exit 1
+printf '#!/usr/bin/env bash\nexit 0\n' > "$fixture/no-trap.sh"
+status=0
+fixture_probe_exit "$fixture/no-trap.sh" "$fixture" "$ROOT" no-trap completed \
+    > "$fixture/no-trap.log" 2>&1 || status=$?
+[[ "$status" != 0 ]] || exit 1
 
 # Qualify cleanup independently of errexit: a caller can invoke its EXIT helper
 # from a conditional, and diagnostics can fail after the original operation.

@@ -17,6 +17,8 @@ finish() {
 trap finish EXIT
 REAL_CARGO="$(command -v cargo)"
 export REAL_CARGO
+REAL_CP="$(command -v cp)"
+export REAL_CP
 REAL_GIT="$(command -v git)"
 export REAL_GIT
 mkdir "$fixture/bin"
@@ -34,7 +36,7 @@ case "$1" in
             "$REAL_CARGO" "$@"
             exit 37
         fi
-        if [[ "${CASE:-}" == check-failure ]] && grep -q 'version = "1.2.4"' Cargo.toml; then exit 25; fi
+        if [[ "${CASE:-}" == check-failure || "${CASE:-}" == restore-failure ]] && grep -q 'version = "1.2.4"' Cargo.toml; then exit 25; fi
         exec "$REAL_CARGO" "$@"
         ;;
     *) exec "$REAL_CARGO" "$@" ;;
@@ -53,6 +55,16 @@ fi
 exec "$REAL_GIT" "$@"
 GIT
 chmod +x "$fixture/bin/git"
+cat > "$fixture/bin/cp" <<'CP'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "${CASE:-}" == restore-failure && "$1" == -p && "$2" == */cargo-release-backup.*/Cargo.lock ]]; then
+    echo 'controlled lockfile restoration failure' >&2
+    exit 43
+fi
+exec "$REAL_CP" "$@"
+CP
+chmod +x "$fixture/bin/cp"
 export PATH="$fixture/bin:$PATH"
 export RELEASE_PREVIOUS=1.2.3 RELEASE_VERSION=1.2.4 RELEASE_DATE=2026-10-13
 helper="$ROOT/scripts/ci/cargo-release-metadata.sh"
@@ -105,6 +117,49 @@ for mode in set-failure sort-failure check-failure literal-version unknown-local
     if [[ "$mode" != missing-member ]]; then
         grep -F 'evidence retained:' "$fixture/$mode.log" > /dev/null
     fi
+done
+# Generic notes and failure restoration belong to the metadata producer.
+for mode in undated-history history-no-lf dated-notes conflicting-date conflicting-notes restore-failure missing-date missing-version; do
+    root="$fixture/$mode"
+    make_workspace "$root"
+    case "$mode" in
+        undated-history) perl -pi -e 's/## \[1\.2\.3\] - 2026-10-12/## [1.2.3]/' "$root/CHANGELOG.md" ;;
+        history-no-lf) perl -0pi -e 's/\n\z//' "$root/CHANGELOG.md" ;;
+        dated-notes) perl -pi -e 's/## \[1\.2\.4\]/## [1.2.4] - 2026-10-13/' "$root/CHANGELOG.md" ;;
+        conflicting-date) perl -pi -e 's/## \[1\.2\.4\]/## [1.2.4] - 2026-10-11/' "$root/CHANGELOG.md" ;;
+        conflicting-notes) perl -pi -e 's/## \[1\.2\.4\]/## [9.9.9]/' "$root/CHANGELOG.md" ;;
+    esac
+    mkdir "$root/originals" "$root/attempts"
+    for file in Cargo.toml Cargo.lock CHANGELOG.md; do cp -p "$root/$file" "$root/originals/$file"; done
+    status=0
+    case "$mode" in
+        missing-date) (cd "$root" && env -u RELEASE_DATE TMPDIR="$root/attempts" bash "$helper" prepare primary) ;;
+        missing-version) (cd "$root" && env -u RELEASE_VERSION TMPDIR="$root/attempts" bash "$helper" prepare primary) ;;
+        *) (cd "$root" && CASE="$mode" TMPDIR="$root/attempts" bash "$helper" prepare primary) ;;
+    esac > "$fixture/$mode.log" 2>&1 || status=$?
+    case "$mode" in
+        undated-history|history-no-lf)
+            [[ "$status" == 0 ]] || exit 1
+            perl -pe 's/## \[1\.2\.4\](?: - 2026-10-13)?/## [1.2.4] - 2026-10-13/' \
+                "$root/originals/CHANGELOG.md" > "$root/expected-notes"
+            cmp "$root/expected-notes" "$root/CHANGELOG.md"
+            (cd "$root" && bash "$helper" check primary)
+            ;;
+        restore-failure)
+            [[ "$status" == 1 ]] || exit 1
+            for file in Cargo.toml CHANGELOG.md; do cmp "$root/originals/$file" "$root/$file"; done
+            if cmp -s "$root/originals/Cargo.lock" "$root/Cargo.lock"; then exit 1; fi
+            set -- "$root/attempts/"cargo-release-backup.*
+            [[ $# == 1 ]] || exit 1
+            cmp "$1/candidate.lock" "$root/Cargo.lock"
+            for file in Cargo.toml Cargo.lock CHANGELOG.md; do cmp "$root/originals/$file" "$1/$file"; done
+            grep -F 'metadata restoration incomplete; originals retained:' "$fixture/$mode.log" > /dev/null
+            ;;
+        *)
+            [[ "$status" != 0 ]] || exit 1
+            for file in Cargo.toml Cargo.lock CHANGELOG.md; do cmp "$root/originals/$file" "$root/$file"; done
+            ;;
+    esac
 done
 # Check a frozen source even when newer working source is incomplete or different.
 cd "$fixture/success"
