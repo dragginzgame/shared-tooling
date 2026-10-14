@@ -56,6 +56,18 @@ class PublicDocIdentityTests(unittest.TestCase):
         source = 'impl<T, E> Request<T, E> { pub fn new() -> Self { todo!() } }'
         self.assertIn('Request', self.key(source, 'pub fn new()', 'an associated function'))
 
+    def test_declarations_use_names_instead_of_rust_keywords(self):
+        for keyword, kind in [('struct', 'a struct'), ('enum', 'an enum'),
+                              ('trait', 'a trait'), ('type', 'a type alias'),
+                              ('union', 'a union'), ('mod', 'a module')]:
+            left = f'pub {keyword} First {{}}'
+            right = f'pub {keyword} Second {{}}'
+            self.assertNotEqual(self.key(left, left, kind), self.key(right, right, kind))
+        source = 'pub static mut COUNTER: u64 = 0;'
+        self.assertTrue(self.key(source, source, 'a static').endswith('::COUNTER'))
+        source = 'macro_rules! exported { () => {} }'
+        self.assertTrue(self.key(source, source, 'a macro').endswith('::exported'))
+
     def test_const_methods_use_the_method_name(self):
         source = 'impl Request { pub const fn with_sort() -> Self { todo!() } }'
         self.assertTrue(self.key(source, 'pub const fn with_sort()', 'a method').endswith('::with_sort'))

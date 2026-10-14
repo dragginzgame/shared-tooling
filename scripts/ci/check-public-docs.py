@@ -88,11 +88,23 @@ def item_key(message):
     prefix = source[:span['byte_start']].decode('utf-8')
     declaration = source[span['byte_start']:span['byte_end']].decode('utf-8')
     kind = message['message'].removeprefix('missing documentation for ')
-    if kind in ('a function', 'a method', 'an associated function', 'a constant'):
-        keyword = 'const' if kind == 'a constant' else 'fn'
-        symbol = re.search(r'\b' + keyword + r'\s+(\w+)', declaration).group(1)
+    keyword = {
+        'a function': 'fn', 'a method': 'fn', 'an associated function': 'fn',
+        'a constant': 'const', 'a static': 'static', 'a module': 'mod',
+        'a struct': 'struct', 'an enum': 'enum', 'a trait': 'trait',
+        'a union': 'union', 'a type alias': 'type', 'an associated type': 'type',
+    }.get(kind)
+    if keyword:
+        match = re.search(r'\b' + keyword + r'\s+(?:mut\s+)?(\w+)', declaration)
+    elif kind == 'a macro':
+        match = re.search(r'\b(?:macro_rules!|macro)\s+(\w+)', declaration)
+    elif kind in ('a struct field', 'a variant'):
+        match = re.search(r'(?:pub(?:\([^)]*\))?\s+)?(\w+)', declaration)
     else:
-        symbol = re.search(r'(?:pub(?:\([^)]*\))?\s+)?(\w+)', declaration).group(1)
+        raise ValueError('unsupported missing-doc item kind: ' + kind)
+    if match is None:
+        raise ValueError('missing-doc declaration has no supported item name')
+    symbol = match.group(1)
     return f"{span['file_name']}::{owner_path(prefix)}::{kind}::{symbol}"
 
 

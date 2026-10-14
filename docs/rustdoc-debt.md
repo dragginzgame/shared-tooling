@@ -35,8 +35,14 @@ python3 scripts/ci/check-public-docs.py target/rustdoc.jsonl ci/docs-baseline.js
 ```
 
 That option writes sorted identities only after complete input processing. It
-must not be used automatically to make a failing gate pass. Query retains its
+must not be used automatically to make a failing gate pass. Declaration identities use the declared name, fixing consumer keys that previously
+used keywords such as `struct` or `mod`. Adoption requires explicit review of any
+changed baseline identities; no fallback identities or automatic rewrite exists.
+
+Query retains its
 Cargo wrapper, current debt file and section-style type-doc checker; those have
-separate contracts. Shared's focused identity/CLI fixtures use synthetic admitted
-compiler records and temporary sources, without invoking compilation. Consumers
-must qualify their own real compiler output before retiring a local checker.
+separate contracts. Shared's Python identity/CLI fixtures use synthetic admitted compiler records and
+temporary sources. The separate `test-public-docs.sh` fixture runs actual locked,
+offline Cargo/rustdoc on a dependency-free crate to qualify declaration names and
+unchanged-count debt replacement. Consumers still qualify their own compiler
+output and baseline before retiring a local checker.

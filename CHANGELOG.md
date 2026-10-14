@@ -7,6 +7,8 @@
 - Provide opt-in item-level rustdoc debt comparison and its regression fixtures;
   consumers retain Cargo execution and their own debt baseline
   ([#181](https://github.com/dragginzgame/shared-tooling/issues/181)).
+- Identify declarations by their names rather than Rust keywords, preventing
+  unrelated documentation from offsetting newly undocumented types/modules.
 
 ```bash
 python3 scripts/ci/check-public-docs.py target/rustdoc.jsonl ci/docs-baseline.json
