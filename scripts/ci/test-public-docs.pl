@@ -52,6 +52,8 @@ is(key('pub struct r#Request { pub r#type: u64 }', 'pub r#type: u64'), 'struct R
 is(key('impl r#Request { pub fn r#match() {} }', 'pub fn r#match()', 'a method'), key('impl Request { pub fn r#match() {} }', 'pub fn r#match()', 'a method'), 'raw impl spelling does not change owner identity');
 isnt(key('pub enum Error { r#type { value: u64 } }', 'value: u64'), key('pub enum Error { r#match { value: u64 } }', 'value: u64'), 'raw lowercase variants retain namespaces');
 isnt(key('pub enum Error { first { value: u64 } }', 'value: u64'), key('pub enum Error { second { value: u64 } }', 'value: u64'), 'lowercase variants retain namespaces');
+isnt(key('pub struct 型甲 { pub value: u64 }', 'pub value: u64'), key('pub struct 型乙 { pub value: u64 }', 'pub value: u64'), 'Unicode owners retain their full names');
+isnt(key('pub enum Error { 型甲 { value: u64 } }', 'value: u64'), key('pub enum Error { 型乙 { value: u64 } }', 'value: u64'), 'Unicode variants retain namespaces');
 like(key('macro_rules! exported { () => {} }', 'macro_rules! exported { () => {} }', 'a macro'), qr/::exported$/, 'macro name');
 like(key('impl Request { pub const fn with_sort() {} }', 'pub const fn with_sort()', 'a method'), qr/::with_sort$/, 'const method');
 is(key('const X: &str = r#"{fake}"#; /* outer /* {nested} */ end */ pub struct Real { pub value: u64 }', 'pub value: u64'), 'struct Real::a struct field::value', 'raw literals and nested comments');

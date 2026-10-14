@@ -9,7 +9,7 @@
   ([#181 — Extract item-level rustdoc debt comparison](https://github.com/dragginzgame/shared-tooling/issues/181)).
 - Identify declarations by their names rather than Rust keywords, preventing
   unrelated documentation from offsetting newly undocumented types/modules.
-- Keep raw Rust identifiers and lowercase variant field namespaces distinct,
+- Keep raw Rust identifiers, Unicode owners and lowercase variant fields distinct,
   so equal warning counts cannot hide replacement debt
   ([#181 — Extract item-level rustdoc debt comparison](https://github.com/dragginzgame/shared-tooling/issues/181)).
 

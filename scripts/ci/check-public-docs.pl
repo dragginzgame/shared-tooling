@@ -19,7 +19,7 @@ sub read_bytes {
 sub tokens {
     my ($source) = @_;
     my @tokens;
-    while ($source =~ m{//[^\n]*|/\*|(?:br|r)(\#*)"|b?"(?:\\.|[^"\\])*"|b?'(?:\\.|[^'\\])'|(?:r\#)?[A-Za-z_][A-Za-z_0-9]*|[^\s]}sg) {
+    while ($source =~ m{//[^\n]*|/\*|(?:br|r)(\#*)"|b?"(?:\\.|[^"\\])*"|b?'(?:\\.|[^'\\])'|(?:r\#)?[_\p{XID_Start}][\p{XID_Continue}]*|[^\s]}sg) {
         my ($token, $hashes) = ($&, $1);
         next if $token =~ m{^//};
         if ($token eq '/*') {
@@ -71,7 +71,7 @@ sub owner_path {
                 }
             }
             if (!defined $owner && @scopes && defined $scopes[-1] && $scopes[-1] =~ /^enum /) {
-                my @names = map { my $name = $_; $name =~ s/^r#//; $name } grep /^(?:r#)?[A-Za-z_]\w*$/, @header;
+                my @names = map { my $name = $_; $name =~ s/^r#//; $name } grep /^(?:r#)?[_\p{XID_Start}][\p{XID_Continue}]*$/, @header;
                 $owner = "variant $names[-1]" if @names;
             }
             push @scopes, $owner;

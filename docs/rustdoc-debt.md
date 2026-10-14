@@ -18,7 +18,7 @@ perl scripts/ci/check-public-docs.pl target/rustdoc.jsonl ci/docs-baseline.json
 
 Identities include source path, owner scopes, item kind and declared name.
 Raw identifiers use their logical name without `r#`, including owner scopes;
-lowercase enum variants retain their own field namespaces.
+Unicode owner names and lowercase enum variants retain their own field namespaces.
 Line movement does not change an identity. Multiplicity is retained: documenting
 an unrelated field cannot offset new debt, and resolved baseline entries must
 be removed explicitly. Added or resolved items return status 1; malformed JSON,
