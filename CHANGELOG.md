@@ -1,13 +1,24 @@
 # Changelog
 
-## [0.13.2]
+## [0.13.3]
 
 ### Added
 
 - Share the optional release-prose advisory and its semantic fixtures, keeping
   status selection with callers and missing inputs/reader failures non-blocking.
 - Collect complete NUL-separated release changes before publishing output; keep
-  package impact policy with consumers and reject failed Git observations.
+  package impact policy with consumers, reject failed Git observations and bind
+  the comparison to the verified commit even if its tag subsequently moves
+  ([PR #191 — Share release-prose and complete change-observation helpers](https://github.com/dragginzgame/shared-tooling/pull/191)).
+
+## [0.13.2]
+
+### Added
+
+- Share fixture completion checks independently of cleanup, so qualification
+  runners can reject incomplete execution while retaining successful evidence.
+  Preserve original failure statuses and reject invalid status values
+  ([#192 — Share fixture completion admission](https://github.com/dragginzgame/shared-tooling/issues/192)).
 
 ## [0.13.1]
 

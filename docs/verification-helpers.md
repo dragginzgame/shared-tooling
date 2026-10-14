@@ -15,7 +15,9 @@ bash scripts/ci/collect-release-changes.sh v0.3.8 > changed-paths.nul
 The optional Bash 3.2 helper emits NUL-separated tracked changes from the selected
 base commit to the current worktree, followed by nonignored untracked paths.
 Without a base, it selects the most recent reachable canonical `vX.Y.Z` tag.
-Explicit bases must resolve to commits. It anchors Git observation at the checkout
+Explicit bases must resolve to commits. The verified commit ID, rather than its
+mutable ref spelling, is used for the comparison even if the tag moves afterwards.
+It anchors Git observation at the checkout
 root, disables optional index writes, and publishes no paths until both Git
 producers succeed. Failed observations preserve their status and clean the
 scratch file; its own newly allocated file is excluded if scratch storage is
@@ -696,3 +698,13 @@ fixture_complete=true
 The allocation helper is additive and does not change existing cleanup callers.
 Its focused fixture is `scripts/ci/test-fixture-allocation.sh`; selecting that
 fixture through the snapshot exporter includes the lifecycle helper.
+
+### Completion admission without cleanup
+
+`fixture_completion_status STATUS COMPLETE` returns the original nonzero status,
+or returns 1 for zero-status execution unless COMPLETE is `true`. STATUS must be
+a canonical decimal shell exit status from 0 through 255; invalid arguments
+return 2 rather than wrapping an invalid status to success. The helper performs
+no cleanup, reporting or process exit. Capture refusal in an explicit conditional
+under errexit. `fixture_finish` uses this admission before its existing cleanup
+policy; qualification runners can instead retain all success and failure evidence.

@@ -15,14 +15,14 @@ else
         exit 1
     fi
 fi
-if ! git rev-parse --verify --quiet "$base_ref^{commit}" >/dev/null; then
+if ! base_commit="$(git rev-parse --verify --quiet "$base_ref^{commit}")"; then
     echo "error: release-change base does not resolve to a commit: $base_ref" >&2
     exit 1
 fi
 paths="$(mktemp "${TMPDIR:-/tmp}/release-changes.XXXXXX")"
 trap 'rm -f -- "$paths"' EXIT
 # Publish nothing until both producers succeed; NULs preserve arbitrary filenames.
-git diff --no-renames --no-relative --name-only --diff-filter=ACDMRTUXB -z "$base_ref" -- > "$paths"
+git diff --no-renames --no-relative --name-only --diff-filter=ACDMRTUXB -z "$base_commit" -- > "$paths"
 git ls-files --others --exclude-standard -z >> "$paths"
 # Exclude only this fresh, collector-owned scratch file if TMPDIR is in the tree.
 # Caller-owned paths, including other files in that directory, stay observable.

@@ -59,7 +59,12 @@ export REAL_GIT
 cat > "$fixture/bin/git" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
-if [[ "$1" == "$FAIL_GIT_COMMAND" ]]; then
+if [[ "${MOVE_VERIFIED_TAG:-0}" == 1 && "$1" == rev-parse && "${2:-}" == --verify ]]; then
+    "$REAL_GIT" "$@"
+    "$REAL_GIT" tag -f v0.3.8 HEAD >/dev/null
+    exit 0
+fi
+if [[ "$1" == "${FAIL_GIT_COMMAND:-}" ]]; then
     if [[ "$PARTIAL_OUTPUT" == 1 ]]; then
         case "$1" in describe) printf 'v0.3.8\n' ;; *) printf 'tracked.txt\0' ;; esac
     fi
@@ -75,12 +80,24 @@ for command in diff ls-files describe; do
         if [[ "$command" == describe ]]; then args=(); fi
         status=0
         PATH="$fixture/bin:$PATH" TMPDIR="$fixture/scratch" FAIL_GIT_COMMAND="$command" PARTIAL_OUTPUT="$partial" \
-            bash "$collector" "${args[@]}" > "$fixture/observed" 2> "$fixture/error" || status=$?
+            bash "$collector" ${args[@]+"${args[@]}"} > "$fixture/observed" 2> "$fixture/error" || status=$?
         [[ "$status" == 37 && ! -s "$fixture/observed" ]] || exit 1
         grep -Fq "injected $command failure" "$fixture/error"
         [[ -z "$(find "$fixture/scratch" -type f -print)" ]] || exit 1
         cmp .git/index "$fixture/index-before"
     done
+done
+# Move the selected tag after its verification. Both explicit and discovered
+# selections must still compare against the originally verified commit.
+original_base="$(git rev-parse v0.3.8)"
+git -c core.hooksPath=/dev/null -c user.name=fixture -c user.email=fixture@example.invalid commit -qm changed
+for selection in explicit discovered; do
+    git tag -f v0.3.8 "$original_base" >/dev/null
+    args=()
+    if [[ "$selection" == explicit ]]; then args=(v0.3.8); fi
+    PATH="$fixture/bin:$PATH" MOVE_VERIFIED_TAG=1 bash "$collector" ${args[@]+"${args[@]}"} > "$fixture/observed"
+    [[ "$(git rev-parse v0.3.8)" == "$(git rev-parse HEAD)" ]] || exit 1
+    assert_paths
 done
 git tag -d v0.3.8 >/dev/null
 if bash "$collector" > "$fixture/observed" 2> "$fixture/error"; then exit 1; fi
