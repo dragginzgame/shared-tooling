@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.12.1]
+
+### Added
+
+- Expose coordinated Cargo member projection and graph-only admission without
+  finalized release notes, retaining complete lock/workspace checks ([#171](https://github.com/dragginzgame/shared-tooling/issues/171)).
+- Own exact stable-version ordering and reject non-increasing finalizer targets
+  at the canonical boundary ([#172](https://github.com/dragginzgame/shared-tooling/issues/172)).
+- Provide optional downloaded-evidence verification and explicit hosted failure
+  stages, preserving independent receipt checks and consumer product gates
+  ([#173](https://github.com/dragginzgame/shared-tooling/issues/173)).
+
+### Fixed
+
+- Include the caller catalog guide when exporting the snapshot-drift task,
+  preventing broken documentation links in reduced consumer snapshots without
+  activating the optional checker.
+  ([#170](https://github.com/dragginzgame/shared-tooling/issues/170))
+
 ## [0.12.0]
 
 ### Changed

@@ -30,6 +30,10 @@ case "$1" in
         ;;
     sort) [[ "${CASE:-}" != sort-failure ]] || exit 24 ;;
     metadata)
+        if [[ "${CASE:-}" == graph-failure ]]; then
+            "$REAL_CARGO" "$@"
+            exit 37
+        fi
         if [[ "${CASE:-}" == check-failure ]] && grep -q 'version = "1.2.4"' Cargo.toml; then exit 25; fi
         exec "$REAL_CARGO" "$@"
         ;;
@@ -118,6 +122,38 @@ for failure in type export; do
     status=0
     GIT_FAILURE="$failure" RELEASE_COMMIT="$commit" bash "$helper" check primary > "$fixture/git-$failure.log" 2>&1 || status=$?
     [[ "$status" == 43 ]] || { echo 'failed Git output was accepted or its status lost' >&2; exit 1; }
+done
+# Graph admission is independent of release notes and pending-version variables.
+root="$fixture/graph"
+make_workspace "$root"
+rm "$root/CHANGELOG.md"
+(cd "$root" && bash "$helper" check-graph primary)
+for file in Cargo.toml Cargo.lock; do cp -p "$root/$file" "$root/$file.before"; done
+status=0
+(cd "$root" && CASE=graph-failure bash "$helper" check-graph primary) > "$fixture/graph-failure.log" 2>&1 || status=$?
+[[ "$status" == 37 ]] || exit 1
+for file in Cargo.toml Cargo.lock; do cmp "$root/$file" "$root/$file.before"; done
+[[ ! -e "$root/CHANGELOG.md" ]] || exit 1
+for mode in mixed-version extra-lock missing-lock unknown-primary; do
+    root="$fixture/graph-$mode"
+    make_workspace "$root"
+    rm "$root/CHANGELOG.md"
+    primary=primary
+    case "$mode" in
+        mixed-version)
+            perl -pi -e 's/version.workspace = true/version = "1.2.2"/' "$root/secondary/Cargo.toml"
+            (cd "$root" && "$REAL_CARGO" generate-lockfile --offline >/dev/null)
+            ;;
+        extra-lock) printf '\n[[package]]\nname = "outside"\nversion = "1.2.3"\n' >> "$root/Cargo.lock" ;;
+        missing-lock) perl -0pi -e 's/\[\[package\]\]\nname = "secondary"\nversion = "1.2.3"\n//' "$root/Cargo.lock" ;;
+        unknown-primary) primary=unknown ;;
+    esac
+    for file in Cargo.toml Cargo.lock; do cp -p "$root/$file" "$root/$file.before"; done
+    if (cd "$root" && bash "$helper" check-graph "$primary") > "$fixture/graph-$mode.log" 2>&1; then
+        echo "graph admission accepted $mode" >&2; exit 1
+    fi
+    for file in Cargo.toml Cargo.lock; do cmp "$root/$file" "$root/$file.before"; done
+    [[ ! -e "$root/CHANGELOG.md" ]] || exit 1
 done
 echo 'Cargo metadata preparation, restoration, workspace admission and selected-commit checks passed (version/sort tools substituted).'
 complete=true

@@ -816,6 +816,30 @@ while IFS= read -r path; do
     governance_args+=(--entrypoint "$path")
     case "$path" in *.md) governance_docs+=("$path") ;; esac
 done < "$ROOT/scripts/distribution/governance-files.txt"
+# Keep the task's existing direct documentation roots but omit the newly linked
+# guide. The committed Markdown declaration must supply it, not the full catalog.
+task_consumer="$FIXTURE/task-consumer"
+git init -q "$task_consumer"
+task_args=(--entrypoint tasks/snapshot-drift.md --entrypoint tasks/README.md
+    --entrypoint docs/consuming-snapshots.md --entrypoint rules/agent-maintenance.md)
+PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --preview --source "$source_root" --consumer "$task_consumer" "${task_args[@]}" \
+    > "$FIXTURE/task-preview.log"
+grep -F "$(printf 'ADD\trequired\tdocs/tool-catalog-bindings.md')" "$FIXTURE/task-preview.log" >/dev/null
+[[ ! -e "$task_consumer/docs" ]] || exit 1
+PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$task_consumer" "${task_args[@]}" \
+    > "$FIXTURE/task-refresh.log"
+cmp "$revision_root/docs/tool-catalog-bindings.md" "$task_consumer/docs/tool-catalog-bindings.md"
+[[ ! -e "$task_consumer/scripts/ci/check-tool-catalogs.pl" ]] || exit 1
+perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$task_consumer" \
+    tasks/snapshot-drift.md docs/tool-catalog-bindings.md > "$FIXTURE/task-links.log"
+bash "$task_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
+    --consumer "$task_consumer" >/dev/null
+rm "$task_consumer/docs/tool-catalog-bindings.md"
+if perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$task_consumer" \
+    tasks/snapshot-drift.md > "$FIXTURE/task-missing.log" 2>&1; then exit 1; fi
+
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$governance_consumer" "${governance_args[@]}" \
     > "$FIXTURE/governance-refresh.log"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/prepare-cargo-failure-fixture.sh scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/prepare-cargo-failure-fixture.sh scripts/ci/fixture-lifecycle.sh scripts/ci/fixture-retention-probes.sh
 set -euo pipefail
 ROOT="$0"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
@@ -10,6 +10,8 @@ fixture="$(CDPATH="" cd -P -- "$fixture" && printf '%s/.' "$PWD")"
 fixture="${fixture%/.}"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
+# shellcheck source=scripts/ci/fixture-retention-probes.sh
+source "$ROOT/scripts/ci/fixture-retention-probes.sh"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Retention fixtures retained"' EXIT
 # Inject exits into disposable copies of actual fixtures immediately after their
@@ -29,49 +31,14 @@ for name in format-tools tool-commands rust-tools release-runner host-tools ic-t
         source="$ROOT/scripts/ci/$name.sh"
         probe_args=("$fixture/exit-input" src/lib.rs Cargo.toml --no-dependency-tables)
     fi
-    failures=(nounset nounset-function command nonzero premature completed failed-completion)
-    [[ "$name" != ic-tools ]] || failures+=(cleanup-failure)
-    for failure in "${failures[@]}"; do
-        # shellcheck disable=SC2016 # Expanded by the disposable child fixture.
-        case "$failure" in
-            nounset) injection='unset RETENTION_UNBOUND; printf "%s\n" "$RETENTION_UNBOUND"'; expected=1 ;;
-            nounset-function) injection='unset RETENTION_UNBOUND; probe_unbound() { echo "$RETENTION_UNBOUND"; }; probe_unbound'; expected=1 ;;
-            command) injection='false'; expected=1 ;;
-            nonzero) injection='exit 23'; expected=23 ;;
-            premature) injection='exit 0'; expected=1 ;;
-            completed) injection='fixture_complete=true; exit 0'; expected=0 ;;
-            failed-completion) injection='fixture_complete=true; exit 23'; expected=23 ;;
-            cleanup-failure) injection='rm() { return 37; }; fixture_complete=true; exit 0'; expected=37 ;;
-        esac
-        # Pass literal shell source through ENVIRON, not awk -v escape decoding.
-        RETENTION_INJECTION="$injection" awk '
-            { print }
-            /^trap .* EXIT$/ && !injected {
-                print "printf \"%s\\n\" \"${fixture:-${FIXTURE_ROOT:-}}\" > \"$RETENTION_EXIT_PATH\""
-                print "printf \"retained evidence\\n\" > \"${fixture:-${FIXTURE_ROOT:-}}/exit-evidence\""
-                print ENVIRON["RETENTION_INJECTION"]
-                print "exit 99"
-                injected=1
-            }
-            END { if (!injected) exit 1 }
-        ' "$source" > "$fixture/exit-source/scripts/ci/probe.sh"
-        status=0
-        TMPDIR="$fixture" "$BASH" "$fixture/exit-source/scripts/ci/probe.sh" \
-            ${probe_args[@]+"${probe_args[@]}"} \
-            > "$fixture/exit-$name-$failure.log" 2>&1 || status=$?
-        [[ "$status" == "$expected" ]] || exit 1
-        if [[ "$failure" == cleanup-failure ]]; then
-            grep -F 'IC fixture cleanup started:' "$fixture/exit-$name-$failure.log" > /dev/null
-            grep -E 'IC fixture cleanup finished: [0-9]+s, status 37' "$fixture/exit-$name-$failure.log" > /dev/null
-        fi
-        retained="$(cat "$RETENTION_EXIT_PATH")"
-        [[ -n "$retained" ]] || exit 1
-        if [[ "$expected" == 0 ]]; then [[ ! -e "$retained" ]] || exit 1
-        else
-            [[ -d "$retained" && "$(cat "$retained/exit-evidence")" == 'retained evidence' ]] || exit 1
-        fi
-    done
+    fixture_probe_exits "$source" "$fixture" "$ROOT" "$name" ${probe_args[@]+"${probe_args[@]}"} || exit 1
+    if [[ "$name" == ic-tools ]]; then
+        fixture_probe_exit "$source" "$fixture" "$ROOT" "$name" cleanup-failure || exit 1
+        grep -F 'IC fixture cleanup started:' "$fixture/$name-cleanup-failure.log" > /dev/null
+        grep -E 'IC fixture cleanup finished: [0-9]+s, status 37' "$fixture/$name-cleanup-failure.log" > /dev/null
+    fi
 done
+
 # Qualify cleanup independently of errexit: a caller can invoke its EXIT helper
 # from a conditional, and diagnostics can fail after the original operation.
 cat > "$fixture/cleanup-probe.sh" <<'PROBE'
