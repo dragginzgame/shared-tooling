@@ -95,10 +95,15 @@ case "$operation" in
         cargo metadata --locked --offline --format-version 1 > "$backup/metadata.json"
         workspace_packages "$backup/metadata.json" "$RELEASE_PREVIOUS" "$backup/local-packages"
         inherited_members "$(pwd -P)" "$backup/metadata.json"
+        "${YQ:-yq}" -p toml -o json '.' Cargo.toml > "$backup/manifest.json"
+        jq -n --slurpfile manifest "$backup/manifest.json" --slurpfile metadata "$backup/metadata.json" '
+            {manifest: $manifest[0], members: ($metadata[0] | . as $m |
+                [.packages[] | select(.id as $id | $m.workspace_members | index($id)) |
+                    {name, manifest_path}])}' > "$backup/workspace-input.json"
         awk -v version="${RELEASE_VERSION:?}" -v previous="$RELEASE_PREVIOUS" -v date="${RELEASE_DATE:?}" \
             -f "$ROOT/scripts/ci/finalize-release-changelog.awk" CHANGELOG.md > "$backup/candidate.notes"
         perl "$ROOT/scripts/ci/render-cargo-workspace-version.pl" Cargo.toml \
-            "$RELEASE_PREVIOUS" "$RELEASE_VERSION" > "$backup/candidate.manifest"
+            "$RELEASE_PREVIOUS" "$RELEASE_VERSION" "$backup/workspace-input.json" > "$backup/candidate.manifest"
         # Independently parse candidate bytes without resolving scratch members.
         "${YQ:-yq}" -p toml -o json '.' "$backup/candidate.manifest" | \
             jq -e --arg version "$RELEASE_VERSION" '.workspace.package.version == $version' > /dev/null

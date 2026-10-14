@@ -2,6 +2,12 @@
 
 ## [0.13.0]
 
+### Fixed
+
+- Advance workspace-owned path dependency requirements with coordinated Cargo
+  releases, including minor/major boundaries. Preserve aliases, literal precision,
+  requirement operators, unrelated dependency bytes and failure restoration.
+
 ### Added
 
 - Include the already reviewed fixture allocator from Shared main

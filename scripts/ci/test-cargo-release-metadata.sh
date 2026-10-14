@@ -28,6 +28,10 @@ set -euo pipefail
 case "$1" in
     set-version|sort) echo 'preparation must not dispatch manifest mutation tools' >&2; exit 91 ;;
     metadata)
+        if [[ "${CASE:-}" == prepared-local-failure ]] && grep -q '^version = "0.10.0"$' Cargo.toml; then
+            "$REAL_CARGO" "$@"
+            exit 25
+        fi
         if [[ "${CASE:-}" == interrupt ]] && grep -q 'version = "1.2.4"' Cargo.toml; then
             kill -TERM "$PPID"; exit 1
         fi
@@ -113,6 +117,91 @@ for package in primary secondary; do
     jq -e --arg name "$package" '.packages[] | select(.name == $name) | .version == "1.2.4"' \
         < <(cd "$fixture/success" && "$REAL_CARGO" metadata --offline --locked --format-version 1) > /dev/null
 done
+# Exercise real Cargo resolution across semver boundaries. An owned dependency
+# alias/requirement must follow its path target, not an unrelated registry row.
+for mode in patch minor major zero-minor zero-major; do
+    root="$fixture/owned-$mode"
+    make_workspace "$root"
+    previous=1.2.3 candidate=1.2.4
+    case "$mode" in
+        minor) candidate=1.3.0 ;;
+        major) candidate=2.0.0 ;;
+        zero-minor) previous=0.9.6 candidate=0.10.0 ;;
+        zero-major) previous=0.9.6 candidate=1.0.0 ;;
+    esac
+    # Bare, renamed, quoted and table-form requirements exercise the literal
+    # writer independently; exact/caret/tilde operators retain their policy.
+    cat > "$root/Cargo.toml" <<TOML
+[workspace]
+members = ["primary", "secondary"]
+resolver = "3"
+[workspace.package]
+version = "$previous"
+edition = "2024"
+[workspace.metadata]
+description = '''
+[workspace.dependencies]
+primary = { version = "DO NOT EDIT" }
+'''
+[workspace.dependencies]
+primary = { version = "${previous%.*}", path = "primary" } # preserve comment
+"alias" = { package = "primary", path = "./primary", version = '^$previous' }
+exact = { version = "=$previous", path = "primary", package = "primary" }
+custom = { version = ">=0.1, <9", path = "primary", package = "primary" }
+unrelated = { version = "${previous%.*}", path = "../unowned-primary", package = "primary" }
+external = { version = "$previous" }
+[workspace.dependencies."tilde"]
+package = "primary"
+path = "primary"
+version = "~$previous"
+TOML
+    mkdir -p "$fixture/unowned-primary/src"
+    printf '[package]\nname="primary"\nversion="%s"\nedition="2024"\n[workspace]\n' "$previous" > "$fixture/unowned-primary/Cargo.toml"
+    printf '#![no_std]\n' > "$fixture/unowned-primary/src/lib.rs"
+    edge=primary
+    case "$mode" in minor) edge='alias' ;; major) edge=tilde ;; zero-major) edge=exact ;; esac
+    printf '\n[dependencies]\n%s.workspace = true\n' "$edge" >> "$root/secondary/Cargo.toml"
+    printf '# Changelog\n\n## [%s]\n\n- Change.\n\n## [%s] - 2026-10-12\n\n- Previous.\n' "$candidate" "$previous" > "$root/CHANGELOG.md"
+    (cd "$root" && "$REAL_CARGO" generate-lockfile --offline > /dev/null)
+    mkdir "$root/originals"
+    for file in Cargo.toml Cargo.lock CHANGELOG.md; do cp -p "$root/$file" "$root/originals/$file"; done
+    "${YQ:-yq}" -p toml -o json '.' "$root/Cargo.toml" > "$root/before.json"
+    (cd "$root" && RELEASE_PREVIOUS="$previous" RELEASE_VERSION="$candidate" bash "$helper" prepare primary) > "$fixture/owned-$mode.log" 2>&1
+    (cd "$root" && RELEASE_VERSION="$candidate" bash "$helper" check primary)
+    jq --arg version "$candidate" --arg short "${candidate%.*}" '
+        .workspace.package.version = $version |
+        .workspace.dependencies.primary.version = $short |
+        .workspace.dependencies.alias.version = ("^" + $version) |
+        .workspace.dependencies.exact.version = ("=" + $version) |
+        .workspace.dependencies.tilde.version = ("~" + $version)' "$root/before.json" > "$root/expected.json"
+    "${YQ:-yq}" -p toml -o json '.' "$root/Cargo.toml" > "$root/after.json"
+    jq -e --slurpfile expected "$root/expected.json" '. == $expected[0]' "$root/after.json" > /dev/null
+    # Identical bytes outside version literals, including opaque descriptions.
+    grep -Fqx 'primary = { version = "DO NOT EDIT" }' "$root/Cargo.toml"
+    grep -Fqx "primary = { version = \"${candidate%.*}\", path = \"primary\" } # preserve comment" "$root/Cargo.toml"
+    if [[ "$mode" == zero-minor ]]; then
+        for file in Cargo.toml Cargo.lock CHANGELOG.md; do cp -p "$root/originals/$file" "$root/$file"; done
+        status=0
+        (cd "$root" && CASE=prepared-local-failure RELEASE_PREVIOUS="$previous" RELEASE_VERSION="$candidate" bash "$helper" prepare primary) \
+            > "$fixture/owned-restoration.log" 2>&1 || status=$?
+        [[ "$status" == 25 ]] || exit 1
+        for file in Cargo.toml Cargo.lock CHANGELOG.md; do cmp "$root/$file" "$root/originals/$file"; done
+    fi
+done
+# A caller-owned range excluding the candidate must fail and restore all bytes.
+root="$fixture/restrictive-local-range"
+make_workspace "$root"
+printf '\n[workspace.dependencies.primary]\npath="primary"\nversion=">=1.2, <1.3"\n' >> "$root/Cargo.toml"
+printf '\n[dependencies]\nprimary.workspace=true\n' >> "$root/secondary/Cargo.toml"
+(cd "$root" && "$REAL_CARGO" generate-lockfile --offline > /dev/null)
+mkdir "$root/originals"
+for file in Cargo.toml Cargo.lock CHANGELOG.md; do cp -p "$root/$file" "$root/originals/$file"; done
+printf '# Changelog\n\n## [1.3.0]\n\n- Change.\n\n## [1.2.3] - 2026-10-12\n\n- Previous.\n' > "$root/CHANGELOG.md"
+cp -p "$root/CHANGELOG.md" "$root/originals/CHANGELOG.md"
+if (cd "$root" && RELEASE_VERSION=1.3.0 bash "$helper" prepare primary) > "$fixture/restrictive.log" 2>&1; then
+    echo 'restrictive local range admitted' >&2; exit 1
+fi
+for file in Cargo.toml Cargo.lock CHANGELOG.md; do cmp "$root/$file" "$root/originals/$file"; done
 for mode in renderer-failure check-failure interrupt literal-version unknown-local missing-member; do
     root="$fixture/$mode"
     make_workspace "$root"
