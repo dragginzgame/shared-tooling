@@ -26,12 +26,11 @@ cat > "$fixture/bin/cargo" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
 case "$1" in
-    set-version)
-        perl -pi -e 's/version = "1\.2\.3"/version = "1.2.4"/' Cargo.toml
-        [[ "${CASE:-}" != set-failure ]] || exit 23
-        ;;
-    sort) [[ "${CASE:-}" != sort-failure ]] || exit 24 ;;
+    set-version|sort) echo 'preparation must not dispatch manifest mutation tools' >&2; exit 91 ;;
     metadata)
+        if [[ "${CASE:-}" == interrupt ]] && grep -q 'version = "1.2.4"' Cargo.toml; then
+            kill -TERM "$PPID"; exit 1
+        fi
         if [[ "${CASE:-}" == graph-failure ]]; then
             "$REAL_CARGO" "$@"
             exit 37
@@ -65,6 +64,18 @@ fi
 exec "$REAL_CP" "$@"
 CP
 chmod +x "$fixture/bin/cp"
+REAL_PERL="$(command -v perl)"
+export REAL_PERL
+cat > "$fixture/bin/perl" <<'PERL'
+#!/usr/bin/env bash
+set -euo pipefail
+case "${1:-}" in
+    */render-cargo-workspace-version.pl)
+        if [[ "${CASE:-}" == renderer-failure ]]; then "$REAL_PERL" "$@"; exit 23; fi ;;
+esac
+exec "$REAL_PERL" "$@"
+PERL
+chmod +x "$fixture/bin/perl"
 export PATH="$fixture/bin:$PATH"
 export RELEASE_PREVIOUS=1.2.3 RELEASE_VERSION=1.2.4 RELEASE_DATE=2026-10-13
 helper="$ROOT/scripts/ci/cargo-release-metadata.sh"
@@ -76,8 +87,10 @@ make_workspace() {
 members = ["primary", "secondary"]
 resolver = "3"
 [workspace.package]
-version = "1.2.3"
+  version = "1.2.3" # Preserve this literal layout.
 edition = "2024"
+[workspace.dependencies.example]
+version = "1.2.3"
 TOML
     for package in primary secondary; do
         cat > "$root/$package/Cargo.toml" <<TOML
@@ -88,6 +101,7 @@ edition.workspace = true
 TOML
         printf 'pub fn value() -> u64 { 0 }\n' > "$root/$package/src/lib.rs"
     done
+    chmod 0640 "$root/Cargo.toml"
     printf '# Changelog\n\n## [1.2.4]\n\n- Prepared change.\n\n## [1.2.3] - 2026-10-12\n\n- Previous.\n' > "$root/CHANGELOG.md"
     (cd "$root" && "$REAL_CARGO" generate-lockfile --offline > /dev/null)
 }
@@ -99,7 +113,7 @@ for package in primary secondary; do
     jq -e --arg name "$package" '.packages[] | select(.name == $name) | .version == "1.2.4"' \
         < <(cd "$fixture/success" && "$REAL_CARGO" metadata --offline --locked --format-version 1) > /dev/null
 done
-for mode in set-failure sort-failure check-failure literal-version unknown-local missing-member; do
+for mode in renderer-failure check-failure interrupt literal-version unknown-local missing-member; do
     root="$fixture/$mode"
     make_workspace "$root"
     case "$mode" in
@@ -112,12 +126,17 @@ for mode in set-failure sort-failure check-failure literal-version unknown-local
     status=0
     (cd "$root" && CASE="$mode" bash "$helper" prepare primary) > "$fixture/$mode.log" 2>&1 || status=$?
     [[ "$status" != 0 ]] || { echo "metadata failure case accepted: $mode" >&2; exit 1; }
-    case "$mode" in set-failure) [[ "$status" == 23 ]] ;; sort-failure) [[ "$status" == 24 ]] ;; check-failure) [[ "$status" == 25 ]] ;; esac
+    case "$mode" in renderer-failure) [[ "$status" == 23 ]] ;; interrupt) [[ "$status" == 143 ]] ;; check-failure) [[ "$status" == 25 ]] ;; esac
     for file in Cargo.toml Cargo.lock CHANGELOG.md; do cmp "$root/$file" "$root/originals/$file"; done
     if [[ "$mode" != missing-member ]]; then
         grep -F 'evidence retained:' "$fixture/$mode.log" > /dev/null
     fi
 done
+# Successful preparation preserves all unrelated bytes and metadata modes.
+grep -Fqx '  version = "1.2.4" # Preserve this literal layout.' "$fixture/success/Cargo.toml"
+grep -Fqx 'version = "1.2.3"' "$fixture/success/Cargo.toml"
+[[ "$(perl -e 'printf "%o", (stat($ARGV[0]))[2]&07777' "$fixture/success/Cargo.toml")" == 640 ]] || exit 1
+
 # Generic notes and failure restoration belong to the metadata producer.
 for mode in undated-history history-no-lf dated-notes conflicting-date conflicting-notes restore-failure missing-date missing-version; do
     root="$fixture/$mode"
@@ -210,5 +229,5 @@ for mode in mixed-version extra-lock missing-lock unknown-primary; do
     for file in Cargo.toml Cargo.lock; do cmp "$root/$file" "$root/$file.before"; done
     [[ ! -e "$root/CHANGELOG.md" ]] || exit 1
 done
-echo 'Cargo metadata preparation, restoration, workspace admission and selected-commit checks passed (version/sort tools substituted).'
+echo 'Cargo metadata preparation, restoration, workspace admission and selected-commit checks passed (literal rendering; no manifest mutation tools).'
 complete=true

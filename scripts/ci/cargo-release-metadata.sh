@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/read-cargo-workspace-version.sh scripts/ci/rewrite-local-lock-versions.pl scripts/ci/finalize-release-changelog.awk scripts/ci/cargo-workspace-members.jq scripts/ci/compare-stable-versions.pl
+# Shared companions: scripts/ci/read-cargo-workspace-version.sh scripts/ci/rewrite-local-lock-versions.pl scripts/ci/finalize-release-changelog.awk scripts/ci/cargo-workspace-members.jq scripts/ci/compare-stable-versions.pl scripts/ci/render-cargo-workspace-version.pl
 set -euo pipefail
 
 # Coordinated workspace versions only. Consumer adapters retain source admission,
@@ -82,7 +82,7 @@ case "$operation" in
                     printf 'metadata restoration incomplete; originals retained: %s\n' "$backup" >&2
                     exit 1
                 fi
-                printf 'failed Cargo preparation restored; evidence retained: %s\n' "$backup" >&2
+                printf 'failed Cargo preparation; restoring release metadata; evidence retained: %s\n' "$backup" >&2
             else
                 rm -rf "$backup"
             fi
@@ -97,14 +97,18 @@ case "$operation" in
         inherited_members "$(pwd -P)" "$backup/metadata.json"
         awk -v version="${RELEASE_VERSION:?}" -v previous="$RELEASE_PREVIOUS" -v date="${RELEASE_DATE:?}" \
             -f "$ROOT/scripts/ci/finalize-release-changelog.awk" CHANGELOG.md > "$backup/candidate.notes"
-        cargo set-version --workspace --offline "$RELEASE_VERSION"
-        cargo sort
+        perl "$ROOT/scripts/ci/render-cargo-workspace-version.pl" Cargo.toml \
+            "$RELEASE_PREVIOUS" "$RELEASE_VERSION" > "$backup/candidate.manifest"
+        # Independently parse candidate bytes without resolving scratch members.
+        "${YQ:-yq}" -p toml -o json '.' "$backup/candidate.manifest" | \
+            jq -e --arg version "$RELEASE_VERSION" '.workspace.package.version == $version' > /dev/null
+        cat "$backup/candidate.manifest" > Cargo.toml
         packages=()
         while IFS= read -r package; do packages+=("$package"); done < "$backup/local-packages"
         perl "$ROOT/scripts/ci/rewrite-local-lock-versions.pl" "$backup/Cargo.lock" \
             "$RELEASE_PREVIOUS" "$RELEASE_VERSION" "${packages[@]}" > "$backup/candidate.lock"
-        cp "$backup/candidate.lock" Cargo.lock
-        cp "$backup/candidate.notes" CHANGELOG.md
+        cat "$backup/candidate.lock" > Cargo.lock
+        cat "$backup/candidate.notes" > CHANGELOG.md
         cargo metadata --locked --offline --format-version 1 > "$backup/prepared.json"
         observed_version="$(bash "$reader" Cargo.toml)"
         [[ "$observed_version" == "$RELEASE_VERSION" ]] || exit 1

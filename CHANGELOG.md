@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.13.0]
+
+### Changed
+
+- Prepare coordinated Cargo metadata with the literal root-version renderer,
+  preserving unrelated manifest bytes, file modes and external lock selections.
+  Remove implicit Cargo-edit/Cargo-sort mutation; consumer ordering checks remain
+  explicit. Unsupported literal layouts refuse without installation.
+- Share explicit consumer root/directory bindings and prefix rendering for
+  fixture retention probes, preserving mandatory consumer assertions.
+- Discard failed tool-selector output for payload admission while retaining its
+  original status/output and safe local evidence in partial archives.
+
 ## [0.12.5]
 
 ### Changed
