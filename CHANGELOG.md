@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.12.9]
+
+### Added
+
+- Provide an opt-in section-style Rust type-documentation layout checker with
+  explicit source selections, indented declarations and multiline attributes
+  ([#187](https://github.com/dragginzgame/shared-tooling/issues/187)).
+
+```bash
+perl scripts/ci/check-type-docs.pl crates
+```
+
 ## [0.12.8]
 
 ### Fixed
