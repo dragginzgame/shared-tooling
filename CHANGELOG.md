@@ -1,15 +1,41 @@
 # Changelog
 
-## [0.13.3]
+## [0.14.0]
 
 ### Added
 
-- Share the optional release-prose advisory and its semantic fixtures, keeping
-  status selection with callers and missing inputs/reader failures non-blocking.
-- Collect complete NUL-separated release changes before publishing output; keep
-  package impact policy with consumers, reject failed Git observations and bind
-  the comparison to the verified commit even if its tag subsequently moves
+- Deliver the release-prose advisory and complete release-change collection
+  previously described as pending in 0.13.3. Keep prose non-blocking and bind
+  collected paths to the verified base commit even if its tag moves
   ([PR #191 — Share release-prose and complete change-observation helpers](https://github.com/dragginzgame/shared-tooling/pull/191)).
+
+## [0.13.3]
+
+Pending integration: the changes below are in
+[PR #194 — Release version and date admission](https://github.com/dragginzgame/shared-tooling/pull/194)
+and [PR #191 — Release prose and change observation](https://github.com/dragginzgame/shared-tooling/pull/191),
+and are not yet on `main`.
+
+### Fixed
+
+- Reject impossible dates in saved release plans through shared stable-version
+  and Gregorian UTC-date admission. Preserve exact u64 components and the
+  increment helper's stricter signed arithmetic headroom
+  ([#193 — Own release version and calendar-date admission](https://github.com/dragginzgame/shared-tooling/issues/193)).
+- Bind release-change collection to the verified base commit, so a moving tag
+  cannot silently change the comparison. Qualify the collector's failure and
+  tag-movement cases under Bash 3.2 as well as current Bash.
+- Include the release-input helper in snapshot qualification and restore the
+  unreadable-manifest fixture's permissions so later failures retain archivable
+  evidence.
+
+### Added
+
+- Share complete NUL-separated release-change collection, publishing paths only
+  after both tracked and untracked Git observations succeed. Keep package-impact
+  policy with consumers.
+- Share the optional release-prose advisory, keeping missing inputs and reader
+  failures non-blocking and release decisions with callers.
 
 ## [0.13.2]
 
