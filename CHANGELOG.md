@@ -8,6 +8,9 @@
   and Gregorian UTC-date admission. Preserve exact u64 components and the
   increment helper's stricter signed arithmetic headroom
   ([#193 — Own release version and calendar-date admission](https://github.com/dragginzgame/shared-tooling/issues/193)).
+- Include the release-input helper in snapshot qualification and restore the
+  unreadable-manifest fixture's permissions so later failures retain archivable
+  evidence.
 
 ## [0.13.2]
 
