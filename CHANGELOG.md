@@ -134,7 +134,7 @@
 ### Added
 
 - Expose coordinated Cargo member projection and graph-only admission without
-  finalized release notes, retaining complete lock/workspace checks ([#171 — Preserve Cargo release metadata contracts](https://github.com/dragginzgame/shared-tooling/issues/171)).
+  finalized release notes, retaining complete lock/workspace checks ([#171](https://github.com/dragginzgame/shared-tooling/issues/171)).
 - Own exact stable-version ordering and reject non-increasing finalizer targets
   at the canonical boundary ([#172](https://github.com/dragginzgame/shared-tooling/issues/172)).
 - Provide optional downloaded-evidence verification and explicit hosted failure
