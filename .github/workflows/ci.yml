@@ -19,6 +19,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  change-scope:
+    runs-on: ubuntu-24.04
+    outputs:
+      scope: ${{ steps.classify.outputs.scope }}
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Classify the exact tested change
+        id: classify
+        env:
+          CHANGE_EVENT: ${{ github.event_name }}
+          CHANGE_REF: ${{ github.event_name == 'pull_request' && format('refs/heads/{0}', github.base_ref) || github.ref }}
+          CHANGE_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          CHANGE_HEAD: ${{ github.sha }}
+        run: |
+          scope="$(perl scripts/ci/classify-ci-change.pl --event "$CHANGE_EVENT" --ref "$CHANGE_REF" \
+            --base "$CHANGE_BASE" --head "$CHANGE_HEAD" --policy ci/docs-only-paths.txt)"
+          case "$scope" in docs|full) ;; *) exit 1 ;; esac
+          if [[ "$scope" == docs ]]; then
+            git diff --check "$CHANGE_BASE...$CHANGE_HEAD" --
+          fi
+          echo "scope=$scope" >> "$GITHUB_OUTPUT"
+
   lint-and-security:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -70,6 +95,8 @@ jobs:
             "$GITHUB_WORKSPACE"
 
   portable-regression:
+    needs: change-scope
+    if: ${{ !cancelled() }}
     permissions:
       contents: read
       actions: read
@@ -80,23 +107,32 @@ jobs:
           - ubuntu-24.04
           - macos-15
           - macos-15-intel
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ needs.change-scope.outputs.scope == 'docs' && 'ubuntu-24.04' || matrix.os }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
+      - name: Require successful change classification
+        env:
+          CLASSIFICATION_RESULT: ${{ needs.change-scope.result }}
+        run: test "$CLASSIFICATION_RESULT" = success
+      - name: Check documentation-only changes
+        if: needs.change-scope.outputs.scope == 'docs'
+        run: |
+          make check-doc-links
       - name: Install fixture dependencies on Linux
-        if: runner.os == 'Linux'
+        if: ${{ needs.change-scope.outputs.scope != 'docs' && (runner.os == 'Linux') }}
         shell: bash
         run: |
           sudo apt-get update
           sudo apt-get install -y xz-utils zip unzip
       - name: Select system Bash on macOS
-        if: runner.os == 'macOS'
+        if: ${{ needs.change-scope.outputs.scope != 'docs' && (runner.os == 'macOS') }}
         shell: bash
         run: |
           echo /bin >> "$GITHUB_PATH"
       - name: Prepare host tools and identify Cargo build cache
+        if: needs.change-scope.outputs.scope != 'docs'
         id: tool-cache-key
         shell: bash
         run: |
@@ -105,6 +141,7 @@ jobs:
           export PATH="$GITHUB_WORKSPACE/.tools/host/bin:$PATH"
           bash scripts/ci/cargo-tool-cache-key.sh ci/tool-versions.env >> "$GITHUB_OUTPUT"
       - name: Restore Cargo tool builds
+        if: needs.change-scope.outputs.scope != 'docs'
         id: tool-cache
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         timeout-minutes: 3
@@ -117,6 +154,7 @@ jobs:
             ${{ steps.tool-cache-key.outputs.root }}/rust-*
           key: cargo-tools-${{ runner.os }}-${{ runner.arch }}-${{ steps.tool-cache-key.outputs.key }}
       - name: Prepare and check the complete common toolset
+        if: needs.change-scope.outputs.scope != 'docs'
         shell: bash
         run: |
           make --no-print-directory install-tools 2>&1 | tee "$RUNNER_TEMP/tools-install.log"
@@ -127,6 +165,7 @@ jobs:
             echo "$GITHUB_WORKSPACE/.tools/rust/common/bin"
           } >> "$GITHUB_PATH"
       - name: Qualify native tool reuse across checkouts without downloads
+        if: needs.change-scope.outputs.scope != 'docs'
         shell: bash
         run: |
           sharing="$RUNNER_TEMP/portable-fixtures/shared-tools"
@@ -160,7 +199,7 @@ jobs:
       # Save immediately after real setup/reuse checks: a later cancelled test
       # run must not force the next push to rebuild identical tools. PRs only read.
       - name: Save verified Cargo tool builds
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.tool-cache.outputs.cache-hit != 'true' }}
+        if: ${{ needs.change-scope.outputs.scope != 'docs' && (github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.tool-cache.outputs.cache-hit != 'true') }}
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         timeout-minutes: 3
         continue-on-error: true
@@ -170,19 +209,23 @@ jobs:
             ${{ steps.tool-cache-key.outputs.root }}/rust-*
           key: cargo-tools-${{ runner.os }}-${{ runner.arch }}-${{ steps.tool-cache-key.outputs.key }}
       - name: Select the frontend fixture runtime
+        if: needs.change-scope.outputs.scope != 'docs'
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version-file: ci/frontend/package.json
           package-manager-cache: false
       - name: Prepare the locked frontend fixture
+        if: needs.change-scope.outputs.scope != 'docs'
         run: |
           test "$(npm --version)" = "$(jq -er '.engines.npm' ci/frontend/package.json)"
           npm ci --prefix ci/frontend
       - name: Qualify native Wasm optimization and execution
+        if: needs.change-scope.outputs.scope != 'docs'
         run: |
           mkdir -p "$RUNNER_TEMP/portable-fixtures"
           bash scripts/ci/qualify-wasm-opt.sh "$RUNNER_TEMP/portable-fixtures/wasm-opt"
       - name: Run portable regression set with prepared tools
+        if: needs.change-scope.outputs.scope != 'docs'
         shell: bash
         env:
           TMPDIR: ${{ runner.temp }}/portable-fixtures
@@ -191,16 +234,18 @@ jobs:
           bash --version | head -n 1
           bash scripts/ci/test-portable-tools.sh 2>&1 | tee "$RUNNER_TEMP/portable-regression.log"
       - name: Qualify the real frontend formatter and Rust hook
+        if: needs.change-scope.outputs.scope != 'docs'
         env:
           TMPDIR: ${{ runner.temp }}/portable-fixtures
         run: |
           bash scripts/ci/test-frontend-formatting.sh 2>&1 | tee "$RUNNER_TEMP/portable-fixtures/frontend-formatting.log"
       - name: Exercise expected native installer and check failures
+        if: needs.change-scope.outputs.scope != 'docs'
         id: retention
         continue-on-error: true
         run: bash scripts/ci/qualify-native-failure-retention.sh "$RUNNER_TEMP/portable-fixtures/native-retention"
       - name: Upload the native failure qualification evidence
-        if: ${{ !cancelled() && steps.retention.outcome == 'failure' }}
+        if: ${{ needs.change-scope.outputs.scope != 'docs' && (!cancelled() && steps.retention.outcome == 'failure') }}
         id: retention-upload
         uses: ./.github/actions/retain-failure-evidence
         env:
@@ -210,7 +255,7 @@ jobs:
           temp-root: ${{ runner.temp }}/portable-fixtures/native-retention/temp
           repository-root: ${{ runner.temp }}/portable-fixtures/native-retention/consumer
       - name: Download native failure evidence by exact ID
-        if: ${{ !cancelled() && steps.retention-upload.outputs.artifact-id != '' }}
+        if: ${{ needs.change-scope.outputs.scope != 'docs' && (!cancelled() && steps.retention-upload.outputs.artifact-id != '') }}
         timeout-minutes: 3
         env:
           GH_TOKEN: ${{ github.token }}
@@ -220,7 +265,7 @@ jobs:
           EVIDENCE_DIGEST: ${{ steps.retention-upload.outputs.artifact-digest }}
         run: bash scripts/ci/download-evidence.sh "$EVIDENCE_REPOSITORY" "$EVIDENCE_RUN" "$EVIDENCE_ARTIFACT" "$EVIDENCE_DIGEST" "$RUNNER_TEMP/native-retention-downloaded"
       - name: Verify native failure status and uploaded payload
-        if: ${{ !cancelled() && steps.retention.outcome != 'skipped' }}
+        if: ${{ needs.change-scope.outputs.scope != 'docs' && (!cancelled() && steps.retention.outcome != 'skipped') }}
         env:
           RETENTION_OUTCOME: ${{ steps.retention.outcome }}
           RETENTION_QUALIFIED: ${{ steps.retention.outputs.qualified }}
@@ -239,7 +284,7 @@ jobs:
           test "$(readlink portable-fixtures/link)" = ../outside-evidence
           test ! -e portable-fixtures/link
       - name: Prepare failed candidate alongside verified native toolsets
-        if: ${{ !cancelled() && steps.retention.outputs.qualified == 'true' }}
+        if: ${{ needs.change-scope.outputs.scope != 'docs' && (!cancelled() && steps.retention.outputs.qualified == 'true') }}
         id: compact-control
         shell: bash
         run: |
@@ -247,7 +292,7 @@ jobs:
           cp -R "$RUNNER_TEMP/portable-fixtures/native-retention/consumer/.tools/ic-set.check/." "$candidate/"
           printf 'candidate=%s\n' "${candidate##*/}" >> "$GITHUB_OUTPUT"
       - name: Upload compact native tool evidence
-        if: ${{ !cancelled() && steps.compact-control.outputs.candidate != '' }}
+        if: ${{ needs.change-scope.outputs.scope != 'docs' && (!cancelled() && steps.compact-control.outputs.candidate != '') }}
         id: compact-upload
         uses: ./.github/actions/retain-failure-evidence
         with:
@@ -256,7 +301,7 @@ jobs:
           repository-root: ${{ github.workspace }}
           compact-successful-tools: 'true'
       - name: Download compact evidence by exact ID
-        if: ${{ !cancelled() && steps.compact-upload.outputs.artifact-id != '' }}
+        if: ${{ needs.change-scope.outputs.scope != 'docs' && (!cancelled() && steps.compact-upload.outputs.artifact-id != '') }}
         timeout-minutes: 3
         env:
           GH_TOKEN: ${{ github.token }}
@@ -266,7 +311,7 @@ jobs:
           EVIDENCE_DIGEST: ${{ steps.compact-upload.outputs.artifact-digest }}
         run: bash scripts/ci/download-evidence.sh "$EVIDENCE_REPOSITORY" "$EVIDENCE_RUN" "$EVIDENCE_ARTIFACT" "$EVIDENCE_DIGEST" "$RUNNER_TEMP/compact-tools-downloaded"
       - name: Verify compact native tool evidence and retained candidate
-        if: ${{ !cancelled() && steps.compact-upload.outputs.artifact-id != '' }}
+        if: ${{ needs.change-scope.outputs.scope != 'docs' && (!cancelled() && steps.compact-upload.outputs.artifact-id != '') }}
         env:
           EVIDENCE_CANDIDATE: ${{ steps.compact-control.outputs.candidate }}
         shell: bash
@@ -293,7 +338,7 @@ jobs:
             cmp "$RUNNER_TEMP/portable-fixtures/native-retention/temp/$log.log" "$payload/$log.log"
           done
       - name: Retain failed validation and installer evidence
-        if: failure()
+        if: ${{ needs.change-scope.outputs.scope != 'docs' && (failure()) }}
         uses: ./.github/actions/retain-failure-evidence
         with:
           name: portable-failure-${{ matrix.os }}

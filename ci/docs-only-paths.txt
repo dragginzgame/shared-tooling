@@ -1,0 +1,12 @@
+# Exact reviewed prose paths. No globs: new or executable inputs default to full CI.
+AGENTS.md
+DRAGGINZGAME.md
+CHANGELOG.md
+rules/agent-maintenance.md
+rules/cargo-dependencies.md
+rules/change-reporting.md
+rules/changelogs.md
+rules/contributions.md
+rules/dependency-pinning.md
+rules/git-hooks.md
+rules/rust-workspaces.md

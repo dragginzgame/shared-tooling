@@ -842,6 +842,46 @@ rm "$task_consumer/docs/tool-catalog-bindings.md"
 if perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$task_consumer" \
     tasks/snapshot-drift.md > "$FIXTURE/task-missing.log" 2>&1; then exit 1; fi
 
+# An existing release-guide selection must gain its linked publication guide
+# on refresh, without selecting publication executables. Simulate the prior
+# declaration in the disposable source; never change the real checkout/index.
+publication_consumer="$FIXTURE/publication-guide"
+publication_source="$FIXTURE/publication-source"
+git init -q "$publication_consumer"
+cp -Rp "$revision_root" "$publication_source"
+git init -q "$publication_source"
+git -C "$publication_source" config user.name 'Snapshot fixture'
+git -C "$publication_source" config user.email 'fixture@example.invalid'
+git -C "$publication_source" config commit.gpgsign false
+git -C "$publication_source" config core.hooksPath /dev/null
+git -C "$publication_source" remote add origin https://example.invalid/shared-tooling
+publication_args=()
+while IFS= read -r path; do
+    [[ "$path" != docs/cargo-publication.md ]] || continue
+    publication_args+=(--entrypoint "$path")
+done < "$ROOT/scripts/distribution/governance-files.txt"
+sed '2{/^<!-- Shared companions:/d;}' "$ROOT/docs/releases.md" > "$publication_source/docs/releases.md"
+git -C "$publication_source" add -- .
+git -C "$publication_source" commit -qm 'Prior publication documentation selection'
+bash "$ROOT/scripts/distribution/refresh-consumer.sh" \
+    --source "$publication_source" --consumer "$publication_consumer" "${publication_args[@]}" > "$FIXTURE/publication-before.log"
+[[ ! -e "$publication_consumer/docs/cargo-publication.md" ]] || exit 1
+cp "$ROOT/docs/releases.md" "$publication_source/docs/releases.md"
+git -C "$publication_source" add -- docs/releases.md
+git -C "$publication_source" commit -qm 'Declare publication guide companion'
+bash "$ROOT/scripts/distribution/refresh-consumer.sh" \
+    --preview --source "$publication_source" --consumer "$publication_consumer" > "$FIXTURE/publication-preview.log"
+grep -F "$(printf 'ADD\trequired\tdocs/cargo-publication.md')" "$FIXTURE/publication-preview.log" >/dev/null
+[[ ! -e "$publication_consumer/docs/cargo-publication.md" ]] || exit 1
+bash "$ROOT/scripts/distribution/refresh-consumer.sh" \
+    --source "$publication_source" --consumer "$publication_consumer" > "$FIXTURE/publication-refresh.log"
+cmp "$ROOT/docs/cargo-publication.md" "$publication_consumer/docs/cargo-publication.md"
+[[ ! -e "$publication_consumer/scripts/ci/run-cargo-publication.sh" ]] || exit 1
+perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$publication_consumer" \
+    docs/releases.md docs/cargo-publication.md > "$FIXTURE/publication-links.log"
+bash "$publication_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
+    --consumer "$publication_consumer" >/dev/null
+
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$governance_consumer" "${governance_args[@]}" \
     > "$FIXTURE/governance-refresh.log"
