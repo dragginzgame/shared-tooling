@@ -83,7 +83,7 @@ check_layout() {
     perl - "$fixture/output" "$@" <<'PERL'
 use strict;
 use warnings;
-my ($path, $width, $fixed) = @ARGV;
+my ($path, $width, $closed) = @ARGV;
 open my $fh, '<', $path or die $!;
 my @lines = <$fh>;
 chomp @lines;
@@ -91,7 +91,7 @@ my ($groups) = grep { /^\s+ISSUES\s+\|\s+PRS\s*$/ } @lines;
 my ($subgroups) = grep { /^\s+OVERALL\s+\|\s+TODAY\s+\|\s+OVERALL\s+\|\s+TODAY\s*$/ } @lines;
 my ($columns) = grep { /^REPOSITORY\s/ } @lines;
 die "missing group headings\n" unless defined $groups && defined $subgroups;
-die "FIXED heading not centered\n" unless index($columns, 'FIXED') == $fixed;
+die "CLOSED heading not centered\n" unless index($columns, 'CLOSED') == $closed;
 my @bars = map { $_ } grep { substr($subgroups, $_, 1) eq '|' } 0 .. length($subgroups)-1;
 my $start = 12;
 $start = 17 if grep { /^TOTAL \(partial\)/ } @lines;
@@ -119,14 +119,14 @@ PERL
 (cd "$fixture/elsewhere" && run --once)
 awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
 grep -Fx 'ISSUES PRS' "$fixture/rows"
-grep -Fx 'REPOSITORY OPEN FIXED FIXED ADDED OPEN MERGED CLOSED MERGED CLOSED ADDED' "$fixture/rows"
-check_layout 102 25
+grep -Fx 'REPOSITORY OPEN CLOSED ADDED CLOSED OPEN CLOSED ADDED CLOSED' "$fixture/rows"
+check_layout 73 19
 [[ "$(grep -cE '^[-|]+$' "$fixture/output")" == 3 ]] || exit 1
-grep -Fx 'alpha 2,500 7,500 / 10,000 0 0 12 1,500 20 0 0 0' "$fixture/rows"
-grep -Fx 'beta 9 1 / 10 0 0 3 7 2 0 0 0' "$fixture/rows"
-grep -Fx 'zero 0 0 / 0 0 0 5 0 1 0 0 0' "$fixture/rows"
-grep -Fx 'TOTAL 2,509 7,501 / 10,010 0 0 20 1,507 23 0 0 0' "$fixture/rows"
-grep -E '^beta +9 +1 / +10 \|' "$fixture/output"
+grep -Fx 'alpha 2,500 7,500 0 0 12 1,520 0 0' "$fixture/rows"
+grep -Fx 'beta 9 1 0 0 3 9 0 0' "$fixture/rows"
+grep -Fx 'zero 0 0 0 0 5 1 0 0' "$fixture/rows"
+grep -Fx 'TOTAL 2,509 7,501 0 0 20 1,530 0 0' "$fixture/rows"
+grep -E '^beta +9 +1 \|' "$fixture/output"
 [[ "$(wc -l < "$GITHUB_SIBLINGS_TEST_CALLS" | tr -d ' ')" == 1 ]] || exit 1
 grep -F 'api graphql --hostname github.com' "$GITHUB_SIBLINGS_TEST_CALLS"
 if grep -E 'ichelper|example.invalid|no-origin|r3:' "$GITHUB_SIBLINGS_TEST_CALLS"; then exit 1; fi
@@ -190,10 +190,10 @@ cat > "$GITHUB_SIBLINGS_TEST_RESPONSE" <<'JSON'
 {"data":{"r0":{"open":{"totalCount":9},"closed":{"totalCount":999999},"prRecent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}},"prOpen":{"totalCount":9000},"prMerged":{"totalCount":1234567},"prClosed":{"totalCount":99},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}},"r1":{"open":{"totalCount":100},"closed":{"totalCount":1},"prRecent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}},"prOpen":{"totalCount":0},"prMerged":{"totalCount":0},"prClosed":{"totalCount":0},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}},"r2":{"open":{"totalCount":9},"closed":{"totalCount":0},"prRecent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}},"prOpen":{"totalCount":1},"prMerged":{"totalCount":2},"prClosed":{"totalCount":3},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}}}}
 JSON
 run --once
-check_layout 135 31
+check_layout 101 24
 awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
-grep -Fx 'beta 100 1 / 101 0 0 0 0 0 0 0 0' "$fixture/rows"
-grep -Fx 'alpha 9 999,999 / 1,000,008 0 0 9,000 1,234,567 99 0 0 0' "$fixture/rows"
+grep -Fx 'beta 100 1 0 0 0 0 0 0' "$fixture/rows"
+grep -Fx 'alpha 9 999,999 0 0 9,000 1,234,666 0 0' "$fixture/rows"
 awk '$1 ~ /^(alpha|beta|zero)$/ { print $1 }' "$fixture/output" > "$fixture/order"
 printf '%s\n' beta alpha zero > "$fixture/expected-order"
 cmp "$fixture/order" "$fixture/expected-order"
@@ -217,8 +217,8 @@ status=0
 GITHUB_SIBLINGS_TEST_STATUS=1 run --once || status=$?
 [[ "$status" == 1 ]] || exit 1
 awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
-grep -Fx 'beta ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
-grep -Fx 'TOTAL (partial) 2,500 7,500 / 10,000 0 0 17 1,500 21 0 0 0' "$fixture/rows"
+grep -Fx 'beta ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
+grep -Fx 'TOTAL (partial) 2,500 7,500 0 0 17 1,521 0 0' "$fixture/rows"
 awk '$1 ~ /^(alpha|beta|zero)$/ { print $1 }' "$fixture/output" > "$fixture/order"
 printf '%s\n' alpha zero beta > "$fixture/expected-order"
 cmp "$fixture/order" "$fixture/expected-order"
@@ -231,7 +231,7 @@ for response in '' 'not JSON' '{"data":{}}'; do
     run --once || status=$?
     [[ "$status" == 1 ]] || exit 1
     awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
-    grep -Fx 'TOTAL (partial) ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
+    grep -Fx 'TOTAL (partial) ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
 done
 # Every issue/PR field must be a valid count. A failed PR read cannot silently
 # turn into zero, or let the row's otherwise valid issue totals appear complete.
@@ -240,9 +240,9 @@ cat > "$fixture/valid-response" <<'JSON'
 JSON
 cp "$fixture/valid-response" "$GITHUB_SIBLINGS_TEST_RESPONSE"
 run --once
-check_layout 91 21
-printf '%-10s  %4s  %4s / %4s | %5s  %5s | %4s  %6s  %6s | %6s  %6s  %5s\n' \
-    alpha 10 20 30 0 0 2 3 4 0 0 0 > "$fixture/narrow-row"
+check_layout 71 18
+printf '%-10s  %4s  %6s | %5s  %6s | %4s  %6s | %5s  %6s\n' \
+    alpha 10 20 0 0 2 7 0 0 > "$fixture/narrow-row"
 grep '^alpha ' "$fixture/output" > "$fixture/actual-narrow-row"
 cmp "$fixture/narrow-row" "$fixture/actual-narrow-row"
 for field in open closed prOpen prMerged prClosed; do
@@ -253,27 +253,27 @@ for field in open closed prOpen prMerged prClosed; do
         run --once || status=$?
         [[ "$status" == 1 ]] || exit 1
         awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
-        grep -Fx 'alpha ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
-        grep -Fx 'TOTAL (partial) 0 0 / 0 0 0 0 0 0 0 0 0' "$fixture/rows"
+        grep -Fx 'alpha ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
+        grep -Fx 'TOTAL (partial) 0 0 0 0 0 0 0 0' "$fixture/rows"
     done
 done
-# The slash has one separator space plus width-four numeric padding.
-# An unavailable sibling must not widen every FIXED number to five characters.
+# Closed values remain counts rather than a closed/total ratio, including
+# unavailable siblings and totals wider than individual repository counts.
 jq '.data.r0.open.totalCount=86 | .data.r0.closed.totalCount=400 | .data.r1=null' \
     "$fixture/valid-response" > "$GITHUB_SIBLINGS_TEST_RESPONSE"
 status=0
 run --once || status=$?
 [[ "$status" == 1 ]] || exit 1
-grep -F ' 400 /  486' "$fixture/output"
-check_layout 98 27
+grep -E '^alpha +86 +400 \|' "$fixture/output"
+check_layout 78 24
 
-# A fleet total wider than any repository must not add padding after its slash.
+# Fleet totals sum open and closed independently.
 jq '.data.r0.open.totalCount=86 | .data.r0.closed.totalCount=400 |
     .data.r1.open.totalCount=200 | .data.r1.closed.totalCount=500' \
     "$fixture/valid-response" > "$GITHUB_SIBLINGS_TEST_RESPONSE"
 run --once
-grep -F ' 400 /  486' "$fixture/output"
-grep -F '900 / 1,186' "$fixture/output"
+grep -E '^alpha +86 +400 \|' "$fixture/output"
+grep -E '^TOTAL +286 +900 \|' "$fixture/output"
 
 # Calendar boundaries include both DST transitions (23/25-hour reporting days).
 # These epochs are UTC, independent of the fixture host timezone.
@@ -307,8 +307,8 @@ cat > "$GITHUB_SIBLINGS_TEST_PAGE" <<'JSON'
 JSON
 run --once
 awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
-grep -Fx 'alpha 10 20 / 30 2 3 2 3 4 0 0 0' "$fixture/rows"
-grep -Fx 'TOTAL 10 21 / 31 3 3 2 3 4 0 0 0' "$fixture/rows"
+grep -Fx 'alpha 10 20 3 2 2 7 0 0' "$fixture/rows"
+grep -Fx 'TOTAL 10 21 3 3 2 7 0 0' "$fixture/rows"
 [[ "$(wc -l < "$GITHUB_SIBLINGS_TEST_CALLS" | tr -d ' ')" == 2 ]] || exit 1
 grep -F 'after=page-one' "$GITHUB_SIBLINGS_TEST_CALLS"
 # Failures, malformed pages and stalled cursors cannot publish a partial count.
@@ -322,7 +322,7 @@ for response in '{}' '{"data":{"repository":{"recent":{"nodes":[],"pageInfo":{"h
     run --once || status=$?
     [[ "$status" == 1 ]] || exit 1
     awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
-    grep -Fx 'alpha ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
+    grep -Fx 'alpha ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
 done
 cp "$fixture/valid-page" "$GITHUB_SIBLINGS_TEST_PAGE"
 status=0
@@ -342,8 +342,8 @@ cat > "$GITHUB_SIBLINGS_TEST_PR_PAGE" <<'JSON'
 JSON
 run --once
 awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
-grep -Fx 'alpha 10 20 / 30 0 0 2 3 4 1 1 2' "$fixture/rows"
-grep -Fx 'TOTAL 10 20 / 30 0 0 2 3 4 1 1 2' "$fixture/rows"
+grep -Fx 'alpha 10 20 0 0 2 7 2 2' "$fixture/rows"
+grep -Fx 'TOTAL 10 20 0 0 2 7 2 2' "$fixture/rows"
 [[ "$(wc -l < "$GITHUB_SIBLINGS_TEST_CALLS" | tr -d ' ')" == 2 ]]
 grep -F 'orderBy: {field: UPDATED_AT, direction: DESC}' "$GITHUB_SIBLINGS_TEST_CALLS" >/dev/null
 cp "$GITHUB_SIBLINGS_TEST_PR_PAGE" "$fixture/valid-pr-page"
@@ -357,8 +357,8 @@ for response in '{}' '{"errors":[{"message":"unavailable"}]}' \
     run --once || status=$?
     [[ "$status" == 1 ]]
     awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
-    grep -Fx 'alpha ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
-    grep -Fx 'TOTAL (partial) 0 0 / 0 0 0 0 0 0 0 0 0' "$fixture/rows"
+    grep -Fx 'alpha ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
+    grep -Fx 'TOTAL (partial) 0 0 0 0 0 0 0 0' "$fixture/rows"
 done
 # A nonempty, recent page with the same cursor must not loop.
 jq '.data.repository.prRecent.nodes |= [.[0]] |

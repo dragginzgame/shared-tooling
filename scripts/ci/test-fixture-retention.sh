@@ -142,11 +142,11 @@ for operation in commit commit-tree tag push; do
     ' "$ROOT/scripts/ci/test-rust-tools.sh" > "$fixture/exit-source/scripts/ci/git-guard.sh"
     cat >> "$fixture/exit-source/scripts/ci/git-guard.sh" <<'PROBE'
 printf '%s\n' "$fixture" > "$RETENTION_EXIT_PATH"
-if git -C "$fixture" -c user.name=Fixture "$1"; then exit 99; fi
+if git -C "$fixture" -c user.name=Fixture "$RETENTION_GIT_OPERATION"; then exit 99; fi
 fixture_complete=true
 PROBE
     status=0
-    TMPDIR="$fixture" "$BASH" "$fixture/exit-source/scripts/ci/git-guard.sh" "$operation" \
+    RETENTION_GIT_OPERATION="$operation" TMPDIR="$fixture" "$BASH" "$fixture/exit-source/scripts/ci/git-guard.sh" \
         > "$fixture/git-guard-$operation.log" 2>&1 || status=$?
     [[ "$status" == 1 ]] || exit 1
     retained="$(cat "$RETENTION_EXIT_PATH")"

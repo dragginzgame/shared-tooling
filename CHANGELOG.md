@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.12.4]
+
+### Changed
+
+- Give issues and PRs matching OPEN/CLOSED overall and ADDED/CLOSED today
+  columns; closed PR counts include merges.
+
+- Replace repeated full tool-fixture runs under temporary-directory aliases with
+  focused installation, checking, failure-retention and cleanup coverage.
+- Consolidate host and IC tool selection admission in the shared tool store,
+  preserving read-only checks and tool-specific payload verification.
+
+### Fixed
+
+- Use the same exact stable-version ordering for Cargo tool freshness and release
+  admission, avoiding precision loss when comparing large version components.
+
 ## [0.12.3]
 
 ### Changed

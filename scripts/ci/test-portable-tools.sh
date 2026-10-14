@@ -90,22 +90,7 @@ printf '[toolchain]\nchannel = "fixture-unprepared"\n' > "$FIXTURE/rust-consumer
 run_fixture bash "$ROOT/scripts/ci/test-tool-commands.sh"
 run_fixture bash "$ROOT/scripts/ci/test-make-format.sh"
 run_fixture bash "$ROOT/scripts/ci/test-make-consumer.sh"
-# Make/Cargo select physical paths independently of the caller's TMPDIR spelling.
-mkdir "$FIXTURE/tool-contexts"
-ln -s "$(cd "$FIXTURE/tool-contexts" && pwd -P)" "$FIXTURE/tool-context-alias"
-for context in trailing-slash directory-alias; do
-    case "$context" in
-        trailing-slash) selected_tmp="$FIXTURE/tool-contexts/" ;;
-        directory-alias) selected_tmp="$FIXTURE/tool-context-alias" ;;
-    esac
-    for script in test-tool-commands test-rust-tools test-host-tools; do
-        TMPDIR="$selected_tmp" run_fixture bash "$ROOT/scripts/ci/$script.sh" \
-            > "$FIXTURE/$script-$context.log" 2>&1
-    done
-    TMPDIR="$selected_tmp" run_fixture perl "$ROOT/scripts/ci/test-tag-maintenance.pl" \
-        > "$FIXTURE/test-tag-maintenance-$context.log" 2>&1
-done
-echo 'Tool and tag fixtures passed with trailing-slash and aliased temporary roots'
+run_fixture bash "$ROOT/scripts/ci/test-tool-path-contexts.sh"
 run_fixture bash "$ROOT/scripts/ci/test-evidence-checksums.sh"
 run_fixture bash "$ROOT/scripts/ci/test-file-digests.sh"
 run_fixture bash "$ROOT/scripts/ci/test-rustsec-db.sh"

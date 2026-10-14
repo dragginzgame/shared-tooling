@@ -29,16 +29,17 @@ In a terminal, refresh every 60 seconds: q quits, r refreshes, Ctrl-C exits.
 --interval selects 1..86400 seconds between completed refreshes.
 ISSUES and PRS each have OVERALL | TODAY groups separated by vertical bars.
 Repository labels omit dragginzgame/.
-FIXED shows closed / total; CLOSED PRs exclude merges.
+OVERALL shows OPEN, CLOSED; TODAY shows ADDED, CLOSED for both sections.
+Closed PRs include merged PRs.
 Open PRs include drafts. Numeric padding starts at four characters and expands
 to fit repository counts. Totals grow independently; headings/errors also fit.
 Sort by open issues descending, then name; failed rows appear last.
 Pale green-to-yellow-to-red row text marks increasing open issue counts,
 relative to the largest backlog in this report. Totals and errors stay uncoloured.
 NO_COLOR or TERM=dumb disables colour; redirected reports are always plain.
-Fixed means closed, including duplicates and issues closed as not planned.
-TODAY shows issues FIXED (currently closed, latest closure) and ADDED (created
-in any state); PRs show MERGED, CLOSED (without merging), and ADDED.
+Closed issues include duplicates and issues closed as not planned.
+TODAY counts creations in any state and currently closed items whose latest
+closure (or PR merge) is since the cutoff.
 All use 06:00 Paris time, including daylight-saving changes. Before 06:00, use
 the previous day's cutoff.
 Failed observations show ERROR, never zero; totals then show TOTAL (partial).
@@ -148,9 +149,9 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 print_row() {
-    printf '%s%-*s  %*s  %s | %*s  %*s | %*s  %*s  %*s | %*s  %*s  %*s%s\n' "${12:-}" "$width" "$1" "$open_width" "$2" "$3" \
-        "$today_width" "$4" "$today_width" "$5" "$open_width" "$6" "$pr_result_width" "$7" "$pr_result_width" "$8" \
-        "$pr_result_width" "$9" "$pr_result_width" "${10}" "$today_width" "${11}" "${13:-}"
+    printf '%s%-*s  %*s  %*s | %*s  %*s | %*s  %*s | %*s  %*s%s\n' "${10:-}" "$width" "$1" \
+        "$open_width" "$2" "$closed_width" "$3" "$added_width" "$4" "$closed_width" "$5" \
+        "$open_width" "$6" "$closed_width" "$7" "$added_width" "$8" "$closed_width" "$9" "${11:-}"
 }
 print_separator() {
     printf '%*s | %*s | %*s | %*s\n' "$((width + 2 + issues_width))" '' \
@@ -172,7 +173,7 @@ format_count() {
 }
 measure_counts() {
     local value formatted
-    for value in "$@" "$(($1 + $2))"; do
+    for value in "$@"; do
         formatted="$(format_count "$value")"
         [[ ${#formatted} -le "$number_width" ]] || number_width=${#formatted}
     done
@@ -292,23 +293,18 @@ colour_open() {
     }'
 }
 print_counts() {
-    local name="$1" open="$2" closed="$3" total fixed foreground='' reset=''
-    local number_width="${12:-$number_width}"
-    total=$((open + closed))
-    printf -v fixed '%*s / %*s' "$number_width" "$(format_count "$closed")" \
-        "$number_width" "$(format_count "$total")"
-    printf -v fixed '%*s' "$fixed_width" "$fixed"
+    local name="$1" open="$2" closed="$3" foreground='' reset=''
     if [[ "$colour" == true && $# == 11 ]]; then
         foreground="$(colour_open "$open" "$max_open")"
         reset=$'\033[39m'
     fi
-    print_row "$name" "$(format_count "$open")" "$fixed" \
-        "$(format_count "$7")" "$(format_count "$8")" "$(format_count "$4")" "$(format_count "$5")" "$(format_count "$6")" "$(format_count "$9")" "$(format_count "${10}")" "$(format_count "${11}")" "$foreground" "$reset"
+    print_row "$name" "$(format_count "$open")" "$(format_count "$closed")" \
+        "$(format_count "$8")" "$(format_count "$7")" "$(format_count "$4")" \
+        "$(format_count "$(($5 + $6))")" "$(format_count "${11}")" \
+        "$(format_count "$(($9 + ${10}))")" "$foreground" "$reset"
 }
 print_error() {
-    local fixed
-    fixed="$(center_text ERROR "$fixed_width")"
-    print_row "$1" ERROR "$fixed" ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR
+    print_row "$1" ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR
 }
 
 render() {
@@ -316,10 +312,10 @@ render() {
     local pr_today_merged pr_today_closed pr_today_added pr_day_counts total_pr_today_merged=0 total_pr_today_closed=0 total_pr_today_added=0
     local total_added=0 total_today=0 total_pr_open=0 total_pr_merged=0 total_pr_closed=0 successful=0 label=TOTAL
     local pr_today_width
-    local number_width=4 max_open=0 fixed_width issues_width prs_width pr_result_width open_width today_width today_group_width total_number_width row_number_width
+    local number_width=4 max_open=0 issues_width prs_width closed_width open_width added_width today_group_width
     printf 'Sibling GitHub issues and pull requests | %s\n' "$(date '+%Y-%m-%d %H:%M:%S %Z')"
-    printf 'Issues: OPEN / FIXED. PRs: OPEN includes drafts; CLOSED excludes merged.\n'
-    printf 'Fixed = closed issues. TODAY since %s (06:00 Paris time).\n' "$cutoff"
+    printf 'OVERALL: OPEN, CLOSED. TODAY: ADDED, CLOSED. Closed PRs include merges.\n'
+    printf 'TODAY since %s (06:00 Paris time).\n' "$cutoff"
     printf 'Most open issues first; colour scales by backlog. Refresh: %ss | q quit | r refresh\n\n' "$interval"
     : > "$scratch/rows"
     for ((i=0; i<repo_count; i++)); do
@@ -334,7 +330,7 @@ render() {
             read -r open closed pr_open pr_merged pr_closed <<< "$counts"
             read -r today added <<< "$day_counts"
             read -r pr_today_merged pr_today_closed pr_today_added <<< "$pr_day_counts"
-            measure_counts "$open" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added" "$pr_today_merged" "$pr_today_closed" "$pr_today_added"
+            measure_counts "$open" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added" "$pr_today_merged" "$pr_today_closed" "$pr_today_added" "$((pr_merged + pr_closed))" "$((pr_today_merged + pr_today_closed))"
             [[ "$open" -le "$max_open" ]] || max_open="$open"
             printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$open" "${repos[$i]}" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added" "$pr_today_merged" "$pr_today_closed" "$pr_today_added" >> "$scratch/rows"
             total_pr_today_merged=$((total_pr_today_merged + pr_today_merged))
@@ -354,31 +350,28 @@ render() {
         fi
     done
     if [[ "$status" != 0 && "$width" -lt 15 ]]; then width=15; fi
-    row_number_width="$number_width"
     if [[ "$successful" -gt 0 ]]; then
-        measure_counts "$total_open" "$total_closed" "$total_pr_open" "$total_pr_merged" "$total_pr_closed" "$total_today" "$total_added" "$total_pr_today_merged" "$total_pr_today_closed" "$total_pr_today_added"
+        measure_counts "$total_open" "$total_closed" "$total_pr_open" "$total_pr_merged" "$total_pr_closed" "$total_today" "$total_added" "$total_pr_today_merged" "$total_pr_today_closed" "$total_pr_today_added" "$((total_pr_merged + total_pr_closed))" "$((total_pr_today_merged + total_pr_today_closed))"
     fi
-    total_number_width="$number_width"
-    number_width="$row_number_width"
-    open_width="$total_number_width"
+    open_width="$number_width"
     if [[ "$successful" -lt "$repo_count" && "$open_width" -lt 5 ]]; then open_width=5; fi
-    today_width="$total_number_width"
-    [[ "$today_width" -ge 5 ]] || today_width=5
-    fixed_width=$((2 * total_number_width + 3))
-    issues_width=$((open_width + 2 + fixed_width))
-    today_group_width=$((2 * today_width + 2))
-    pr_result_width="$total_number_width"
-    [[ "$pr_result_width" -ge 6 ]] || pr_result_width=6
-    prs_width=$((open_width + 4 + 2 * pr_result_width))
-    pr_today_width=$((2 * pr_result_width + 4 + today_width))
+    added_width="$number_width"
+    [[ "$added_width" -ge 5 ]] || added_width=5
+    closed_width="$number_width"
+    [[ "$closed_width" -ge 6 ]] || closed_width=6
+    issues_width=$((open_width + 2 + closed_width))
+    today_group_width=$((added_width + 2 + closed_width))
+    prs_width="$issues_width"
+    pr_today_width="$today_group_width"
     sort -t $'\t' -k1,1nr -k2,2 "$scratch/rows" > "$scratch/sorted"
     printf '%*s  %s | %s\n' "$width" '' "$(center_text ISSUES "$((issues_width + 3 + today_group_width))")" \
         "$(center_text PRS "$((prs_width + 3 + pr_today_width))")"
     printf '%*s  %s | %s | %s | %s\n' "$width" '' "$(center_text OVERALL "$issues_width")" \
         "$(center_text TODAY "$today_group_width")" "$(center_text OVERALL "$prs_width")" "$(center_text TODAY "$pr_today_width")"
-    print_row REPOSITORY "$(center_text OPEN "$open_width")" "$(center_text FIXED "$fixed_width")" \
-        "$(center_text FIXED "$today_width")" "$(center_text ADDED "$today_width")" "$(center_text OPEN "$open_width")" "$(center_text MERGED "$pr_result_width")" "$(center_text CLOSED "$pr_result_width")" \
-        "$(center_text MERGED "$pr_result_width")" "$(center_text CLOSED "$pr_result_width")" "$(center_text ADDED "$today_width")"
+    print_row REPOSITORY "$(center_text OPEN "$open_width")" "$(center_text CLOSED "$closed_width")" \
+        "$(center_text ADDED "$added_width")" "$(center_text CLOSED "$closed_width")" \
+        "$(center_text OPEN "$open_width")" "$(center_text CLOSED "$closed_width")" \
+        "$(center_text ADDED "$added_width")" "$(center_text CLOSED "$closed_width")"
     print_separator
     while IFS=$'\t' read -r open name closed pr_open pr_merged pr_closed today added pr_today_merged pr_today_closed pr_today_added; do
         name="${name#dragginzgame/}"
@@ -391,7 +384,7 @@ render() {
     print_separator
     if [[ "$status" != 0 ]]; then label='TOTAL (partial)'; fi
     if [[ "$successful" -gt 0 ]]; then
-        print_counts "$label" "$total_open" "$total_closed" "$total_pr_open" "$total_pr_merged" "$total_pr_closed" "$total_today" "$total_added" "$total_pr_today_merged" "$total_pr_today_closed" "$total_pr_today_added" "$total_number_width"
+        print_counts "$label" "$total_open" "$total_closed" "$total_pr_open" "$total_pr_merged" "$total_pr_closed" "$total_today" "$total_added" "$total_pr_today_merged" "$total_pr_today_closed" "$total_pr_today_added" total
     else
         print_error "$label"
     fi
