@@ -4,6 +4,10 @@
 
 ### Added
 
+- Include the already reviewed fixture allocator from Shared main
+  `998065bd2dc8350fb6811c3c3486627cbb48724e` in this contribution snapshot,
+  preserving caller-selected cleanup and diagnostic retention (#189).
+
 - Share read-only common-tool reporting through installer admission, catalog-owned
   rosters, executable hashes and live version observations; retain partial output
   and the original probe failure status.
