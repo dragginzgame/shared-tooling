@@ -4,6 +4,7 @@ use warnings;
 use JSON::PP qw(decode_json);
 use Cwd qw(abs_path);
 use File::Basename qw(dirname);
+use Encode qw(encode_utf8);
 
 # Pure literal rendering, not TOML admission or a release transaction. Callers
 # admit the source and independently validate the candidate before installing it.
@@ -53,8 +54,9 @@ if (defined $workspace_input) {
             && defined $dependency->{version};
         my $package = $dependency->{package} // $name;
         next unless exists $members{$package};
-        my $manifest = abs_path(dirname($path) . '/' . $dependency->{path} . '/Cargo.toml');
-        next unless defined($manifest) && $manifest eq $members{$package};
+        # Cargo JSON decodes Unicode; filesystem observations retain byte paths.
+        my $manifest = abs_path(dirname($path) . '/' . encode_utf8($dependency->{path}) . '/Cargo.toml');
+        next unless defined($manifest) && $manifest eq encode_utf8($members{$package});
         $name =~ /\A[A-Za-z0-9][A-Za-z0-9_-]*\z/ or die "unsupported local dependency key: $name\n";
         my $requirement = $dependency->{version};
         # Composite ranges remain caller policy; Cargo's prepared graph admits

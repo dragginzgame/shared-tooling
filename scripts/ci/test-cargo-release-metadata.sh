@@ -119,8 +119,9 @@ for package in primary secondary; do
 done
 # Exercise real Cargo resolution across semver boundaries. An owned dependency
 # alias/requirement must follow its path target, not an unrelated registry row.
-for mode in patch minor major zero-minor zero-major; do
+for mode in patch minor major zero-minor zero-major unicode; do
     root="$fixture/owned-$mode"
+    [[ "$mode" != unicode ]] || root="$root space-é"
     make_workspace "$root"
     previous=1.2.3 candidate=1.2.4
     case "$mode" in
@@ -128,12 +129,18 @@ for mode in patch minor major zero-minor zero-major; do
         major) candidate=2.0.0 ;;
         zero-minor) previous=0.9.6 candidate=0.10.0 ;;
         zero-major) previous=0.9.6 candidate=1.0.0 ;;
+        unicode) previous=0.9.6 candidate=0.10.0 ;;
     esac
+    primary_dir=primary
+    if [[ "$mode" == unicode ]]; then
+        primary_dir='primary-é'
+        mv "$root/primary" "$root/$primary_dir"
+    fi
     # Bare, renamed, quoted and table-form requirements exercise the literal
     # writer independently; exact/caret/tilde operators retain their policy.
     cat > "$root/Cargo.toml" <<TOML
 [workspace]
-members = ["primary", "secondary"]
+members = ["$primary_dir", "secondary"]
 resolver = "3"
 [workspace.package]
 version = "$previous"
@@ -144,15 +151,15 @@ description = '''
 primary = { version = "DO NOT EDIT" }
 '''
 [workspace.dependencies]
-primary = { version = "${previous%.*}", path = "primary" } # preserve comment
-"alias" = { package = "primary", path = "./primary", version = '^$previous' }
-exact = { version = "=$previous", path = "primary", package = "primary" }
-custom = { version = ">=0.1, <9", path = "primary", package = "primary" }
+primary = { version = "${previous%.*}", path = "$primary_dir" } # preserve comment
+"alias" = { package = "primary", path = "./$primary_dir", version = '^$previous' }
+exact = { version = "=$previous", path = "$primary_dir", package = "primary" }
+custom = { version = ">=0.1, <9", path = "$primary_dir", package = "primary" }
 unrelated = { version = "${previous%.*}", path = "../unowned-primary", package = "primary" }
 external = { version = "$previous" }
 [workspace.dependencies."tilde"]
 package = "primary"
-path = "primary"
+path = "$primary_dir"
 version = "~$previous"
 TOML
     mkdir -p "$fixture/unowned-primary/src"
@@ -178,7 +185,7 @@ TOML
     jq -e --slurpfile expected "$root/expected.json" '. == $expected[0]' "$root/after.json" > /dev/null
     # Identical bytes outside version literals, including opaque descriptions.
     grep -Fqx 'primary = { version = "DO NOT EDIT" }' "$root/Cargo.toml"
-    grep -Fqx "primary = { version = \"${candidate%.*}\", path = \"primary\" } # preserve comment" "$root/Cargo.toml"
+    grep -Fqx "primary = { version = \"${candidate%.*}\", path = \"$primary_dir\" } # preserve comment" "$root/Cargo.toml"
     if [[ "$mode" == zero-minor ]]; then
         for file in Cargo.toml Cargo.lock CHANGELOG.md; do cp -p "$root/originals/$file" "$root/$file"; done
         status=0
