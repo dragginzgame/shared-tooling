@@ -2,6 +2,7 @@
 # Shared companions: scripts/ci/check-type-docs.pl
 use strict;
 use warnings;
+use utf8;
 use File::Temp qw(tempdir);
 use File::Path qw(remove_tree);
 use FindBin qw($Bin);
@@ -12,7 +13,7 @@ my $checker = "$Bin/check-type-docs.pl";
 my $file = "$root/source.rs";
 sub check {
     my ($source, $expected) = @_;
-    open my $handle, '>', $file or die $!;
+    open my $handle, '>:encoding(UTF-8)', $file or die $!;
     print {$handle} $source;
     close $handle or die $!;
     my $status = system($^X, $checker, $file);
@@ -41,6 +42,14 @@ pub trait NotCode {}
 */
 RUST
 check($valid, 0);
+for my $name ('r#type', '型甲') {
+    (my $logical_name = $name) =~ s/^r#//;
+    my $documented = $valid;
+    $documented =~ s/Current/$logical_name/g;
+    $documented =~ s/struct \Q$logical_name\E/struct $name/;
+    check($documented, 0);
+    check("pub struct $name;\n", 1);
+}
 (my $missing = $valid) =~ s/    \/\/\/ A current cross-module contract[.]\n//;
 check($missing, 1);
 check("mod nested {\n    pub enum Missing {}\n}\n", 1);

@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use File::Find qw(find);
+use Encode qw(decode FB_CROAK);
 
 @ARGV or die "usage: check-type-docs.pl <source-directory-or-rust-file>...\n";
 my %rust_files;
@@ -52,12 +53,13 @@ sub code_mask {
 
 my @violations;
 for my $file (sort keys %rust_files) {
-    open my $handle, '<', $file or die "error: cannot read $file: $!\n";
+    open my $handle, '<:raw', $file or die "error: cannot read $file: $!\n";
     local $/;
     my $source = <$handle>;
     close $handle or die "error: cannot close $file: $!\n";
+    $source = decode('UTF-8', $source, FB_CROAK);
     my $mask = code_mask($source);
-    while ($mask =~ /^[ \t]*pub(?:\([^)]*\))?[ \t]+(?:struct|enum|trait)[ \t]+([A-Za-z_][A-Za-z0-9_]*)/mg) {
+    while ($mask =~ /^[ \t]*pub(?:\([^)]*\))?[ \t]+(?:struct|enum|trait)[ \t]+(?:r#)?([_\p{XID_Start}][\p{XID_Continue}]*)/mg) {
         my $name = $1;
         my $offset = $-[0];
         my $prefix = substr($source, 0, $offset);

@@ -3,7 +3,9 @@
 `check-type-docs.pl` checks section-style documentation for source-visible public
 `struct`, `enum` and `trait` declarations, including restricted visibility and
 indented declarations. Select source roots explicitly; the caller owns which
-packages/files adopt this convention. The checker runs no Cargo, installer,
+packages/files adopt this convention. Raw identifiers use the name without
+`r#` in their documentation heading; Unicode identifiers are inspected too.
+The checker runs no Cargo, installer,
 network operation or source rewrite. Perl core modules are sufficient.
 
 ```bash

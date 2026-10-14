@@ -8,6 +8,9 @@
   explicit source selections, indented declarations and multiline attributes;
   refuse incomplete directory traversal instead of accepting a partial scan
   ([#187 — Share opt-in Rust type documentation checks](https://github.com/dragginzgame/shared-tooling/issues/187)).
+- Inspect Unicode and raw type names without silently skipping declarations or
+  mistaking the `r#` spelling for the documented name
+  ([#187 — Share opt-in Rust type documentation checks](https://github.com/dragginzgame/shared-tooling/issues/187)).
 
 ```bash
 perl scripts/ci/check-type-docs.pl crates
