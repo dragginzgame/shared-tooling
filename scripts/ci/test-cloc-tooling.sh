@@ -74,7 +74,9 @@ printf 'name\tversion\n' > "$repo/scripts/ci/pins.tsv"
 ln -s "$repo/scripts/dev/local.pl" "$repo/scripts/dev/alias.pl"
 ln -s "$repo" "$parent/alias"
 hash="$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$repo/scripts/ci/a.sh")"
-revision="$(git -C "$ROOT" rev-parse HEAD)"
+# A valid snapshot identity containing the old wildcard-triggering substring.
+# Inventory checks syntax and payload integrity, not commit-object availability.
+revision=cff186285829481185e932d3c16514022b897de9
 printf 'format\t1\nsource\thttps://github.com/dragginzgame/shared-tooling.git\nrevision\t%s\nfile\t%s\t-\tscripts/ci/a.sh\n' \
     "$revision" "$hash" > "$repo/.shared-tooling.snapshot"
 perl "$ROOT/scripts/dev/cloc-tooling.pl" --json "$parent" > "$fixture/counts.json"
@@ -154,8 +156,13 @@ mv "$repo/config/.shared-tooling.snapshot" "$repo/.shared-tooling.snapshot"
 # Multiple manifests and nested snapshots retain their real shared ownership.
 sed 's|scripts/ci/a.sh|scripts/ci/b.sh|' "$repo/.shared-tooling.snapshot" > "$repo/.shared-tooling-extra.snapshot"
 # Independent bundles can select different versions and commits; keep both.
-sed -e 's/0.2.8/0.1.14/' -e "s/$revision/1111111111111111111111111111111111111111/" \
+retained_comment="# Retained annotation: 0.2.8 $revision"
+printf '%s\n' "$retained_comment" >> "$repo/.shared-tooling-extra.snapshot"
+tab="$(printf '\t')"
+sed -e "s/^# version${tab}0\.2\.8$/# version${tab}0.1.14/" \
+    -e "s/^revision${tab}$revision$/revision${tab}1111111111111111111111111111111111111111/" \
     "$repo/.shared-tooling-extra.snapshot" > "$fixture/other-version"
+grep -Fx "$retained_comment" "$fixture/other-version" >/dev/null
 cp "$fixture/other-version" "$repo/.shared-tooling-extra.snapshot"
 perl "$ROOT/scripts/dev/cloc-tooling.pl" "$parent" > "$fixture/mixed.txt"
 grep -F "0.1.14@111111111111,0.2.8@${revision:0:12}" "$fixture/mixed.txt" >/dev/null

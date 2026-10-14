@@ -27,7 +27,8 @@ aliases are skipped; duplicate GitHub repositories are counted once.
 In a terminal, refresh every 60 seconds: q quits, r refreshes, Ctrl-C exits.
 --once prints one report (also the default when input/output is not a terminal).
 --interval selects 1..86400 seconds between completed refreshes.
-Grouped headings show ISSUES (OPEN, FIXED), TODAY (FIXED, ADDED), and PRS (OPEN, MERGED, CLOSED).
+ISSUES and PRS each have OVERALL | TODAY groups separated by vertical bars.
+Repository labels omit dragginzgame/.
 FIXED shows closed / total; CLOSED PRs exclude merges.
 Open PRs include drafts. Numeric padding starts at four characters and expands
 to fit repository counts. Totals grow independently; headings/errors also fit.
@@ -37,13 +38,15 @@ relative to the largest backlog in this report. Totals and errors stay uncoloure
 NO_COLOR or TERM=dumb disables colour; redirected reports are always plain.
 Fixed means closed, including duplicates and issues closed as not planned.
 TODAY shows issues FIXED (currently closed, latest closure) and ADDED (created
-in any state) since 06:00 Paris time, including daylight-saving changes. Before 06:00, use the previous day's cutoff.
+in any state); PRs show MERGED, CLOSED (without merging), and ADDED.
+All use 06:00 Paris time, including daylight-saving changes. Before 06:00, use
+the previous day's cutoff.
 Failed observations show ERROR, never zero; totals then show TOTAL (partial).
 A partial/failed --once report exits nonzero. Watch mode retries next refresh.
 
 Requires Bash 3.2+, Git, jq, Perl core, system timezone data, and an authenticated
 GitHub CLI (gh auth login). Uses a batched read-only GraphQL request per refresh,
-plus pagination for recently updated issues. Restart to rescan siblings.
+plus pagination for recently updated issues and PRs. Restart to rescan siblings.
 EOF
 }
 
@@ -80,7 +83,7 @@ done
 shopt -s nullglob dotglob
 repos=()
 repo_count=0
-width=24
+width=10
 # GraphQL variables, not shell interpolation.
 # shellcheck disable=SC2016
 query='query($since: DateTime!) {'
@@ -114,12 +117,17 @@ for checkout in "${parent%/}"/*; do
             nodes { state createdAt closedAt }
             pageInfo { hasNextPage endCursor }
         }
+        prRecent: pullRequests(first: 100, orderBy: {field: UPDATED_AT, direction: DESC}) {
+            nodes { state createdAt updatedAt closedAt mergedAt }
+            pageInfo { hasNextPage endCursor }
+        }
         prOpen: pullRequests(states: OPEN) { totalCount }
         prMerged: pullRequests(states: MERGED) { totalCount }
         prClosed: pullRequests(states: CLOSED) { totalCount }
     }"
     repo_count=$((repo_count + 1))
-    [[ ${#identity} -le $width ]] || width=${#identity}
+    display_name="${identity#dragginzgame/}"
+    [[ ${#display_name} -le $width ]] || width=${#display_name}
 done
 query="$query }"
 [[ "$repo_count" -gt 0 ]] || { echo "error: no connected GitHub checkouts in $parent" >&2; exit 1; }
@@ -140,11 +148,13 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 
 print_row() {
-    printf '%s%-*s  %*s  %s  %*s  %*s  %*s  %*s  %*s%s\n' "${9:-}" "$width" "$1" "$open_width" "$2" "$3" \
-        "$today_width" "$4" "$today_width" "$5" "$open_width" "$6" "$pr_result_width" "$7" "$pr_result_width" "$8" "${10:-}"
+    printf '%s%-*s  %*s  %s | %*s  %*s | %*s  %*s  %*s | %*s  %*s  %*s%s\n' "${12:-}" "$width" "$1" "$open_width" "$2" "$3" \
+        "$today_width" "$4" "$today_width" "$5" "$open_width" "$6" "$pr_result_width" "$7" "$pr_result_width" "$8" \
+        "$pr_result_width" "$9" "$pr_result_width" "${10}" "$today_width" "${11}" "${13:-}"
 }
 print_separator() {
-    printf '%*s\n' "$((width + 6 + issues_width + today_group_width + prs_width))" '' | tr ' ' '-'
+    printf '%*s | %*s | %*s | %*s\n' "$((width + 2 + issues_width))" '' \
+        "$today_group_width" '' "$prs_width" '' "$pr_today_width" '' | tr ' ' '-'
 }
 center_text() {
     local value="$1" span="$2" left
@@ -223,6 +233,55 @@ count_today() {
     printf '%s\t%s' "$total_fixed" "$total_added"
 }
 
+# PR connections have no since filter. Walk newest updates first, stopping once
+# a complete page reaches before the cutoff; event timestamps decide the counts.
+count_pr_today() {
+    local index="$1" page counts merged closed added total_merged=0 total_closed=0 total_added=0 cursor='' next
+    page="$(jq -c --arg key "r$index" '.data[$key].prRecent' "$scratch/response")" || return 1
+    while :; do
+        counts="$(jq -er --arg since "$cutoff" '
+            def timestamp: type == "string" and
+                test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$");
+            select((.nodes | type == "array") and
+                (.pageInfo.hasNextPage | type == "boolean") and
+                all(.nodes[]; (.createdAt | timestamp) and (.updatedAt | timestamp) and
+                    ((.state == "OPEN" and .closedAt == null and .mergedAt == null) or
+                     (.state == "CLOSED" and (.closedAt | timestamp) and .mergedAt == null) or
+                     (.state == "MERGED" and (.closedAt | timestamp) and (.mergedAt | timestamp))))) |
+            [([.nodes[] | select(.state == "MERGED" and .mergedAt >= $since)] | length),
+             ([.nodes[] | select(.state == "CLOSED" and .closedAt >= $since)] | length),
+             ([.nodes[] | select(.createdAt >= $since)] | length)] | @tsv
+        ' <<< "$page")" || return 1
+        read -r merged closed added <<< "$counts"
+        total_merged=$((total_merged + merged))
+        total_closed=$((total_closed + closed))
+        total_added=$((total_added + added))
+        [[ "$(jq -r '.pageInfo.hasNextPage' <<< "$page")" == true ]] || break
+        # An empty page claiming continuation cannot establish completeness.
+        jq -e '.nodes | length > 0' <<< "$page" >/dev/null || return 1
+        if jq -e --arg since "$cutoff" 'any(.nodes[]; .updatedAt < $since)' <<< "$page" >/dev/null; then break; fi
+        next="$(jq -er '.pageInfo.endCursor | select(type == "string" and length > 0)' <<< "$page")" || return 1
+        [[ "$next" != "$cursor" ]] || return 1
+        cursor="$next"
+        # shellcheck disable=SC2016
+        if ! gh api graphql --hostname github.com -f query='
+            query($owner: String!, $name: String!, $after: String!) {
+                repository(owner: $owner, name: $name) {
+                    prRecent: pullRequests(first: 100, after: $after,
+                        orderBy: {field: UPDATED_AT, direction: DESC}) {
+                        nodes { state createdAt updatedAt closedAt mergedAt }
+                        pageInfo { hasNextPage endCursor }
+                    }
+                }
+            }' -f "owner=${repos[$index]%/*}" -f "name=${repos[$index]#*/}" \
+            -f "after=$cursor" > "$scratch/pr-page" 2>> "$scratch/errors"; then
+            return 1
+        fi
+        page="$(jq -ec 'select((.errors // []) | length == 0) | .data.repository.prRecent' "$scratch/pr-page")" || return 1
+    done
+    printf '%s\t%s\t%s' "$total_merged" "$total_closed" "$total_added"
+}
+
 colour_open() {
     # Apply the pastel scale to foreground text, preserving the terminal background.
     awk -v open="$1" -v maximum="$2" 'BEGIN {
@@ -234,27 +293,29 @@ colour_open() {
 }
 print_counts() {
     local name="$1" open="$2" closed="$3" total fixed foreground='' reset=''
-    local number_width="${9:-$number_width}"
+    local number_width="${12:-$number_width}"
     total=$((open + closed))
     printf -v fixed '%*s / %*s' "$number_width" "$(format_count "$closed")" \
         "$number_width" "$(format_count "$total")"
     printf -v fixed '%*s' "$fixed_width" "$fixed"
-    if [[ "$colour" == true && $# == 8 ]]; then
+    if [[ "$colour" == true && $# == 11 ]]; then
         foreground="$(colour_open "$open" "$max_open")"
         reset=$'\033[39m'
     fi
     print_row "$name" "$(format_count "$open")" "$fixed" \
-        "$(format_count "$7")" "$(format_count "$8")" "$(format_count "$4")" "$(format_count "$5")" "$(format_count "$6")" "$foreground" "$reset"
+        "$(format_count "$7")" "$(format_count "$8")" "$(format_count "$4")" "$(format_count "$5")" "$(format_count "$6")" "$(format_count "$9")" "$(format_count "${10}")" "$(format_count "${11}")" "$foreground" "$reset"
 }
 print_error() {
     local fixed
     fixed="$(center_text ERROR "$fixed_width")"
-    print_row "$1" ERROR "$fixed" ERROR ERROR ERROR ERROR ERROR
+    print_row "$1" ERROR "$fixed" ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR
 }
 
 render() {
     local i counts name open closed pr_open pr_merged pr_closed today added day_counts total_open=0 total_closed=0
+    local pr_today_merged pr_today_closed pr_today_added pr_day_counts total_pr_today_merged=0 total_pr_today_closed=0 total_pr_today_added=0
     local total_added=0 total_today=0 total_pr_open=0 total_pr_merged=0 total_pr_closed=0 successful=0 label=TOTAL
+    local pr_today_width
     local number_width=4 max_open=0 fixed_width issues_width prs_width pr_result_width open_width today_width today_group_width total_number_width row_number_width
     printf 'Sibling GitHub issues and pull requests | %s\n' "$(date '+%Y-%m-%d %H:%M:%S %Z')"
     printf 'Issues: OPEN / FIXED. PRs: OPEN includes drafts; CLOSED excludes merged.\n'
@@ -268,12 +329,17 @@ render() {
             [.open.totalCount, .closed.totalCount,
              .prOpen.totalCount, .prMerged.totalCount, .prClosed.totalCount] |
             select(all(.[]; count)) | @tsv
-        ' "$scratch/response" 2>/dev/null)" && day_counts="$(count_today "$i" 2>> "$scratch/errors")"; then
+        ' "$scratch/response" 2>/dev/null)" && day_counts="$(count_today "$i" 2>> "$scratch/errors")" &&
+            pr_day_counts="$(count_pr_today "$i" 2>> "$scratch/errors")"; then
             read -r open closed pr_open pr_merged pr_closed <<< "$counts"
             read -r today added <<< "$day_counts"
-            measure_counts "$open" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added"
+            read -r pr_today_merged pr_today_closed pr_today_added <<< "$pr_day_counts"
+            measure_counts "$open" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added" "$pr_today_merged" "$pr_today_closed" "$pr_today_added"
             [[ "$open" -le "$max_open" ]] || max_open="$open"
-            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$open" "${repos[$i]}" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added" >> "$scratch/rows"
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$open" "${repos[$i]}" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added" "$pr_today_merged" "$pr_today_closed" "$pr_today_added" >> "$scratch/rows"
+            total_pr_today_merged=$((total_pr_today_merged + pr_today_merged))
+            total_pr_today_closed=$((total_pr_today_closed + pr_today_closed))
+            total_pr_today_added=$((total_pr_today_added + pr_today_added))
             total_today=$((total_today + today))
             total_added=$((total_added + added))
             total_open=$((total_open + open))
@@ -287,9 +353,10 @@ render() {
             status=1
         fi
     done
+    if [[ "$status" != 0 && "$width" -lt 15 ]]; then width=15; fi
     row_number_width="$number_width"
     if [[ "$successful" -gt 0 ]]; then
-        measure_counts "$total_open" "$total_closed" "$total_pr_open" "$total_pr_merged" "$total_pr_closed" "$total_today" "$total_added"
+        measure_counts "$total_open" "$total_closed" "$total_pr_open" "$total_pr_merged" "$total_pr_closed" "$total_today" "$total_added" "$total_pr_today_merged" "$total_pr_today_closed" "$total_pr_today_added"
     fi
     total_number_width="$number_width"
     number_width="$row_number_width"
@@ -303,23 +370,28 @@ render() {
     pr_result_width="$total_number_width"
     [[ "$pr_result_width" -ge 6 ]] || pr_result_width=6
     prs_width=$((open_width + 4 + 2 * pr_result_width))
+    pr_today_width=$((2 * pr_result_width + 4 + today_width))
     sort -t $'\t' -k1,1nr -k2,2 "$scratch/rows" > "$scratch/sorted"
-    printf '%*s  %s  %s  %s\n' "$width" '' "$(center_text ISSUES "$issues_width")" \
-        "$(center_text TODAY "$today_group_width")" "$(center_text PRS "$prs_width")"
+    printf '%*s  %s | %s\n' "$width" '' "$(center_text ISSUES "$((issues_width + 3 + today_group_width))")" \
+        "$(center_text PRS "$((prs_width + 3 + pr_today_width))")"
+    printf '%*s  %s | %s | %s | %s\n' "$width" '' "$(center_text OVERALL "$issues_width")" \
+        "$(center_text TODAY "$today_group_width")" "$(center_text OVERALL "$prs_width")" "$(center_text TODAY "$pr_today_width")"
     print_row REPOSITORY "$(center_text OPEN "$open_width")" "$(center_text FIXED "$fixed_width")" \
-        "$(center_text FIXED "$today_width")" "$(center_text ADDED "$today_width")" "$(center_text OPEN "$open_width")" "$(center_text MERGED "$pr_result_width")" "$(center_text CLOSED "$pr_result_width")"
+        "$(center_text FIXED "$today_width")" "$(center_text ADDED "$today_width")" "$(center_text OPEN "$open_width")" "$(center_text MERGED "$pr_result_width")" "$(center_text CLOSED "$pr_result_width")" \
+        "$(center_text MERGED "$pr_result_width")" "$(center_text CLOSED "$pr_result_width")" "$(center_text ADDED "$today_width")"
     print_separator
-    while IFS=$'\t' read -r open name closed pr_open pr_merged pr_closed today added; do
+    while IFS=$'\t' read -r open name closed pr_open pr_merged pr_closed today added pr_today_merged pr_today_closed pr_today_added; do
+        name="${name#dragginzgame/}"
         if [[ "$open" == -1 ]]; then
             print_error "$name"
         else
-            print_counts "$name" "$open" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added"
+            print_counts "$name" "$open" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added" "$pr_today_merged" "$pr_today_closed" "$pr_today_added"
         fi
     done < "$scratch/sorted"
     print_separator
     if [[ "$status" != 0 ]]; then label='TOTAL (partial)'; fi
     if [[ "$successful" -gt 0 ]]; then
-        print_counts "$label" "$total_open" "$total_closed" "$total_pr_open" "$total_pr_merged" "$total_pr_closed" "$total_today" "$total_added" "$total_number_width"
+        print_counts "$label" "$total_open" "$total_closed" "$total_pr_open" "$total_pr_merged" "$total_pr_closed" "$total_today" "$total_added" "$total_pr_today_merged" "$total_pr_today_closed" "$total_pr_today_added" "$total_number_width"
     else
         print_error "$label"
     fi

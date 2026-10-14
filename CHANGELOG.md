@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.12.3]
+
+### Changed
+
+- Shorten the issue dashboard’s repository labels and give ISSUES and PRS
+  matching OVERALL | TODAY groups, including daily merged, closed and added PRs
+  using the same 06:00 Paris cutoff.
+
+- Share fixture exit injection and retained-evidence qualification with consumers,
+  retaining caller rosters, physical anchoring and actual archive round trips
+  ([#174](https://github.com/dragginzgame/shared-tooling/issues/174)).
+
+### Fixed
+
+- Make mixed-snapshot inventory fixtures independent of the current commit hash.
+  Version and revision substitutions now affect only their exact records, with
+  regression coverage for the hash that broke Linux and macOS CI.
+  ([#175](https://github.com/dragginzgame/shared-tooling/issues/175))
+
 ## [0.12.2]
 
 ### Changed

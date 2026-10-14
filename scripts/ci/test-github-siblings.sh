@@ -14,6 +14,7 @@ fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "GitHub dashboard fixtures retained"' EXIT
 mkdir -p "$fixture/bin" "$fixture/projects" "$fixture/elsewhere"
 export GITHUB_SIBLINGS_TEST_RESPONSE="$fixture/response"
+export GITHUB_SIBLINGS_TEST_PR_PAGE="$fixture/pr-page"
 export GITHUB_SIBLINGS_TEST_PAGE="$fixture/page"
 export GITHUB_SIBLINGS_TEST_CALLS="$fixture/calls"
 cat > "$fixture/bin/gh" <<'SCRIPT'
@@ -23,6 +24,10 @@ printf '%s' "$*" | tr '\n' ' ' >> "$GITHUB_SIBLINGS_TEST_CALLS"
 printf '\n' >> "$GITHUB_SIBLINGS_TEST_CALLS"
 for arg in "$@"; do
     if [[ "$arg" == after=* ]]; then
+        if [[ "$*" == *prRecent* ]]; then
+            cat "$GITHUB_SIBLINGS_TEST_PR_PAGE"
+            exit "${GITHUB_SIBLINGS_TEST_PR_PAGE_STATUS:-0}"
+        fi
         cat "$GITHUB_SIBLINGS_TEST_PAGE"
         exit "${GITHUB_SIBLINGS_TEST_PAGE_STATUS:-0}"
     fi
@@ -66,43 +71,62 @@ mkdir -p "$fixture/projects/alpha [copy]/scripts/dev"
 cp "$ROOT/scripts/dev/github-siblings.sh" "$fixture/projects/alpha [copy]/scripts/dev/"
 script="$fixture/projects/alpha [copy]/scripts/dev/github-siblings.sh"
 cat > "$GITHUB_SIBLINGS_TEST_RESPONSE" <<'JSON'
-{"data":{"r0":{"open":{"totalCount":2500},"closed":{"totalCount":7500},"prOpen":{"totalCount":12},"prMerged":{"totalCount":1500},"prClosed":{"totalCount":20},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}},"r1":{"open":{"totalCount":9},"closed":{"totalCount":1},"prOpen":{"totalCount":3},"prMerged":{"totalCount":7},"prClosed":{"totalCount":2},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}},"r2":{"open":{"totalCount":0},"closed":{"totalCount":0},"prOpen":{"totalCount":5},"prMerged":{"totalCount":0},"prClosed":{"totalCount":1},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}}}}
+{"data":{"r0":{"open":{"totalCount":2500},"closed":{"totalCount":7500},"prRecent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}},"prOpen":{"totalCount":12},"prMerged":{"totalCount":1500},"prClosed":{"totalCount":20},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}},"r1":{"open":{"totalCount":9},"closed":{"totalCount":1},"prRecent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}},"prOpen":{"totalCount":3},"prMerged":{"totalCount":7},"prClosed":{"totalCount":2},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}},"r2":{"open":{"totalCount":0},"closed":{"totalCount":0},"prRecent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}},"prOpen":{"totalCount":5},"prMerged":{"totalCount":0},"prClosed":{"totalCount":1},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}}}}
 JSON
 run() {
     : > "$GITHUB_SIBLINGS_TEST_CALLS"
     bash "$script" "$@" > "$fixture/output" 2>&1
 }
 check_layout() {
-    # Check visible heading positions and whole-table alignment, including the
-    # totals, against the expected narrow/wide layouts for these known counts.
+    # Check centered headings and aligned separators for narrow/wide counts,
+    # totals and partial results.
     perl - "$fixture/output" "$@" <<'PERL'
 use strict;
 use warnings;
-my ($path, $width, $issues, $fixed, $prs, $today) = @ARGV;
+my ($path, $width, $fixed) = @ARGV;
 open my $fh, '<', $path or die $!;
 my @lines = <$fh>;
 chomp @lines;
-my ($groups) = grep { /^\s+ISSUES\s+TODAY\s+PRS\s*$/ } @lines;
+my ($groups) = grep { /^\s+ISSUES\s+\|\s+PRS\s*$/ } @lines;
+my ($subgroups) = grep { /^\s+OVERALL\s+\|\s+TODAY\s+\|\s+OVERALL\s+\|\s+TODAY\s*$/ } @lines;
 my ($columns) = grep { /^REPOSITORY\s/ } @lines;
-die "group headings not centered\n" unless defined $groups &&
-    index($groups, 'ISSUES') == $issues && index($groups, 'PRS') == $prs && index($groups, 'TODAY') == $today;
+die "missing group headings\n" unless defined $groups && defined $subgroups;
 die "FIXED heading not centered\n" unless index($columns, 'FIXED') == $fixed;
-for my $line (grep { /^(?:REPOSITORY\s|dragginzgame\/|TOTAL\s|---)/ } @lines) {
-    die "table column alignment changed\n" unless length($line) == $width;
+my @bars = map { $_ } grep { substr($subgroups, $_, 1) eq '|' } 0 .. length($subgroups)-1;
+my $start = 12;
+$start = 17 if grep { /^TOTAL \(partial\)/ } @lines;
+for my $spec ([$groups,'ISSUES',$start,$bars[1]-1], [$groups,'PRS',$bars[1]+2,$width],
+              [$subgroups,'OVERALL',$start,$bars[0]-1], [$subgroups,'TODAY',$bars[0]+2,$bars[1]-1],
+              [$subgroups,'OVERALL',$bars[1]+2,$bars[2]-1], [$subgroups,'TODAY',$bars[2]+2,$width]) {
+    my ($line,$label,$left,$right) = @$spec;
+    # Verify symmetry within each group independently of number widths.
+    my $region = substr($line, $left, $right-$left);
+    $region =~ /^(\s*)\Q$label\E(\s*)$/ or die "invalid heading region: $region\n";
+    die "heading not centered: $label\n" if abs(length($1)-length($2)) > 1;
 }
+for my $line ($groups, $subgroups, grep { /^(?:REPOSITORY\s|(?:alpha|beta|zero)\s|TOTAL\s|---)/ } @lines) {
+    die "table column alignment changed: ".length($line)." != $width\n" unless length($line) == $width;
+    next if $line eq $groups;
+    my @actual = ($line =~ /\|/g);
+    die "missing group separators\n" unless @actual == 3;
+    for my $position (@bars) {
+        die "misaligned group separator\n" unless substr($line, $position, 1) eq "|";
+    }
+}
+
 PERL
 }
 (cd "$fixture/elsewhere" && run --once)
-awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
-grep -Fx 'ISSUES TODAY PRS' "$fixture/rows"
-grep -Fx 'REPOSITORY OPEN FIXED FIXED ADDED OPEN MERGED CLOSED' "$fixture/rows"
-check_layout 89 34 39 76 55
-[[ "$(grep -cE '^-+$' "$fixture/rows")" == 3 ]] || exit 1
-grep -Fx 'dragginzgame/alpha 2,500 7,500 / 10,000 0 0 12 1,500 20' "$fixture/rows"
-grep -Fx 'dragginzgame/beta 9 1 / 10 0 0 3 7 2' "$fixture/rows"
-grep -Fx 'dragginzgame/zero 0 0 / 0 0 0 5 0 1' "$fixture/rows"
-grep -Fx 'TOTAL 2,509 7,501 / 10,010 0 0 20 1,507 23' "$fixture/rows"
-grep -F 'dragginzgame/beta              9       1 /     10' "$fixture/output"
+awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
+grep -Fx 'ISSUES PRS' "$fixture/rows"
+grep -Fx 'REPOSITORY OPEN FIXED FIXED ADDED OPEN MERGED CLOSED MERGED CLOSED ADDED' "$fixture/rows"
+check_layout 102 25
+[[ "$(grep -cE '^[-|]+$' "$fixture/output")" == 3 ]] || exit 1
+grep -Fx 'alpha 2,500 7,500 / 10,000 0 0 12 1,500 20 0 0 0' "$fixture/rows"
+grep -Fx 'beta 9 1 / 10 0 0 3 7 2 0 0 0' "$fixture/rows"
+grep -Fx 'zero 0 0 / 0 0 0 5 0 1 0 0 0' "$fixture/rows"
+grep -Fx 'TOTAL 2,509 7,501 / 10,010 0 0 20 1,507 23 0 0 0' "$fixture/rows"
+grep -E '^beta +9 +1 / +10 \|' "$fixture/output"
 [[ "$(wc -l < "$GITHUB_SIBLINGS_TEST_CALLS" | tr -d ' ')" == 1 ]] || exit 1
 grep -F 'api graphql --hostname github.com' "$GITHUB_SIBLINGS_TEST_CALLS"
 if grep -E 'ichelper|example.invalid|no-origin|r3:' "$GITHUB_SIBLINGS_TEST_CALLS"; then exit 1; fi
@@ -163,15 +187,15 @@ run --interval || status=$?
 # Rank by open issues, independent of closed issue history.
 # Grouped counts widen numeric fields, including the closed / total ratio.
 cat > "$GITHUB_SIBLINGS_TEST_RESPONSE" <<'JSON'
-{"data":{"r0":{"open":{"totalCount":9},"closed":{"totalCount":999999},"prOpen":{"totalCount":9000},"prMerged":{"totalCount":1234567},"prClosed":{"totalCount":99},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}},"r1":{"open":{"totalCount":100},"closed":{"totalCount":1},"prOpen":{"totalCount":0},"prMerged":{"totalCount":0},"prClosed":{"totalCount":0},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}},"r2":{"open":{"totalCount":9},"closed":{"totalCount":0},"prOpen":{"totalCount":1},"prMerged":{"totalCount":2},"prClosed":{"totalCount":3},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}}}}
+{"data":{"r0":{"open":{"totalCount":9},"closed":{"totalCount":999999},"prRecent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}},"prOpen":{"totalCount":9000},"prMerged":{"totalCount":1234567},"prClosed":{"totalCount":99},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}},"r1":{"open":{"totalCount":100},"closed":{"totalCount":1},"prRecent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}},"prOpen":{"totalCount":0},"prMerged":{"totalCount":0},"prClosed":{"totalCount":0},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}},"r2":{"open":{"totalCount":9},"closed":{"totalCount":0},"prRecent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}},"prOpen":{"totalCount":1},"prMerged":{"totalCount":2},"prClosed":{"totalCount":3},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}}}}
 JSON
 run --once
-check_layout 113 39 45 96 67
-awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
-grep -Fx 'dragginzgame/beta 100 1 / 101 0 0 0 0 0' "$fixture/rows"
-grep -Fx 'dragginzgame/alpha 9 999,999 / 1,000,008 0 0 9,000 1,234,567 99' "$fixture/rows"
-awk '$1 ~ /^dragginzgame\// { print $1 }' "$fixture/output" > "$fixture/order"
-printf '%s\n' dragginzgame/beta dragginzgame/alpha dragginzgame/zero > "$fixture/expected-order"
+check_layout 135 31
+awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
+grep -Fx 'beta 100 1 / 101 0 0 0 0 0 0 0 0' "$fixture/rows"
+grep -Fx 'alpha 9 999,999 / 1,000,008 0 0 9,000 1,234,567 99 0 0 0' "$fixture/rows"
+awk '$1 ~ /^(alpha|beta|zero)$/ { print $1 }' "$fixture/output" > "$fixture/order"
+printf '%s\n' beta alpha zero > "$fixture/expected-order"
 cmp "$fixture/order" "$fixture/expected-order"
 
 # Equal open counts rank by name, regardless of closed counts.
@@ -181,22 +205,22 @@ jq '.data.r0.open.totalCount=9 | .data.r0.closed.totalCount=9990 |
     "$GITHUB_SIBLINGS_TEST_RESPONSE" > "$fixture/ranked"
 cp "$fixture/ranked" "$GITHUB_SIBLINGS_TEST_RESPONSE"
 run --once
-awk '$1 ~ /^dragginzgame\// { print $1 }' "$fixture/output" > "$fixture/order"
-printf '%s\n' dragginzgame/alpha dragginzgame/beta dragginzgame/zero > "$fixture/expected-order"
+awk '$1 ~ /^(alpha|beta|zero)$/ { print $1 }' "$fixture/output" > "$fixture/order"
+printf '%s\n' alpha beta zero > "$fixture/expected-order"
 cmp "$fixture/order" "$fixture/expected-order"
 
 # A GraphQL partial response retains successful rows and fails the report.
 cat > "$GITHUB_SIBLINGS_TEST_RESPONSE" <<'JSON'
-{"data":{"r0":{"open":{"totalCount":2500},"closed":{"totalCount":7500},"prOpen":{"totalCount":12},"prMerged":{"totalCount":1500},"prClosed":{"totalCount":20},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}},"r1":null,"r2":{"open":{"totalCount":0},"closed":{"totalCount":0},"prOpen":{"totalCount":5},"prMerged":{"totalCount":0},"prClosed":{"totalCount":1},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}}},"errors":[{"message":"unavailable","path":["r1"]}]}
+{"data":{"r0":{"open":{"totalCount":2500},"closed":{"totalCount":7500},"prRecent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}},"prOpen":{"totalCount":12},"prMerged":{"totalCount":1500},"prClosed":{"totalCount":20},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}},"r1":null,"r2":{"open":{"totalCount":0},"closed":{"totalCount":0},"prRecent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}},"prOpen":{"totalCount":5},"prMerged":{"totalCount":0},"prClosed":{"totalCount":1},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}}},"errors":[{"message":"unavailable","path":["r1"]}]}
 JSON
 status=0
 GITHUB_SIBLINGS_TEST_STATUS=1 run --once || status=$?
 [[ "$status" == 1 ]] || exit 1
-awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
-grep -Fx 'dragginzgame/beta ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
-grep -Fx 'TOTAL (partial) 2,500 7,500 / 10,000 0 0 17 1,500 21' "$fixture/rows"
-awk '$1 ~ /^dragginzgame\// { print $1 }' "$fixture/output" > "$fixture/order"
-printf '%s\n' dragginzgame/alpha dragginzgame/zero dragginzgame/beta > "$fixture/expected-order"
+awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
+grep -Fx 'beta ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
+grep -Fx 'TOTAL (partial) 2,500 7,500 / 10,000 0 0 17 1,500 21 0 0 0' "$fixture/rows"
+awk '$1 ~ /^(alpha|beta|zero)$/ { print $1 }' "$fixture/output" > "$fixture/order"
+printf '%s\n' alpha zero beta > "$fixture/expected-order"
 cmp "$fixture/order" "$fixture/expected-order"
 grep -F 'simulated GitHub failure' "$fixture/output"
 
@@ -206,20 +230,20 @@ for response in '' 'not JSON' '{"data":{}}'; do
     status=0
     run --once || status=$?
     [[ "$status" == 1 ]] || exit 1
-    awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
-    grep -Fx 'TOTAL (partial) ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
+    awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
+    grep -Fx 'TOTAL (partial) ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
 done
 # Every issue/PR field must be a valid count. A failed PR read cannot silently
 # turn into zero, or let the row's otherwise valid issue totals appear complete.
 cat > "$fixture/valid-response" <<'JSON'
-{"data":{"r0":{"open":{"totalCount":10},"closed":{"totalCount":20},"prOpen":{"totalCount":2},"prMerged":{"totalCount":3},"prClosed":{"totalCount":4},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}},"r1":{"open":{"totalCount":0},"closed":{"totalCount":0},"prOpen":{"totalCount":0},"prMerged":{"totalCount":0},"prClosed":{"totalCount":0},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}},"r2":{"open":{"totalCount":0},"closed":{"totalCount":0},"prOpen":{"totalCount":0},"prMerged":{"totalCount":0},"prClosed":{"totalCount":0},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}}}}
+{"data":{"r0":{"open":{"totalCount":10},"closed":{"totalCount":20},"prRecent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}},"prOpen":{"totalCount":2},"prMerged":{"totalCount":3},"prClosed":{"totalCount":4},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}},"r1":{"open":{"totalCount":0},"closed":{"totalCount":0},"prRecent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}},"prOpen":{"totalCount":0},"prMerged":{"totalCount":0},"prClosed":{"totalCount":0},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}},"r2":{"open":{"totalCount":0},"closed":{"totalCount":0},"prRecent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}},"prOpen":{"totalCount":0},"prMerged":{"totalCount":0},"prClosed":{"totalCount":0},"recent":{"nodes":[],"pageInfo":{"hasNextPage":false,"endCursor":null}}}}}
 JSON
 cp "$fixture/valid-response" "$GITHUB_SIBLINGS_TEST_RESPONSE"
 run --once
-check_layout 79 31 35 67 48
-printf '%-24s  %4s  %4s / %4s  %5s  %5s  %4s  %6s  %6s\n' \
-    dragginzgame/alpha 10 20 30 0 0 2 3 4 > "$fixture/narrow-row"
-grep '^dragginzgame/alpha ' "$fixture/output" > "$fixture/actual-narrow-row"
+check_layout 91 21
+printf '%-10s  %4s  %4s / %4s | %5s  %5s | %4s  %6s  %6s | %6s  %6s  %5s\n' \
+    alpha 10 20 30 0 0 2 3 4 0 0 0 > "$fixture/narrow-row"
+grep '^alpha ' "$fixture/output" > "$fixture/actual-narrow-row"
 cmp "$fixture/narrow-row" "$fixture/actual-narrow-row"
 for field in open closed prOpen prMerged prClosed; do
     for invalid in null -1 1.5 '"2"'; do
@@ -228,9 +252,9 @@ for field in open closed prOpen prMerged prClosed; do
         status=0
         run --once || status=$?
         [[ "$status" == 1 ]] || exit 1
-        awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
-        grep -Fx 'dragginzgame/alpha ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
-        grep -Fx 'TOTAL (partial) 0 0 / 0 0 0 0 0 0' "$fixture/rows"
+        awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
+        grep -Fx 'alpha ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
+        grep -Fx 'TOTAL (partial) 0 0 / 0 0 0 0 0 0 0 0 0' "$fixture/rows"
     done
 done
 # The slash has one separator space plus width-four numeric padding.
@@ -241,7 +265,7 @@ status=0
 run --once || status=$?
 [[ "$status" == 1 ]] || exit 1
 grep -F ' 400 /  486' "$fixture/output"
-check_layout 81 32 36 69 49
+check_layout 98 27
 
 # A fleet total wider than any repository must not add padding after its slash.
 jq '.data.r0.open.totalCount=86 | .data.r0.closed.totalCount=400 |
@@ -282,9 +306,9 @@ cat > "$GITHUB_SIBLINGS_TEST_PAGE" <<'JSON'
 {"data":{"repository":{"recent":{"nodes":[{"state":"CLOSED","createdAt":"2026-01-14T00:00:00Z","closedAt":"2026-01-15T10:00:00Z"},{"state":"OPEN","createdAt":"2026-01-15T10:00:00Z","closedAt":null}],"pageInfo":{"hasNextPage":false,"endCursor":"last"}}}}}
 JSON
 run --once
-awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
-grep -Fx 'dragginzgame/alpha 10 20 / 30 2 3 2 3 4' "$fixture/rows"
-grep -Fx 'TOTAL 10 21 / 31 3 3 2 3 4' "$fixture/rows"
+awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
+grep -Fx 'alpha 10 20 / 30 2 3 2 3 4 0 0 0' "$fixture/rows"
+grep -Fx 'TOTAL 10 21 / 31 3 3 2 3 4 0 0 0' "$fixture/rows"
 [[ "$(wc -l < "$GITHUB_SIBLINGS_TEST_CALLS" | tr -d ' ')" == 2 ]] || exit 1
 grep -F 'after=page-one' "$GITHUB_SIBLINGS_TEST_CALLS"
 # Failures, malformed pages and stalled cursors cannot publish a partial count.
@@ -297,13 +321,62 @@ for response in '{}' '{"data":{"repository":{"recent":{"nodes":[],"pageInfo":{"h
     status=0
     run --once || status=$?
     [[ "$status" == 1 ]] || exit 1
-    awk '{$1=$1; print}' "$fixture/output" > "$fixture/rows"
-    grep -Fx 'dragginzgame/alpha ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
+    awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
+    grep -Fx 'alpha ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
 done
 cp "$fixture/valid-page" "$GITHUB_SIBLINGS_TEST_PAGE"
 status=0
 GITHUB_SIBLINGS_TEST_PAGE_STATUS=1 run --once || status=$?
 [[ "$status" == 1 ]] || exit 1
+# Daily PR activity uses event timestamps, not updatedAt; merges are not closed
+# without merging, and reopened PRs are not counted as closures.
+jq '.data.r0.prRecent = {
+    nodes: [
+        {state:"MERGED",createdAt:"2026-01-14T00:00:00Z",updatedAt:"2026-01-15T10:00:00Z",closedAt:"2026-01-15T05:00:00Z",mergedAt:"2026-01-15T05:00:00Z"},
+        {state:"CLOSED",createdAt:"2026-01-15T05:00:00Z",updatedAt:"2026-01-15T09:00:00Z",closedAt:"2026-01-15T06:00:00Z",mergedAt:null},
+        {state:"OPEN",createdAt:"2026-01-14T00:00:00Z",updatedAt:"2026-01-15T08:00:00Z",closedAt:null,mergedAt:null}],
+    pageInfo:{hasNextPage:true,endCursor:"pr-one"}}' \
+    "$fixture/valid-response" > "$GITHUB_SIBLINGS_TEST_RESPONSE"
+cat > "$GITHUB_SIBLINGS_TEST_PR_PAGE" <<'JSON'
+{"data":{"repository":{"prRecent":{"nodes":[{"state":"OPEN","createdAt":"2026-01-15T05:00:00Z","updatedAt":"2026-01-15T05:00:00Z","closedAt":null,"mergedAt":null},{"state":"MERGED","createdAt":"2026-01-14T00:00:00Z","updatedAt":"2026-01-15T04:59:59Z","closedAt":"2026-01-15T04:59:59Z","mergedAt":"2026-01-15T04:59:59Z"}],"pageInfo":{"hasNextPage":true,"endCursor":"older"}}}}}
+JSON
+run --once
+awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
+grep -Fx 'alpha 10 20 / 30 0 0 2 3 4 1 1 2' "$fixture/rows"
+grep -Fx 'TOTAL 10 20 / 30 0 0 2 3 4 1 1 2' "$fixture/rows"
+[[ "$(wc -l < "$GITHUB_SIBLINGS_TEST_CALLS" | tr -d ' ')" == 2 ]]
+grep -F 'orderBy: {field: UPDATED_AT, direction: DESC}' "$GITHUB_SIBLINGS_TEST_CALLS" >/dev/null
+cp "$GITHUB_SIBLINGS_TEST_PR_PAGE" "$fixture/valid-pr-page"
+# Stopping before older pages avoids scanning the repository's full history.
+# Missing, failed and malformed PR pages invalidate the entire row.
+for response in '{}' '{"errors":[{"message":"unavailable"}]}' \
+    '{"data":{"repository":{"prRecent":{"nodes":[],"pageInfo":{"hasNextPage":true,"endCursor":"pr-one"}}}}}' \
+    '{"data":{"repository":{"prRecent":{"nodes":[{"state":"MERGED","createdAt":"2026-01-15T05:00:00Z","updatedAt":"2026-01-15T05:00:00Z","closedAt":"2026-01-15T05:00:00Z","mergedAt":null}],"pageInfo":{"hasNextPage":false}}}}}'; do
+    printf '%s\n' "$response" > "$GITHUB_SIBLINGS_TEST_PR_PAGE"
+    status=0
+    run --once || status=$?
+    [[ "$status" == 1 ]]
+    awk '{gsub(/\|/, " "); $1=$1; print}' "$fixture/output" > "$fixture/rows"
+    grep -Fx 'alpha ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR' "$fixture/rows"
+    grep -Fx 'TOTAL (partial) 0 0 / 0 0 0 0 0 0 0 0 0' "$fixture/rows"
+done
+# A nonempty, recent page with the same cursor must not loop.
+jq '.data.repository.prRecent.nodes |= [.[0]] |
+    .data.repository.prRecent.pageInfo.endCursor="pr-one"' \
+    "$fixture/valid-pr-page" > "$GITHUB_SIBLINGS_TEST_PR_PAGE"
+status=0
+run --once || status=$?
+[[ "$status" == 1 ]]
+cp "$fixture/valid-pr-page" "$GITHUB_SIBLINGS_TEST_PR_PAGE"
+status=0
+GITHUB_SIBLINGS_TEST_PR_PAGE_STATUS=1 run --once || status=$?
+[[ "$status" == 1 ]]
+# A missing initial PR connection is not zero activity.
+jq 'del(.data.r0.prRecent)' "$fixture/valid-response" > "$GITHUB_SIBLINGS_TEST_RESPONSE"
+status=0
+run --once || status=$?
+[[ "$status" == 1 ]]
+
 # Redirected output stays plain even when TERM advertises colour.
 cp "$fixture/valid-response" "$GITHUB_SIBLINGS_TEST_RESPONSE"
 TERM=xterm-256color run --once
@@ -328,7 +401,7 @@ my ($path, $scenario) = @ARGV;
 open my $fh, '<', $path or die $!;
 my %colours;
 while (<$fh>) {
-    if (/^\e\[38;2;(\d+;\d+;\d+)mdragginzgame\/(\w+).*\e\[39m\n$/) {
+    if (/^\e\[38;2;(\d+;\d+;\d+)m(\w+).*\e\[39m\n$/) {
         $colours{$2}=$1;
     } elsif (/\e/) { die "only repository foregrounds may be coloured\n"; }
 }
