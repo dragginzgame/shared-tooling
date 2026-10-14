@@ -39,7 +39,11 @@ INSTALL
 #!/usr/bin/env bash
 set -eu
 name="${0##*/}"
-[[ "$*" == --version || ( "$name" == cargo-sort-derives && "$*" == 'sort-derives --version' ) ]]
+if [[ "$name" == cargo-sort-derives ]]; then
+    [[ "$*" == 'sort-derives --version' ]]
+else
+    [[ "$*" == --version ]]
+fi
 printf 'probe %s\n' "$name" >> "$REPORT_EVENTS"
 printf 'observed %s\n' "$name"
 printf 'probe stderr %s\n' "$name" >&2
