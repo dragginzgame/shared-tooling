@@ -1,4 +1,5 @@
 # Local developer setup
+<!-- Shared companions: scripts/ci/report-tool-versions.sh -->
 
 From the checkout root, prepare the common executables explicitly:
 
