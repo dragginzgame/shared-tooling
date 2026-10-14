@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.12.0]
+
+### Changed
+
+- Use the latest delivered implementation and complete required CI matrix for
+  routine issue acceptance. Superseded runs remain evidence, with an explicit
+  version-specific reason required to keep them as active closure gates.
+  ([#169](https://github.com/dragginzgame/shared-tooling/issues/169))
+
+### Breaking
+
+- Require release candidates to be numbered and at the top of the changelog.
+  Reject `Draft` headings and misplaced candidates instead of relocating them;
+  consumers can retire equivalent guards after qualifying adoption.
+  ([#162](https://github.com/dragginzgame/shared-tooling/issues/162))
+
+### Added
+
+- Record and execute one explicitly selected Cargo publication attempt with
+  retained intent, arguments, logs and command statuses. Consumer adapters keep
+  package admission, registry reconciliation and recovery policy.
+  ([#163](https://github.com/dragginzgame/shared-tooling/issues/163))
+
 ## [0.11.4]
 
 ### Added

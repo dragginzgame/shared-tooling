@@ -676,6 +676,8 @@ scripts/ci/cargo-tool-cache-key.sh scripts/ci/tool-catalog-records.pl
 scripts/ci/test-tool-catalogs.pl scripts/ci/check-tool-catalogs.pl
 scripts/ci/check-publication.sh scripts/ci/check-crates-io-version.sh
 scripts/ci/test-publication.sh scripts/ci/check-publication.sh
+scripts/ci/run-cargo-publication.sh scripts/ci/check-make-execution.sh
+scripts/ci/test-cargo-publication-attempt.sh scripts/ci/run-cargo-publication.sh
 scripts/ci/run-release.sh scripts/ci/check-release-tag.sh
 scripts/ci/test-release-runner.sh scripts/ci/fixture-lifecycle.sh
 scripts/ci/test-host-tools.sh scripts/ci/test-tool-evidence.sh
