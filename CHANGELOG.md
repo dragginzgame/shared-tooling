@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.13.3]
+
+Pending integration: the changes below are in
+[PR #194 — Release version and date admission](https://github.com/dragginzgame/shared-tooling/pull/194)
+and [PR #191 — Release prose and change observation](https://github.com/dragginzgame/shared-tooling/pull/191),
+and are not yet on `main`.
+
+### Fixed
+
+- Reject impossible dates in saved release plans through shared stable-version
+  and Gregorian UTC-date admission. Preserve exact u64 components and the
+  increment helper's stricter signed arithmetic headroom
+  ([#193 — Own release version and calendar-date admission](https://github.com/dragginzgame/shared-tooling/issues/193)).
+- Bind release-change collection to the verified base commit, so a moving tag
+  cannot silently change the comparison. Qualify the collector's failure and
+  tag-movement cases under Bash 3.2 as well as current Bash.
+- Include the release-input helper in snapshot qualification and restore the
+  unreadable-manifest fixture's permissions so later failures retain archivable
+  evidence.
+
+### Added
+
+- Share complete NUL-separated release-change collection, publishing paths only
+  after both tracked and untracked Git observations succeed. Keep package-impact
+  policy with consumers.
+- Share the optional release-prose advisory, keeping missing inputs and reader
+  failures non-blocking and release decisions with callers.
+
 ## [0.13.2]
 
 ### Added
