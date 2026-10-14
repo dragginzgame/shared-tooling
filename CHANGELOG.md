@@ -20,7 +20,14 @@
 
 - Own empty/plausible Cargo failure, stale library/probe lock identity and coherent
   wrong-primary graph regressions, preserving exact failure status and input bytes
-  ([#171](https://github.com/dragginzgame/shared-tooling/issues/171)).
+  ([#171 — Preserve Cargo release metadata contracts](https://github.com/dragginzgame/shared-tooling/issues/171)).
+
+## [0.12.9]
+
+### Fixed
+
+- Keep fixture timing labels accurate for commands with interpreter flags, and
+  verify failure propagation without depending on portable-suite ordering.
 
 ## [0.12.8]
 
@@ -114,7 +121,7 @@
 ### Added
 
 - Expose coordinated Cargo member projection and graph-only admission without
-  finalized release notes, retaining complete lock/workspace checks ([#171](https://github.com/dragginzgame/shared-tooling/issues/171)).
+  finalized release notes, retaining complete lock/workspace checks ([#171 — Preserve Cargo release metadata contracts](https://github.com/dragginzgame/shared-tooling/issues/171)).
 - Own exact stable-version ordering and reject non-increasing finalizer targets
   at the canonical boundary ([#172](https://github.com/dragginzgame/shared-tooling/issues/172)).
 - Provide optional downloaded-evidence verification and explicit hosted failure

@@ -229,8 +229,7 @@ SCRIPT
 printf '#!%s\n' "$BASH" > "$fixture/bin/bash"
 cat >> "$fixture/bin/bash" <<'SCRIPT'
 case "${1:-}" in
-    */verify-file-checksum.sh) [[ "${RETENTION_TIMED_FAILURE:-}" == yes ]] || exit 24 ;;
-    */test-portable-prerequisites.sh) [[ "${RETENTION_TIMED_FAILURE:-}" != yes ]] || exit 23 ;;
+    */verify-file-checksum.sh) exit 24 ;;
 esac
 exec "$RETENTION_REAL_BASH" "$@"
 SCRIPT
@@ -254,18 +253,8 @@ TMPDIR="$fixture/portable" PATH="$fixture/bin:$PATH" \
 set -- "$fixture/portable"/shared-tooling-test.*
 [[ $# == 1 && -f "$1/input.txt" ]] || exit 1
 
-# Timing a child fixture must preserve its original failure and stop the suite.
-mkdir "$fixture/portable-timed"
-status=0
-RETENTION_TIMED_FAILURE=yes TMPDIR="$fixture/portable-timed" PATH="$fixture/bin:$PATH" \
-    "$BASH" "$ROOT/scripts/ci/test-portable-tools.sh" > "$fixture/portable-timed.log" 2>&1 || status=$?
-[[ "$status" == 23 ]] || exit 1
-set -- "$fixture/portable-timed"/shared-tooling-test.*
-[[ $# == 1 && -f "$1/input.txt" && -s "$1/timings.tsv" ]] || exit 1
-[[ "$(wc -l < "$1/timings.tsv")" -eq 1 ]] || exit 1
-IFS=$'\t' read -r timed_name timed_seconds timed_status < "$1/timings.tsv"
-[[ "$timed_name" == test-portable-prerequisites.sh && "$timed_seconds" =~ ^[0-9]+$ && "$timed_status" == 23 ]] || exit 1
-grep -F "$(cat "$1/timings.tsv")" "$fixture/portable-timed.log" > /dev/null
+# Timing and child-stop behavior are qualified independently by
+# test-fixture-timing.sh; no suite ordering is assumed here.
 
 # Exercise the actual workflow's native qualification commands with a failed
 # installer substitute, then check the final collector selects its evidence.

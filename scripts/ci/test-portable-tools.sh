@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared companions: scripts/ci/fixture-timing.sh
 set -euo pipefail
 
 ROOT="$0"
@@ -22,12 +23,8 @@ finish() {
 }
 trap finish EXIT
 
-run_fixture() {
-    local start="$SECONDS" status=0
-    "$@" || status=$?
-    printf '%s\t%s\t%s\n' "${2##*/}" "$((SECONDS - start))" "$status" >> "$FIXTURE/timings.tsv"
-    return "$status"
-}
+# shellcheck source=scripts/ci/fixture-timing.sh
+source "$ROOT/scripts/ci/fixture-timing.sh"
 
 for script in \
     "$ROOT"/scripts/ci/*.sh \
@@ -52,16 +49,17 @@ if bash "$ROOT/scripts/ci/verify-file-checksum.sh" \
     exit 1
 fi
 
-run_fixture bash "$ROOT/scripts/ci/test-portable-prerequisites.sh"
-run_fixture bash "$ROOT/scripts/ci/test-script-paths.sh"
-run_fixture perl "$ROOT/scripts/ci/test-ci-change-selection.pl"
-run_fixture bash "$ROOT/scripts/ci/test-rust-toolchains.sh"
-run_fixture bash "$ROOT/scripts/ci/test-cargo-install-qualification.sh"
-run_fixture bash "$ROOT/scripts/ci/test-evidence-archive.sh"
-run_fixture bash "$ROOT/scripts/ci/test-evidence-download.sh"
-run_fixture bash "$ROOT/scripts/ci/test-gh-ci.sh"
-run_fixture bash "$ROOT/scripts/ci/test-github-siblings.sh"
-run_fixture bash "$ROOT/scripts/ci/test-maintenance-task.sh"
+run_fixture test-portable-prerequisites.sh bash "$ROOT/scripts/ci/test-portable-prerequisites.sh"
+run_fixture test-fixture-timing.sh bash "$ROOT/scripts/ci/test-fixture-timing.sh"
+run_fixture test-script-paths.sh bash "$ROOT/scripts/ci/test-script-paths.sh"
+run_fixture test-ci-change-selection.pl perl "$ROOT/scripts/ci/test-ci-change-selection.pl"
+run_fixture test-rust-toolchains.sh bash "$ROOT/scripts/ci/test-rust-toolchains.sh"
+run_fixture test-cargo-install-qualification.sh bash "$ROOT/scripts/ci/test-cargo-install-qualification.sh"
+run_fixture test-evidence-archive.sh bash "$ROOT/scripts/ci/test-evidence-archive.sh"
+run_fixture test-evidence-download.sh bash "$ROOT/scripts/ci/test-evidence-download.sh"
+run_fixture test-gh-ci.sh bash "$ROOT/scripts/ci/test-gh-ci.sh"
+run_fixture test-github-siblings.sh bash "$ROOT/scripts/ci/test-github-siblings.sh"
+run_fixture test-maintenance-task.sh bash "$ROOT/scripts/ci/test-maintenance-task.sh"
 # A parent gate may retain its own logs and GitHub summary. The runner fixture
 # must select its own destinations without changing those parent-owned outputs.
 mkdir -p "$FIXTURE/runner-parent/logs" "$FIXTURE/runner-parent/failures"
@@ -72,7 +70,7 @@ done
 VALIDATION_LOG_DIR="$FIXTURE/runner-parent/logs" \
     VALIDATION_FAILURE_LOG_DIR="$FIXTURE/runner-parent/failures" \
     GITHUB_STEP_SUMMARY="$FIXTURE/runner-parent/summary.md" \
-    run_fixture bash "$ROOT/scripts/ci/test-validation-target-runner.sh"
+    run_fixture test-validation-target-runner.sh bash "$ROOT/scripts/ci/test-validation-target-runner.sh"
 for destination in logs/sentinel failures/sentinel summary.md; do
     cmp "$FIXTURE/runner-parent/expected" "$FIXTURE/runner-parent/$destination"
 done
@@ -80,56 +78,56 @@ for directory in logs failures; do
     [[ "$(ls -A "$FIXTURE/runner-parent/$directory")" == sentinel ]] || exit 1
 done
 echo 'Runner fixture preserves inherited parent logs and summary'
-run_fixture bash "$ROOT/scripts/ci/test-runner-disk-space.sh"
-run_fixture bash "$ROOT/scripts/ci/test-installers.sh"
-run_fixture bash "$ROOT/scripts/ci/test-tool-downloads.sh"
-run_fixture bash "$ROOT/scripts/ci/test-ic-tools.sh"
-run_fixture bash "$ROOT/scripts/ci/test-host-tools.sh"
+run_fixture test-runner-disk-space.sh bash "$ROOT/scripts/ci/test-runner-disk-space.sh"
+run_fixture test-installers.sh bash "$ROOT/scripts/ci/test-installers.sh"
+run_fixture test-tool-downloads.sh bash "$ROOT/scripts/ci/test-tool-downloads.sh"
+run_fixture test-ic-tools.sh bash "$ROOT/scripts/ci/test-ic-tools.sh"
+run_fixture test-host-tools.sh bash "$ROOT/scripts/ci/test-host-tools.sh"
 # Consumer-root invocation must not leak its compiler selection into substitutes.
 mkdir "$FIXTURE/rust-consumer"
 printf '[toolchain]\nchannel = "fixture-unprepared"\n' > "$FIXTURE/rust-consumer/rust-toolchain.toml"
-(cd "$FIXTURE/rust-consumer" && run_fixture bash "$ROOT/scripts/ci/test-rust-tools.sh")
-run_fixture bash "$ROOT/scripts/ci/test-tool-commands.sh"
-run_fixture bash "$ROOT/scripts/ci/test-make-format.sh"
-run_fixture bash "$ROOT/scripts/ci/test-make-consumer.sh"
-run_fixture bash "$ROOT/scripts/ci/test-tool-path-contexts.sh"
-run_fixture bash "$ROOT/scripts/ci/test-evidence-checksums.sh"
-run_fixture bash "$ROOT/scripts/ci/test-file-digests.sh"
-run_fixture bash "$ROOT/scripts/ci/test-rustsec-db.sh"
-run_fixture perl "$ROOT/scripts/ci/test-local-lock-versions.pl"
-run_fixture perl "$ROOT/scripts/ci/test-workspace-version-rendering.pl"
-run_fixture perl "$ROOT/scripts/ci/test-readme-version-rendering.pl"
-run_fixture perl "$ROOT/scripts/ci/test-stable-version-ordering.pl"
-run_fixture perl "$ROOT/scripts/ci/test-tag-maintenance.pl"
-run_fixture bash "$ROOT/scripts/ci/test-verification-helpers.sh"
-run_fixture bash "$ROOT/scripts/ci/test-publication.sh"
-run_fixture bash "$ROOT/scripts/ci/test-cargo-publication-attempt.sh"
-run_fixture perl "$ROOT/scripts/ci/test-tool-catalogs.pl"
-run_fixture perl "$ROOT/scripts/ci/test-documentation-links.pl"
-run_fixture bash "$ROOT/scripts/ci/test-crates-io-version.sh"
-run_fixture bash "$ROOT/scripts/ci/test-cargo-tool-versions.sh"
-run_fixture bash "$ROOT/scripts/ci/test-release-commands.sh"
-run_fixture bash "$ROOT/scripts/ci/test-dependency-pins.sh"
-run_fixture bash "$ROOT/scripts/ci/test-npm-pins.sh"
-run_fixture bash "$ROOT/scripts/ci/test-cargo-metadata.sh"
-run_fixture bash "$ROOT/scripts/ci/test-format-tools.sh"
-run_fixture bash "$ROOT/scripts/ci/test-git-hooks.sh"
-run_fixture bash "$ROOT/scripts/ci/test-cloc.sh"
-run_fixture bash "$ROOT/scripts/ci/test-cloc-siblings.sh"
-run_fixture bash "$ROOT/scripts/ci/test-cloc-tooling.sh"
-run_fixture bash "$ROOT/scripts/ci/test-cloc-tooling-distribution.sh"
-run_fixture bash "$ROOT/scripts/ci/test-cloc-fixture-contexts.sh"
-run_fixture bash "$ROOT/scripts/ci/test-fixture-retention.sh"
-run_fixture bash "$ROOT/scripts/ci/test-collect-tool-evidence.sh"
-run_fixture bash "$ROOT/scripts/ci/test-snapshot-distribution.sh"
-run_fixture bash "$ROOT/scripts/ci/test-snapshot-retirement.sh"
-run_fixture bash "$ROOT/scripts/ci/test-release-runner.sh"
-run_fixture bash "$ROOT/scripts/ci/test-release-tracking.sh"
-run_fixture bash "$ROOT/scripts/ci/test-release-pr.sh"
-run_fixture bash "$ROOT/scripts/ci/test-release-metadata.sh"
-run_fixture bash "$ROOT/scripts/ci/test-cargo-release-metadata.sh"
-run_fixture bash "$ROOT/scripts/ci/test-hosted-failure.sh"
-run_fixture bash "$ROOT/scripts/ci/test-release-source.sh"
+(cd "$FIXTURE/rust-consumer" && run_fixture test-rust-tools.sh bash "$ROOT/scripts/ci/test-rust-tools.sh")
+run_fixture test-tool-commands.sh bash "$ROOT/scripts/ci/test-tool-commands.sh"
+run_fixture test-make-format.sh bash "$ROOT/scripts/ci/test-make-format.sh"
+run_fixture test-make-consumer.sh bash "$ROOT/scripts/ci/test-make-consumer.sh"
+run_fixture test-tool-path-contexts.sh bash "$ROOT/scripts/ci/test-tool-path-contexts.sh"
+run_fixture test-evidence-checksums.sh bash "$ROOT/scripts/ci/test-evidence-checksums.sh"
+run_fixture test-file-digests.sh bash "$ROOT/scripts/ci/test-file-digests.sh"
+run_fixture test-rustsec-db.sh bash "$ROOT/scripts/ci/test-rustsec-db.sh"
+run_fixture test-local-lock-versions.pl perl "$ROOT/scripts/ci/test-local-lock-versions.pl"
+run_fixture test-workspace-version-rendering.pl perl "$ROOT/scripts/ci/test-workspace-version-rendering.pl"
+run_fixture test-readme-version-rendering.pl perl "$ROOT/scripts/ci/test-readme-version-rendering.pl"
+run_fixture test-stable-version-ordering.pl perl "$ROOT/scripts/ci/test-stable-version-ordering.pl"
+run_fixture test-tag-maintenance.pl perl "$ROOT/scripts/ci/test-tag-maintenance.pl"
+run_fixture test-verification-helpers.sh bash "$ROOT/scripts/ci/test-verification-helpers.sh"
+run_fixture test-publication.sh bash "$ROOT/scripts/ci/test-publication.sh"
+run_fixture test-cargo-publication-attempt.sh bash "$ROOT/scripts/ci/test-cargo-publication-attempt.sh"
+run_fixture test-tool-catalogs.pl perl "$ROOT/scripts/ci/test-tool-catalogs.pl"
+run_fixture test-documentation-links.pl perl "$ROOT/scripts/ci/test-documentation-links.pl"
+run_fixture test-crates-io-version.sh bash "$ROOT/scripts/ci/test-crates-io-version.sh"
+run_fixture test-cargo-tool-versions.sh bash "$ROOT/scripts/ci/test-cargo-tool-versions.sh"
+run_fixture test-release-commands.sh bash "$ROOT/scripts/ci/test-release-commands.sh"
+run_fixture test-dependency-pins.sh bash "$ROOT/scripts/ci/test-dependency-pins.sh"
+run_fixture test-npm-pins.sh bash "$ROOT/scripts/ci/test-npm-pins.sh"
+run_fixture test-cargo-metadata.sh bash "$ROOT/scripts/ci/test-cargo-metadata.sh"
+run_fixture test-format-tools.sh bash "$ROOT/scripts/ci/test-format-tools.sh"
+run_fixture test-git-hooks.sh bash "$ROOT/scripts/ci/test-git-hooks.sh"
+run_fixture test-cloc.sh bash "$ROOT/scripts/ci/test-cloc.sh"
+run_fixture test-cloc-siblings.sh bash "$ROOT/scripts/ci/test-cloc-siblings.sh"
+run_fixture test-cloc-tooling.sh bash "$ROOT/scripts/ci/test-cloc-tooling.sh"
+run_fixture test-cloc-tooling-distribution.sh bash "$ROOT/scripts/ci/test-cloc-tooling-distribution.sh"
+run_fixture test-cloc-fixture-contexts.sh bash "$ROOT/scripts/ci/test-cloc-fixture-contexts.sh"
+run_fixture test-fixture-retention.sh bash "$ROOT/scripts/ci/test-fixture-retention.sh"
+run_fixture test-collect-tool-evidence.sh bash "$ROOT/scripts/ci/test-collect-tool-evidence.sh"
+run_fixture test-snapshot-distribution.sh bash "$ROOT/scripts/ci/test-snapshot-distribution.sh"
+run_fixture test-snapshot-retirement.sh bash "$ROOT/scripts/ci/test-snapshot-retirement.sh"
+run_fixture test-release-runner.sh bash "$ROOT/scripts/ci/test-release-runner.sh"
+run_fixture test-release-tracking.sh bash "$ROOT/scripts/ci/test-release-tracking.sh"
+run_fixture test-release-pr.sh bash "$ROOT/scripts/ci/test-release-pr.sh"
+run_fixture test-release-metadata.sh bash "$ROOT/scripts/ci/test-release-metadata.sh"
+run_fixture test-cargo-release-metadata.sh bash "$ROOT/scripts/ci/test-cargo-release-metadata.sh"
+run_fixture test-hosted-failure.sh bash "$ROOT/scripts/ci/test-hosted-failure.sh"
+run_fixture test-release-source.sh bash "$ROOT/scripts/ci/test-release-source.sh"
 
 mkdir -p "$FIXTURE/repository" "$FIXTURE/result"
 cat >"$FIXTURE/fake-sccache" <<'SCRIPT'
@@ -189,7 +187,7 @@ bash "$ROOT/scripts/dev/gh-ci.sh" --help >/dev/null 2>&1
 
 # Node belongs to opt-in browser consumers, not portable shell prerequisites.
 if command -v node >/dev/null 2>&1; then
-    run_fixture node "$ROOT/scripts/ci/test-node-tools.mjs"
+    run_fixture test-node-tools.mjs node "$ROOT/scripts/ci/test-node-tools.mjs"
 else
     printf 'Node prerequisite tests skipped: Node is not selected on this host.\n'
 fi
