@@ -1,16 +1,31 @@
 # Changelog
 
-## [0.12.9]
+## [0.13.1]
 
 ### Added
 
 - Provide an opt-in section-style Rust type-documentation layout checker with
   explicit source selections, indented declarations and multiline attributes
-  ([#187](https://github.com/dragginzgame/shared-tooling/issues/187)).
+  ([#187 — Share opt-in Rust type documentation checks](https://github.com/dragginzgame/shared-tooling/issues/187)).
 
 ```bash
 perl scripts/ci/check-type-docs.pl crates
 ```
+
+## [0.13.0]
+
+### Added
+
+- Share fixture-directory allocation and physical-path anchoring, preserving
+  failed allocations for diagnosis and keeping cleanup policy with callers
+  ([#189 — Share fixture-directory allocation](https://github.com/dragginzgame/shared-tooling/issues/189)).
+
+## [0.12.9]
+
+### Fixed
+
+- Keep fixture timing labels accurate for commands with interpreter flags, and
+  verify failure propagation without depending on portable-suite ordering.
 
 ## [0.12.8]
 
