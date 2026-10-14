@@ -662,3 +662,13 @@ fixture_complete=true
 The allocation helper is additive and does not change existing cleanup callers.
 Its focused fixture is `scripts/ci/test-fixture-allocation.sh`; selecting that
 fixture through the snapshot exporter includes the lifecycle helper.
+
+### Completion admission without cleanup
+
+`fixture_completion_status STATUS COMPLETE` returns the original nonzero status,
+or returns 1 for zero-status execution unless COMPLETE is `true`. STATUS must be
+a canonical decimal shell exit status from 0 through 255; invalid arguments
+return 2 rather than wrapping an invalid status to success. The helper performs
+no cleanup, reporting or process exit. Capture refusal in an explicit conditional
+under errexit. `fixture_finish` uses this admission before its existing cleanup
+policy; qualification runners can instead retain all success and failure evidence.
