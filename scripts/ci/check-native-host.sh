@@ -15,10 +15,14 @@ esac
 # Standalone assignments preserve an observer's nonzero exit, even when it
 # printed the expected value. Comparison cannot turn failed observation clean.
 observed_os="$(uname -s)"
+if [[ "$observed_os" != "$expected_os" ]]; then
+    printf 'native OS mismatch: expected %s, observed %s\n' "$expected_os" "$observed_os" >&2
+    exit 1
+fi
 observed_architecture="$(uname -m)"
-if [[ "$observed_os" != "$expected_os" || "$observed_architecture" != "$expected_architecture" ]]; then
-    printf 'native host mismatch: expected %s/%s, observed %s/%s\n' \
-        "$expected_os" "$expected_architecture" "$observed_os" "$observed_architecture" >&2
+if [[ "$observed_architecture" != "$expected_architecture" ]]; then
+    printf 'native architecture mismatch: expected %s, observed %s\n' \
+        "$expected_architecture" "$observed_architecture" >&2
     exit 1
 fi
 if [[ "$expected_os" == Darwin ]]; then

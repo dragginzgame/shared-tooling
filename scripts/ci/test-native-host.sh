@@ -57,7 +57,10 @@ for scenario in linux darwin-intel darwin-arm wrong-os wrong-arch wrong-version 
     status=0
     "$BASH" "$ROOT/scripts/ci/check-native-host.sh" "${args[@]}" > "$fixture/$scenario.log" 2>&1 || status=$?
     [[ "$status" == "$expected" ]] || exit 1
-    if [[ "$scenario" == linux || "$scenario" == wrong-* || "$scenario" == failed-arch ]]; then
+    if [[ "$scenario" == wrong-os || "$scenario" == failed-os ]]; then
+        printf '%s\n' -s > "$fixture/expected-observations"
+        cmp "$fixture/expected-observations" "$HOST_OBSERVATIONS"
+    elif [[ "$scenario" == linux || "$scenario" == wrong-arch || "$scenario" == wrong-version || "$scenario" == failed-arch ]]; then
         printf '%s\n' -s -m > "$fixture/expected-observations"
         if [[ "$scenario" == wrong-version ]]; then printf '%s\n' -productVersion >> "$fixture/expected-observations"; fi
         cmp "$fixture/expected-observations" "$HOST_OBSERVATIONS"
