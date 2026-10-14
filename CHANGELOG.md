@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.1]
+
+### Added
+
+- Share the optional release-prose advisory and its semantic fixtures, keeping
+  status selection with callers and missing inputs/reader failures non-blocking.
+
 ## [0.13.0]
 
 ### Added

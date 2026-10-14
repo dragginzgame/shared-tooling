@@ -6,6 +6,22 @@ policy. They require Perl core modules or Bash 3.2+, as noted below, and run on
 Linux and macOS. The portable regression suite includes offline fixtures;
 native CI qualifies each supported host separately.
 
+## Release-prose advisory
+
+```bash
+bash scripts/ci/warn-release-prose.sh 0.3.7 docs/status/current.md
+```
+
+This optional Bash 3.2/awk helper warns when the selected status file describes
+its target version as a candidate, or its `Next action` section contains release
+instructions likely to become stale. The caller supplies the version and file;
+the default file is `docs/status/current.md`, resolved from the caller's directory.
+It does not parse package identity or decide release readiness. Missing inputs
+and reader failures remain advisory, and the command always returns success.
+Run it before release metadata mutation; never turn interpreted prose into a
+post-mutation blocker. Consumers retain invocation timing and their own status
+layout. The owner fixture qualifies heuristics and failure behavior.
+
 ## Evidence archives
 
 ```bash
