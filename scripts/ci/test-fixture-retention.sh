@@ -250,10 +250,12 @@ grep -F "$(cat "$1/timings.tsv")" "$fixture/portable-timed.log" > /dev/null
 # This checks local ordering/paths; GitHub's upload service is qualified by CI.
 yq -o json '.' "$ROOT/.github/workflows/ci.yml" > "$fixture/workflow.json"
 yq -o json '.' "$ROOT/.github/actions/retain-failure-evidence/action.yml" > "$fixture/collector.json"
-# Cache transport is optional; setup/admission and the complete gate never are.
+# Cache transport is optional; native setup/admission and the complete gate are
+# mandatory unless the classifier admitted a reviewed documentation-only change.
 # A main-only save follows native reuse, and carries the exact restore selection.
 # shellcheck disable=SC2016 # GitHub expressions are literal workflow inputs.
-jq -e --arg save_condition "\${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.tool-cache.outputs.cache-hit != 'true' }}" '
+jq -e --arg save_condition "\${{ needs.change-scope.outputs.scope != 'docs' && (github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.tool-cache.outputs.cache-hit != 'true') }}" \
+  --arg native_condition "needs.change-scope.outputs.scope != 'docs'" '
   .jobs["portable-regression"].steps | to_entries |
   map(select(.value.uses? | strings | startswith("actions/cache/restore@"))) as $restore |
   map(select(.value.uses? | strings | startswith("actions/cache/save@"))) as $save |
@@ -270,7 +272,7 @@ jq -e --arg save_condition "\${{ github.event_name == 'push' && github.ref == 'r
   $restore[0].value.with.path == "${{ steps.tool-cache-key.outputs.root }}/cargo-cache\n${{ steps.tool-cache-key.outputs.root }}/rust-*\n" and
   $restore[0].value.with["restore-keys"] == null and
   $restore[0].value["timeout-minutes"] <= 3 and $save[0].value["timeout-minutes"] <= 3 and
-  all($setup[], $reuse[], $gate[]; .value.if == null and .value["continue-on-error"] != true)
+  all($setup[], $reuse[], $gate[]; .value.if == $native_condition and .value["continue-on-error"] != true)
 ' "$fixture/workflow.json" > /dev/null
 # A failed regression gate must still fail the job and reach failure collection.
 jq -e '
@@ -280,10 +282,10 @@ jq -e '
   $gate[0]["continue-on-error"] != true
 ' "$fixture/workflow.json" > /dev/null
 # shellcheck disable=SC2016 # GitHub expressions are literal workflow inputs.
-jq -e '
+jq -e --arg failure_condition "\${{ needs.change-scope.outputs.scope != 'docs' && (failure()) }}" '
   .jobs["portable-regression"].steps | to_entries |
   map(select(.value.run? | strings | contains("make --no-print-directory install-tools"))) as $native |
-  map(select(.value.uses == "./.github/actions/retain-failure-evidence" and .value.if == "failure()")) as $uploads |
+  map(select(.value.uses == "./.github/actions/retain-failure-evidence" and .value.if == $failure_condition)) as $uploads |
   ($native | length) == 1 and ($uploads | length) == 1 and
   $uploads[0].key > $native[0].key and $uploads[0].key == length - 1 and
   $uploads[0].value.with["temp-root"] == "${{ runner.temp }}" and

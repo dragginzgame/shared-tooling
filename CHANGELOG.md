@@ -1,18 +1,35 @@
 # Changelog
 
-## [0.12.6]
+## [0.12.8]
 
 ### Added
 
 - Provide opt-in item-level rustdoc debt comparison and its regression fixtures;
   consumers retain Cargo execution and their own debt baseline
-  ([#181](https://github.com/dragginzgame/shared-tooling/issues/181)).
+  ([#181 — Extract item-level rustdoc debt comparison](https://github.com/dragginzgame/shared-tooling/issues/181)).
 - Identify declarations by their names rather than Rust keywords, preventing
   unrelated documentation from offsetting newly undocumented types/modules.
 
 ```bash
 python3 scripts/ci/check-public-docs.py target/rustdoc.jsonl ci/docs-baseline.json
 ```
+
+## [0.12.7]
+
+### Added
+
+- Share explicit development/MSRV Rust toolchain preparation across native
+  workflows, preserving caller-selected versions and targets
+  ([#177 — Share explicit Rust toolchain preparation](https://github.com/dragginzgame/shared-tooling/issues/177)).
+
+## [0.12.6]
+
+### Fixed
+
+- Qualify reviewed governance-only changes without native toolchain setup, while
+  retaining required check names, documentation checks and full validation for
+  unknown or code changes
+  ([#182 — Documentation-only CI selection](https://github.com/dragginzgame/shared-tooling/issues/182)).
 
 ## [0.12.5]
 
@@ -27,7 +44,7 @@ python3 scripts/ci/check-public-docs.py target/rustdoc.jsonl ci/docs-baseline.js
 
 - Provide advisory, package-selected Cargo README dependency rendering; preserve
   unsupported or ambiguous examples with a reminder
-  ([#178](https://github.com/dragginzgame/shared-tooling/issues/178)).
+  ([#178 — Own advisory README dependency rendering](https://github.com/dragginzgame/shared-tooling/issues/178)).
 
 - Give issues and PRs matching OPEN/CLOSED overall and ADDED/CLOSED today
   columns; closed PR counts include merges.
