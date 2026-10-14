@@ -4,6 +4,9 @@
 
 ### Changed
 
+- Share native OS, architecture and caller-selected macOS major admission,
+  preserving failed observation status without changing host matrices or PATH.
+
 - Share retained-success fixture qualification and formatter-log selection with
   consumer CI; retain caller archive layout, source identity and Git custody.
 - Run generic release-source admission fixtures independently of repository
