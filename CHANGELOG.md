@@ -5,7 +5,8 @@
 ### Added
 
 - Provide an opt-in section-style Rust type-documentation layout checker with
-  explicit source selections, indented declarations and multiline attributes
+  explicit source selections, indented declarations and multiline attributes;
+  refuse incomplete directory traversal instead of accepting a partial scan
   ([#187 — Share opt-in Rust type documentation checks](https://github.com/dragginzgame/shared-tooling/issues/187)).
 
 ```bash

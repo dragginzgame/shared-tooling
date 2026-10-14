@@ -55,5 +55,20 @@ $status != 0 or die "malformed input accepted through directory selection\n";
 check($valid, 0);
 $status = system($^X, $checker, $root, $file);
 $status == 0 or die "overlapping valid source selections refused\n";
+# A readable sibling must not hide an unreadable selected subtree. Restore
+# permissions before asserting, so a failed check still leaves inspectable data.
+mkdir "$root/blocked" or die $!;
+open my $blocked, '>', "$root/blocked/missing.rs" or die $!;
+print {$blocked} "pub struct Missing;\n" or die $!;
+close $blocked or die $!;
+chmod 0000, "$root/blocked" or die $!;
+if (-r "$root/blocked") {
+    chmod 0700, "$root/blocked" or die $!;
+    print "Unreadable-directory case skipped: current user bypasses permissions\n";
+} else {
+    $status = system($^X, $checker, $root);
+    chmod 0700, "$root/blocked" or die $!;
+    $status != 0 or die "unreadable subtree admitted as a complete selection\n";
+}
 $complete = 1;
 print "Section-style documentation selection, syntax and refusal fixtures passed\n";

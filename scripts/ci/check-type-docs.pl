@@ -10,6 +10,9 @@ for my $root (@ARGV) {
     -l $root and die "error: source roots must not be symlinks: $root\n";
     if (-f $root && $root =~ /[.]rs\z/) { $rust_files{$root} = 1; next; }
     -d $root or die "error: source root is not a directory or Rust file: $root\n";
+    # File::Find warns and continues when a subtree cannot be read. A partial
+    # source inventory cannot establish that the selected documentation passes.
+    local $SIG{__WARN__} = sub { die "error: source traversal failed: @_" };
     find({ no_chdir => 1, wanted => sub {
         return if -l $_;
         $rust_files{$_} = 1 if -f $_ && /[.]rs\z/;
