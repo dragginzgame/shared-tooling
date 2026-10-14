@@ -2,6 +2,14 @@
 
 ## [0.13.0]
 
+### Added
+
+- Share read-only common-tool reporting through installer admission, catalog-owned
+  rosters, executable hashes and live version observations; retain partial output
+  and the original probe failure status.
+- Share test-only pipe jobserver observation, checking inherited descriptor type
+  and direction without consuming or returning tokens.
+
 ### Changed
 
 - Share native OS, architecture and caller-selected macOS major admission,

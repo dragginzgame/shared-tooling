@@ -87,6 +87,8 @@ run_fixture bash "$ROOT/scripts/ci/test-host-tools.sh"
 mkdir "$FIXTURE/rust-consumer"
 printf '[toolchain]\nchannel = "fixture-unprepared"\n' > "$FIXTURE/rust-consumer/rust-toolchain.toml"
 (cd "$FIXTURE/rust-consumer" && run_fixture bash "$ROOT/scripts/ci/test-rust-tools.sh")
+run_fixture bash "$ROOT/scripts/ci/test-tool-version-report.sh"
+run_fixture bash "$ROOT/scripts/ci/test-pipe-jobserver.sh"
 run_fixture bash "$ROOT/scripts/ci/test-tool-commands.sh"
 run_fixture bash "$ROOT/scripts/ci/test-native-host.sh"
 run_fixture bash "$ROOT/scripts/ci/test-formatting-evidence.sh"
