@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.4]
+
+- Discover current Rust sources and Cargo manifests for opt-in formatting-hook
+  qualification, including new modules/crates and tracked deletions. Preserve
+  consumer perturbations, explicit tooling inputs and the real source index
+  ([#195 — Formatting source discovery](https://github.com/dragginzgame/shared-tooling/issues/195)).
+
 ## [0.13.3]
 
 Pending integration: the changes below are in
