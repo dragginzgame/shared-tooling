@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.13.0]
+## [0.14.0]
 
 ### Breaking
 
@@ -26,6 +26,14 @@
 - Own empty/plausible Cargo failure, stale library/probe lock identity and coherent
   wrong-primary graph regressions, preserving exact failure status and input bytes
   ([#171 — Preserve Cargo release metadata contracts](https://github.com/dragginzgame/shared-tooling/issues/171)).
+
+## [0.13.0]
+
+### Added
+
+- Share fixture-directory allocation and physical-path anchoring, preserving
+  failed allocations for diagnosis and keeping cleanup policy with callers
+  ([#189 — Share fixture-directory allocation](https://github.com/dragginzgame/shared-tooling/issues/189)).
 
 ## [0.12.9]
 

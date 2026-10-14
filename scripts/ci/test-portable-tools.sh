@@ -51,6 +51,7 @@ fi
 
 run_fixture test-portable-prerequisites.sh bash "$ROOT/scripts/ci/test-portable-prerequisites.sh"
 run_fixture test-fixture-timing.sh bash "$ROOT/scripts/ci/test-fixture-timing.sh"
+run_fixture test-fixture-allocation.sh bash "$ROOT/scripts/ci/test-fixture-allocation.sh"
 run_fixture test-script-paths.sh bash "$ROOT/scripts/ci/test-script-paths.sh"
 run_fixture test-ci-change-selection.pl perl "$ROOT/scripts/ci/test-ci-change-selection.pl"
 run_fixture test-rust-toolchains.sh bash "$ROOT/scripts/ci/test-rust-toolchains.sh"

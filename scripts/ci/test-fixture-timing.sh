@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
-fixture="$(mktemp -d "${TMPDIR:-/tmp}/fixture-timing.XXXXXX")"
+fixture="$(fixture_create "${TMPDIR:-/tmp}/fixture-timing.XXXXXX")"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Timing fixture retained"' EXIT
 cat > "$fixture/driver.sh" <<'DRIVER'
