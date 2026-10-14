@@ -28,7 +28,8 @@ In a terminal, refresh every 60 seconds: q quits, r refreshes, Ctrl-C exits.
 --once prints one report (also the default when input/output is not a terminal).
 --interval selects 1..86400 seconds between completed refreshes.
 ISSUES and PRS each have OVERALL | TODAY groups separated by vertical bars.
-Repository labels omit dragginzgame/.
+Repository labels include dragginzgame/ only when the complete table fits the
+terminal width (or an explicit COLUMNS value). Unknown widths use short names.
 OVERALL shows OPEN, CLOSED; TODAY shows ADDED, CLOSED for both sections.
 Closed PRs include merged PRs.
 Open PRs include drafts. Numeric padding starts at four characters and expands
@@ -84,7 +85,8 @@ done
 shopt -s nullglob dotglob
 repos=()
 repo_count=0
-width=10
+short_width=10
+full_width=10
 # GraphQL variables, not shell interpolation.
 # shellcheck disable=SC2016
 query='query($since: DateTime!) {'
@@ -128,7 +130,8 @@ for checkout in "${parent%/}"/*; do
     }"
     repo_count=$((repo_count + 1))
     display_name="${identity#dragginzgame/}"
-    [[ ${#display_name} -le $width ]] || width=${#display_name}
+    [[ ${#display_name} -le $short_width ]] || short_width=${#display_name}
+    [[ ${#identity} -le $full_width ]] || full_width=${#identity}
 done
 query="$query }"
 [[ "$repo_count" -gt 0 ]] || { echo "error: no connected GitHub checkouts in $parent" >&2; exit 1; }
@@ -308,6 +311,7 @@ print_error() {
 }
 
 render() {
+    local width="$short_width" show_owner=false expanded_width="$full_width" table_width
     local i counts name open closed pr_open pr_merged pr_closed today added day_counts total_open=0 total_closed=0
     local pr_today_merged pr_today_closed pr_today_added pr_day_counts total_pr_today_merged=0 total_pr_today_closed=0 total_pr_today_added=0
     local total_added=0 total_today=0 total_pr_open=0 total_pr_merged=0 total_pr_closed=0 successful=0 label=TOTAL
@@ -363,6 +367,12 @@ render() {
     today_group_width=$((added_width + 2 + closed_width))
     prs_width="$issues_width"
     pr_today_width="$today_group_width"
+    [[ "$expanded_width" -ge "$width" ]] || expanded_width="$width"
+    table_width=$((expanded_width + 2 + issues_width + today_group_width + prs_width + pr_today_width + 9))
+    if [[ "$terminal_columns" -ge "$table_width" ]]; then
+        width="$expanded_width"
+        show_owner=true
+    fi
     sort -t $'\t' -k1,1nr -k2,2 "$scratch/rows" > "$scratch/sorted"
     printf '%*s  %s | %s\n' "$width" '' "$(center_text ISSUES "$((issues_width + 3 + today_group_width))")" \
         "$(center_text PRS "$((prs_width + 3 + pr_today_width))")"
@@ -374,7 +384,7 @@ render() {
         "$(center_text ADDED "$added_width")" "$(center_text CLOSED "$closed_width")"
     print_separator
     while IFS=$'\t' read -r open name closed pr_open pr_merged pr_closed today added pr_today_merged pr_today_closed pr_today_added; do
-        name="${name#dragginzgame/}"
+        [[ "$show_owner" == true ]] || name="${name#dragginzgame/}"
         if [[ "$open" == -1 ]]; then
             print_error "$name"
         else
@@ -404,6 +414,15 @@ while :; do
     # Read-only query, explicitly bound to github.com regardless of GH_HOST/GH_REPO.
     gh api graphql --hostname github.com -f "query=$query" -f "since=$cutoff" \
         > "$scratch/response" 2> "$scratch/errors" || status=1
+    # Probe before redirecting render output; remeasure on every refresh.
+    terminal_columns="${COLUMNS:-0}"
+    if [[ -t 1 ]]; then
+        terminal_size="$(stty size <&1 2>/dev/null)" || terminal_size=''
+        if [[ "$terminal_size" =~ ^[0-9]+[[:space:]]+([1-9][0-9]{0,5})$ ]]; then
+            terminal_columns="${BASH_REMATCH[1]}"
+        fi
+    fi
+    [[ "$terminal_columns" =~ ^[1-9][0-9]{0,5}$ ]] || terminal_columns=0
     render > "$scratch/frame"
     if [[ "$interactive" == true ]]; then printf '\033[H\033[2J'; fi
     cat "$scratch/frame"

@@ -6,23 +6,22 @@ overlay. Consumers adopt the baseline and keep their own `AGENTS.md`.
 
 ## Validation in Shared Tooling
 
-- During script development, run focused fixtures and ShellCheck for the affected
-  scripts, following their sourced helpers with `shellcheck -x`.
-- For changes confined to an isolated, read-only reporting script (such as the
-  sibling issue dashboard) and its fixtures, those focused checks plus diff
-  review are sufficient for delivery. Cover changed queries, pagination,
-  calculations, failure handling and output as applicable. Do not run unrelated
-  installer or release fixtures solely because a reporting script changed.
-- Run the full `bash scripts/ci/test-portable-tools.sh` suite and ShellCheck over
-  `scripts/ci/*.sh`, `scripts/dev/*.sh` and `scripts/distribution/*.sh` before
-  delivering shared infrastructure changes or a batch affecting multiple tools.
-  This includes shared helpers, installers, release tooling, snapshot/export
-  logic, hooks and CI wiring. If a reporting change reaches those paths, use the
-  full gate. Required CI and release gates remain unchanged.
-- Validation has standing authority; no additional request is needed. Reuse
-  passing results for unchanged inputs rather than rerunning at every handoff.
-- For documentation-only changes, check links, instruction consistency and the
-  diff. Do not run the portable script suite solely because prose changed.
+The baseline's [validation and evidence policy](DRAGGINZGAME.md#validation-and-evidence)
+owns when to run checks. This overlay identifies the local checks only.
+
+- During development and before handing off a change, run focused fixtures and
+  ShellCheck for the affected scripts, following sourced helpers with
+  `shellcheck -x`. Select checks for the changed behavior and directly affected
+  callers, including rejection and recovery paths where relevant.
+- Shared helper, installer, release-tooling, snapshot/export, hook and CI edits
+  need their affected consumer/contract fixtures, not an automatic full suite.
+  Multiple changed files or tools do not by themselves justify the full gate.
+- Full local checks are `make ci`, `bash scripts/ci/test-portable-tools.sh`
+  and blanket ShellCheck over `scripts/ci/*.sh`, `scripts/dev/*.sh` and
+  `scripts/distribution/*.sh`; run them only under the baseline's release or
+  explicit-check authority.
+- For documentation-only changes, use `make check-doc-links`, instruction
+  consistency review and `git diff --check`.
 
 The common [contribution authority rules](rules/contributions.md) apply here.
 Staging, commits, version changes, tags and `make release-*` are user-owned by

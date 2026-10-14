@@ -1,8 +1,19 @@
 # Changelog
 
+## [0.12.5]
+
+### Changed
+
+- Show full repository names in the issue dashboard when they fit the terminal;
+  shorten Dragginzgame names when space is limited or the width is unknown.
+
 ## [0.12.4]
 
 ### Changed
+
+- Provide advisory, package-selected Cargo README dependency rendering; preserve
+  unsupported or ambiguous examples with a reminder
+  ([#178](https://github.com/dragginzgame/shared-tooling/issues/178)).
 
 - Give issues and PRs matching OPEN/CLOSED overall and ADDED/CLOSED today
   columns; closed PR counts include merges.

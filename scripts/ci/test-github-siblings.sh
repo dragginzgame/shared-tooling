@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Shared companions: scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
+export COLUMNS=0 # Ordinary redirected reports have no known terminal width.
 ROOT="$0"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
@@ -417,6 +418,26 @@ if ($scenario eq 'zero') {
 PERL
 done
 script="$plain_script"
+
+# Full names fit exactly at 79 columns with these counts; one less must
+# shorten them. Repeated invocations also cover shrinking and unknown widths.
+cp "$fixture/valid-response" "$GITHUB_SIBLINGS_TEST_RESPONSE"
+for columns in 79 78 120 0 invalid 9999999 79 78; do
+    COLUMNS="$columns" run --once
+    case "$columns" in
+        79|120)
+            grep -E '^dragginzgame/alpha +10 +20' "$fixture/output" >/dev/null
+            awk '/^dragginzgame\// { if (length($0) > 79) exit 1 }' "$fixture/output"
+            ;;
+        *) grep -E '^alpha +10 +20' "$fixture/output" >/dev/null ;;
+    esac
+done
+# Recalculate using larger values, not just repository-name length.
+jq '.data.r0.prMerged.totalCount=1234567' "$fixture/valid-response" > "$GITHUB_SIBLINGS_TEST_RESPONSE"
+COLUMNS=79 run --once
+grep -E '^alpha +10 +20' "$fixture/output" >/dev/null
+COLUMNS=109 run --once
+grep -E '^dragginzgame/alpha +10 +20' "$fixture/output" >/dev/null
 
 mkdir "$fixture/empty"
 status=0
