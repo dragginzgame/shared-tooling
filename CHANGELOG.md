@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.12.6]
+
+- Extend shared fixture-exit probes to consumer root names and diagnostic
+  failures, retaining original status and failed evidence
+  ([#174 — Share fixture exit and retained-evidence probes](https://github.com/dragginzgame/shared-tooling/issues/174)).
+
 ## [0.12.5]
 
 ### Changed

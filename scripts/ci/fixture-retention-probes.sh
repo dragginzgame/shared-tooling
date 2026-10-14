@@ -17,20 +17,22 @@ fixture_probe_exit() {
         completed) injection='fixture_complete=true; exit 0'; expected=0 ;;
         failed-completion) injection='fixture_complete=true; exit 23'; expected=23 ;;
         cleanup-failure) injection='rm() { return 37; }; fixture_complete=true; exit 0'; expected=37 ;;
+        diagnostic) injection='printf "fixture output\n" > "${fixture:-${TEST_ROOT:-${FIXTURE:-${FIXTURE_ROOT:-${scratch:-}}}}}/output"; cat() { return 7; }; exit 23'; expected=23 ;;
         *) printf 'Unknown retention probe: %s\n' "$failure" >&2; return 2 ;;
     esac
     local directory="$probe_root/exit-source/scripts/ci"
     local exit_path="$probe_root/$name-$failure.exit"
     mkdir -p "$directory" || return
     cp "$source_root/scripts/ci/fixture-lifecycle.sh" "$directory/" || return
+    cp "$source_root/scripts/ci/fixture-retention-probes.sh" "$directory/" || return
     RETENTION_INJECTION="$injection" awk '
         { print }
         /^ROOT=".*%\/\.\}"$/ {
             print "ROOT=\"$RETENTION_SOURCE_ROOT\""
         }
         /^trap .* EXIT$/ && !injected {
-            print "printf \"%s\\n\" \"${fixture:-${FIXTURE:-${FIXTURE_ROOT:-}}}\" > \"$RETENTION_EXIT_PATH\""
-            print "printf \"retained evidence\\n\" > \"${fixture:-${FIXTURE:-${FIXTURE_ROOT:-}}}/exit-evidence\""
+            print "printf \"%s\\n\" \"${fixture:-${TEST_ROOT:-${FIXTURE:-${FIXTURE_ROOT:-${scratch:-}}}}}\" > \"$RETENTION_EXIT_PATH\""
+            print "printf \"retained evidence\\n\" > \"${fixture:-${TEST_ROOT:-${FIXTURE:-${FIXTURE_ROOT:-${scratch:-}}}}}/exit-evidence\""
             print ENVIRON["RETENTION_INJECTION"]
             print "exit 99"
             injected=1

@@ -40,6 +40,21 @@ for name in format-tools tool-commands rust-tools release-runner host-tools ic-t
     fi
 done
 
+# Consumer fixtures use different local root names and can fail while reporting.
+# Exercise the shared injector itself, preserving the original exit and evidence.
+for root_name in TEST_ROOT scratch; do
+    cat > "$fixture/consumer-root.sh" <<PROBE
+#!/usr/bin/env bash
+set -euo pipefail
+$root_name="\$(mktemp -d "\${TMPDIR:-/tmp}/consumer-probe.XXXXXX")"
+fixture_complete=false
+source "$ROOT/scripts/ci/fixture-lifecycle.sh"
+trap 'fixture_finish "\$?" "\$$root_name" "Consumer probe retained"' EXIT
+PROBE
+    fixture_probe_exits "$fixture/consumer-root.sh" "$fixture" "$ROOT" "$root_name" || exit 1
+    fixture_probe_exit "$fixture/consumer-root.sh" "$fixture" "$ROOT" "$root_name" diagnostic || exit 1
+done
+
 # Conditional callers must not mask a mismatch or continue to later cases.
 cat > "$fixture/wrong-owner.sh" <<'PROBE'
 #!/usr/bin/env bash
