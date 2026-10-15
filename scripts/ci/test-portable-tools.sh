@@ -65,6 +65,7 @@ run_fixture test-ci-change-selection.pl perl "$ROOT/scripts/ci/test-ci-change-se
 run_fixture test-rust-toolchains.sh bash "$ROOT/scripts/ci/test-rust-toolchains.sh"
 run_fixture test-cargo-install-qualification.sh bash "$ROOT/scripts/ci/test-cargo-install-qualification.sh"
 run_fixture test-evidence-archive.sh bash "$ROOT/scripts/ci/test-evidence-archive.sh"
+run_fixture test-native-evidence-archive.sh bash "$ROOT/scripts/ci/test-native-evidence-archive.sh"
 run_fixture test-evidence-download.sh bash "$ROOT/scripts/ci/test-evidence-download.sh"
 run_fixture test-gh-ci.sh bash "$ROOT/scripts/ci/test-gh-ci.sh"
 run_fixture test-github-siblings.sh bash "$ROOT/scripts/ci/test-github-siblings.sh"

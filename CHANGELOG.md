@@ -30,6 +30,13 @@
   Non-default layouts must set `FIXTURE_PROBE_ROOT_VARIABLE` and
   `FIXTURE_PROBE_DIRECTORY_VARIABLE`; failure status and evidence remain preserved.
 
+### Changed
+
+- Keep exhaustive shared implementation regressions at their producer; consumers
+  retain actual integration and admission checks against their reviewed snapshot.
+- Share complete native evidence packaging with hidden Git recovery state,
+  replayable inventories, checksums and original failure/partial-output custody.
+
 ### Fixed
 
 - Own release/formatting checker failure-retention payload and formatting

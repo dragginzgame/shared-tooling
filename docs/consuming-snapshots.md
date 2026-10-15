@@ -512,8 +512,9 @@ instructions and checks with the [release contract](releases.md), including
 artifact retention and the exact atomic branch/tag push. A passing snapshot
 check alone does not verify those behaviors. Explicit PR adopters instead qualify
 the exact branch push, review boundary, merged-source validation and tag-only push.
-The direct release runner's consumer fixture, `scripts/ci/test-release-runner.sh`,
-simulates Git effects. Real-Git tracking qualification is independently selected
+The owner regression fixture, `scripts/ci/test-release-runner.sh`, simulates Git
+effects. Consumers retain their actual integration checks and tool/snapshot
+admission rather than routinely rerunning Shared's implementation regressions. Real-Git tracking qualification is independently selected
 as `scripts/ci/test-release-tracking.sh`; the owner portable suite always runs it.
 Select fixtures according to their documented effects and local authority rather
 than editing vendored tests or invoking an unauthorized broader suite.
