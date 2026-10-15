@@ -4,6 +4,9 @@
 
 - Own the native diagnostic collector's store/reference and candidate-archive
   regression cases, allowing Metrics to retain only its workflow integration.
+- Separate optional maintenance runner/systemd selection roots from the governance
+  catalog. Keep task guidance available without operational payloads; explicit
+  opt-in and guarded retirement use the existing snapshot exporter contract.
 
 - Share explicit Rust installation between local callers and the existing
   toolchain action; allow minimum-toolchain components for MSRV lint lanes.
