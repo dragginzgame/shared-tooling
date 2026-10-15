@@ -15,6 +15,8 @@
 
 ### Fixed
 
+- Stop Cargo graph checks on metadata failures under Bash 3.2, even when Cargo
+  emitted valid-looking output; preserve the original status and retained evidence.
 - Advance workspace-owned path dependency requirements across minor and major
   release boundaries, preserving unrelated manifest bytes and restoring original
   metadata on failure

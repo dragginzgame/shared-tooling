@@ -154,7 +154,8 @@ case "$operation" in
                 '$0 == heading { count++ } END { if (count != 1) exit 1 }' "$selected_root/CHANGELOG.md"
         fi
         lock_packages "$selected_root" "$observed_version" > "$temporary/local-packages"
-        (cd "$selected_root" && cargo metadata --locked --offline --format-version 1) > "$temporary/metadata.json"
+        # Bash 3.2 can lose an unguarded subshell failure before the next command.
+        (cd "$selected_root" && cargo metadata --locked --offline --format-version 1) > "$temporary/metadata.json" || exit $?
         workspace_packages "$temporary/metadata.json" "$observed_version" "$temporary/local-packages"
         complete=true
         ;;
