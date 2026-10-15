@@ -40,6 +40,7 @@
 
 ## [0.15.2]
 
+<<<<<<< HEAD
 - Add a contributor agreement granting Toko Studios explicit alternative
   licensing rights, with contributor/employer authority and signed-scope records.
   Acceptance and existing-contribution clearance remain separately recorded.
@@ -47,6 +48,19 @@
 - Prepare Dragginz license 1.1 with contributor patent grants and defensive
   patent termination. The current text preserves permanent Toko Studios rights;
   existing licenses and grants remain unchanged without deliberate adoption.
+=======
+- Separate optional maintenance runner/systemd selection roots from the governance
+  catalog. Keep task guidance available without operational payloads; explicit
+  opt-in and guarded retirement use the existing snapshot exporter contract.
+
+- Share explicit Rust installation between local callers and the existing
+  toolchain action; allow minimum-toolchain components for MSRV lint lanes.
+
+- Add read-only changelog preflight using the canonical candidate selector.
+- Support explicit verified snapshot ownership handover during consumer refresh,
+  preserving source proof, local edits, index custody and selected entrypoints.
+
+>>>>>>> a7275930209088c61ea4bb1f98a2d03ccfc3807d
 
 - Complete saved-source Cargo dependency projection, previously noted as pending
   in 0.15.1. Archived manifests now use recorded workspace identity without
@@ -76,8 +90,17 @@
   Non-default layouts must set `FIXTURE_PROBE_ROOT_VARIABLE` and
   `FIXTURE_PROBE_DIRECTORY_VARIABLE`; failure status and evidence remain preserved.
 
+### Changed
+
+- Keep exhaustive shared implementation regressions at their producer; consumers
+  retain actual integration and admission checks against their reviewed snapshot.
+- Share complete native evidence packaging with hidden Git recovery state,
+  replayable inventories, checksums and original failure/partial-output custody.
+
 ### Fixed
 
+- Own release/formatting checker failure-retention payload and formatting
+  completion qualification here, allowing consumers to check only their own logs.
 - Advance workspace-owned path dependency requirements across minor and major
   releases, preserving unrelated manifest bytes and restoring originals on failure
   ([PR #197 — Coordinated Cargo requirements](https://github.com/dragginzgame/shared-tooling/pull/197)).

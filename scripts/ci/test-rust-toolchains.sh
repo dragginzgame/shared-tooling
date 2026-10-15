@@ -15,7 +15,9 @@ jq -e '.runs.using == "composite" and (.runs.steps | length) == 1 and
         "DEVELOPMENT": "${{ inputs.development }}",
         "MINIMUM": "${{ inputs.minimum }}",
         "DEVELOPMENT_TARGET": "${{ inputs.development-target }}",
-        "MINIMUM_TARGET": "${{ inputs.minimum-target }}"
+        "MINIMUM_TARGET": "${{ inputs.minimum-target }}",
+        "MINIMUM_COMPONENTS": "${{ inputs.minimum-components }}",
+        "ACTION_ROOT": "${{ github.action_path }}"
     } and .inputs."development-target".default == "" and
     .inputs.development.required and .inputs.minimum.required and
     .inputs."minimum-target".required' "$fixture/action.json" >/dev/null
@@ -34,14 +36,16 @@ STUB
 chmod +x "$fixture/bin/rustup"
 export TOOLCHAIN_FIXTURE="$fixture"
 export DEVELOPMENT=1.99.0 MINIMUM=1.88.0 MINIMUM_TARGET=wasm32-unknown-unknown
-export DEVELOPMENT_TARGET FAIL_AT=0
+export DEVELOPMENT_TARGET MINIMUM_COMPONENTS='' FAIL_AT=0
+export ACTION_ROOT="$root/.github/actions/prepare-rust-toolchains"
 run_action() {
     : > "$fixture/actual"
     : > "$fixture/calls"
     status=0
-    PATH="$fixture/bin:$PATH" /bin/bash --noprofile --norc -e -o pipefail "$fixture/run.sh" > "$fixture/output" 2>&1 || status=$?
+    PATH="$fixture/bin:$PATH" "$BASH" --noprofile --norc -e -o pipefail "$fixture/run.sh" > "$fixture/output" 2>&1 || status=$?
 }
 # Exact arguments for routine CI and the recovery caller, including boundaries.
+for MINIMUM_COMPONENTS in '' clippy,rustfmt; do
 for DEVELOPMENT_TARGET in wasm32-unknown-unknown ''; do
     run_action
     [[ "$status" == 0 ]] || exit 1
@@ -49,8 +53,10 @@ for DEVELOPMENT_TARGET in wasm32-unknown-unknown ''; do
         printf '%s\0' toolchain install 1.99.0 --profile minimal --component rustfmt --component clippy
         if [[ -n "$DEVELOPMENT_TARGET" ]]; then printf '%s\0' --target wasm32-unknown-unknown; fi
         printf '%s\0' toolchain install 1.88.0 --profile minimal --target wasm32-unknown-unknown
+        if [[ -n "$MINIMUM_COMPONENTS" ]]; then printf '%s\0' --component "$MINIMUM_COMPONENTS"; fi
     } > "$fixture/expected"
     cmp "$fixture/expected" "$fixture/actual"
+done
 done
 # Neither installation failure can be hidden or run subsequent setup.
 for FAIL_AT in 1 2; do
@@ -62,15 +68,42 @@ done
 FAIL_AT=0
 # Reject malformed explicit selections before either install, including the
 # second toolchain's input. Empty optional development target remains valid.
-for input in DEVELOPMENT MINIMUM MINIMUM_TARGET DEVELOPMENT_TARGET; do
+for input in DEVELOPMENT MINIMUM MINIMUM_TARGET DEVELOPMENT_TARGET MINIMUM_COMPONENTS; do
     saved="${!input}"
     for invalid in '' '--help' 'two words' $'line\nbreak'; do
-        [[ "$input" != DEVELOPMENT_TARGET || -n "$invalid" ]] || continue
+        [[ ( "$input" != DEVELOPMENT_TARGET && "$input" != MINIMUM_COMPONENTS ) || -n "$invalid" ]] || continue
         printf -v "$input" '%s' "$invalid"
         run_action
         [[ "$status" == 2 && ! -s "$fixture/calls" ]] || exit 1
     done
     printf -v "$input" '%s' "$saved"
+done
+for MINIMUM_COMPONENTS in ',clippy' 'clippy,' 'clippy,,rustfmt'; do
+    run_action
+    [[ "$status" == 2 && ! -s "$fixture/calls" ]] || exit 1
+done
+# Exercise the standalone entrypoint too, including complete admission before
+# rustup, optional-free setup and transparent failure status.
+for arguments in '1.91.0' '1.91.0 --component clippy --target wasm32-unknown-unknown'; do
+    : > "$fixture/calls"
+    # Intentional splitting of this fixture's fixed argument sets only.
+    # shellcheck disable=SC2086
+    PATH="$fixture/bin:$PATH" "$BASH" "$root/scripts/dev/prepare-rust-toolchain.sh" $arguments
+    [[ "$(wc -l < "$fixture/calls" | tr -d ' ')" == 1 ]] || exit 1
+done
+for invalid in missing option value comma trailing; do
+    : > "$fixture/calls"
+    arguments=(1.91.0)
+    case "$invalid" in
+        missing) arguments=() ;;
+        option) arguments+=(--unknown value) ;;
+        value) arguments+=(--component clippy --target) ;;
+        comma) arguments+=(--component 'clippy,,rustfmt') ;;
+        trailing) arguments+=(--component 'clippy,') ;;
+    esac
+    status=0
+    PATH="$fixture/bin:$PATH" "$BASH" "$root/scripts/dev/prepare-rust-toolchain.sh" ${arguments[@]+"${arguments[@]}"} > "$fixture/output" 2>&1 || status=$?
+    [[ "$status" == 2 && ! -s "$fixture/calls" ]] || exit 1
 done
 fixture_complete=true
 printf 'Rust toolchain action fixtures passed\n'
