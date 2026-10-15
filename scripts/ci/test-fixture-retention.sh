@@ -14,6 +14,7 @@ source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 source "$ROOT/scripts/ci/fixture-retention-probes.sh"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Retention fixtures retained"' EXIT
+"$BASH" "$ROOT/scripts/ci/test-fixture-assertion-probe.sh"
 # Inject exits into disposable copies of actual fixtures immediately after their
 # EXIT trap. No installer, release, or nested test body is dispatched. Exercise
 # cleanup/status handling using this invocation's Bash (including 3.2).
@@ -38,6 +39,22 @@ for name in format-tools tool-commands rust-tools release-runner host-tools ic-t
         grep -F 'IC fixture cleanup started:' "$fixture/$name-cleanup-failure.log" > /dev/null
         grep -E 'IC fixture cleanup finished: [0-9]+s, status 37' "$fixture/$name-cleanup-failure.log" > /dev/null
     fi
+done
+
+# Consumer fixtures use different local root names and can fail while reporting.
+# Exercise the shared injector itself, preserving the original exit and evidence.
+for root_name in TEST_ROOT scratch; do
+    cat > "$fixture/consumer-root.sh" <<PROBE
+#!/usr/bin/env bash
+set -euo pipefail
+$root_name="\$(mktemp -d "\${TMPDIR:-/tmp}/consumer-probe.XXXXXX")"
+fixture_complete=false
+source "$ROOT/scripts/ci/fixture-lifecycle.sh"
+trap 'fixture_finish "\$?" "\$$root_name" "Consumer probe retained"' EXIT
+PROBE
+    TEST_ROOT="$fixture/unrelated-root" fixture_probe_exits "$fixture/consumer-root.sh" "$fixture" "$ROOT" "$root_name" || exit 1
+    TEST_ROOT="$fixture/unrelated-root" fixture_probe_exit "$fixture/consumer-root.sh" "$fixture" "$ROOT" "$root_name" diagnostic || exit 1
+    [[ ! -e "$fixture/unrelated-root" ]] || exit 1
 done
 
 # Conditional callers must not mask a mismatch or continue to later cases.
