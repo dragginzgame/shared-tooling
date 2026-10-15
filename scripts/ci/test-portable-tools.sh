@@ -130,6 +130,8 @@ run_fixture test-release-metadata.sh bash "$ROOT/scripts/ci/test-release-metadat
 run_fixture test-cargo-release-metadata.sh bash "$ROOT/scripts/ci/test-cargo-release-metadata.sh"
 run_fixture test-hosted-failure.sh bash "$ROOT/scripts/ci/test-hosted-failure.sh"
 run_fixture test-release-source.sh bash "$ROOT/scripts/ci/test-release-source.sh"
+run_fixture test-release-prose-warning.sh bash "$ROOT/scripts/ci/test-release-prose-warning.sh"
+run_fixture test-release-changes.sh bash "$ROOT/scripts/ci/test-release-changes.sh"
 
 mkdir -p "$FIXTURE/repository" "$FIXTURE/result"
 cat >"$FIXTURE/fake-sccache" <<'SCRIPT'
