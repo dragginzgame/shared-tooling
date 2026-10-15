@@ -24,6 +24,10 @@
 
 ### Added
 
+- Prepare deliberately unsorted Cargo formatting fixtures from caller-selected
+  adjacent dependencies, preserving manifest bytes and rejecting unsupported
+  layouts before emitting output.
+
 - Check manifest ordering against the selected immutable release source, and
   create hosted evidence parents only after complete input admission
   ([PR #208 — Hosted qualification admission](https://github.com/dragginzgame/shared-tooling/pull/208)).
