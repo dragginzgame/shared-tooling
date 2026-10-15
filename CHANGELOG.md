@@ -2,6 +2,10 @@
 
 ## [0.14.1]
 
+- Extend assertion-retention probing with caller-selected literal assertions and
+  bindings; verify the assertion was reached, rejecting setup failures and
+  missing or duplicate matches before admitting retained evidence.
+
 - Add caller-selected rustdoc debt and type-documentation checks, completing
   their previously pending integration
   ([#181 — Rustdoc debt comparison](https://github.com/dragginzgame/shared-tooling/issues/181),
