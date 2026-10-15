@@ -6,6 +6,16 @@ policy. They require Perl core modules or Bash 3.2+, as noted below, and run on
 Linux and macOS. The portable regression suite includes offline fixtures;
 native CI qualifies each supported host separately.
 
+## Fixture diagnostic replay
+
+`fixture_replay_logs FILE...` in `scripts/ci/fixture-lifecycle.sh` writes existing
+regular-file inputs to stderr in caller order, without adding separators. Missing
+paths, directories and unmatched glob literals are skipped. Reader/output failures
+are best effort and the helper returns success; callers save their original status
+before invoking it and retain their existing failure/completion handling. Callers
+own explicit file/glob selection, whether replay runs, and cleanup/retention policy.
+No files are removed or collected into a separate artifact.
+
 ## Cargo dependency-order fixtures
 
 ```bash

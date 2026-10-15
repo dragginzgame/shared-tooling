@@ -2,6 +2,9 @@
 
 ## [0.15.2]
 
+- Share best-effort replay of explicitly selected fixture logs without replacing
+  the caller's saved failure status or taking over log selection and retention.
+
 - Share explicit Rust installation between local callers and the existing
   toolchain action; allow minimum-toolchain components for MSRV lint lanes.
 

@@ -60,6 +60,7 @@ run_fixture test-release-changelog.sh bash "$ROOT/scripts/ci/test-release-change
 run_fixture test-saved-cargo-manifest.pl perl "$ROOT/scripts/ci/test-saved-cargo-manifest.pl"
 run_fixture test-workflow-step.sh bash "$ROOT/scripts/ci/test-workflow-step.sh"
 run_fixture test-fixture-completion.sh bash "$ROOT/scripts/ci/test-fixture-completion.sh"
+run_fixture test-fixture-log-replay.sh bash "$ROOT/scripts/ci/test-fixture-log-replay.sh"
 run_fixture test-script-paths.sh bash "$ROOT/scripts/ci/test-script-paths.sh"
 run_fixture test-type-docs.pl perl "$ROOT/scripts/ci/test-type-docs.pl"
 run_fixture test-ci-change-selection.pl perl "$ROOT/scripts/ci/test-ci-change-selection.pl"
