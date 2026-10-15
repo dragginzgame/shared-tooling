@@ -75,6 +75,7 @@ remote:get-url)
     ;;
 ls-tree:-z)
     path="$5"
+    [[ -z "${SNAPSHOT_TEST_READ_LOG:-}" ]] || printf 'mode:%s\n' "$path" >> "$SNAPSHOT_TEST_READ_LOG"
     committed_file="$SNAPSHOT_TEST_REVISION_ROOT/$path"
     if [[ -f "$committed_file" ]]; then
         mode=100644
@@ -84,6 +85,11 @@ ls-tree:-z)
     ;;
 cat-file:blob)
     path="${3#*:}"
+    [[ -z "${SNAPSHOT_TEST_READ_LOG:-}" ]] || printf 'blob:%s\n' "$path" >> "$SNAPSHOT_TEST_READ_LOG"
+    if [[ "${SNAPSHOT_TEST_BLOB_FAIL:-}" == "$path" ]]; then
+        printf 'partial committed payload\n'
+        exit 73
+    fi
     if [[ "${SNAPSHOT_TEST_SOURCE_DRIFT:-}" == "true" && "$path" == "scripts/ci/sample.sh" ]]; then
         printf '# concurrent source edit\n' >>"$repository/$path"
         chmod -x "$repository/$path"
@@ -114,7 +120,14 @@ fi
 [[ ! -e "$consumer_root/scripts" ]] || exit 1
 [[ ! -e "$consumer_root/ignored.txt" ]] || exit 1
 
-if ! SNAPSHOT_TEST_SOURCE_DRIFT=true PATH="$FIXTURE/bin:$PATH" \
+# A failed committed read must not publish its partial output or a manifest.
+if SNAPSHOT_TEST_BLOB_FAIL=scripts/ci/sample.sh PATH="$FIXTURE/bin:$PATH" \
+    bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$consumer_root" \
+    --entrypoint scripts/ci/sample.sh > "$FIXTURE/failed-blob.log" 2>&1; then exit 1; fi
+[[ ! -e "$consumer_root/.shared-tooling.snapshot" && ! -e "$consumer_root/scripts" ]] || exit 1
+
+if ! SNAPSHOT_TEST_READ_LOG="$FIXTURE/selected-reads" SNAPSHOT_TEST_SOURCE_DRIFT=true PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" \
     --consumer "$consumer_root" \
@@ -124,6 +137,13 @@ if ! SNAPSHOT_TEST_SOURCE_DRIFT=true PATH="$FIXTURE/bin:$PATH" \
     cat "$FIXTURE/initial-refresh.log" >&2
     exit 1
 fi
+
+# Bound immutable source work without weakening the independent drift proof.
+for path in scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh scripts/ci/sample.sh; do
+    for observation in mode blob; do
+        [[ "$(grep -Fxc "$observation:$path" "$FIXTURE/selected-reads")" == 1 ]] || exit 1
+    done
+done
 
 cmp "$revision_root/scripts/ci/sample.sh" "$consumer_root/scripts/ci/sample.sh"
 [[ -x "$consumer_root/scripts/ci/sample.sh" ]] || exit 1
