@@ -2,6 +2,10 @@
 
 ## [0.15.1]
 
+- Add read-only changelog preflight using the canonical candidate selector.
+- Support explicit verified snapshot ownership handover during consumer refresh,
+  preserving source proof, local edits, index custody and selected entrypoints.
+
 Pending integration of
 [PR #216 — Saved-source dependency projection](https://github.com/dragginzgame/shared-tooling/pull/216)
 and [PR #214 — Consumer qualification ownership](https://github.com/dragginzgame/shared-tooling/pull/214).

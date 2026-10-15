@@ -895,3 +895,12 @@ from their receipts. Consumers retain source/job/run identity, collection policy
 native tool pins and compact-tool qualification. Negative owner cases exercise
 both stages and malformed/missing/ambiguous evidence; consumer collector tests
 still qualify the complete upload/download boundary.
+
+## Read-only changelog preflight
+
+`check-release-changelog.sh VERSION PREVIOUS DATE CHANGELOG` admits a regular
+changelog with the canonical candidate selector before any setup or mutation.
+It writes no temporary/output file, preserves failed reader/selector status and
+keeps empty notes advisory. Coordinated metadata preparation remains the writer;
+consumer source, tag, impact and release authority stay local. Focused coverage
+is `scripts/ci/test-release-changelog.sh`.
