@@ -5,6 +5,37 @@ CI and release behavior must not depend on a sibling checkout, a moving Git
 branch, or network availability. Consumers vendor a reviewed file set and
 record its exact Shared Tooling source revision.
 
+## Consolidating existing snapshots
+
+Use the explicit `--takeover-snapshot ROOT MANIFEST` option on
+`scripts/distribution/refresh-consumer.sh`. ROOT is relative to the consumer
+(`.` means its root); MANIFEST is relative to that snapshot root. The consumer
+must still be a Git checkout root. For example:
+
+```sh
+/path/to/shared-tooling/scripts/distribution/refresh-consumer.sh --preview \
+  --consumer /path/to/consumer \
+  --takeover-snapshot . .supplement.snapshot \
+  --takeover-snapshot helpers .shared-tooling.snapshot
+```
+
+Review the preview, then repeat without `--preview`. Without an explicit complete
+`--entrypoint` set, existing and transferred entrypoints are unioned. Every
+transferred record is proved against its recorded source commit, hash and mode;
+edited, forged, staged, aliased or unavailable inputs refuse before publication.
+The root must match the actual prior layout; it is never inferred from the
+manifest's directory. The source remote must match the destination owner.
+
+Selected canonical payloads are exported normally. Unneeded old copies retire
+under the same unchanged-source proof as ordinary refresh; transferred receipts
+retire only after the new manifest and payloads verify. Unrelated files, index
+entries and tool/evidence storage remain untouched. No ownership records are
+hand-edited. Subsequent refreshes need only the consolidated manifest. An
+interruption can leave some retired copies absent or some prior receipts still
+present: retain the preview and old receipts, inspect the new manifest's integrity,
+and retry with the remaining receipts. This one-off ownership operation is not a
+transactional release or a tool-store cleanup mechanism.
+
 ## Common catalog ownership in 0.10.0
 
 Common installers now bring their reviewed pin catalogs as required snapshot

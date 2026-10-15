@@ -2,6 +2,11 @@
 
 ## [0.15.2]
 
+- Add read-only changelog preflight using the canonical candidate selector.
+- Support explicit verified snapshot ownership handover during consumer refresh,
+  preserving source proof, local edits, index custody and selected entrypoints.
+
+
 - Complete saved-source Cargo dependency projection, previously noted as pending
   in 0.15.1. Archived manifests now use recorded workspace identity without
   reconstructing the old checkout, preserving unrelated bytes and rejecting
