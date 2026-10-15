@@ -2,6 +2,9 @@
 
 ## [0.15.2]
 
+- Correct Rust setup adoption guidance to include the action's declared
+  preparation-helper companion through canonical export.
+
 - Share explicit Rust installation between local callers and the existing
   toolchain action; allow minimum-toolchain components for MSRV lint lanes.
 
