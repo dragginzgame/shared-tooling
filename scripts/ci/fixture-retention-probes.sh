@@ -90,7 +90,10 @@ fixture_probe_effect() {
     printf '%s\n' "$status" > "$run/status.txt" || return
     [[ "$status" == "$expected" ]] || return 1
     if [[ "$expected" == 0 ]]; then
-        for path in "$run/tmp"/*; do [[ ! -e "$path" && ! -L "$path" ]] || return 1; done
+        # Include hidden entries without changing the caller's glob options.
+        for path in "$run/tmp"/* "$run/tmp"/.[!.]* "$run/tmp"/..?*; do
+            [[ ! -e "$path" && ! -L "$path" ]] || return 1
+        done
         return 0
     fi
     grep -Fq -- "$marker" "$run/result.log" || return 1

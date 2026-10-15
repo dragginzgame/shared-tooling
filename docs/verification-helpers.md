@@ -779,7 +779,7 @@ when it prints plausible output. Linux does not call `sw_vers`. Consumers retain
 their matrices, workflow ordering, PATH changes and native-host qualification.
 The portable fixture substitutes observations; it does not qualify macOS.
 
-### Consumer flow qualification
+## Consumer flow qualification
 
 Source `scripts/ci/make-adapter-probes.sh` for
 `make_probe_execution_modes MAKE MAKEFILE DIRECTORY EVENTS TARGET...` and

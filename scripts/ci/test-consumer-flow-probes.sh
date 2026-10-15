@@ -47,6 +47,18 @@ for effect in success failed; do
 done
 mkdir -p "$fixture/wrong/tmp"
 if FLOW_EFFECT=wrong fixture_probe_effect "$fixture/effect.sh" "$fixture/wrong" effect 43 "$BASH" injected; then exit 1; fi
+# Successful child status cannot hide leftover files, including dangling links.
+printf '#!/usr/bin/env bash\nexit 0\n' > "$fixture/empty-success.sh"
+for name in visible .hidden ..hidden; do
+    for kind in file link; do
+        run="$fixture/leftover-$name-$kind"
+        mkdir -p "$run/tmp"
+        if [[ "$kind" == file ]]; then printf retained > "$run/tmp/$name"
+        else ln -s missing "$run/tmp/$name"; fi
+        if fixture_probe_effect "$fixture/empty-success.sh" "$run" effect 0 "$BASH" unused; then exit 1; fi
+        [[ -e "$run/tmp/$name" || -L "$run/tmp/$name" ]] || exit 1
+    done
+done
 # Small diagnostics select explicitly named files, never the scratch tree.
 mkdir -p "$fixture/checkout" "$fixture/evidence/scratch" "$fixture/formats"
 printf 'source identity\n' > "$fixture/evidence/source.txt"

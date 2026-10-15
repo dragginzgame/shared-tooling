@@ -15,6 +15,8 @@
 
 ### Fixed
 
+- Reject successful cleanup claims when hidden files or dangling links remain
+  in a consumer fixture scratch directory.
 - Stop Cargo graph checks on metadata failures under Bash 3.2, even when Cargo
   emitted valid-looking output; preserve the original status and retained evidence.
 - Advance workspace-owned path dependency requirements across minor and major
