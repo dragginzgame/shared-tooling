@@ -51,9 +51,9 @@ for kind in fetch make pin invalid; do
     esac
     [[ "$status" == "$expected" ]] || exit 1
     case "$kind" in
-        fetch) [[ $(wc -l < "$PREFLIGHT_EVENTS") == 1 ]] || exit 1 ;;
+        fetch) [[ $(wc -l < "$PREFLIGHT_EVENTS") -eq 1 ]] || exit 1 ;;
         invalid) [[ ! -s "$PREFLIGHT_EVENTS" ]] || exit 1 ;;
-        *) [[ $(wc -l < "$PREFLIGHT_EVENTS") == 2 ]] || exit 1 ;;
+        *) [[ $(wc -l < "$PREFLIGHT_EVENTS") -eq 2 ]] || exit 1 ;;
     esac
 done
 fixture_complete=true
