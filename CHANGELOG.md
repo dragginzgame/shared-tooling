@@ -2,6 +2,9 @@
 
 ## [0.15.1]
 
+- Extract focused snapshot path/helper rejection qualification from distribution
+  tests, and complete archive/tool-receipt owner cases for consumer reuse.
+
 - Share explicit Rust installation between local callers and the existing
   toolchain action; allow minimum-toolchain components for MSRV lint lanes.
 

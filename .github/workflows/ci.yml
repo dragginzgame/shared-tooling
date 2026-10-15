@@ -84,6 +84,8 @@ jobs:
           "$ACTIONLINT_BIN" .github/workflows/*.yml
           make check-pins
           make check-doc-links
+      - name: Qualify independent downloaded-evidence readers
+        run: python3 scripts/ci/test-failure-evidence.py
       - name: Scan repository history for secrets
         shell: bash
         run: |

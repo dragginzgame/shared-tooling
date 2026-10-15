@@ -904,3 +904,18 @@ It writes no temporary/output file, preserves failed reader/selector status and
 keeps empty notes advisory. Coordinated metadata preparation remains the writer;
 consumer source, tag, impact and release authority stay local. Focused coverage
 is `scripts/ci/test-release-changelog.sh`.
+
+## Focused verifier qualification
+
+`bash scripts/ci/test-snapshot-verifier.sh` checks generic snapshot directory
+admission, ordinary aliases, resolved manifest parents and corruption of inert
+checksum helpers against a controlled three-file export. Distribution tests
+retain refresh/source/index obligations; consumers retain their actual exported
+manifest and representative payload corruption checks. This Bash 3.2 fixture
+requires no Git repository, tool installation or Cargo inputs.
+
+`python3 scripts/ci/test-failure-evidence.py` owns generic downloaded-archive,
+compact-tool receipt and hosted-scenario rejection cases. The standard-library
+suite runs in Linux CI; it adds no Python prerequisite to native shell consumers.
+Consumers retain actual collector integration, source/run identity, caller pin
+selection and representative rejection checks through their own verifier.
