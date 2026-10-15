@@ -27,12 +27,16 @@ selected_workspace="${selected_workspace%/.}"
 }
 stage="$1"
 temporary="$3"
+[[ -n "$temporary" ]] || { echo 'evidence parent must not be empty' >&2; exit 2; }
 [[ "$temporary" == /* ]] || temporary="$PWD/$temporary"
-temporary="$(cd -P "$temporary" && printf '%s/.' "$PWD")"
-temporary="${temporary%/.}"
 host_catalog="$4"
 failure_logs="$5"
 [[ -f "$host_catalog" && ! -L "$host_catalog" && "$host_catalog" == /* && "$failure_logs" == /* ]] || exit 2
+# All admission precedes the first effect. Consumers select the path; this
+# owner creates and anchors it before allocating a retained scenario.
+mkdir -p -- "$temporary" || exit $?
+temporary="$(cd -P "$temporary" && printf '%s/.' "$PWD")" || exit $?
+temporary="${temporary%/.}"
 export TMPDIR="$temporary"
 scenario="$(mktemp -d "$temporary/hosted-${stage}.XXXXXX")"
 printf 'Qualification scenario retained: %s\n' "$scenario"

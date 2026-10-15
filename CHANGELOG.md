@@ -17,10 +17,6 @@ and [PR #214 — Consumer qualification ownership](https://github.com/dragginzga
 
 ## [0.15.0]
 
-Pending integration in
-[PR #205 — Release fixes and consumer qualification helpers](https://github.com/dragginzgame/shared-tooling/pull/205).
-These changes are not yet on `main`.
-
 ### Breaking
 
 - Prepare coordinated Cargo releases with literal manifest updates instead of
@@ -42,6 +38,18 @@ These changes are not yet on `main`.
   retaining safe local evidence and original diagnostics.
 
 ### Added
+
+- Verify controlled hosted-scenario artifacts beside their Shared producer;
+  consumers select archive prefixes and keep source/run and tool-pin admission
+  ([PR #209 — Independent scenario verification](https://github.com/dragginzgame/shared-tooling/pull/209)).
+
+- Check manifest ordering against the selected immutable release source, and
+  create hosted evidence parents only after complete input admission
+  ([PR #208 — Hosted qualification admission](https://github.com/dragginzgame/shared-tooling/pull/208)).
+
+- Share locked release preflight with catalog identity checks and exact workflow
+  run-body extraction; callers retain preparation authority and execution policy
+  ([PR #207 — Workflow extraction and release preflight](https://github.com/dragginzgame/shared-tooling/pull/207)).
 
 - Add Shared Tooling’s MIT license and clarify the fleet license selection:
   Dragginz for IcyDB, Canic and IC Relay; MIT for other sibling libraries and
