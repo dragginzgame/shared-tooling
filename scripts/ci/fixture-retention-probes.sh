@@ -91,8 +91,8 @@ fixture_probe_effect() {
         return 0
     fi
     grep -Fq -- "$marker" "$run/result.log" || return 1
-    local retained=("$run/tmp/$prefix".*)
-    [[ ${#retained[@]} == 1 && -d "${retained[0]}" ]] || return 1
+    local matches=("$run/tmp/$prefix".*)
+    [[ ${#matches[@]} == 1 && -d "${matches[0]}" ]] || return 1
     # shellcheck disable=SC2034 # Public result consumed by the caller's payload assertions.
-    fixture_effect_retained="${retained[0]}"
+    fixture_effect_retained="${matches[0]}"
 }
