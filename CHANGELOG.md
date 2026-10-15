@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.1]
+
+- Project saved Cargo manifests using recorded source identity, including owned
+  dependency requirements, without reconstructing the original workspace. Refuse
+  incomplete ownership evidence before emitting a candidate
+  ([#210 — Saved-source dependency projection](https://github.com/dragginzgame/shared-tooling/issues/210)).
+
 ## [0.15.0]
 
 ### Breaking
