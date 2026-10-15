@@ -887,3 +887,13 @@ The producer fixture `scripts/ci/test-checker-retention.sh` qualifies retained
 release/formatting inputs, logs and Git index after child or assertion failures.
 Consumers retain their own status/diagnostic checks without inspecting these
 shared checkers' internal directory layout.
+
+`collect-native-evidence.sh EVIDENCE OUTPUT` inventories available top-level files
+and packages the caller-owned tree verbatim, including hidden Git recovery state,
+with an archive checksum. Keep the same relative evidence-root spelling for
+inventory replay. The caller selects trusted inputs and artifact upload policy;
+this helper does not sanitize a tree for public distribution. Output must be
+outside the evidence tree; existing outputs refuse. Failures preserve inputs and
+partial output with their command status. Publish separately selected readable
+diagnostics before calling it. `test-native-evidence-archive.sh` owns packaging,
+checksum, containment, refusal and partial-failure qualification.
