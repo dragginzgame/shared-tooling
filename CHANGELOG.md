@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.15.3]
+
+- Share structural Rust runtime-panic scanning and its semantic fixtures as
+  snapshot source. Consumers compile against their own lockfile and retain
+  application source inventories
+  ([#225 — Reusable Rust panic scanner](https://github.com/dragginzgame/shared-tooling/issues/225)).
+
 ## [0.15.2]
 
 - Separate optional maintenance runner/systemd selection roots from the governance
