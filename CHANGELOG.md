@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.15.2]
+
+- Complete saved-source Cargo dependency projection, previously noted as pending
+  in 0.15.1. Archived manifests now use recorded workspace identity without
+  reconstructing the old checkout, preserving unrelated bytes and rejecting
+  incomplete ownership evidence
+  ([#210 — Saved-source dependency projection](https://github.com/dragginzgame/shared-tooling/issues/210)).
+
 ## [0.15.1]
 
 Pending integration of
