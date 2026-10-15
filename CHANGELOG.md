@@ -28,6 +28,10 @@ These changes are not yet on `main`.
 
 ### Added
 
+- Add Shared Tooling’s MIT license and clarify the fleet license selection:
+  Dragginz for IcyDB, Canic and IC Relay; MIT for other sibling libraries and
+  tools, preserving existing notices and earlier grants.
+
 - Qualify caller-selected assertions without executing the remaining fixture
   body; require proof that the assertion was reached
   ([PR #203 — Selected assertion probes](https://github.com/dragginzgame/shared-tooling/pull/203)).

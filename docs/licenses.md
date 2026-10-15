@@ -3,9 +3,10 @@
 
 Shared Tooling owns the master wording for the two selected licenses:
 
-- [MIT](../licenses/MIT.txt): the reusable libraries.
+- [MIT](../licenses/MIT.txt): the other sibling libraries and tools, including
+  Shared Tooling.
 - [Dragginz Source Available License — Verifiable ICP Burn 1.0](../licenses/Dragginz-ICP-Burn-1.0.txt):
-  Canic and IC Relay. Third-party Live Deployments require verifiable mainnet
+  IcyDB, Canic and IC Relay. Third-party Live Deployments require verifiable mainnet
   burning: 100% of ordinary resource funding or at least 20% of Cloud Engine
   infrastructure value. Toko Studios Ltd has the express section 5 exception.
 
@@ -15,31 +16,44 @@ required; monthly reconciliation is not permission to operate without burning.
 Contributor acceptance must expressly include the organization exception.
 The named beneficiary is part of the fixed terms, not a consumer-editable field.
 
-These are templates, not a license grant for every file in Shared Tooling or a
-retroactive change to consumer releases. The Dragginz text remains a custom
-draft requiring legal and contributor-ownership review before adoption.
+Shared Tooling itself uses the [root MIT license](../LICENSE). These templates
+do not retroactively change consumer releases or third-party license grants.
+The Dragginz text remains a custom draft requiring legal and contributor-ownership
+review before adoption.
 Previously granted rights and third-party licenses remain intact.
 
 ## Consumer copies
 
 Replace `{{COPYRIGHT_NOTICES}}` with the repository's existing copyright lines.
 Preserve every applicable holder and year; do not replace ownership notices with
-a blanket organization name. Copy the complete terms into the consumer's
+a blanket organization name. Where no notice exists, use Toko Studios Ltd
+and the applicable year. Copy the complete terms into the consumer's
 `LICENSE`. Package copies must carry the same terms and applicable notices.
 Do not edit the terms in consumers. Changes to the Dragginz terms require a new
 versioned master and deliberate consumer adoption; preserve version 1.0 once
 adopted. This unadopted draft replaces the earlier blanket-ban draft. MIT stays the standard MIT text.
 
-Canic additionally retains its prior MIT grant: append the exact
+Canic and IcyDB additionally retain their prior MIT grants: append the exact
 [prior-material notice](../licenses/prior-mit-notice.txt), followed by MIT with
 the original copyright notices. This is not an MIT alternative for later
-contributions offered exclusively under Dragginz. Relay has no such appendix.
+contributions offered exclusively under Dragginz. IcyDB also preserves its
+original Apache-2.0 and MIT notices for previously covered material, including
+in published packages. Relay has no such appendix.
 
 For Cargo, use `license = "MIT"` at the workspace root and inherit it in members.
 For Dragginz, use `license-file = "LICENSE"` in `workspace.package` and
 `license-file.workspace = true` in members. Do not retain an alternative MIT
 declaration for newly restricted code. Check package file lists to ensure the
 license ships; root metadata alone does not establish archive contents.
+
+Apply inherited metadata to unpublished workspace members too. For every
+publishable package, inspect `cargo package --list --locked -p PACKAGE` and
+verify that the applicable license text and preserved notices are present.
+A root MIT declaration does not automatically include a root license outside
+the package directory; add an unchanged package-local copy where needed.
+Cargo can include the workspace-inherited `license-file` automatically, so
+check the actual file list before duplicating it. Repeat this focused check
+when changing package layout, include/exclude rules or licensing metadata.
 
 ## Drift checks
 

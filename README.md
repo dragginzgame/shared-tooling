@@ -23,6 +23,8 @@ identity independently.
 Opt-in browser consumers can reuse the [Node/npm prerequisite checker](docs/node-tools.md)
 while retaining their package roots, pins and setup ownership.
 
+Shared Tooling is licensed under [MIT](LICENSE).
+
 ## Repository fleet ownership
 
 The [canonical license templates and drift checker](docs/licenses.md) keep MIT
