@@ -895,6 +895,55 @@ PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consum
     > "$FIXTURE/governance-refresh.log"
 perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$governance_consumer" \
     "${governance_docs[@]}" > "$FIXTURE/governance-links.log"
+# Governance carries instructions, while operational maintenance is explicit.
+maintenance_args=()
+while IFS= read -r path; do
+    [[ -n "$path" && ! -e "$governance_consumer/$path" ]] || exit 1
+    mkdir -p "$source_root/$(dirname "$path")" "$revision_root/$(dirname "$path")"
+    cp -p "$ROOT/$path" "$source_root/$path"
+    cp -p "$ROOT/$path" "$revision_root/$path"
+    maintenance_args+=(--add-entrypoint "$path")
+done < "$ROOT/scripts/distribution/maintenance-files.txt"
+maintenance_consumer="$FIXTURE/maintenance-consumer"
+maintenance_source="$FIXTURE/maintenance-source"
+cp -Rp "$revision_root" "$maintenance_source"
+git init -q "$maintenance_source"
+git -C "$maintenance_source" config user.name 'Snapshot fixture'
+git -C "$maintenance_source" config user.email 'fixture@example.invalid'
+git -C "$maintenance_source" config commit.gpgsign false
+git -C "$maintenance_source" config core.hooksPath /dev/null
+git -C "$maintenance_source" remote add origin https://example.invalid/shared-tooling
+git -C "$maintenance_source" add -- .
+git -C "$maintenance_source" commit -qm 'Optional maintenance source'
+git init -q "$maintenance_consumer"
+bash "$ROOT/scripts/distribution/refresh-consumer.sh" \
+    --source "$maintenance_source" --consumer "$maintenance_consumer" "${governance_args[@]}" \
+    > "$FIXTURE/maintenance-governance.log"
+bash "$ROOT/scripts/distribution/refresh-consumer.sh" \
+    --source "$maintenance_source" --consumer "$maintenance_consumer" "${maintenance_args[@]}" \
+    > "$FIXTURE/maintenance-opt-in.log"
+while IFS= read -r path; do
+    cmp "$ROOT/$path" "$maintenance_consumer/$path"
+done < "$ROOT/scripts/distribution/maintenance-files.txt"
+bash "$ROOT/$verifier_path" --consumer "$maintenance_consumer" >/dev/null
+cp "$maintenance_consumer/.shared-tooling.snapshot" "$FIXTURE/maintenance-before-refusal"
+printf '\n# consumer change\n' >> "$maintenance_consumer/scripts/dev/run-maintenance.sh"
+if bash "$ROOT/scripts/distribution/refresh-consumer.sh" \
+    --source "$maintenance_source" --consumer "$maintenance_consumer" "${governance_args[@]}" \
+    > "$FIXTURE/maintenance-retire-refused.log" 2>&1; then exit 1; fi
+cmp "$maintenance_consumer/.shared-tooling.snapshot" "$FIXTURE/maintenance-before-refusal"
+grep -Fx '# consumer change' "$maintenance_consumer/scripts/dev/run-maintenance.sh" >/dev/null
+cp -p "$ROOT/scripts/dev/run-maintenance.sh" "$maintenance_consumer/scripts/dev/run-maintenance.sh"
+bash "$ROOT/scripts/distribution/refresh-consumer.sh" \
+    --source "$maintenance_source" --consumer "$maintenance_consumer" "${governance_args[@]}" \
+    > "$FIXTURE/maintenance-retired.log"
+while IFS= read -r path; do
+    [[ ! -e "$maintenance_consumer/$path" ]] || exit 1
+done < "$ROOT/scripts/distribution/maintenance-files.txt"
+bash "$ROOT/$verifier_path" --consumer "$maintenance_consumer" >/dev/null
+perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$maintenance_consumer" \
+    "${governance_docs[@]}" > "$FIXTURE/maintenance-retired-links.log"
+
 # Ensure the checker actually inspects exported targets, not the source files.
 rm "$governance_consumer/docs/tag-maintenance.md"
 if perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$governance_consumer" \
