@@ -10,6 +10,9 @@
 
 ### Added
 
+- Expose completion admission separately from fixture cleanup, allowing retained
+  successful evidence to share fail-closed status handling with disposable tests.
+
 - Include the already reviewed fixture allocator from Shared main
   `998065bd2dc8350fb6811c3c3486627cbb48724e` in this contribution snapshot,
   preserving caller-selected cleanup and diagnostic retention (#189).

@@ -698,6 +698,12 @@ The portable fixture substitutes observations; it does not qualify macOS.
 
 ## Fixture allocation
 
+Retained-success fixtures can call `fixture_completion_status STATUS COMPLETE`
+without deleting evidence. It preserves a nonzero child status, refuses an
+incomplete zero-status execution with status 1 and rejects invalid status values
+with status 2. Callers retain cleanup and diagnostic policy. The completion
+fixture exercises real EXIT/nounset handling under Bash 3.2 and newer.
+
 Source `scripts/ci/fixture-lifecycle.sh` and call `fixture_create TEMPLATE` to
 allocate one directory and return its absolute physical path before changing cwd.
 The caller selects the template/prefix and retains its EXIT trap, completion flag
