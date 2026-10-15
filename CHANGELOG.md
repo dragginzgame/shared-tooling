@@ -2,6 +2,9 @@
 
 ## [0.14.1]
 
+- Verify controlled hosted-scenario artifacts beside their Shared producer;
+  consumers select archive prefixes and keep source/run and tool-pin admission.
+
 - Own hosted qualification admission and evidence-parent creation together;
   reject invalid requests before directory creation and anchor admitted aliases.
 
