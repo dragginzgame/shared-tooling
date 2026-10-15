@@ -1,6 +1,38 @@
 # Changelog
 
-## [0.14.1]
+## [0.15.0]
+
+### Breaking
+
+- Prepare coordinated Cargo releases with literal manifest updates instead of
+  implicit Cargo-edit/Cargo-sort mutation. Consumers keep explicit ordering checks;
+  unsupported literal layouts refuse without installing metadata
+  ([PR #180 — Deterministic release preparation](https://github.com/dragginzgame/shared-tooling/pull/180)).
+- Select fixture root and directory variables explicitly instead of guessing
+  consumer aliases. Set `FIXTURE_PROBE_ROOT_VARIABLE` and
+  `FIXTURE_PROBE_DIRECTORY_VARIABLE` for non-default layouts; retained failure
+  evidence and diagnostic status remain mandatory.
+
+### Fixed
+
+- Advance workspace-owned path dependency requirements across minor and major
+  release boundaries, preserving unrelated manifest bytes and restoring original
+  metadata on failure
+  ([PR #197 — Coordinated Cargo requirements](https://github.com/dragginzgame/shared-tooling/pull/197)).
+- Discard failed tool-selection output before choosing physical archive payloads,
+  while retaining local evidence and the original failure diagnostics.
+- Require proof that an assertion was reached when qualifying retained failures,
+  and support caller-selected assertions without running the rest of a fixture
+  ([PR #203 — Selected assertion probes](https://github.com/dragginzgame/shared-tooling/pull/203)).
+
+### Added
+
+- Share native host admission, admitted tool-version reports and pipe jobserver
+  observation while keeping host matrices and tool selections with consumers.
+- Share formatter evidence, retained-effect checks, Make adapter qualification
+  and selected native diagnostic archives. Consumers retain their payload rosters,
+  upload policy and Git recovery custody
+  ([PR #201 — Consumer qualification flows](https://github.com/dragginzgame/shared-tooling/pull/201)).
 
 - Extend assertion-retention probing with caller-selected literal assertions and
   bindings; verify the assertion was reached, rejecting setup failures and
