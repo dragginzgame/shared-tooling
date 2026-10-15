@@ -32,7 +32,7 @@ cp -p "$fixture/nested/.shared-tooling.snapshot" "$fixture/nested/nested.sh" "$s
 cp -p "$fixture/nested/scripts/ci/"*.sh "$seed/helpers/scripts/ci/"
 printf 'unrelated\n' > "$seed/unrelated"
 git -C "$seed" add unrelated
-for subject in valid edited mode staged staged-receipt forged wrong-source unavailable missing alias duplicate; do
+for subject in valid interrupted edited mode staged staged-receipt forged wrong-source unavailable missing alias duplicate; do
     consumer="$fixture/$subject"
     cp -Rp "$seed" "$consumer"
     case "$subject" in
@@ -57,8 +57,27 @@ for subject in valid edited mode staged staged-receipt forged wrong-source unava
     status=0
     bash "$root/scripts/distribution/refresh-consumer.sh" --preview "${args[@]}" > "$fixture/$subject-preview.log" 2>&1 || status=$?
     diff -r "$fixture/before-$subject" "$consumer" > "$fixture/$subject-diff.log" || { cat "$fixture/$subject-diff.log" >&2; exit 1; }
-    if [[ "$subject" == valid ]]; then
+    if [[ "$subject" == valid || "$subject" == interrupted ]]; then
         [[ "$status" == 0 ]] || { cat "$fixture/$subject-preview.log" >&2; exit 1; }
+        if [[ "$subject" == interrupted ]]; then
+            mkdir "$fixture/bin"
+            TAKEOVER_REAL_MV="$(command -v mv)"
+            export TAKEOVER_REAL_MV TAKEOVER_DESTINATION="$consumer/.shared-tooling.snapshot"
+            cat > "$fixture/bin/mv" <<'STUB'
+#!/usr/bin/env bash
+if [[ "$#" == 2 && "$2" == "$TAKEOVER_DESTINATION" ]]; then exit 37; fi
+exec "$TAKEOVER_REAL_MV" "$@"
+STUB
+            chmod +x "$fixture/bin/mv"
+            status=0
+            PATH="$fixture/bin:$PATH" bash "$root/scripts/distribution/refresh-consumer.sh" "${args[@]}" \
+                > "$fixture/interrupted-apply.log" 2>&1 || status=$?
+            [[ "$status" == 37 && ! -e "$consumer/helpers/nested.sh" ]] || exit 1
+            for receipt in .shared-tooling.snapshot .supplement.snapshot helpers/.shared-tooling.snapshot; do
+                cmp "$fixture/before-$subject/$receipt" "$consumer/$receipt"
+            done
+            cmp "$seed/.git/index" "$consumer/.git/index"
+        fi
         bash "$root/scripts/distribution/refresh-consumer.sh" "${args[@]}" > "$fixture/$subject-apply.log" 2>&1
         [[ -f "$consumer/nested.sh" && -x "$consumer/nested.sh" && -f "$consumer/supplemental.sh" ]] || exit 1
         [[ ! -e "$consumer/helpers/nested.sh" && ! -e "$consumer/helpers/.shared-tooling.snapshot" && ! -e "$consumer/.supplement.snapshot" ]] || exit 1
