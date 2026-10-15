@@ -8,6 +8,7 @@ evidence="$1" output="$2"
 # Do not archive our own output or replace an earlier attempt's evidence.
 evidence_physical="$(cd -P "$evidence" && printf '%s/.' "$PWD")"
 evidence_physical="${evidence_physical%/.}"
+[[ "$evidence_physical" != / ]] || exit 2
 output_parent=.
 [[ "$output" != */* ]] || output_parent="${output%/*}"
 [[ -n "$output_parent" ]] || output_parent=/
