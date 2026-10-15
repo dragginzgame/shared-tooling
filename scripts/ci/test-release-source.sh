@@ -14,24 +14,32 @@ fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Release source fixtures retained"' EXIT
 SOURCE_TEST_GIT="$(command -v git)"
 export SOURCE_TEST_GIT
-git clone --quiet --shared --no-checkout "$ROOT" "$fixture/repository"
+# A minimal owned Git fixture makes this test exportable to any consumer.
+# It never depends on the producer repository's layout or committed objects.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_NAMESPACE
+export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
+mkdir "$fixture/repository"
+git init --quiet "$fixture/repository"
 cd "$fixture/repository"
-git read-tree HEAD
-git checkout-index --all
+for path in README.md AGENTS.md CONTRIBUTING.md Cargo.lock; do
+    printf 'original %s\n' "$path" > "$path"
+done
+git add -- README.md AGENTS.md CONTRIBUTING.md Cargo.lock
+git -c user.name=Fixture -c user.email=fixture@example.invalid commit --quiet -m fixture
 check() { bash "$ROOT/scripts/ci/check-release-source.sh" "$@" > "$fixture/output" 2>&1; }
 refuse() { if check "$@"; then echo 'unexpected release source admission' >&2; exit 1; fi; }
 check
 [[ ! -s "$fixture/output" ]] || exit 1
 
 # A lock-only change names the actual lock and leaves its bytes untouched.
-printf '\n' >> ci/frontend/package-lock.json
-cp ci/frontend/package-lock.json "$fixture/lock"
+printf '\n' >> Cargo.lock
+cp Cargo.lock "$fixture/lock"
 cp .git/index "$fixture/index"
 refuse
-grep -F 'unstaged: ci/frontend/package-lock.json' "$fixture/output" > /dev/null
-cmp ci/frontend/package-lock.json "$fixture/lock"
+grep -F 'unstaged: Cargo.lock' "$fixture/output" > /dev/null
+cmp Cargo.lock "$fixture/lock"
 cmp .git/index "$fixture/index"
-git checkout-index --force -- ci/frontend/package-lock.json
+git checkout-index --force -- Cargo.lock
 
 # Preserve a hidden staged edit, an ordinary working edit and an unusual name.
 replacement="$(git rev-parse HEAD:AGENTS.md)"
