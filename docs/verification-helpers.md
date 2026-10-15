@@ -723,6 +723,17 @@ non-Rust tooling/lock/configuration overlays. Source and checker bytes match the
 delivered Shared contribution; focused coverage is
 `scripts/ci/test-rust-formatting-sources.sh`.
 
+### Workflow run extraction
+
+`scripts/ci/extract-workflow-step.sh STEPS_JSON STEP_ID` emits the selected run
+body from one JSON array of workflow steps. It requires exactly one matching
+object with a nonblank string `run` and no `uses`. Missing/duplicate selections,
+invalid shapes and malformed or multiple JSON documents refuse without emitting
+a script. It preserves jq failures and requires prepared jq on PATH. Callers
+own YAML-to-JSON selection, ordering/condition assertions and actual execution;
+extraction grants no authority to execute unreviewed workflow code. Focused
+coverage is `scripts/ci/test-workflow-step.sh`.
+
 ### Consumer flow qualification
 
 Source `scripts/ci/make-adapter-probes.sh` for

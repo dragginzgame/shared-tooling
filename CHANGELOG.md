@@ -10,6 +10,9 @@
 
 ### Added
 
+- Extract exactly one executable workflow step from a complete JSON step array,
+  refusing duplicate IDs, action steps, empty bodies and malformed input before
+  emitting any script. Consumers retain workflow policy and execution.
 - Share locked Cargo cache preparation and ordered consumer tool targets with
   multi-catalog identity checks; preserve caller-owned source admission and
   preparation authority.
