@@ -39,6 +39,10 @@ and [PR #214 — Consumer qualification ownership](https://github.com/dragginzga
 
 ### Added
 
+- Prepare deliberately unsorted Cargo formatting fixtures from caller-selected
+  adjacent dependencies, preserving manifest bytes and rejecting unsupported
+  layouts before emitting output.
+
 - Verify controlled hosted-scenario artifacts beside their Shared producer;
   consumers select archive prefixes and keep source/run and tool-pin admission
   ([PR #209 — Independent scenario verification](https://github.com/dragginzgame/shared-tooling/pull/209)).
