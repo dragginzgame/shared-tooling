@@ -10,6 +10,12 @@
 
 ### Added
 
+- Share locked Cargo cache preparation and ordered consumer tool targets with
+  multi-catalog identity checks; preserve caller-owned source admission and
+  preparation authority.
+- Include the delivered opt-in Rust formatting source selector from Shared main
+  so current additions/deletions use its canonical path admission.
+
 - Share caller-selected Make admission/parallel dispatch probes, effectful fixture
   status/retention checks and explicit native diagnostic collection. Consumers
   retain target rosters, effect stubs, payload assertions and outer Git custody.

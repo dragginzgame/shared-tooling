@@ -55,6 +55,8 @@ fi
 run_fixture bash "$ROOT/scripts/ci/test-portable-prerequisites.sh"
 run_fixture bash "$ROOT/scripts/ci/test-fixture-completion.sh"
 run_fixture bash "$ROOT/scripts/ci/test-consumer-flow-probes.sh"
+run_fixture bash "$ROOT/scripts/ci/test-rust-formatting-sources.sh"
+run_fixture bash "$ROOT/scripts/ci/test-cargo-release-preflight.sh"
 run_fixture bash "$ROOT/scripts/ci/test-script-paths.sh"
 run_fixture bash "$ROOT/scripts/ci/test-cargo-install-qualification.sh"
 run_fixture bash "$ROOT/scripts/ci/test-evidence-archive.sh"

@@ -698,6 +698,31 @@ The portable fixture substitutes observations; it does not qualify macOS.
 
 ## Fixture allocation
 
+### Locked release preflight
+
+`scripts/ci/cargo-release-preflight.sh TOOL-ROOT PREPARE` accepts repeated
+`--pin PATH`, `--check TARGET` and `--prepare TARGET` pairs. Callers first admit
+source/recovery and consume their preparation authority. With PREPARE=0 it
+runs locked offline Cargo fetching followed by check targets; PREPARE=1 runs
+locked fetching followed by the caller's complete ordered preparation targets.
+Explicit Cargo offline policy remains authoritative. Cargo retains the caller's
+selected-source working directory; tool targets run with Make in TOOL-ROOT.
+Every selected catalog is hashed before preparation and rechecked after each
+tool target. Failures preserve fetch/Make status or refuse changed selections.
+The helper owns no version/source admission, index, release or publication effect.
+Focused coverage is `scripts/ci/test-cargo-release-preflight.sh`.
+
+### Current Rust formatting inputs
+
+Pass `--rust-sources` after the formatting checker's fourth positional argument
+to use `scripts/ci/select-rust-formatting-sources.sh`. The canonical selector
+includes current maintained Rust/Cargo inputs and tracked deletions, publishing
+its complete NUL-separated result only after Git/path admission. Only disposable
+hook checkouts are updated. Consumers retain chosen perturbations and additional
+non-Rust tooling/lock/configuration overlays. Source and checker bytes match the
+delivered Shared contribution; focused coverage is
+`scripts/ci/test-rust-formatting-sources.sh`.
+
 ### Consumer flow qualification
 
 Source `scripts/ci/make-adapter-probes.sh` for
