@@ -33,6 +33,9 @@ for name in format-tools tool-commands rust-tools release-runner host-tools ic-t
         source="$ROOT/scripts/ci/$name.sh"
         probe_args=("$fixture/exit-input" src/lib.rs Cargo.toml --no-dependency-tables)
     fi
+    FIXTURE_PROBE_DIRECTORY_VARIABLE=fixture
+    [[ "$name" != release-runner ]] || FIXTURE_PROBE_DIRECTORY_VARIABLE=FIXTURE_ROOT
+    export FIXTURE_PROBE_DIRECTORY_VARIABLE
     fixture_probe_exits "$source" "$fixture" "$ROOT" "$name" ${probe_args[@]+"${probe_args[@]}"} || exit 1
     if [[ "$name" == ic-tools ]]; then
         fixture_probe_exit "$source" "$fixture" "$ROOT" "$name" cleanup-failure || exit 1
@@ -52,10 +55,47 @@ fixture_complete=false
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 trap 'fixture_finish "\$?" "\$$root_name" "Consumer probe retained"' EXIT
 PROBE
-    TEST_ROOT="$fixture/unrelated-root" fixture_probe_exits "$fixture/consumer-root.sh" "$fixture" "$ROOT" "$root_name" || exit 1
-    TEST_ROOT="$fixture/unrelated-root" fixture_probe_exit "$fixture/consumer-root.sh" "$fixture" "$ROOT" "$root_name" diagnostic || exit 1
+    FIXTURE_PROBE_DIRECTORY_VARIABLE="$root_name" TEST_ROOT="$fixture/unrelated-root" fixture_probe_exits "$fixture/consumer-root.sh" "$fixture" "$ROOT" "$root_name" || exit 1
+    FIXTURE_PROBE_DIRECTORY_VARIABLE="$root_name" TEST_ROOT="$fixture/unrelated-root" fixture_probe_exit "$fixture/consumer-root.sh" "$fixture" "$ROOT" "$root_name" diagnostic || exit 1
     [[ ! -e "$fixture/unrelated-root" ]] || exit 1
 done
+# Consumer-owned initialization can use explicit lowercase root/directory names.
+cat > "$fixture/consumer.sh" <<'PROBE'
+#!/usr/bin/env bash
+set -euo pipefail
+repository_root="$(git rev-parse --show-toplevel)"
+source "$repository_root/scripts/ci/fixture-lifecycle.sh"
+temporary_root="$(mktemp -d "${TMPDIR:-/tmp}/consumer-retention.XXXXXX")"
+fixture_complete=false
+trap 'fixture_finish "$?" "$temporary_root" "Consumer retained"' EXIT
+printf 'never execute the actual body\n' > "$RETENTION_SOURCE_ROOT/body-was-run"
+PROBE
+FIXTURE_PROBE_ROOT_VARIABLE=repository_root FIXTURE_PROBE_DIRECTORY_VARIABLE=temporary_root \
+    fixture_probe_exits "$fixture/consumer.sh" "$fixture" "$ROOT" consumer || exit 1
+[[ ! -e "$ROOT/body-was-run" ]] || exit 1
+if fixture_probe_prefix "$fixture/consumer.sh" "$fixture/invalid.sh" ROOT 'bad;name' 'exit 0'; then exit 1; fi
+[[ ! -e "$fixture/invalid.sh" ]] || exit 1
+FIXTURE_PROBE_DIRECTORY_VARIABLE=fixture
+export FIXTURE_PROBE_DIRECTORY_VARIABLE
+
+# A diagnostic fixture may intentionally keep its successful result.
+cat > "$fixture/retained-owner.sh" <<'PROBE'
+#!/usr/bin/env bash
+set -euo pipefail
+fixture="$(mktemp -d "${TMPDIR:-/tmp}/retained-owner.XXXXXX")"
+fixture_complete=false
+finish() {
+    local status=$?
+    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
+    exit "$status"
+}
+trap finish EXIT
+PROBE
+for outcome in nounset premature retained-completed failed-completion; do
+    fixture_probe_exit "$fixture/retained-owner.sh" "$fixture" "$ROOT" retained "$outcome" || exit 1
+done
+# Retention is a caller assertion; a deleting owner cannot qualify this case.
+if FIXTURE_PROBE_ROOT_VARIABLE=repository_root FIXTURE_PROBE_DIRECTORY_VARIABLE=temporary_root fixture_probe_exit "$fixture/consumer.sh" "$fixture" "$ROOT" wrong-retention retained-completed; then exit 1; fi
 
 # Conditional callers must not mask a mismatch or continue to later cases.
 cat > "$fixture/wrong-owner.sh" <<'PROBE'

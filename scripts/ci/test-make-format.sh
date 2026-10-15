@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: make/tools.mk make/rust-format.mk make/execution.mk scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh scripts/ci/check-make-execution.sh
+# Shared companions: make/tools.mk make/rust-format.mk make/execution.mk scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh scripts/ci/check-make-execution.sh scripts/ci/check-pipe-jobserver.pl
 set -euo pipefail
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 root="${BASH_SOURCE[0]}"
@@ -31,14 +31,12 @@ format-tools-check fmt fmt-check: override SHARED_TOOLING_ROOT := $(CURDIR)/vend
 help:
 	@echo harmless
 MAKE
+export JOBSERVER_PROBE="$root/scripts/ci/check-pipe-jobserver.pl"
 cat > "$consumer/.tools/rust/common/bin/format-fixture-cargo" <<'CARGO'
 #!/usr/bin/env bash
 set -eu
 if [[ "${JOBSERVER_TEST_REQUIRED:-0}" == 1 ]]; then
-    [[ "${MAKEFLAGS:-}" =~ --jobserver-(auth|fds)=([0-9]+),([0-9]+) ]] || exit 1
-    reader="${BASH_REMATCH[2]}"; writer="${BASH_REMATCH[3]}"
-    : <&"$reader"
-    : >&"$writer"
+    perl "$JOBSERVER_PROBE"
 fi
 [[ "$CARGO_NET_OFFLINE" == true && "$RUSTUP_AUTO_INSTALL" == 0 ]] || exit 1
 case "$*" in
