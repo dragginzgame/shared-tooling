@@ -73,3 +73,26 @@ fixture_probe_exits() {
         fixture_probe_exit "$1" "$2" "$3" "$4" "$failure" "${@:5}" || return
     done
 }
+
+# Execute an effectful fixture with caller-prepared PATH stubs and assertions.
+# Publish the retained directory without a command substitution/errexit boundary.
+fixture_probe_effect() {
+    [[ $# == 6 ]] || return 2
+    local script="$1" run="$2" prefix="$3" expected="$4" interpreter="$5" marker="$6"
+    local status=0 path
+    fixture_effect_retained=''
+    [[ -f "$script" && -d "$run/tmp" && "$prefix" != */* && -n "$prefix" ]] || return 2
+    case "$expected" in 0|[1-9]|[1-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5]) ;; *) return 2 ;; esac
+    TMPDIR="$run/tmp" "$interpreter" "$script" > "$run/result.log" 2>&1 || status=$?
+    printf '%s\n' "$status" > "$run/status.txt" || return
+    [[ "$status" == "$expected" ]] || return 1
+    if [[ "$expected" == 0 ]]; then
+        for path in "$run/tmp"/*; do [[ ! -e "$path" && ! -L "$path" ]] || return 1; done
+        return 0
+    fi
+    grep -Fq -- "$marker" "$run/result.log" || return 1
+    local retained=("$run/tmp/$prefix".*)
+    [[ ${#retained[@]} == 1 && -d "${retained[0]}" ]] || return 1
+    # shellcheck disable=SC2034 # Public result consumed by the caller's payload assertions.
+    fixture_effect_retained="${retained[0]}"
+}

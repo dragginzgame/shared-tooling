@@ -698,6 +698,33 @@ The portable fixture substitutes observations; it does not qualify macOS.
 
 ## Fixture allocation
 
+### Consumer flow qualification
+
+Source `scripts/ci/make-adapter-probes.sh` for
+`make_probe_execution_modes MAKE MAKEFILE DIRECTORY EVENTS TARGET...` and
+`make_probe_parallel_dispatch` with the same arguments. Callers prepare reviewed
+Makefiles and substituted effects. The first checks unsafe direct/inherited
+execution modes and hidden flag assignments; the second requires observable
+dispatch under a real pipe jobserver. Both fail when required assertions disagree.
+
+`fixture_probe_effect SCRIPT RUN PREFIX STATUS BASH MARKER` runs a fixture with
+caller-prepared PATH/environment, captures `result.log` and `status.txt`, and
+requires exact status, successful cleanup or one retained failure directory and
+the supplied marker. `RUN/tmp` must exist. The helper publishes
+`fixture_effect_retained` for consumer-owned payload/diagnostic assertions.
+
+`collect-native-diagnostics.sh CHECKOUT EVIDENCE OUTPUT FORMAT-ROOT TOOLS-OUTCOME
+HOST-PINS IC-PINS NAME...` archives only the supplied existing top-level files
+and writes its SHA-256 before collecting failed tools or formatter logs.
+Names cannot traverse directories; the scratch tree is never implicitly selected.
+The helper uses the existing tool/formatter owners and returns 0 on success,
+the tool collector's nonfatal status on partial collection, or 2 on fatal
+admission/archive errors. Consumers retain source/outcome records, the selected
+roster, upload policy and complete outer archives including Git recovery state.
+
+Focused coverage is `scripts/ci/test-consumer-flow-probes.sh`; no helper is a
+sandbox for an unreviewed Makefile, script or selected payload.
+
 Retained-success fixtures can call `fixture_completion_status STATUS COMPLETE`
 without deleting evidence. It preserves a nonzero child status, refuses an
 incomplete zero-status execution with status 1 and rejects invalid status values

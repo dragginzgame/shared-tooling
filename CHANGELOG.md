@@ -10,6 +10,10 @@
 
 ### Added
 
+- Share caller-selected Make admission/parallel dispatch probes, effectful fixture
+  status/retention checks and explicit native diagnostic collection. Consumers
+  retain target rosters, effect stubs, payload assertions and outer Git custody.
+
 - Expose completion admission separately from fixture cleanup, allowing retained
   successful evidence to share fail-closed status handling with disposable tests.
 
