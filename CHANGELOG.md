@@ -2,6 +2,9 @@
 
 ## [0.15.1]
 
+- Let the shared evidence action upload a caller-prepared archive and collection
+  log, retaining available diagnostics before reporting incomplete inputs.
+
 - Share explicit hosted common-tool preparation and a narrow Make-fixture
   bootstrap; consumers keep compilers, leaf stubs, catalogs and product gates.
 
