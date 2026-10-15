@@ -2,6 +2,9 @@
 
 ## [0.15.1]
 
+- Share explicit Rust installation between local callers and the existing
+  toolchain action; allow minimum-toolchain components for MSRV lint lanes.
+
 - Add read-only changelog preflight using the canonical candidate selector.
 - Support explicit verified snapshot ownership handover during consumer refresh,
   preserving source proof, local edits, index custody and selected entrypoints.
