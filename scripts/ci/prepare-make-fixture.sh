@@ -9,10 +9,16 @@ set -euo pipefail
 source_path="$1" fixture_path="$2"
 [[ "$source_path" == /* ]] || source_path="$PWD/$source_path"
 [[ "$fixture_path" == /* ]] || fixture_path="$PWD/$fixture_path"
+for directory in "$source_path" "$fixture_path"; do
+    case "$directory" in *$'\n'*|*$'\r'*) echo 'fixture directory contains CR/LF' >&2; exit 2 ;; esac
+done
 source_root="$(cd -P "$source_path" && printf '%s/.' "$PWD")"
 source_root="${source_root%/.}"
 fixture_root="$(cd -P "$fixture_path" && printf '%s/.' "$PWD")"
 fixture_root="${fixture_root%/.}"
+for directory in "$source_root" "$fixture_root"; do
+    case "$directory" in *$'\n'*|*$'\r'*) echo 'resolved fixture directory contains CR/LF' >&2; exit 2 ;; esac
+done
 [[ "$source_root" != "$fixture_root" ]] || exit 2
 payloads=(make/consumer.mk make/tools.mk make/release.mk make/rust-format.mk make/execution.mk
     scripts/ci/check-make-execution.sh scripts/ci/run-formatting.sh)

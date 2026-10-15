@@ -1,9 +1,12 @@
 # Changelog
 
-## [0.15.1]
+## [0.15.4]
 
 - Share explicit hosted common-tool preparation and a narrow Make-fixture
   bootstrap; consumers keep compilers, leaf stubs, catalogs and product gates.
+  Reject CR/LF directory inputs and resolved aliases before copying fixtures.
+
+## [0.15.1]
 
 - Extract focused snapshot path/helper rejection qualification from distribution
   tests, and complete archive/tool-receipt owner cases for consumer reuse.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: .github/actions/prepare-common-tools/action.yml scripts/ci/fixture-lifecycle.sh scripts/ci/extract-workflow-step.sh
+# Shared companions: .github/actions/prepare-common-tools/action.yml scripts/ci/fixture-lifecycle.sh scripts/ci/extract-workflow-step.sh scripts/ci/prepare-make-fixture.sh
 set -euo pipefail
 ROOT="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
@@ -63,6 +63,30 @@ for failure in success install check; do
     fi
     cmp "$fixture/expected-calls" "$fixture/prepare-calls"
     cmp "$fixture/expected-path" "$fixture/prepare-path"
+done
+# Reject forbidden raw and resolved directories before publishing any payload.
+mkdir "$fixture/clean-output"
+for suffix in $'\n' $'\r' $'\r\n'; do
+    forbidden="$fixture/forbidden$suffix"
+    mkdir "$forbidden"
+    ln -s "$forbidden" "$fixture/directory-alias"
+    for selected in "$forbidden" "$fixture/directory-alias"; do
+        status=0
+        bash "$ROOT/scripts/ci/prepare-make-fixture.sh" "$ROOT" "$selected" \
+            > "$fixture/rejected-output.log" 2>&1 || status=$?
+        [[ "$status" == 2 && ! -e "$forbidden/make" && ! -e "$forbidden/scripts" ]] || exit 1
+    done
+    # A complete source distinguishes path rejection from missing-input refusal.
+    mkdir -p "$forbidden/scripts/ci"
+    cp -Rp "$ROOT/make" "$forbidden/"
+    cp -p "$ROOT/scripts/ci/check-make-execution.sh" "$ROOT/scripts/ci/run-formatting.sh" "$forbidden/scripts/ci/"
+    for selected in "$forbidden" "$fixture/directory-alias"; do
+        status=0
+        bash "$ROOT/scripts/ci/prepare-make-fixture.sh" "$selected" "$fixture/clean-output" \
+            > "$fixture/rejected-source.log" 2>&1 || status=$?
+        [[ "$status" == 2 && ! -e "$fixture/clean-output/make" ]] || exit 1
+    done
+    rm "$fixture/directory-alias"
 done
 fixture_complete=true
 printf 'Common tool preparation ordering, status, logs and PATH checks passed\n'
