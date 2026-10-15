@@ -130,6 +130,7 @@ run_fixture test-formatting-evidence.sh bash "$ROOT/scripts/ci/test-formatting-e
 run_fixture test-collect-tool-evidence.sh bash "$ROOT/scripts/ci/test-collect-tool-evidence.sh"
 run_fixture test-consumer-flow-probes.sh bash "$ROOT/scripts/ci/test-consumer-flow-probes.sh"
 run_fixture test-fixture-retention.sh bash "$ROOT/scripts/ci/test-fixture-retention.sh"
+run_fixture test-collect-tool-evidence.sh bash "$ROOT/scripts/ci/test-collect-tool-evidence.sh"
 run_fixture test-snapshot-distribution.sh bash "$ROOT/scripts/ci/test-snapshot-distribution.sh"
 run_fixture test-snapshot-retirement.sh bash "$ROOT/scripts/ci/test-snapshot-retirement.sh"
 run_fixture test-release-runner.sh bash "$ROOT/scripts/ci/test-release-runner.sh"
