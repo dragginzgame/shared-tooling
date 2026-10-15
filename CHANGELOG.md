@@ -4,6 +4,8 @@
 
 - Add opt-in manifest-order qualification to Cargo metadata checks, sharing the
   same current or immutable source, cleanup and retained failure evidence.
+  Preserve failed sort/metadata producer statuses explicitly under Bash 3.2,
+  including commands that wrote plausible output before failing.
 
 - Extend assertion-retention probing with caller-selected literal assertions and
   bindings; verify the assertion was reached, rejecting setup failures and

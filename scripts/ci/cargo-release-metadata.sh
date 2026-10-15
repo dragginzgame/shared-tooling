@@ -148,7 +148,7 @@ case "$operation" in
         if [[ "$check_manifest_order" == true ]]; then
             # Check the same selected source as the graph, using the caller's
             # prepared Cargo tool. Never execute scripts from the export.
-            (cd "$selected_root" && cargo sort --workspace --check)
+            (cd "$selected_root" && cargo sort --workspace --check) || exit $?
         fi
         observed_version="$(bash "$reader" "$selected_root/Cargo.toml")"
         if [[ "$operation" == check ]]; then
@@ -157,7 +157,9 @@ case "$operation" in
                 '$0 == heading { count++ } END { if (count != 1) exit 1 }' "$selected_root/CHANGELOG.md"
         fi
         lock_packages "$selected_root" "$observed_version" > "$temporary/local-packages"
-        (cd "$selected_root" && cargo metadata --locked --offline --format-version 1) > "$temporary/metadata.json"
+        # Bash 3.2 can otherwise continue after a failed subshell producer,
+        # including one that left plausible metadata behind.
+        (cd "$selected_root" && cargo metadata --locked --offline --format-version 1) > "$temporary/metadata.json" || exit $?
         workspace_packages "$temporary/metadata.json" "$observed_version" "$temporary/local-packages"
         complete=true
         ;;
