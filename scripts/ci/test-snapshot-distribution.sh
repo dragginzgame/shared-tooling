@@ -272,11 +272,19 @@ done
 # Root can still read mode-000 files; qualify this case on ordinary user hosts.
 cp "$FIXTURE/version-manifest" "$FIXTURE/unreadable-records"
 chmod 000 "$FIXTURE/unreadable-records"
+unreadable_checked=false
+unreadable_status=0
 if [[ ! -r "$FIXTURE/unreadable-records" ]]; then
-    if manifest_contents="$(cat "$FIXTURE/version-manifest")" \
+    unreadable_checked=true
+    manifest_contents="$(cat "$FIXTURE/version-manifest")" \
         bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --read-manifest "$FIXTURE/unreadable-records" \
-        > "$FIXTURE/unreadable-records.out" 2> "$FIXTURE/unreadable-records.err"; then exit 1; fi
-    [[ ! -s "$FIXTURE/unreadable-records.out" ]] || exit 1
+        > "$FIXTURE/unreadable-records.out" 2> "$FIXTURE/unreadable-records.err" || unreadable_status=$?
+fi
+# Restore this fixture-owned permission before assertions or later failures so
+# the evidence collector can retain the test input along with its diagnostics.
+chmod 600 "$FIXTURE/unreadable-records"
+if [[ "$unreadable_checked" == true ]]; then
+    [[ "$unreadable_status" != 0 && ! -s "$FIXTURE/unreadable-records.out" ]] || exit 1
 fi
 for invalid in unknown duplicate unowned nul; do
     cp "$FIXTURE/version-manifest" "$FIXTURE/invalid-records"
@@ -597,7 +605,7 @@ selection_consumer="$FIXTURE/selection"
 mkdir "$selection_consumer"
 git init -q "$selection_consumer"
 for path in scripts/ci/run-validation-targets.sh scripts/ci/check-make-execution.sh \
-    scripts/ci/run-release.sh scripts/ci/next-release-version.sh \
+    scripts/ci/run-release.sh scripts/ci/next-release-version.sh scripts/ci/validate-release-inputs.pl \
     scripts/ci/check-release-tag.sh scripts/ci/fixture-lifecycle.sh \
     scripts/ci/test-release-runner.sh scripts/ci/finalize-release-changelog.awk \
     scripts/ci/test-host-tools.sh scripts/ci/test-ic-tools.sh scripts/ci/test-tool-evidence.sh \
