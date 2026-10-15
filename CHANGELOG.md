@@ -1,14 +1,19 @@
 # Changelog
 
-## [0.15.1]
+## [0.15.2]
 
 - Add read-only changelog preflight using the canonical candidate selector.
 - Support explicit verified snapshot ownership handover during consumer refresh,
   preserving source proof, local edits, index custody and selected entrypoints.
 
-Pending integration of
-[PR #216 — Saved-source dependency projection](https://github.com/dragginzgame/shared-tooling/pull/216)
-and [PR #214 — Consumer qualification ownership](https://github.com/dragginzgame/shared-tooling/pull/214).
+
+- Complete saved-source Cargo dependency projection, previously noted as pending
+  in 0.15.1. Archived manifests now use recorded workspace identity without
+  reconstructing the old checkout, preserving unrelated bytes and rejecting
+  incomplete ownership evidence
+  ([#210 — Saved-source dependency projection](https://github.com/dragginzgame/shared-tooling/issues/210)).
+
+## [0.15.1]
 
 - Project saved Cargo manifests using recorded source identity, updating owned
   dependency requirements without reconstructing the original workspace. Preserve
@@ -30,8 +35,17 @@ and [PR #214 — Consumer qualification ownership](https://github.com/dragginzga
   Non-default layouts must set `FIXTURE_PROBE_ROOT_VARIABLE` and
   `FIXTURE_PROBE_DIRECTORY_VARIABLE`; failure status and evidence remain preserved.
 
+### Changed
+
+- Keep exhaustive shared implementation regressions at their producer; consumers
+  retain actual integration and admission checks against their reviewed snapshot.
+- Share complete native evidence packaging with hidden Git recovery state,
+  replayable inventories, checksums and original failure/partial-output custody.
+
 ### Fixed
 
+- Own release/formatting checker failure-retention payload and formatting
+  completion qualification here, allowing consumers to check only their own logs.
 - Advance workspace-owned path dependency requirements across minor and major
   releases, preserving unrelated manifest bytes and restoring originals on failure
   ([PR #197 — Coordinated Cargo requirements](https://github.com/dragginzgame/shared-tooling/pull/197)).
@@ -42,6 +56,10 @@ and [PR #214 — Consumer qualification ownership](https://github.com/dragginzga
   retaining safe local evidence and original diagnostics.
 
 ### Added
+
+- Prepare deliberately unsorted Cargo formatting fixtures from caller-selected
+  adjacent dependencies, preserving manifest bytes and rejecting unsupported
+  layouts before emitting output.
 
 - Verify controlled hosted-scenario artifacts beside their Shared producer;
   consumers select archive prefixes and keep source/run and tool-pin admission
