@@ -853,8 +853,12 @@ the tool collector's nonfatal status on partial collection, or 2 on fatal
 admission/archive errors. Consumers retain source/outcome records, the selected
 roster, upload policy and complete outer archives including Git recovery state.
 
-Focused coverage is `scripts/ci/test-consumer-flow-probes.sh`; no helper is a
-sandbox for an unreviewed Makefile, script or selected payload.
+Focused coverage is `scripts/ci/test-consumer-flow-probes.sh` and
+`scripts/ci/test-native-diagnostics.sh`. The latter owns referenced host/IC/Rust
+bundle selection, rejected-store local retention and fatal candidate-archive
+failures after readable diagnostics are published. Consumers retain actual
+workflow dispatch/status and outer recovery-state checks. No helper is a sandbox
+for an unreviewed Makefile, script or selected payload.
 ## Assertion retention probes
 
 Source `scripts/ci/fixture-retention-probes.sh` for

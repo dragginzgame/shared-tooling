@@ -2,6 +2,9 @@
 
 ## [0.15.2]
 
+- Own the native diagnostic collector's store/reference and candidate-archive
+  regression cases, allowing Metrics to retain only its workflow integration.
+
 - Share explicit Rust installation between local callers and the existing
   toolchain action; allow minimum-toolchain components for MSRV lint lanes.
 
