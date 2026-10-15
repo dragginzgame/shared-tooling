@@ -2,6 +2,10 @@
 
 ## [0.15.2]
 
+- Separate optional maintenance runner/systemd selection roots from the governance
+  catalog. Keep task guidance available without operational payloads; explicit
+  opt-in and guarded retirement use the existing snapshot exporter contract.
+
 - Share explicit Rust installation between local callers and the existing
   toolchain action; allow minimum-toolchain components for MSRV lint lanes.
 
