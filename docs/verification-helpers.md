@@ -805,7 +805,11 @@ selected-source working directory; tool targets run with Make in TOOL-ROOT.
 Every selected catalog is hashed before preparation and rechecked after each
 tool target. Failures preserve fetch/Make status or refuse changed selections.
 The helper owns no version/source admission, index, release or publication effect.
-Focused coverage is `scripts/ci/test-cargo-release-preflight.sh`.
+Focused coverage is `scripts/ci/test-cargo-release-preflight.sh`, including
+simulated cold/warm caches, offline policy, fetch failure, missing executables,
+setup/check failure and selected-pin drift. These use substituted Cargo/Make
+effects. Consumers retain actual Cargo offline-policy checks, preparation
+authority, catalog overrides, runner ordering and Git-state custody.
 
 ## Current Rust formatting inputs
 

@@ -2,6 +2,9 @@
 
 ## [0.15.2]
 
+- Own simulated release-preflight cold/warm cache, offline and tool-failure
+  cases beside the shared helper; consumers retain their adapter/runner checks.
+
 - Separate optional maintenance runner/systemd selection roots from the governance
   catalog. Keep task guidance available without operational payloads; explicit
   opt-in and guarded retirement use the existing snapshot exporter contract.
