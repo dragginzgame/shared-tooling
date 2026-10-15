@@ -2,10 +2,16 @@
 
 ## [0.14.0]
 
-The following work is prepared in open PRs and awaits integration and required
-native CI. The earlier 0.13.1/0.13.3 descriptions remain historical pending notes.
+This draft includes local changes and work prepared in open PRs; integration
+and required native CI remain pending. The earlier 0.13.1/0.13.3 descriptions
+remain historical pending notes.
 
 ### Added
+
+- Own canonical MIT and Dragginz Verifiable ICP Burn license templates with an
+  opt-in drift checker, preserving consumer copyright and prior-license notices.
+  Third-party live use requires verifiable mainnet burning; the named organization
+  receives an express operational exception.
 
 - Prepare item-level rustdoc debt comparison and opt-in type-documentation
   layout checks, preserving caller-owned source selection and policy

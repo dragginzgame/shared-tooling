@@ -25,6 +25,9 @@ while retaining their package roots, pins and setup ownership.
 
 ## Repository fleet ownership
 
+The [canonical license templates and drift checker](docs/licenses.md) keep MIT
+and the Dragginz Verifiable ICP Burn terms consistent across adopting repositories.
+
 Shared Tooling owns consistency across the Dragginzgame repositories: shared
 rules and tools, adoption/pin drift checks, repository and sibling counts,
 CI/issue dashboards, LOC/tooling inventories, and repeatable maintenance audits.

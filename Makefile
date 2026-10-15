@@ -11,7 +11,7 @@ include make/consumer.mk
         release-version release-preflight release-verify \
         release-prepare-version release-prepared-check release-files \
         release-commit-check release-committed-check release-tagged-check release-push-check \
-        release-merged-preflight check-cargo-tool-versions check-tool-catalogs
+        release-merged-preflight check-cargo-tool-versions check-tool-catalogs test-licenses
 
 help:
 	@echo "Current local version: make version"
@@ -31,6 +31,9 @@ help:
 
 tasks:
 	@cat tasks/README.md
+
+test-licenses:
+	perl scripts/ci/test-license.pl
 
 check-cargo-tool-versions:
 	@perl scripts/dev/check-cargo-tool-versions.pl --versions "$(RUST_TOOL_VERSIONS)"
