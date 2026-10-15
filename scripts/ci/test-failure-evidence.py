@@ -6,7 +6,8 @@ import subprocess
 import tarfile
 import tempfile
 import unittest
-from failure_evidence import regular_evidence_archive, verify_compact_tools
+from failure_evidence import (regular_evidence_archive, verify_compact_tools,
+                              verify_hosted_scenario)
 
 
 class EvidenceTests(unittest.TestCase):
@@ -59,5 +60,96 @@ class EvidenceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             verify_compact_tools({".tools/ic-set.ABC123/bin/wasm-opt": None}, read, tool_pins, "Linux/X64")
 
+
+
+    def test_hosted_scenarios(self):
+        # Literal expectations are independent of the shell producer. Alternate
+        # prefixes (including regex characters) remain caller-owned selections.
+        for stage in ("early", "late"):
+            parent, logs = "consumer fixtures/[selected]", "consumer logs/validation"
+            scenario = f"{parent}/hosted-{stage}.ABC123"
+            marker = (b"error: controlled early installer download failure\n" if stage == "early"
+                      else b"error: controlled late validation failure\n")
+            status = 22 if stage == "early" else 2
+            files = {
+                scenario + "/status.txt": (f"stage={stage}\nstatus={status}\nexpected={status}\n".encode(), 0o644),
+                scenario + "/scenario.log": (marker, 0o644),
+            }
+            for name in ("before.txt", "after.txt", "consumer/input.txt"):
+                files[scenario + "/" + name] = (f"controlled {stage} input\n".encode(), 0o640)
+            if stage == "early":
+                payload = scenario + "/tool-store/host-" + "0" * 64 + "/set.ABC123/bin/jq"
+                files[payload] = (b"controlled rejected download bytes\n", 0o644)
+            else:
+                payload = logs + "/latest-combined.log"
+                files[payload] = (b"batch\n" + marker, 0o644)
+                files[logs + "/latest.log"] = (marker, 0o644)
+            with tempfile.TemporaryDirectory() as temporary:
+                path = Path(temporary) / "evidence.tar.gz"
+
+                def verify(entries, selected=stage, prefixes=(parent, logs), link=None):
+                    with tarfile.open(path, "w:gz") as archive:
+                        for name, (data, mode) in entries.items():
+                            member = tarfile.TarInfo(name)
+                            member.size, member.mode = len(data), mode
+                            archive.addfile(member, io.BytesIO(data))
+                        if link is not None:
+                            member = tarfile.TarInfo(link)
+                            member.type, member.linkname = tarfile.SYMTYPE, "outside"
+                            archive.addfile(member)
+                    with regular_evidence_archive(path) as (members, read):
+                        verify_hosted_scenario(members, read, selected,
+                                               scenario_parent=prefixes[0],
+                                               failure_log_root=prefixes[1])
+
+                verify(files)
+                verify({"./" + name: value for name, value in files.items()})
+                for invalid in ("", "other", "early\n", "late\n"):
+                    with self.subTest(stage=stage, invalid=invalid), self.assertRaises(ValueError):
+                        verify(files, selected=invalid)
+                for index in (0, 1):
+                    for invalid in ("", "/absolute", "../outside", "inside/./alias", "inside//alias", "trailing/"):
+                        prefixes = [parent, logs]
+                        prefixes[index] = invalid
+                        with self.subTest(prefix=invalid, index=index), self.assertRaises(ValueError):
+                            verify(files, prefixes=prefixes)
+                with self.assertRaises(ValueError):
+                    verify(files, selected="late" if stage == "early" else "early")
+                other = scenario.replace("ABC123", "DEF456") + "/status.txt"
+                with self.assertRaises(ValueError):
+                    verify(dict(files, **{other: files[scenario + "/status.txt"]}))
+                for name in files:
+                    missing = {key: value for key, value in files.items() if key != name}
+                    with self.subTest(missing=name), self.assertRaises(ValueError):
+                        verify(missing)
+                    with self.subTest(link=name), self.assertRaises(ValueError):
+                        verify(missing, link=name)
+                for name, replacement in (
+                    (scenario + "/after.txt", (b"changed\n", 0o640)),
+                    (scenario + "/before.txt", (f"controlled {stage} input\n".encode(), 0o644)),
+                    (scenario + "/status.txt", (b"status=0\n", 0o644)),
+                    (scenario + "/scenario.log", (b"unrelated setup outage\n", 0o644)),
+                    (payload, (b"damaged retained bytes\n", 0o644)),
+                ):
+                    with self.subTest(corrupt=name), self.assertRaises(ValueError):
+                        verify(dict(files, **{name: replacement}))
+                if stage == "early":
+                    for wrong in (
+                        scenario + "/consumer/.tools/host-set.ABC123/bin/jq",
+                        payload.replace("0" * 64, "invalid"),
+                        payload.replace("set.ABC123", "set.invalid-name"),
+                    ):
+                        entries = {key: value for key, value in files.items() if key != payload}
+                        entries[wrong] = files[payload]
+                        with self.subTest(candidate=wrong), self.assertRaises(ValueError):
+                            verify(entries)
+                    with self.assertRaises(ValueError):
+                        verify(dict(files, **{payload.replace("set.ABC123", "set.DEF456"): files[payload]}))
+                else:
+                    # A marker substring is insufficient in the retained raw log.
+                    bad_raw = b"prefix " + marker
+                    with self.assertRaises(ValueError):
+                        verify(dict(files, **{logs + "/latest.log": (bad_raw, 0o644),
+                                              payload: (bad_raw, 0o644)}))
 
 if __name__ == "__main__": unittest.main()
