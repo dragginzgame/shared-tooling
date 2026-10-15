@@ -1,11 +1,29 @@
 # Changelog
 
-## [0.13.4]
+## [0.14.0]
+
+The following work is prepared in open PRs and awaits integration and required
+native CI. The earlier 0.13.1/0.13.3 descriptions remain historical pending notes.
+
+### Added
 
 - Discover current Rust sources and Cargo manifests for opt-in formatting-hook
   qualification, including new modules/crates and tracked deletions. Preserve
   consumer perturbations, explicit tooling inputs and the real source index
   ([#195 — Formatting source discovery](https://github.com/dragginzgame/shared-tooling/issues/195)).
+- Prepare item-level rustdoc debt comparison and opt-in type-documentation
+  layout checks, preserving caller-owned source selection and policy
+  ([#181 — Extract caller-owned rustdoc item-debt comparison](https://github.com/dragginzgame/shared-tooling/issues/181),
+  [#187 — Share opt-in section-style Rust type documentation checks](https://github.com/dragginzgame/shared-tooling/issues/187)).
+- Prepare complete release-change collection bound to the verified base commit,
+  plus a non-blocking release-prose advisory
+  ([PR #191 — Share release-prose and complete change-observation helpers](https://github.com/dragginzgame/shared-tooling/pull/191)).
+
+### Fixed
+
+- Prepare exact stable-version and calendar-date admission for release inputs,
+  with snapshot qualification and readable retained failure evidence
+  ([#193 — Own release version and calendar-date admission](https://github.com/dragginzgame/shared-tooling/issues/193)).
 
 ## [0.13.3]
 
