@@ -29,14 +29,13 @@ OWNER
 fixture_probe_assertion "$fixture/owner.sh" "$fixture" "$root" owner selected || exit 1
 # Missing layout markers must be refused before any child execution.
 for marker in anchor trap assertion; do
-    # Match literal shell expressions, not this process's variables.
-    # shellcheck disable=SC2016
-    case "$marker" in
-        anchor) pattern='^root="\${root%/\.}"$' ;;
-        trap) pattern='^trap ' ;;
-        assertion) pattern='^\[\[ "\$status" == ' ;;
-    esac
-    awk -v pattern="$pattern" '$0 !~ pattern' "$fixture/owner.sh" > "$fixture/unsupported.sh"
+    # Keep regex literals in the program: awk -v interprets backslashes again.
+    awk -v marker="$marker" '
+        marker == "anchor" && /^root="\$\{root%\/\.\}"$/ { next }
+        marker == "trap" && /^trap / { next }
+        marker == "assertion" && /^\[\[ "\$status" == / { next }
+        { print }
+    ' "$fixture/owner.sh" > "$fixture/unsupported.sh"
     status=0
     fixture_probe_assertion "$fixture/unsupported.sh" "$fixture" "$root" "$marker" selected || status=$?
     [[ "$status" != 0 && ! -f "$fixture/$marker-assertion.path" ]] || exit 1
