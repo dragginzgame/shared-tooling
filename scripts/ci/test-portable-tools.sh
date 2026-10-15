@@ -98,6 +98,7 @@ printf '[toolchain]\nchannel = "fixture-unprepared"\n' > "$FIXTURE/rust-consumer
 run_fixture test-tool-commands.sh bash "$ROOT/scripts/ci/test-tool-commands.sh"
 run_fixture test-make-format.sh bash "$ROOT/scripts/ci/test-make-format.sh"
 run_fixture test-make-consumer.sh bash "$ROOT/scripts/ci/test-make-consumer.sh"
+run_fixture test-prepare-common-tools.sh bash "$ROOT/scripts/ci/test-prepare-common-tools.sh"
 run_fixture test-tool-path-contexts.sh bash "$ROOT/scripts/ci/test-tool-path-contexts.sh"
 run_fixture test-evidence-checksums.sh bash "$ROOT/scripts/ci/test-evidence-checksums.sh"
 run_fixture test-file-digests.sh bash "$ROOT/scripts/ci/test-file-digests.sh"

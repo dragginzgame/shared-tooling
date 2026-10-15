@@ -2,6 +2,9 @@
 
 ## [0.15.1]
 
+- Share explicit hosted common-tool preparation and a narrow Make-fixture
+  bootstrap; consumers keep compilers, leaf stubs, catalogs and product gates.
+
 - Extract focused snapshot path/helper rejection qualification from distribution
   tests, and complete archive/tool-receipt owner cases for consumer reuse.
 

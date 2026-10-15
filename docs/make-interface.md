@@ -154,3 +154,19 @@ No old public command is removed by this addition. Any later retirement must
 identify callers and actual replacement coverage before selecting a breaking
 Shared Tooling release. Consumer library adoption is normally contributor tooling
 work, not a reason to bump the library's minor version.
+
+## Hosted preparation and disposable fixtures
+
+The optional `.github/actions/prepare-common-tools` action runs `make install-tools`
+then `make tools-check`, retaining complete `tools-install.log` and `tools-check.log`
+under `RUNNER_TEMP`. It appends common host/IC/Cargo executable directories to
+`GITHUB_PATH` only after both commands succeed. Consumers own compiler setup,
+Make's ordered local extensions, caches and product gates. The action requires
+an existing checkout, `RUNNER_TEMP` and `GITHUB_PATH`; it does not select a compiler.
+
+`bash scripts/ci/prepare-make-fixture.sh SOURCE EXISTING-FIXTURE` copies the common
+Make includes and execution/formatting runners into a disposable consumer. It
+preserves modes and unrelated files, rejects missing inputs or symlink outputs
+before copying, and preserves copy failures. It invokes no Make, Git, installer
+or release command. Callers keep the Makefile, catalogs, leaf stubs, assertions
+and fixture retention; this is a test skeleton, not a complete consumer export.
