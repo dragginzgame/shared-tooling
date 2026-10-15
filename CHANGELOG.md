@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.14.1]
+
+- Add caller-selected rustdoc debt and type-documentation checks, completing
+  their previously pending integration
+  ([#181 — Rustdoc debt comparison](https://github.com/dragginzgame/shared-tooling/issues/181),
+  [#187 — Type documentation checks](https://github.com/dragginzgame/shared-tooling/issues/187)).
+- Add complete release-change collection bound to the verified base commit and
+  a non-blocking prose advisory
+  ([PR #191 — Release observation helpers](https://github.com/dragginzgame/shared-tooling/pull/191)).
+- Validate release versions and calendar dates exactly, preserving readable
+  failure evidence
+  ([#193 — Release input admission](https://github.com/dragginzgame/shared-tooling/issues/193)).
+- Discover current Rust sources for opt-in formatting qualification, including
+  new files and tracked deletions without changing the caller's index
+  ([#195 — Formatting source discovery](https://github.com/dragginzgame/shared-tooling/issues/195)).
+- Support consumer fixture root names and diagnostic failure probes while
+  preserving original status and retained evidence
+  ([PR #183 — IcyDB fixture support](https://github.com/dragginzgame/shared-tooling/pull/183)).
+
 ## [0.14.0]
 
 The following work is prepared in open PRs and awaits integration and required
