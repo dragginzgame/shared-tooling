@@ -72,3 +72,48 @@ def verify_compact_tools(members, read, tool_pins, native_host):
         raise ValueError("compact IC receipt identifies a different native host")
     if not read("tool-evidence/ic/files.sha256"):
         raise ValueError("compact IC checksum receipt is empty")
+
+
+def verify_hosted_scenario(members, read, stage, *, scenario_parent, failure_log_root):
+    """Independently verify the controlled hosted driver's retained bytes and modes.
+
+    Callers select canonical relative archive prefixes and retain source/run
+    identity, archive collection and native tool-selection qualification.
+    """
+    if stage not in ("early", "late"):
+        raise ValueError("expected early or late qualification")
+    for prefix in (scenario_parent, failure_log_root):
+        if (not prefix or prefix.startswith("/")
+                or any(part in ("", ".", "..") for part in prefix.split("/"))):
+            raise ValueError("expected canonical relative evidence prefixes")
+    scenarios = [name.rsplit("/", 1)[0] for name in members
+                 if re.fullmatch(re.escape(scenario_parent) + r"/hosted-" + stage
+                                 + r"\.[A-Za-z0-9]+/status\.txt", name)]
+    if len(scenarios) != 1:
+        raise ValueError("expected exactly one selected qualification scenario")
+    scenario = scenarios[0]
+    status = 22 if stage == "early" else 2
+    expected_status = f"stage={stage}\nstatus={status}\nexpected={status}\n".encode()
+    if read(scenario + "/status.txt") != expected_status:
+        raise ValueError("controlled failure status was not retained")
+    expected_input = f"controlled {stage} input\n".encode()
+    for name in ("before.txt", "after.txt", "consumer/input.txt"):
+        if read(scenario + "/" + name, 0o640) != expected_input:
+            raise ValueError("scenario input bytes were not preserved")
+    marker = (b"error: controlled early installer download failure" if stage == "early"
+              else b"error: controlled late validation failure")
+    # The logger annotates its live diagnostics; retained raw logs below
+    # keep the original complete lines.
+    if marker not in read(scenario + "/scenario.log"):
+        raise ValueError("scenario did not reach the controlled failure")
+    if stage == "early":
+        candidates = [name for name in members
+                      if re.fullmatch(re.escape(scenario)
+                                      + r"/tool-store/host-[0-9a-f]{64}/set\.[A-Za-z0-9]+/bin/jq", name)]
+        if len(candidates) != 1 or read(candidates[0]) != b"controlled rejected download bytes\n":
+            raise ValueError("rejected installer candidate bytes were not retained")
+    else:
+        prefix = failure_log_root + "/"
+        raw = read(prefix + "latest.log")
+        if marker not in raw.splitlines() or raw not in read(prefix + "latest-combined.log"):
+            raise ValueError("raw/combined validation logs were not retained")

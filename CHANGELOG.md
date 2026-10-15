@@ -24,6 +24,10 @@
 
 ### Added
 
+- Verify controlled hosted-scenario artifacts beside their Shared producer;
+  consumers select archive prefixes and keep source/run and tool-pin admission
+  ([PR #209 — Independent scenario verification](https://github.com/dragginzgame/shared-tooling/pull/209)).
+
 - Check manifest ordering against the selected immutable release source, and
   create hosted evidence parents only after complete input admission
   ([PR #208 — Hosted qualification admission](https://github.com/dragginzgame/shared-tooling/pull/208)).
