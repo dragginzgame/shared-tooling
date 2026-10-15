@@ -6,6 +6,7 @@ use std::{env, fs, process::ExitCode};
 use proc_macro2::{Delimiter, Span, TokenStream, TokenTree};
 use syn::{
     Attribute, Expr, ImplItem, Item, Meta, Token, TraitItem, Type,
+    ext::IdentExt,
     parse::Parser,
     punctuated::Punctuated,
     visit::{self, Visit},
@@ -28,7 +29,7 @@ impl Scanner {
             let TokenTree::Ident(ident) = token else {
                 continue;
             };
-            let name = ident.to_string();
+            let name = ident.unraw().to_string();
             let macro_call = forbidden_macro(&name)
                 && matches!(tokens.get(index + 1), Some(TokenTree::Punct(p)) if p.as_char() == '!');
             let method_call = matches!(name.as_str(), "unwrap" | "expect")
@@ -43,7 +44,7 @@ impl Scanner {
 
 impl<'ast> Visit<'ast> for Scanner {
     fn visit_expr_method_call(&mut self, node: &'ast syn::ExprMethodCall) {
-        if node.method == "unwrap" || node.method == "expect" {
+        if node.method.unraw() == "unwrap" || node.method.unraw() == "expect" {
             self.hits
                 .push((node.method.span(), node.method.to_string()));
         }
@@ -90,7 +91,7 @@ impl<'ast> Visit<'ast> for Scanner {
 
     fn visit_macro(&mut self, node: &'ast syn::Macro) {
         if let Some(segment) = node.path.segments.last()
-            && forbidden_macro(&segment.ident.to_string())
+            && forbidden_macro(&segment.ident.unraw().to_string())
         {
             self.hits
                 .push((segment.ident.span(), segment.ident.to_string()));

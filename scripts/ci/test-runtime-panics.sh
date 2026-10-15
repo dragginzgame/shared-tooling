@@ -88,6 +88,12 @@ printf 'fn production() { let _ = format!("{}", value.unwrap()); }\n' > "$execut
 check production-inside-macro 1 "$checker" "$executor/production.rs"
 printf 'macro_rules! runtime { () => { panic!("fixture"); }; }\n' > "$executor/production.rs"
 check production-macro-template 1 "$checker" "$executor/production.rs"
+for pattern in 'value.r#unwrap();' 'value.r#expect("reason");' 'r#panic!("reason");' \
+  'std::r#assert!(false);' 'format!("{}", value.r#unwrap());' \
+  'outer!(r#panic!("reason"));'; do
+  printf 'fn production() { %s }\n' "$pattern" > "$executor/production.rs"
+  check "raw-identifier-$cases" 1 "$checker" "$executor/production.rs"
+done
 printf '#[cfg(all(feature = "sql", test))]\nfn test() { panic!("fixture"); }\n' > "$executor/production.rs"
 check reordered-test-cfg 0 "$checker" "$executor/production.rs"
 printf '#[cfg(not(not(test)))]\nfn test() { panic!("fixture"); }\n' > "$executor/production.rs"

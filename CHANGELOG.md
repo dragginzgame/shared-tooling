@@ -1,6 +1,9 @@
 # Changelog
 
-## [0.15.3]
+## [0.15.4]
+
+- Detect raw-identifier spellings of forbidden Rust panic constructs, including
+  calls nested in macro tokens, in the shared source scanner.
 
 - Share structural Rust runtime-panic scanning and its semantic fixtures as
   snapshot source. Consumers compile against their own lockfile and retain
