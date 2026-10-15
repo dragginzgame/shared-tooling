@@ -1,5 +1,43 @@
 # Changelog
 
+## [0.15.0]
+
+Pending integration in
+[PR #205 — Release fixes and consumer qualification helpers](https://github.com/dragginzgame/shared-tooling/pull/205).
+These changes are not yet on `main`.
+
+### Breaking
+
+- Prepare coordinated Cargo releases with literal manifest updates instead of
+  implicit Cargo-edit/Cargo-sort mutation. Consumers must keep ordering checks
+  explicit; unsupported manifest layouts refuse without installing changes.
+- Select consumer fixture variables explicitly instead of guessing aliases.
+  Non-default layouts must set `FIXTURE_PROBE_ROOT_VARIABLE` and
+  `FIXTURE_PROBE_DIRECTORY_VARIABLE`; failure status and evidence remain preserved.
+
+### Fixed
+
+- Advance workspace-owned path dependency requirements across minor and major
+  releases, preserving unrelated manifest bytes and restoring originals on failure
+  ([PR #197 — Coordinated Cargo requirements](https://github.com/dragginzgame/shared-tooling/pull/197)).
+- Preserve Cargo metadata failures under Bash 3.2, even when the failed command
+  emits valid-looking output.
+- Reject successful cleanup claims when hidden files or dangling links remain.
+- Exclude failed tool-selection output from archive payload selection while
+  retaining safe local evidence and original diagnostics.
+
+### Added
+
+- Qualify caller-selected assertions without executing the remaining fixture
+  body; require proof that the assertion was reached
+  ([PR #203 — Selected assertion probes](https://github.com/dragginzgame/shared-tooling/pull/203)).
+- Share native host checks, admitted tool-version reports and pipe jobserver
+  observation while keeping host matrices and tool selections with consumers.
+- Share Make adapter checks, retained-effect probes and selected diagnostic
+  archives; consumers retain payload selection, upload policy and Git recovery
+  custody
+  ([PR #201 — Consumer qualification flows](https://github.com/dragginzgame/shared-tooling/pull/201)).
+
 ## [0.14.1]
 
 - Qualify failed status assertions through a shared fixture-retention probe with
