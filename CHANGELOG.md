@@ -2,6 +2,9 @@
 
 ## [0.14.1]
 
+- Own hosted qualification admission and evidence-parent creation together;
+  reject invalid requests before directory creation and anchor admitted aliases.
+
 - Add opt-in manifest-order qualification to Cargo metadata checks, sharing the
   same current or immutable source, cleanup and retained failure evidence.
   Preserve failed sort/metadata producer statuses explicitly under Bash 3.2,

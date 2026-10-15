@@ -751,3 +751,13 @@ commit admission, cleanup and failure retention. Consumers retain the opt-in
 policy and prepare the Cargo tool; this check performs no installation or
 manifest mutation. Other check callers remain unchanged. The flag is rejected
 for `prepare` and `check-graph`. Scripts from the selected export are never run.
+
+## Hosted qualification admission and evidence parents
+
+`qualify-hosted-failure.sh` owns stage/manual-dispatch admission, selected-checkout
+comparison and validation of caller catalog/log paths before creating an evidence
+parent. Consumers select the five arguments and delegate; they need not repeat
+admission or create the parent first. A nonempty missing parent is created only
+after admission, then physically anchored so relative paths, aliases and spaces
+retain the same scenario identity. Refused inputs create no evidence directories.
+The focused owner fixture is `scripts/ci/test-hosted-failure.sh`.
