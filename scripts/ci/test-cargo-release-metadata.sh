@@ -25,8 +25,18 @@ mkdir "$fixture/bin"
 cat > "$fixture/bin/cargo" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
+if [[ -n "${ORDER_EVENTS:-}" ]]; then
+    printf '%s\n' "$*" >> "$ORDER_EVENTS"
+fi
 case "$1" in
-    set-version|sort) echo 'preparation must not dispatch manifest mutation tools' >&2; exit 91 ;;
+    set-version) echo "preparation must not dispatch manifest mutation tools" >&2; exit 91 ;;
+    sort)
+        [[ "$*" == "sort --workspace --check" ]] || exit 91
+        if [[ -n "${ORDER_EVENTS:-}" ]]; then
+            printf '%s\n' "$PWD" > "$ORDER_EVENTS.root"
+            cat Cargo.toml > "$ORDER_EVENTS.manifest"
+        fi
+        [[ "${CASE:-}" != sort-failure ]] || exit 24 ;;
     metadata)
         if [[ "${CASE:-}" == prepared-local-failure ]] && grep -q '^version = "0.10.0"$' Cargo.toml; then
             "$REAL_CARGO" "$@"
@@ -114,6 +124,9 @@ mkdir "$fixture/success"
 make_workspace "$fixture/success"
 (cd "$fixture/success" && bash "$helper" prepare primary > "$fixture/success.log" 2>&1)
 (cd "$fixture/success" && bash "$helper" check primary)
+(cd "$fixture/success" && ORDER_EVENTS="$fixture/current-order.events" bash "$helper" check primary --manifest-order)
+[[ "$(cat "$fixture/current-order.events.root")" == "$fixture/success" ]] || exit 1
+cmp "$fixture/success/Cargo.toml" "$fixture/current-order.events.manifest"
 for package in primary secondary; do
     jq -e --arg name "$package" '.packages[] | select(.name == $name) | .version == "1.2.4"' \
         < <(cd "$fixture/success" && "$REAL_CARGO" metadata --offline --locked --format-version 1) > /dev/null
@@ -294,6 +307,44 @@ for failure in type export; do
     GIT_FAILURE="$failure" RELEASE_COMMIT="$commit" bash "$helper" check primary > "$fixture/git-$failure.log" 2>&1 || status=$?
     [[ "$status" == 43 ]] || { echo 'failed Git output was accepted or its status lost' >&2; exit 1; }
 done
+# Manifest ordering is opt-in and belongs to the same selected source as graph
+# admission. A poisoned working tree must never be used for the committed check.
+git show "$commit:Cargo.toml" > "$fixture/committed-manifest"
+for mode in default ordered sort-failure; do
+    events="$fixture/order-$mode.events"
+    status=0
+    if [[ "$mode" == default ]]; then
+        CASE=sort-failure ORDER_EVENTS="$events" RELEASE_COMMIT="$commit" \
+            bash "$helper" check primary > "$fixture/order-$mode.log" 2>&1 || status=$?
+        [[ "$status" == 0 && ! -e "$events.root" ]] || exit 1
+    else
+        CASE="$mode" ORDER_EVENTS="$events" RELEASE_COMMIT="$commit" \
+            bash "$helper" check primary --manifest-order > "$fixture/order-$mode.log" 2>&1 || status=$?
+        [[ "$(head -n 1 "$events")" == 'sort --workspace --check' ]] || exit 1
+        [[ "$(cat "$events.root")" != "$PWD" ]] || exit 1
+        cmp "$fixture/committed-manifest" "$events.manifest"
+        if [[ "$mode" == ordered ]]; then
+            [[ "$status" == 0 && ! -e "$(cat "$events.root")" ]] || exit 1
+            grep -Fxq 'metadata --locked --offline --format-version 1' "$events"
+        else
+            [[ "$status" == 24 && -d "$(cat "$events.root")" ]] || exit 1
+            if grep -q '^metadata ' "$events"; then exit 1; fi
+            grep -Fq 'failed Cargo metadata check retained:' "$fixture/order-$mode.log"
+        fi
+    fi
+    [[ "$(git rev-parse HEAD)" == "$commit" && "$(git write-tree)" == "$index_before" ]] || exit 1
+    [[ "$(cat Cargo.toml)" == 'broken current metadata' && ! -e secondary/Cargo.toml ]] || exit 1
+done
+# Reject unsupported flag/operation combinations before invoking any Cargo tool.
+for operation in prepare check-graph; do
+    status=0
+    ORDER_EVENTS="$fixture/rejected-order.events" bash "$helper" "$operation" primary --manifest-order \
+        > "$fixture/order-$operation.log" 2>&1 || status=$?
+    [[ "$status" == 2 && ! -e "$fixture/rejected-order.events" ]] || exit 1
+done
+status=0
+bash "$helper" check primary --unknown > "$fixture/order-unknown.log" 2>&1 || status=$?
+[[ "$status" == 2 ]] || exit 1
 # Graph admission is independent of release notes and pending-version variables.
 root="$fixture/graph"
 make_workspace "$root"

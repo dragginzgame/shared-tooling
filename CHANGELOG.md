@@ -24,6 +24,10 @@
 
 ### Added
 
+- Check manifest ordering against the selected immutable release source, and
+  create hosted evidence parents only after complete input admission
+  ([PR #208 — Hosted qualification admission](https://github.com/dragginzgame/shared-tooling/pull/208)).
+
 - Share locked release preflight with catalog identity checks and exact workflow
   run-body extraction; callers retain preparation authority and execution policy
   ([PR #207 — Workflow extraction and release preflight](https://github.com/dragginzgame/shared-tooling/pull/207)).
