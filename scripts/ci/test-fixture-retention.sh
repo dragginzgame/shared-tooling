@@ -14,6 +14,7 @@ source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 source "$ROOT/scripts/ci/fixture-retention-probes.sh"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Retention fixtures retained"' EXIT
+"$BASH" "$ROOT/scripts/ci/test-fixture-assertion-probe.sh"
 # Inject exits into disposable copies of actual fixtures immediately after their
 # EXIT trap. No installer, release, or nested test body is dispatched. Exercise
 # cleanup/status handling using this invocation's Bash (including 3.2).

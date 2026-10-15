@@ -60,3 +60,38 @@ fixture_probe_exits() {
         fixture_probe_exit "$1" "$2" "$3" "$4" "$failure" "${@:5}" || return
     done
 }
+
+# Contradict the first status assertion in a lower-case Jobs-style fixture.
+# Refuse unsupported layouts rather than running an unmodified success path.
+fixture_probe_assertion() {
+    local source="$1" probe_root="$2" source_root="$3" name="$4"
+    shift 4
+    local directory="$probe_root/assertion-source" status=0 retained
+    local observation="$probe_root/$name-assertion.path"
+    mkdir -p "$directory" || return
+    awk '
+        { line=$0 }
+        /^root="\$\{root%\/\.\}"$/ {
+            line="root=\"$RETENTION_SOURCE_ROOT\""; anchored=1
+        }
+        /^trap .* EXIT$/ && !trapped {
+            print line
+            print "printf \"%s\\n\" \"$fixture\" > \"$RETENTION_ASSERTION_PATH\""
+            print "printf \"retained assertion evidence\\n\" > \"$fixture/assertion-evidence\""
+            trapped=1
+            next
+        }
+        trapped && !injected && /^[[:space:]]*\[\[ "\$status" == .* \]\]/ {
+            sub(/== .* \]\]/, "== 97 ]]", line); injected=1
+        }
+        { print line }
+        END { if (!anchored || !trapped || !injected) exit 1 }
+    ' "$source" > "$directory/$name.sh" || return
+    RETENTION_SOURCE_ROOT="$source_root" RETENTION_ASSERTION_PATH="$observation" \
+        TMPDIR="$probe_root" "$BASH" "$directory/$name.sh" "$@" \
+        > "$probe_root/$name-assertion.log" 2>&1 || status=$?
+    [[ "$status" == 1 ]] || return 1
+    retained="$(cat "$observation")" || return
+    [[ -n "$retained" && -d "$retained" &&
+        "$(cat "$retained/assertion-evidence")" == 'retained assertion evidence' ]] || return 1
+}
