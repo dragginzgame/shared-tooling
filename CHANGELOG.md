@@ -2,10 +2,14 @@
 
 ## [0.15.1]
 
-- Project saved Cargo manifests using recorded source identity, including owned
-  dependency requirements, without reconstructing the original workspace. Refuse
-  incomplete ownership evidence before emitting a candidate
+- Project saved Cargo manifests using recorded source identity, updating owned
+  dependency requirements without reconstructing the original workspace. Preserve
+  unrelated bytes and refuse incomplete ownership evidence before emitting output
   ([#210 — Saved-source dependency projection](https://github.com/dragginzgame/shared-tooling/issues/210)).
+- Clarify which regression checks Shared Tooling owns and which integration,
+  recovery and native checks consumers retain. Review each proof before removing
+  duplicate test dispatch; existing validation gates remain unchanged
+  ([#212 — Producer and consumer qualification ownership](https://github.com/dragginzgame/shared-tooling/issues/212)).
 
 ## [0.15.0]
 
@@ -30,6 +34,10 @@
   retaining safe local evidence and original diagnostics.
 
 ### Added
+
+- Verify controlled hosted-scenario artifacts beside their Shared producer;
+  consumers select archive prefixes and keep source/run and tool-pin admission
+  ([PR #209 — Independent scenario verification](https://github.com/dragginzgame/shared-tooling/pull/209)).
 
 - Check manifest ordering against the selected immutable release source, and
   create hosted evidence parents only after complete input admission

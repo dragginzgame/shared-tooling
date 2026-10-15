@@ -882,3 +882,16 @@ admission or create the parent first. A nonempty missing parent is created only
 after admission, then physically anchored so relative paths, aliases and spaces
 retain the same scenario identity. Refused inputs create no evidence directories.
 The focused owner fixture is `scripts/ci/test-hosted-failure.sh`.
+
+## Controlled hosted-scenario verification
+
+`failure_evidence.py` also exports
+`verify_hosted_scenario(members, read, stage, *, scenario_parent, failure_log_root)`.
+Call it inside `regular_evidence_archive` with explicit canonical relative archive
+prefixes. It independently checks the maintained hosted driver's exact failure
+status, preserved input bytes/modes, scenario marker, rejected early download or
+late raw/combined logs. It neither extracts archives nor derives expected bytes
+from their receipts. Consumers retain source/job/run identity, collection policy,
+native tool pins and compact-tool qualification. Negative owner cases exercise
+both stages and malformed/missing/ambiguous evidence; consumer collector tests
+still qualify the complete upload/download boundary.
