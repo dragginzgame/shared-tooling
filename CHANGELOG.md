@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.15.1]
+
+Pending integration of
+[PR #216 — Saved-source dependency projection](https://github.com/dragginzgame/shared-tooling/pull/216)
+and [PR #214 — Consumer qualification ownership](https://github.com/dragginzgame/shared-tooling/pull/214).
+
+- Project saved Cargo manifests using recorded source identity, updating owned
+  dependency requirements without reconstructing the original workspace. Preserve
+  unrelated bytes and refuse incomplete ownership evidence before emitting output
+  ([#210 — Saved-source dependency projection](https://github.com/dragginzgame/shared-tooling/issues/210)).
+- Clarify which regression checks Shared Tooling owns and which integration,
+  recovery and native checks consumers retain. Review each proof before removing
+  duplicate test dispatch; existing validation gates remain unchanged
+  ([#212 — Producer and consumer qualification ownership](https://github.com/dragginzgame/shared-tooling/issues/212)).
+
 ## [0.15.0]
 
 Pending integration in
