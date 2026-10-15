@@ -6,6 +6,8 @@
   bindings; verify the assertion was reached, rejecting setup failures and
   missing or duplicate matches before admitting retained evidence.
 
+- Qualify failed status assertions through a shared fixture-retention probe with
+  explicit source/root inputs and fail-closed layout admission.
 - Add caller-selected rustdoc debt and type-documentation checks, completing
   their previously pending integration
   ([#181 — Rustdoc debt comparison](https://github.com/dragginzgame/shared-tooling/issues/181),
@@ -30,8 +32,6 @@ native CI. The earlier 0.13.1/0.13.3 descriptions remain historical pending note
 
 ### Added
 
-- Qualify failed status assertions through a shared fixture-retention probe with
-  explicit source/root inputs and fail-closed layout admission.
 - Prepare item-level rustdoc debt comparison and opt-in type-documentation
   layout checks, preserving caller-owned source selection and policy
   ([#181 — Extract caller-owned rustdoc item-debt comparison](https://github.com/dragginzgame/shared-tooling/issues/181),
