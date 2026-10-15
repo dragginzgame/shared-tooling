@@ -72,7 +72,7 @@ fixture_probe_assertion() {
     local directory="$probe_root/assertion-source" status=0 retained
     local observation="$probe_root/$name-assertion.path"
     mkdir -p "$directory" || return
-    local reached="$probe_root/$name-assertion.reached" assertion bindings
+    local reached="$probe_root/$name-assertion.reached" assertion='' bindings='' selected=false
     rm -f -- "$observation" "$reached" || return
     if [[ "${1:-}" == --selected ]]; then
         [[ $# == 4 ]] || return 2
@@ -82,45 +82,35 @@ fixture_probe_assertion() {
             END { if (found != 1 || ENVIRON["RETENTION_ASSERTION_PREFIX"] == "") exit 1 }
         ' "$2")" || return
         [[ "$assertion" == *'[[ '* ]] || return 2
-        bindings="$4"
-        RETENTION_ASSERTION="$assertion" RETENTION_BINDINGS="$bindings" awk '
-            /^root="\$\{root%\/\.\}"$/ {
-                print "root=\"$RETENTION_SOURCE_ROOT\""; anchored=1; next
-            }
-            { print }
-            /^trap .* EXIT$/ {
-                print "printf \"%s\\n\" \"$fixture\" > \"$RETENTION_ASSERTION_PATH\""
-                print "printf \"retained assertion evidence\\n\" > \"$fixture/assertion-evidence\""
+        bindings="$4"; selected=true
+        shift 4
+    fi
+    RETENTION_ASSERTION="$assertion" RETENTION_BINDINGS="$bindings" RETENTION_SELECTED="$selected" awk '
+        { line=$0 }
+        /^root="\$\{root%\/\.\}"$/ {
+            line="root=\"$RETENTION_SOURCE_ROOT\""; anchored=1
+        }
+        /^trap .* EXIT$/ && !trapped {
+            print line
+            print "printf \"%s\\n\" \"$fixture\" > \"$RETENTION_ASSERTION_PATH\""
+            print "printf \"retained assertion evidence\\n\" > \"$fixture/assertion-evidence\""
+            trapped=1
+            if (ENVIRON["RETENTION_SELECTED"] == "true") {
                 print ENVIRON["RETENTION_BINDINGS"]
                 print "printf reached > \"$RETENTION_ASSERTION_REACHED\""
                 print ENVIRON["RETENTION_ASSERTION"]
                 print "fixture_complete=true; exit 0"
-                trapped=1; exit
+                injected=1; exit
             }
-            END { if (!anchored || !trapped) exit 1 }
-        ' "$source" > "$directory/$name.sh" || return
-        shift 4
-    else
-        awk '
-            { line=$0 }
-            /^root="\$\{root%\/\.\}"$/ {
-                line="root=\"$RETENTION_SOURCE_ROOT\""; anchored=1
-            }
-            /^trap .* EXIT$/ && !trapped {
-                print line
-                print "printf \"%s\\n\" \"$fixture\" > \"$RETENTION_ASSERTION_PATH\""
-                print "printf \"retained assertion evidence\\n\" > \"$fixture/assertion-evidence\""
-                trapped=1
-                next
-            }
-            trapped && !injected && /^[[:space:]]*\[\[ "\$status" == .* \]\]/ {
-                print "printf reached > \"$RETENTION_ASSERTION_REACHED\""
-                sub(/== .* \]\]/, "== 97 ]]", line); injected=1
-            }
-            { print line }
-            END { if (!anchored || !trapped || !injected) exit 1 }
-        ' "$source" > "$directory/$name.sh" || return
-    fi
+            next
+        }
+        trapped && !injected && /^[[:space:]]*\[\[ "\$status" == .* \]\]/ {
+            print "printf reached > \"$RETENTION_ASSERTION_REACHED\""
+            sub(/== .* \]\]/, "== 97 ]]", line); injected=1
+        }
+        { print line }
+        END { if (!anchored || !trapped || !injected) exit 1 }
+    ' "$source" > "$directory/$name.sh" || return
     RETENTION_SOURCE_ROOT="$source_root" RETENTION_ASSERTION_PATH="$observation" \
         RETENTION_ASSERTION_REACHED="$reached" \
         TMPDIR="$probe_root" "$BASH" "$directory/$name.sh" "$@" \
