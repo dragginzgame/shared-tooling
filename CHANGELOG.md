@@ -2,6 +2,10 @@
 
 ## [0.15.2]
 
+- Carry the common-tool preparation action and Make-fixture bootstrap from
+  [PR #227](https://github.com/dragginzgame/shared-tooling/pull/227) onto the
+  reviewed Metrics adoption source, preserving its existing evidence helpers.
+
 - Share best-effort replay of explicitly selected fixture logs without replacing
   the caller's saved failure status or taking over log selection and retention.
 - Separate optional maintenance runner/systemd selection roots from the governance

@@ -26,7 +26,7 @@ for input in src/lib.rs Cargo.toml Makefile README.md .githooks/pre-commit scrip
     printf 'retained input\n' > "$fixture/exit-input/$input"
 done
 export RETENTION_EXIT_PATH="$fixture/exit-path"
-for name in format-tools tool-commands rust-tools release-runner host-tools ic-tools fixture-retention check-formatting-hooks; do
+for name in format-tools tool-commands rust-tools release-runner host-tools ic-tools fixture-retention prepare-common-tools check-formatting-hooks; do
     source="$ROOT/scripts/ci/test-$name.sh"
     probe_args=()
     if [[ "$name" == check-formatting-hooks ]]; then
