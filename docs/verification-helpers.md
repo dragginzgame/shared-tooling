@@ -882,3 +882,8 @@ admission or create the parent first. A nonempty missing parent is created only
 after admission, then physically anchored so relative paths, aliases and spaces
 retain the same scenario identity. Refused inputs create no evidence directories.
 The focused owner fixture is `scripts/ci/test-hosted-failure.sh`.
+
+The producer fixture `scripts/ci/test-checker-retention.sh` qualifies retained
+release/formatting inputs, logs and Git index after child or assertion failures.
+Consumers retain their own status/diagnostic checks without inspecting these
+shared checkers' internal directory layout.

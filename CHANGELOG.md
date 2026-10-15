@@ -13,6 +13,8 @@
 
 ### Fixed
 
+- Own release/formatting checker failure-retention payload and formatting
+  completion qualification here, allowing consumers to check only their own logs.
 - Advance workspace-owned path dependency requirements across minor and major
   releases, preserving unrelated manifest bytes and restoring originals on failure
   ([PR #197 — Coordinated Cargo requirements](https://github.com/dragginzgame/shared-tooling/pull/197)).
