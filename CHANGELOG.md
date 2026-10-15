@@ -24,6 +24,10 @@
 
 ### Added
 
+- Share locked release preflight with catalog identity checks and exact workflow
+  run-body extraction; callers retain preparation authority and execution policy
+  ([PR #207 — Workflow extraction and release preflight](https://github.com/dragginzgame/shared-tooling/pull/207)).
+
 - Add Shared Tooling’s MIT license and clarify the fleet license selection:
   Dragginz for IcyDB, Canic and IC Relay; MIT for other sibling libraries and
   tools, preserving existing notices and earlier grants.

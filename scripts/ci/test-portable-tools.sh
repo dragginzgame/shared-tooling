@@ -54,6 +54,8 @@ run_fixture test-fixture-timing.sh bash "$ROOT/scripts/ci/test-fixture-timing.sh
 run_fixture test-fixture-allocation.sh bash "$ROOT/scripts/ci/test-fixture-allocation.sh"
 run_fixture test-public-docs.pl perl "$ROOT/scripts/ci/test-public-docs.pl"
 run_fixture test-public-docs.sh bash "$ROOT/scripts/ci/test-public-docs.sh"
+run_fixture test-cargo-release-preflight.sh bash "$ROOT/scripts/ci/test-cargo-release-preflight.sh"
+run_fixture test-workflow-step.sh bash "$ROOT/scripts/ci/test-workflow-step.sh"
 run_fixture test-fixture-completion.sh bash "$ROOT/scripts/ci/test-fixture-completion.sh"
 run_fixture test-script-paths.sh bash "$ROOT/scripts/ci/test-script-paths.sh"
 run_fixture test-type-docs.pl perl "$ROOT/scripts/ci/test-type-docs.pl"
