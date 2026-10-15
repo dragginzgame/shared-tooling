@@ -5,42 +5,40 @@
 ### Breaking
 
 - Prepare coordinated Cargo releases with literal manifest updates instead of
-  implicit Cargo-edit/Cargo-sort mutation. Consumers keep explicit ordering checks;
-  unsupported literal layouts refuse without installing metadata
-  ([PR #180 — Deterministic release preparation](https://github.com/dragginzgame/shared-tooling/pull/180)).
-- Select fixture root and directory variables explicitly instead of guessing
-  consumer aliases. Set `FIXTURE_PROBE_ROOT_VARIABLE` and
-  `FIXTURE_PROBE_DIRECTORY_VARIABLE` for non-default layouts; retained failure
-  evidence and diagnostic status remain mandatory.
+  implicit Cargo-edit/Cargo-sort mutation. Consumers must keep ordering checks
+  explicit; unsupported manifest layouts refuse without installing changes.
+- Select consumer fixture variables explicitly instead of guessing aliases.
+  Non-default layouts must set `FIXTURE_PROBE_ROOT_VARIABLE` and
+  `FIXTURE_PROBE_DIRECTORY_VARIABLE`; failure status and evidence remain preserved.
 
 ### Fixed
 
-- Reject successful cleanup claims when hidden files or dangling links remain
-  in a consumer fixture scratch directory.
-- Stop Cargo graph checks on metadata failures under Bash 3.2, even when Cargo
-  emitted valid-looking output; preserve the original status and retained evidence.
 - Advance workspace-owned path dependency requirements across minor and major
-  release boundaries, preserving unrelated manifest bytes and restoring original
-  metadata on failure
+  releases, preserving unrelated manifest bytes and restoring originals on failure
   ([PR #197 — Coordinated Cargo requirements](https://github.com/dragginzgame/shared-tooling/pull/197)).
-- Discard failed tool-selection output before choosing physical archive payloads,
-  while retaining local evidence and the original failure diagnostics.
-- Require proof that an assertion was reached when qualifying retained failures,
-  and support caller-selected assertions without running the rest of a fixture
-  ([PR #203 — Selected assertion probes](https://github.com/dragginzgame/shared-tooling/pull/203)).
+- Preserve Cargo metadata failures under Bash 3.2, even when the failed command
+  emits valid-looking output.
+- Reject successful cleanup claims when hidden files or dangling links remain.
+- Exclude failed tool-selection output from archive payload selection while
+  retaining safe local evidence and original diagnostics.
 
 ### Added
 
-- Share native host admission, admitted tool-version reports and pipe jobserver
+- Add Shared Tooling’s MIT license and clarify the fleet license selection:
+  Dragginz for IcyDB, Canic and IC Relay; MIT for other sibling libraries and
+  tools, preserving existing notices and earlier grants.
+
+- Qualify caller-selected assertions without executing the remaining fixture
+  body; require proof that the assertion was reached
+  ([PR #203 — Selected assertion probes](https://github.com/dragginzgame/shared-tooling/pull/203)).
+- Share native host checks, admitted tool-version reports and pipe jobserver
   observation while keeping host matrices and tool selections with consumers.
-- Share formatter evidence, retained-effect checks, Make adapter qualification
-  and selected native diagnostic archives. Consumers retain their payload rosters,
-  upload policy and Git recovery custody
+- Share Make adapter checks, retained-effect probes and selected diagnostic
+  archives; consumers retain payload selection, upload policy and Git recovery
+  custody
   ([PR #201 — Consumer qualification flows](https://github.com/dragginzgame/shared-tooling/pull/201)).
 
-- Extend assertion-retention probing with caller-selected literal assertions and
-  bindings; verify the assertion was reached, rejecting setup failures and
-  missing or duplicate matches before admitting retained evidence.
+## [0.14.1]
 
 - Qualify failed status assertions through a shared fixture-retention probe with
   explicit source/root inputs and fail-closed layout admission.
@@ -63,10 +61,16 @@
 
 ## [0.14.0]
 
-The following work is prepared in open PRs and awaits integration and required
-native CI. The earlier 0.13.1/0.13.3 descriptions remain historical pending notes.
+This draft includes local changes and work prepared in open PRs; integration
+and required native CI remain pending. The earlier 0.13.1/0.13.3 descriptions
+remain historical pending notes.
 
 ### Added
+
+- Own canonical MIT and Dragginz Verifiable ICP Burn license templates with an
+  opt-in drift checker, preserving consumer copyright and prior-license notices.
+  Third-party live use requires verifiable mainnet burning; the named organization
+  receives an express operational exception.
 
 - Prepare item-level rustdoc debt comparison and opt-in type-documentation
   layout checks, preserving caller-owned source selection and policy

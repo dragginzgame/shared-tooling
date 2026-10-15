@@ -23,7 +23,12 @@ identity independently.
 Opt-in browser consumers can reuse the [Node/npm prerequisite checker](docs/node-tools.md)
 while retaining their package roots, pins and setup ownership.
 
+Shared Tooling is licensed under [MIT](LICENSE).
+
 ## Repository fleet ownership
+
+The [canonical license templates and drift checker](docs/licenses.md) keep MIT
+and the Dragginz Verifiable ICP Burn terms consistent across adopting repositories.
 
 Shared Tooling owns consistency across the Dragginzgame repositories: shared
 rules and tools, adoption/pin drift checks, repository and sibling counts,

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/fixture-timing.sh
+# Shared companions: scripts/ci/fixture-timing.sh scripts/ci/test-license.pl
 set -euo pipefail
 
 ROOT="$0"
@@ -109,6 +109,7 @@ run_fixture test-publication.sh bash "$ROOT/scripts/ci/test-publication.sh"
 run_fixture test-cargo-publication-attempt.sh bash "$ROOT/scripts/ci/test-cargo-publication-attempt.sh"
 run_fixture test-tool-catalogs.pl perl "$ROOT/scripts/ci/test-tool-catalogs.pl"
 run_fixture test-documentation-links.pl perl "$ROOT/scripts/ci/test-documentation-links.pl"
+run_fixture test-license.pl perl "$ROOT/scripts/ci/test-license.pl"
 run_fixture test-crates-io-version.sh bash "$ROOT/scripts/ci/test-crates-io-version.sh"
 run_fixture test-cargo-tool-versions.sh bash "$ROOT/scripts/ci/test-cargo-tool-versions.sh"
 run_fixture test-release-commands.sh bash "$ROOT/scripts/ci/test-release-commands.sh"
