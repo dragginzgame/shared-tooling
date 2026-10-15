@@ -127,7 +127,6 @@ run_fixture test-tool-version-report.sh bash "$ROOT/scripts/ci/test-tool-version
 run_fixture test-pipe-jobserver.sh bash "$ROOT/scripts/ci/test-pipe-jobserver.sh"
 run_fixture test-native-host.sh bash "$ROOT/scripts/ci/test-native-host.sh"
 run_fixture test-formatting-evidence.sh bash "$ROOT/scripts/ci/test-formatting-evidence.sh"
-run_fixture test-collect-tool-evidence.sh bash "$ROOT/scripts/ci/test-collect-tool-evidence.sh"
 run_fixture test-consumer-flow-probes.sh bash "$ROOT/scripts/ci/test-consumer-flow-probes.sh"
 run_fixture test-fixture-retention.sh bash "$ROOT/scripts/ci/test-fixture-retention.sh"
 run_fixture test-collect-tool-evidence.sh bash "$ROOT/scripts/ci/test-collect-tool-evidence.sh"

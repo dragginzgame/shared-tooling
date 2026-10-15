@@ -2,6 +2,10 @@
 
 ## [0.14.1]
 
+- Extend assertion-retention probing with caller-selected literal assertions and
+  bindings; verify the assertion was reached, rejecting setup failures and
+  missing or duplicate matches before admitting retained evidence.
+
 - Qualify failed status assertions through a shared fixture-retention probe with
   explicit source/root inputs and fail-closed layout admission.
 - Add caller-selected rustdoc debt and type-documentation checks, completing

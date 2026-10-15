@@ -805,3 +805,24 @@ roster, upload policy and complete outer archives including Git recovery state.
 
 Focused coverage is `scripts/ci/test-consumer-flow-probes.sh`; no helper is a
 sandbox for an unreviewed Makefile, script or selected payload.
+## Assertion retention probes
+
+Source `scripts/ci/fixture-retention-probes.sh` for
+`fixture_probe_assertion OWNER PROBE_ROOT SOURCE_ROOT NAME [ARGUMENTS...]`.
+The default probe contradicts the first status assertion in a lower-case
+`root`/`fixture` owner and runs its existing setup. Consumers retain the fixture
+roster and arguments.
+
+For an assertion in a workflow or another script, pass
+`--selected ASSERTION_SOURCE LITERAL_PREFIX BINDINGS` after `NAME` instead.
+Exactly one source line must match the literal prefix after leading whitespace.
+The child runs only the owner's initialization through its EXIT trap, followed
+by caller bindings and the selected assertion. Bindings are trusted shell source
+maintained by the caller; never pass user input. Bodies that build, install or
+mutate Git are excluded in this mode. Keep contradictory values and product
+assertion selection in the consumer.
+
+Both modes require the supported root anchor and EXIT boundary, evidence
+retention, status 1, and a receipt proving the intended assertion was reached.
+Ignored assertions and earlier setup failures are rejected. The focused owner
+suite is `scripts/ci/test-fixture-assertion-probe.sh`.
