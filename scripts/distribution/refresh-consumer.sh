@@ -399,15 +399,21 @@ done
 # Follow the selected revision's explicit companion graph, including cycles,
 # without executing inspected files. The committed closure is the payload owner.
 proposed=("${files[@]}")
+source_modes=()
+staged_files="$STAGING_DIR/files"
+mkdir -p "$staged_files"
 cursor=0
 while [[ "$cursor" -lt "${#proposed[@]}" ]]; do
     path="${proposed[$cursor]}"
     validate_relative_path "$path"
-    committed_mode "$source_revision" "$path" > /dev/null || fail "cannot read committed companion source: $path"
-    git -C "$SOURCE_ROOT" cat-file blob "$source_revision:$path" > "$STAGING_DIR/companion-source" || fail "cannot inspect companions: $path"
-    declaration="$(sed -n '2s/^# Shared companions: //p' "$STAGING_DIR/companion-source")"
+    # These observations belong to the immutable selected revision. Retain them
+    # for export; mutable checkout and consumer admission still run below.
+    source_modes[cursor]="$(committed_mode "$source_revision" "$path")" || fail "cannot read committed companion source: $path"
+    mkdir -p "$staged_files/$(dirname "$path")"
+    git -C "$SOURCE_ROOT" cat-file blob "$source_revision:$path" > "$staged_files/$path" || fail "cannot inspect companions: $path"
+    declaration="$(sed -n '2s/^# Shared companions: //p' "$staged_files/$path")"
     if [[ "$path" == *.md && -z "$declaration" ]]; then
-        declaration="$(sed -n '2s/^<!-- Shared companions: \(.*\) -->$/\1/p' "$STAGING_DIR/companion-source")"
+        declaration="$(sed -n '2s/^<!-- Shared companions: \(.*\) -->$/\1/p' "$staged_files/$path")"
     fi
     companions=()
     read -r -a companions <<< "$declaration"
@@ -427,7 +433,6 @@ files=("${proposed[@]}")
 
 checksum_tool_declared=false
 snapshot_verifier_declared=false
-source_modes=()
 for index in "${!files[@]}"; do
     path="${files[$index]}"
     validate_relative_path "$path"
@@ -440,7 +445,6 @@ for index in "${!files[@]}"; do
     "$SOURCE_ROOT/"*) ;;
     *) fail "source file escapes the source checkout: $path" ;;
     esac
-    source_modes[index]="$(committed_mode "$source_revision" "$path")" || fail "cannot read committed mode: $path"
     if [[ "$index" -ge "$selected_count" ]]; then
         consumer_states[index]="$(consumer_state "$path")" || fail "cannot inspect consumer input: $path"
         git -C "$CONSUMER_ROOT" --literal-pathspecs ls-files --stage -z -- "$path" > "$STAGING_DIR/index-$index" ||
@@ -458,14 +462,8 @@ done
 [[ "$checksum_tool_declared" == "true" ]] || fail "snapshot must include the checksum verifier"
 [[ "$snapshot_verifier_declared" == "true" ]] || fail "snapshot must include the snapshot verifier"
 
-staged_files="$STAGING_DIR/files"
-mkdir -p "$staged_files"
-
 for index in "${!files[@]}"; do
     path="${files[$index]}"
-    mkdir -p "$staged_files/$(dirname "$path")"
-    git -C "$SOURCE_ROOT" cat-file blob "$source_revision:$path" >"$staged_files/$path" ||
-        fail "cannot export committed source file: $path"
     chmod "${source_modes[$index]#100}" "$staged_files/$path"
 done
 

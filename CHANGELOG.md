@@ -1,10 +1,55 @@
 # Changelog
 
-## [0.15.2]
+## [0.15.4]
 
 - Own simulated release-preflight cold/warm cache, offline and tool-failure
   cases beside the shared helper; consumers retain their adapter/runner checks.
 
+- Make maintenance runners and scheduler files optional for consumers while
+  retaining shared task guidance. Existing snapshots use explicit selection and
+  guarded retirement to remove these files
+  ([PR #220 — Optional maintenance runtime](https://github.com/dragginzgame/shared-tooling/pull/220)).
+
+### Pending integration
+
+- Share structural Rust runtime-panic scanning, including detection of raw
+  identifiers such as `r#unwrap()` and `r#panic!()` inside and outside macros.
+  Consumers retain their source inventories and dependency selections
+  ([PR #226 — Shared Rust panic scanner](https://github.com/dragginzgame/shared-tooling/pull/226)).
+- Share hosted common-tool preparation and Make fixture setup. Reject CR/LF
+  directory paths and resolved aliases before copying fixture files
+  ([PR #227 — Common tool preparation and fixture setup](https://github.com/dragginzgame/shared-tooling/pull/227)).
+
+## [0.15.3]
+
+- Promote Dragginz 1.1 and CLA 1.0 as the current texts, including permanent
+  Toko Studios patent rights and the narrowed downstream copyright exception.
+  License checks default to 1.1; historical copies require explicit 1.0 selection.
+  Consumer adoption and contributor signatures remain separate recorded actions.
+
+- Reuse immutable committed payloads and modes during snapshot refresh instead
+  of reading them again after companion discovery. Consumer and index drift
+  checks remain independent
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
+
+- Consolidate overlapping consumer snapshots through explicit, verified ownership
+  handover, preserving local edits and Git index state. Add read-only changelog
+  preflight before setup or release preparation
+  ([PR #217 — Snapshot handover and changelog preflight](https://github.com/dragginzgame/shared-tooling/pull/217)).
+- Share explicit Rust installation between local setup and hosted workflows,
+  including optional Clippy/rustfmt components for minimum-Rust lanes. Keep
+  toolchain selection with consumers and installation out of validation checks
+  ([PR #218 — Shared Rust toolchain setup](https://github.com/dragginzgame/shared-tooling/pull/218)).
+
+## [0.15.2]
+
+- Add a contributor agreement granting Toko Studios explicit alternative
+  licensing rights, with contributor/employer authority and signed-scope records.
+  Acceptance and existing-contribution clearance remain separately recorded.
+
+- Prepare Dragginz license 1.1 with contributor patent grants and defensive
+  patent termination. The current text preserves permanent Toko Studios rights;
+  existing licenses and grants remain unchanged without deliberate adoption.
 - Separate optional maintenance runner/systemd selection roots from the governance
   catalog. Keep task guidance available without operational payloads; explicit
   opt-in and guarded retirement use the existing snapshot exporter contract.

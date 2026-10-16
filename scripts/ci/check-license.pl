@@ -1,16 +1,19 @@
 #!/usr/bin/env perl
-# Shared companions: licenses/MIT.txt licenses/Dragginz-ICP-Burn-1.0.txt licenses/prior-mit-notice.txt
+# Shared companions: licenses/MIT.txt licenses/Dragginz-ICP-Burn-1.0.txt licenses/Dragginz-ICP-Burn-1.1.txt licenses/prior-mit-notice.txt
 use strict;
 use warnings;
 use FindBin;
 use Getopt::Long qw(GetOptions);
 
-my ($kind, $file, $prior_mit);
-GetOptions('kind=s' => \$kind, 'file=s' => \$file, 'prior-mit' => \$prior_mit)
+my ($kind, $file, $prior_mit, $license_version);
+GetOptions('kind=s' => \$kind, 'file=s' => \$file, 'prior-mit' => \$prior_mit,
+    'license-version=s' => \$license_version)
     && !@ARGV && defined($kind) && defined($file)
     && ($kind eq 'mit' || $kind eq 'dragginz')
     && (!$prior_mit || $kind eq 'dragginz')
-    or die "usage: check-license.pl --kind mit|dragginz --file LICENSE [--prior-mit]\n";
+    && (!defined($license_version) || ($kind eq 'dragginz' && $license_version =~ /\A1\.[01]\z/))
+    or die "usage: check-license.pl --kind mit|dragginz --file LICENSE [--prior-mit] [--license-version 1.0|1.1]\n";
+$license_version //= '1.1';
 my $root = "$FindBin::Bin/../../licenses";
 
 sub read_file {
@@ -54,5 +57,5 @@ if ($prior_mit) {
     $actual = $parts[0];
 }
 check_text($actual, read_file("$root/" . ($kind eq 'mit'
-    ? 'MIT.txt' : 'Dragginz-ICP-Burn-1.0.txt')));
+    ? 'MIT.txt' : "Dragginz-ICP-Burn-$license_version.txt")));
 print "[OK] $file matches canonical $kind terms\n";
