@@ -24,6 +24,9 @@ Run the shared [semantic fixtures](../scripts/ci/test-runtime-panics.sh) with th
 absolute compiled scanner path as the only argument. Consumer checks retain
 inventory/discovery and one actual-source invocation, rather than copying these
 scanner regressions. Qualify compiler/dependency changes in the consumer.
+The exported lifecycle companion anchors semantic-fixture evidence to its
+physical directory, preserving cleanup and diagnostics if temporary-root aliases
+change during execution.
 
 Shared Tooling's native CI compiles the scanner on Linux and both macOS hosts
 using the producer-only templates and locked graph under `ci/runtime-panics/`.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/check-runtime-panics.rs scripts/ci/test-runtime-panics.sh scripts/ci/verify-file-checksum.sh scripts/ci/verify-evidence-checksums.sh ci/runtime-panics/workspace.toml.in ci/runtime-panics/scanner.toml.in ci/runtime-panics/Cargo.lock.in
+# Shared companions: scripts/ci/check-runtime-panics.rs scripts/ci/test-runtime-panics.sh scripts/ci/fixture-lifecycle.sh scripts/ci/verify-file-checksum.sh scripts/ci/verify-evidence-checksums.sh ci/runtime-panics/workspace.toml.in ci/runtime-panics/scanner.toml.in ci/runtime-panics/Cargo.lock.in
 set -euo pipefail
 
 # Producer-only native qualification. Rust is explicitly prepared by the caller;
@@ -38,11 +38,12 @@ cp "$ROOT/ci/runtime-panics/scanner.toml.in" "$evidence/workspace/crates/scanner
 cp "$ROOT/ci/runtime-panics/Cargo.lock.in" "$evidence/workspace/Cargo.lock"
 cp "$ROOT/scripts/ci/check-runtime-panics.rs" "$evidence/workspace/crates/scanner/src/main.rs"
 cp "$ROOT/scripts/ci/test-runtime-panics.sh" "$evidence/semantic-fixture.sh"
+cp "$ROOT/scripts/ci/fixture-lifecycle.sh" "$evidence/fixture-lifecycle.sh"
 cp "$ROOT/scripts/ci/qualify-runtime-panics.sh" "$evidence/qualifier.sh"
 (
     cd "$evidence"
     for file in workspace/Cargo.toml workspace/crates/scanner/Cargo.toml \
-        workspace/Cargo.lock workspace/crates/scanner/src/main.rs semantic-fixture.sh qualifier.sh; do
+        workspace/Cargo.lock workspace/crates/scanner/src/main.rs semantic-fixture.sh fixture-lifecycle.sh qualifier.sh; do
         digest="$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$file")"
         printf '%s  %s\n' "$digest" "$file"
     done

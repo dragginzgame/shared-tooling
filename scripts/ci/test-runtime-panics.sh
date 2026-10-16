@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/check-runtime-panics.rs docs/rust-source-checks.md
+# Shared companions: scripts/ci/check-runtime-panics.rs scripts/ci/fixture-lifecycle.sh docs/rust-source-checks.md
 set -euo pipefail
 
 [[ "$#" -eq 1 && "$1" == /* && -x "$1" ]] || {
@@ -7,19 +7,11 @@ set -euo pipefail
   exit 2
 }
 checker="$1"
-scratch="$(mktemp -d "${TMPDIR:-/tmp}/runtime-panics.XXXXXX")"
-complete=false
-cleanup() {
-  local status=$?
-  [[ "$complete" == true || "$status" != 0 ]] || status=1
-  if [[ "$status" -eq 0 ]]; then
-    rm -rf "$scratch"
-  else
-    echo "Runtime scanner fixture retained: $scratch" >&2
-  fi
-  exit "$status"
-}
-trap cleanup EXIT
+# shellcheck source=scripts/ci/fixture-lifecycle.sh
+source "${BASH_SOURCE[0]%/*}/fixture-lifecycle.sh"
+scratch="$(fixture_create "${TMPDIR:-/tmp}/runtime-panics.XXXXXX")"
+fixture_complete=false
+trap 'fixture_finish "$?" "$scratch" "Runtime scanner fixture retained"' EXIT
 executor="$scratch/source"
 mkdir -p "$executor"
 cases=0
@@ -124,5 +116,5 @@ check test-only-trait-item 0 "$checker" "$executor/production.rs"
 printf 'fn production() { value.unwrap(); }\n' > "$executor/production.rs"
 check diagnostic 1 "$checker" "$executor/production.rs"
 grep -F "$executor/production.rs:1:" "$scratch/diagnostic.stderr" > /dev/null
-complete=true
+fixture_complete=true
 printf '[OK] Shared runtime scanner fixtures passed (%s cases).\n' "$cases"

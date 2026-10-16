@@ -25,8 +25,10 @@ mkdir -p "$fixture/exit-input/src" "$fixture/exit-input/.githooks" "$fixture/exi
 for input in src/lib.rs Cargo.toml Makefile README.md .githooks/pre-commit scripts/dev/install-git-hooks.sh scripts/ci/check-make-execution.sh; do
     printf 'retained input\n' > "$fixture/exit-input/$input"
 done
+printf '#!/bin/sh\nexit 99\n' > "$fixture/exit-input/prefix-checker"
+chmod +x "$fixture/exit-input/prefix-checker"
 export RETENTION_EXIT_PATH="$fixture/exit-path"
-for name in format-tools tool-commands rust-tools release-runner host-tools ic-tools fixture-retention snapshot-verifier prepare-common-tools check-formatting-hooks; do
+for name in format-tools tool-commands rust-tools release-runner host-tools ic-tools fixture-retention snapshot-verifier runtime-panics prepare-common-tools check-formatting-hooks; do
     source="$ROOT/scripts/ci/test-$name.sh"
     probe_args=()
     if [[ "$name" == check-formatting-hooks ]]; then
@@ -35,10 +37,13 @@ for name in format-tools tool-commands rust-tools release-runner host-tools ic-t
     fi
     FIXTURE_PROBE_DIRECTORY_VARIABLE=fixture
     [[ "$name" != release-runner ]] || FIXTURE_PROBE_DIRECTORY_VARIABLE=FIXTURE_ROOT
+    if [[ "$name" == runtime-panics ]]; then
+        FIXTURE_PROBE_DIRECTORY_VARIABLE=scratch
+        probe_args=("$fixture/exit-input/prefix-checker")
+    fi
     export FIXTURE_PROBE_DIRECTORY_VARIABLE
     fixture_probe_exits "$source" "$fixture" "$ROOT" "$name" ${probe_args[@]+"${probe_args[@]}"} || exit 1
     if [[ "$name" == ic-tools ]]; then
-        fixture_probe_exit "$source" "$fixture" "$ROOT" "$name" cleanup-failure || exit 1
         grep -F 'IC fixture cleanup started:' "$fixture/$name-cleanup-failure.log" > /dev/null
         grep -E 'IC fixture cleanup finished: [0-9]+s, status 37' "$fixture/$name-cleanup-failure.log" > /dev/null
     fi
@@ -210,28 +215,30 @@ mkdir "$fixture/physical parent" "$fixture/decoy" "$fixture/changed-cwd"
 printf 'unrelated evidence\n' > "$fixture/decoy/payload"
 export RETENTION_ALIAS="$fixture/tmp-alias" RETENTION_DECOY="$fixture/decoy"
 export RETENTION_CHANGED_CWD="$fixture/changed-cwd"
-for name in format-tools release-runner fixture-retention; do
+for name in format-tools release-runner fixture-retention runtime-panics; do
     awk '
         { print }
         /^trap .* EXIT$/ { found=1; exit }
         END { if (!found) exit 1 }
     ' "$ROOT/scripts/ci/test-$name.sh" > "$fixture/exit-source/scripts/ci/anchor-probe.sh"
     cat >> "$fixture/exit-source/scripts/ci/anchor-probe.sh" <<'PROBE'
-directory="${fixture:-${FIXTURE_ROOT:-}}"
+directory="${fixture:-${FIXTURE_ROOT:-${scratch:-}}}"
 printf '%s\n' "$directory" > "$RETENTION_EXIT_PATH"
 printf 'retained evidence\n' > "$directory/payload"
 cd "$RETENTION_CHANGED_CWD"
 rm "$RETENTION_ALIAS"
 ln -s "$RETENTION_DECOY" "$RETENTION_ALIAS"
-if [[ "$1" == failed ]]; then exit 23; fi
+if [[ "$RETENTION_ANCHOR_OUTCOME" == failed ]]; then exit 23; fi
 fixture_complete=true
 PROBE
     for outcome in completed failed; do
+        probe_args=("$outcome")
+        [[ "$name" != runtime-panics ]] || probe_args=("$fixture/exit-input/prefix-checker")
         rm -f "$RETENTION_ALIAS"
         ln -s "$fixture/physical parent" "$RETENTION_ALIAS"
         status=0
-        (cd "$fixture" && CDPATH="$fixture" TMPDIR=tmp-alias "$BASH" \
-            "$fixture/exit-source/scripts/ci/anchor-probe.sh" "$outcome") \
+        (cd "$fixture" && CDPATH="$fixture" TMPDIR=tmp-alias RETENTION_ANCHOR_OUTCOME="$outcome" "$BASH" \
+            "$fixture/exit-source/scripts/ci/anchor-probe.sh" "${probe_args[@]}") \
             > "$fixture/anchor-$name-$outcome.log" 2>&1 || status=$?
         retained="$(cat "$RETENTION_EXIT_PATH")"
         [[ "$retained" == "$fixture/physical parent/"* ]] || exit 1

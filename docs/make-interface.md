@@ -187,7 +187,10 @@ and fixture retention; this is a test skeleton, not a complete consumer export.
 
 `scripts/ci/fixture-retention-probes.sh` owns the common failure injections,
 status comparisons and retained-evidence checks. Consumers keep source rosters,
-working directories and domain-specific diagnostic assertions. Existing
+working directories and domain-specific diagnostic assertions.
+`fixture_probe_exits` includes cleanup refusal alongside command, early-exit,
+completion and incomplete-run cases; callers need not append `cleanup-failure`.
+Existing
 `FIXTURE_PROBE_ROOT_VARIABLE` / `FIXTURE_PROBE_DIRECTORY_VARIABLE` selections may
 be paired with `FIXTURE_PROBE_COMPLETION_VARIABLE` (default `fixture_complete`)
 and `FIXTURE_PROBE_TEMPORARY_ROOT` (default the probe root). Variable names are

@@ -50,6 +50,7 @@ for scenario in unprepared compiler rustfmt build clippy semantics; do
     else
         cmp "$ROOT/scripts/ci/check-runtime-panics.rs" "$fixture/$scenario/workspace/crates/scanner/src/main.rs"
         cmp "$ROOT/ci/runtime-panics/Cargo.lock.in" "$fixture/$scenario/workspace/Cargo.lock"
+        cmp "$ROOT/scripts/ci/fixture-lifecycle.sh" "$fixture/$scenario/fixture-lifecycle.sh"
         grep -F "Runtime scanner qualification evidence: $fixture/$scenario" "$fixture/$scenario.log" > /dev/null
         if [[ "$scenario" == semantics ]]; then
             grep -F 'Fixture no-input: expected 2, got 23' "$fixture/$scenario/semantics.log" > /dev/null

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.15.8]
+
+- Include cleanup refusal in the standard fixture exit probes, preserving
+  caller-specific diagnostic checks without a duplicate injection
+  ([PR #237 — Include cleanup refusal in standard exit probes](https://github.com/dragginzgame/shared-tooling/pull/237)).
+- Qualify nested workflow discovery and failed Git inventories at the dependency
+  checker owner, including partial output and scratch cleanup
+  ([PR #236 — Qualify dependency workflow inventory failures](https://github.com/dragginzgame/shared-tooling/pull/236)).
+- Keep scanner semantic-fixture evidence and cleanup anchored when temporary
+  directory aliases change. Native qualification retains and checksums the
+  shared lifecycle companion with its source inputs
+  ([#225 — Structural Rust runtime panic scanner](https://github.com/dragginzgame/shared-tooling/issues/225)).
+
 ## [0.15.7]
 
 - Qualify real Cargo environment and configuration offline refusal on a frozen
