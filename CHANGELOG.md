@@ -2,6 +2,9 @@
 
 ## [0.15.2]
 
+- Own selected-commit metadata rejection and retained-input assertions, including
+  missing release fields, invalid Git identities and failing Git producers.
+
 - Keep exhaustive Make flag permutations and common-tool leaf failures with
   their producer. Offer a four-mode per-target consumer admission probe while
   preserving independent target effects and parallel-dispatch checks.
