@@ -2,6 +2,9 @@
 
 ## [0.15.10]
 
+- Qualify exact lock/index preservation after literal source admission and
+  rename refusal in the shared release-source fixture.
+
 - Qualify standalone formatting success and cleanup at the wrapper owner,
   preserving earlier failure logs byte-for-byte
   ([PR #240 — Standalone formatting and retained-log qualification](https://github.com/dragginzgame/shared-tooling/pull/240)).

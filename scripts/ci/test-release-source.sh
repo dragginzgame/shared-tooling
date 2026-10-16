@@ -39,6 +39,11 @@ refuse
 grep -F 'unstaged: Cargo.lock' "$fixture/output" > /dev/null
 cmp Cargo.lock "$fixture/lock"
 cmp .git/index "$fixture/index"
+# Literal admission must preserve the same working bytes and index too.
+check --allow Cargo.lock
+[[ ! -s "$fixture/output" ]] || exit 1
+cmp Cargo.lock "$fixture/lock"
+cmp .git/index "$fixture/index"
 git checkout-index --force -- Cargo.lock
 
 # Preserve a hidden staged edit, an ordinary working edit and an unusual name.
@@ -68,8 +73,12 @@ git checkout-index --force -- CONTRIBUTING.md
 rm "$untracked"
 mv README.md renamed.md
 git add -- README.md renamed.md
+cp .git/index "$fixture/index"
+cp renamed.md "$fixture/renamed"
 refuse --allow renamed.md
 grep -F 'staged: README.md' "$fixture/output" > /dev/null
+cmp .git/index "$fixture/index"
+cmp renamed.md "$fixture/renamed"
 git read-tree HEAD
 git checkout-index --force -- README.md
 rm renamed.md
