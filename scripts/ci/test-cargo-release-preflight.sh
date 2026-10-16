@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Shared companions: scripts/ci/cargo-release-preflight.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
+unset RELEASE_MAKE
 ROOT="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture="$(fixture_create "${TMPDIR:-/tmp}/cargo-preflight.XXXXXX")"
@@ -40,6 +41,21 @@ for mode in 0 1; do
     fi
     cmp "$fixture/expected" "$PREFLIGHT_EVENTS"
 done
+# Release adapters may select one Make executable, including a path with spaces.
+# Its failure must stop before a later target without falling back to ambient Make.
+sed 's/make:%s/selected-make:%s/' "$fixture/bin/make" > "$fixture/selected make"
+chmod +x "$fixture/selected make"
+: > "$PREFLIGHT_EVENTS"
+RELEASE_MAKE="$fixture/selected make" run 1
+printf 'cargo:%s:fetch --locked\nselected-make:install\nselected-make:offline-check\n' "$PWD" > "$fixture/expected"
+cmp "$fixture/expected" "$PREFLIGHT_EVENTS"
+: > "$PREFLIGHT_EVENTS"
+status=0
+RELEASE_MAKE="$fixture/selected make" PREFLIGHT_MAKE_STATUS=39 run 1 \
+    > "$fixture/selected-failure.log" 2>&1 || status=$?
+[[ "$status" == 39 ]] || exit 1
+printf 'cargo:%s:fetch --locked\nselected-make:install\n' "$PWD" > "$fixture/expected"
+cmp "$fixture/expected" "$PREFLIGHT_EVENTS"
 for kind in fetch make pin invalid; do
     : > "$PREFLIGHT_EVENTS"
     status=0

@@ -2,6 +2,9 @@
 
 ## [0.15.4]
 
+- Preserve the release adapter's selected Make executable during shared Cargo
+  preflight, including paths with spaces and exact failure propagation.
+
 - Make maintenance runners and scheduler files optional for consumers while
   retaining shared task guidance. Existing snapshots use explicit selection and
   guarded retirement to remove these files

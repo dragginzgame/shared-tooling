@@ -802,6 +802,8 @@ runs locked offline Cargo fetching followed by check targets; PREPARE=1 runs
 locked fetching followed by the caller's complete ordered preparation targets.
 Explicit Cargo offline policy remains authoritative. Cargo retains the caller's
 selected-source working directory; tool targets run with Make in TOOL-ROOT.
+`RELEASE_MAKE` selects one Make executable (including a path with spaces),
+defaulting to `make`; its failure status is preserved without fallback.
 Every selected catalog is hashed before preparation and rechecked after each
 tool target. Failures preserve fetch/Make status or refuse changed selections.
 The helper owns no version/source admission, index, release or publication effect.
