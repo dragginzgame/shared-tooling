@@ -441,8 +441,9 @@ passes that environment through without learning product-specific variable names
 
 `scripts/ci/run-sccache.sh` prevents a long-lived sccache server from inheriting
 an invocation-owned temporary directory that will later be deleted. It defaults
-to `.tmp/sccache-runtime` in the consuming repository. Override discovery with
-`SCCACHE_BIN`, `SCCACHE_REPOSITORY_ROOT`, or `SCCACHE_RUNTIME_DIR`.
+to `.tmp/sccache-runtime` in the consuming repository. Set `SCCACHE_BIN` to the
+absolute path of the selected executable; PATH discovery is not performed.
+Override runtime placement with `SCCACHE_REPOSITORY_ROOT` or `SCCACHE_RUNTIME_DIR`.
 Consumers retain cache-failure policy in an explicit adapter; see
 [launcher adoption](docs/verification-helpers.md#compiler-cache-launcher-adoption).
 
@@ -451,7 +452,8 @@ Consumers retain cache-failure policy in an explicit adapter; see
 The executable `.githooks/pre-commit` formats an isolated copy of the index with
 the consumer's `make fmt`, then refreshes only the selected files. It rejects
 partial staging and preserves unselected files and unrelated working edits.
-The installer refuses to replace an existing hook setup.
+The installer requires `--consumer <repository>` and refuses to replace an
+existing hook setup. `make install-hooks` supplies the destination explicitly.
 Following IcyDB and Canic, `fmt` runs `cargo sort --workspace` to order Cargo.toml
 files before `cargo fmt --all`; `fmt-check` checks both without modifying files.
 The shared `scripts/ci/check-format-tools.sh` admits the consumer's pinned

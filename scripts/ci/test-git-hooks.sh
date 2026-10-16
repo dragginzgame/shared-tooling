@@ -265,22 +265,50 @@ bash .githooks/pre-commit > output
 [[ ! -e README.md && -z "$(git ls-files -- README.md)" ]] || exit 1
 
 new_fixture installer
-bash scripts/dev/install-git-hooks.sh > output
+# No installer-relative target: malformed selections stop without reading Git or
+# changing either the intended consumer's index or its local configuration.
+cp .git/config config-before
+cp .git/index index-before
+for selection in missing flag-only empty unknown extra; do
+    case "$selection" in
+        missing) set -- ;;
+        flag-only) set -- --consumer ;;
+        empty) set -- --consumer '' ;;
+        unknown) set -- --root "$PWD" ;;
+        extra) set -- --consumer "$PWD" extra ;;
+    esac
+    if bash scripts/dev/install-git-hooks.sh "$@" > output 2>&1; then
+        echo "hook installer accepted $selection destination" >&2; exit 1
+    else
+        [[ $? == 2 ]] || exit 1
+    fi
+    cmp config-before .git/config
+    cmp index-before .git/index
+done
+bash scripts/dev/install-git-hooks.sh --consumer "$PWD" > output
 [[ "$(git config --local --get core.hooksPath)" == .githooks ]] || exit 1
-bash scripts/dev/install-git-hooks.sh > output
+bash scripts/dev/install-git-hooks.sh --consumer "$PWD" > output
+
+# Installer location and invocation cwd do not select the consumer.
+new_fixture installer-explicit-target
+consumer="$PWD"
+cp .git/index index-before
+(cd "$FIXTURE" && bash "$ROOT/scripts/dev/install-git-hooks.sh" --consumer "${consumer##*/}") > output
+[[ "$(git config --local --get core.hooksPath)" == .githooks ]] || exit 1
+cmp index-before .git/index
 
 # Logical aliases such as macOS /var versus /private/var name the same root.
 new_fixture installer-path-alias
 ln -s "$PWD" "$FIXTURE/installer-alias"
 (
     cd "$FIXTURE/installer-alias"
-    bash scripts/dev/install-git-hooks.sh > output
+    bash scripts/dev/install-git-hooks.sh --consumer "$PWD" > output
 )
 [[ "$(git config --local --get core.hooksPath)" == .githooks ]] || exit 1
 
 new_fixture installer-configured
 git config --local core.hooksPath custom-hooks
-expect_failure bash scripts/dev/install-git-hooks.sh
+expect_failure bash scripts/dev/install-git-hooks.sh --consumer "$PWD"
 [[ "$(git config --get core.hooksPath)" == custom-hooks ]] || exit 1
 
 # Git values are literal paths: trailing newlines must not become .githooks.
@@ -292,17 +320,17 @@ for scope in local inherited; do
     cp .git/config local-before
     cp "$config" config-before
     if [[ "$scope" == inherited ]]; then
-        GIT_CONFIG_GLOBAL="$config" expect_failure bash scripts/dev/install-git-hooks.sh
+        GIT_CONFIG_GLOBAL="$config" expect_failure bash scripts/dev/install-git-hooks.sh --consumer "$PWD"
     else
-        expect_failure bash scripts/dev/install-git-hooks.sh
+        expect_failure bash scripts/dev/install-git-hooks.sh --consumer "$PWD"
     fi
     cmp local-before .git/config
     cmp config-before "$config"
 done
 
 new_fixture $'installer-root\n'
-bash scripts/dev/install-git-hooks.sh > output
-bash scripts/dev/install-git-hooks.sh >> output
+bash scripts/dev/install-git-hooks.sh --consumer "$PWD" > output
+bash scripts/dev/install-git-hooks.sh --consumer "$PWD" >> output
 [[ "$(git config --local --get core.hooksPath)" == .githooks ]] || exit 1
 printf 'unformatted\n' > staged.rs
 git add staged.rs
@@ -328,7 +356,7 @@ GIT
     chmod +x mock-bin/git
     cp .git/config config-before
     if PATH="$PWD/mock-bin:$PATH" HOOK_TEST_GIT="$real_git" HOOK_TEST_OBSERVATION="$observation" \
-        bash scripts/dev/install-git-hooks.sh > output 2>&1; then
+        bash scripts/dev/install-git-hooks.sh --consumer "$PWD" > output 2>&1; then
         echo 'hook installer accepted a failed Git observation' >&2
         exit 1
     else
@@ -339,12 +367,12 @@ done
 
 new_fixture installer-disabled
 git config --local core.hooksPath ''
-expect_failure bash scripts/dev/install-git-hooks.sh
+expect_failure bash scripts/dev/install-git-hooks.sh --consumer "$PWD"
 [[ "$(git config --local --get core.hooksPath)" == '' ]] || exit 1
 
 new_fixture installer-inherited
 printf '[core]\n\thooksPath = inherited-hooks\n' > "$FIXTURE/global-config"
-GIT_CONFIG_GLOBAL="$FIXTURE/global-config" expect_failure bash scripts/dev/install-git-hooks.sh
+GIT_CONFIG_GLOBAL="$FIXTURE/global-config" expect_failure bash scripts/dev/install-git-hooks.sh --consumer "$PWD"
 [[ -z "$(git config --local --get core.hooksPath || true)" ]] || exit 1
 
 new_fixture installer-private-hook
@@ -352,13 +380,13 @@ mkdir .git/hooks
 printf '#!/bin/sh\nexit 0\n' > .git/hooks/pre-push
 chmod +x .git/hooks/pre-push
 cp .git/hooks/pre-push before
-expect_failure bash scripts/dev/install-git-hooks.sh
+expect_failure bash scripts/dev/install-git-hooks.sh --consumer "$PWD"
 cmp before .git/hooks/pre-push
 [[ -z "$(git config --get core.hooksPath || true)" ]] || exit 1
 
 new_fixture installer-non-executable
 chmod -x .githooks/pre-commit
-expect_failure bash scripts/dev/install-git-hooks.sh
+expect_failure bash scripts/dev/install-git-hooks.sh --consumer "$PWD"
 [[ ! -x .githooks/pre-commit && -z "$(git config --get core.hooksPath || true)" ]] || exit 1
 
 # Qualify the optional shared formatter against real Cargo and the actual hook,

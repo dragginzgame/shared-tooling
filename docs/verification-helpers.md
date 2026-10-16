@@ -274,8 +274,11 @@ The installer prints the selected executable path; callers own `GITHUB_PATH`,
 
 `scripts/ci/run-sccache.sh` owns stable, repository-scoped temporary files and
 socket selection for a cache server that outlives one validation invocation.
-It forwards the exact arguments, diagnostics and exit status to `SCCACHE_BIN`;
-it does not select Cargo's compiler wrapper or retry compiler failures.
+It forwards the exact arguments, diagnostics and exit status to `SCCACHE_BIN`.
+Set that variable to an absolute executable file. Unset, empty, bare-name,
+relative, directory and unavailable selections fail before runtime creation;
+there is no PATH fallback. The selected file may be a caller-owned adapter.
+The launcher does not select Cargo's compiler wrapper or retry compiler failures.
 It refuses a symlinked repository `.tmp`, selected runtime root or `tmp` child
 before creating runtime directories. An explicit `SCCACHE_RUNTIME_DIR` owns its
 chosen location; its ancestors follow normal filesystem resolution (including
@@ -853,6 +856,19 @@ a script. It preserves jq failures and requires prepared jq on PATH. Callers
 own YAML-to-JSON selection, ordering/condition assertions and actual execution;
 extraction grants no authority to execute unreviewed workflow code. Focused
 coverage is `scripts/ci/test-workflow-step.sh`.
+
+## Producer and consumer fixture boundaries
+
+Shared's Cargo preflight fixture runs the real release runner against cold,
+offline, fetch-failed and tool-failed preparation, proving refusal before version
+preparation and retention of its isolated source/index. Consumers keep their
+preparation-authority routing, exact package/pin selections and recovery custody.
+The tool-version report fixture owns catalog/admission/probe mechanics, including
+partial stdout/stderr. Workflow fixtures can substitute that reporter boundary
+while checking their own log names, status and later-step refusal.
+The native archive fixture owns partial tar/hash failures and preservation of
+readable diagnostics plus their checksum. Consumers retain a real archive round
+trip for their selected payloads and workflow-level collector failure propagation.
 
 ## Consumer flow qualification
 

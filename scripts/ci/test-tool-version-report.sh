@@ -64,7 +64,7 @@ for tool in jq yq rg cloc cargo-sort cargo-sort-derives candid-extractor icp did
 done
 digest="$(bash "$snapshot/scripts/ci/verify-file-checksum.sh" --print sha256 "$consumer/host bin/jq")"
 grep -F "sha256=$digest" "$fixture/report" > /dev/null
-for failure in admit-host admit-rust admit-ic jq cargo-sort-derives wasm-opt; do
+for failure in admit-host admit-rust admit-ic jq cloc cargo-sort-derives wasm-opt; do
     : > "$REPORT_EVENTS"
     status=0
     REPORT_FAILURE="$failure" bash "$snapshot/scripts/ci/report-tool-versions.sh" "$consumer" > "$fixture/$failure.out" 2> "$fixture/$failure.err" || status=$?
@@ -72,7 +72,7 @@ for failure in admit-host admit-rust admit-ic jq cargo-sort-derives wasm-opt; do
         admit-*) [[ "$status" == 37 ]]; grep -Fx partial-admission "$fixture/$failure.out" > /dev/null ;;
         *) [[ "$status" == 43 ]]; grep -Fx "observed $failure" "$fixture/$failure.out" > /dev/null; grep -Fx "probe stderr $failure" "$fixture/$failure.err" > /dev/null ;;
     esac
-    case "$failure" in admit-host|jq) ! grep -q 'admit rust' "$REPORT_EVENTS" ;; admit-rust|cargo-sort-derives) ! grep -q 'admit ic' "$REPORT_EVENTS" ;; esac
+    case "$failure" in admit-host|jq|cloc) ! grep -q 'admit rust' "$REPORT_EVENTS" ;; admit-rust|cargo-sort-derives) ! grep -q 'admit ic' "$REPORT_EVENTS" ;; esac
 done
 # Invalid catalogs refuse before admission; no implicit preparation is allowed.
 # shellcheck disable=SC2016 # Invalid literal catalog must never execute.

@@ -1,5 +1,35 @@
 # Changelog
 
+## [0.17.0]
+
+### Breaking
+
+- Require `--consumer <repository>` for hook installation. Update direct setup
+  callers before snapshot adoption; `make install-hooks` already supplies it.
+- Require `SCCACHE_BIN` to select an absolute executable file for the stable
+  compiler-cache launcher. Remove implicit PATH discovery; consumers select
+  the binary or their own cache-failure adapter explicitly before launch.
+
+### Changed
+
+- Qualify repeated validation-log retention and Cargo/logger status combinations
+  at their Shared owners. Earlier failure bytes survive retries and unusable
+  evidence destinations; consumers retain their adapter and lock-cleanup checks
+  ([PR #249 — Repeated logger failures](https://github.com/dragginzgame/shared-tooling/pull/249),
+  [PR #250 — Publication logger status](https://github.com/dragginzgame/shared-tooling/pull/250)).
+- Require a commit object when proving prior snapshot ownership, including
+  takeover receipts. Refuse tree/tag identities and failed type observations
+  before changing consumer files
+  ([#248 — Require commit objects for prior snapshot ownership proofs](https://github.com/dragginzgame/shared-tooling/issues/248)).
+- Avoid repeated directory-creation commands for existing snapshot payload
+  parents, retaining manifest admission, drift checks and atomic replacement
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
+- Qualify release preflight refusals at the shared runner/helper boundary,
+  preserving source, index and existing tools before version preparation.
+  Shared fixtures also own reporter partial output and archive diagnostic
+  checksum preservation, keeping consumer checks focused on their own adapters
+  ([PR #247 — Keep generic release and evidence qualification at Shared owners](https://github.com/dragginzgame/shared-tooling/pull/247)).
+
 ## [0.16.1]
 
 - Read snapshot companion headers with Bash instead of launching a parser for

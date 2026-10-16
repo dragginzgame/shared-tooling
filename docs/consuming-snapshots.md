@@ -23,6 +23,8 @@ Review the preview, then repeat without `--preview`. Without an explicit complet
 `--entrypoint` set, existing and transferred entrypoints are unioned. Every
 transferred record is proved against its recorded source commit, hash and mode;
 edited, forged, staged, aliased or unavailable inputs refuse before publication.
+The recorded revision must itself be a commit object. Tree or annotated-tag
+object IDs and failed Git type observations cannot establish that identity.
 The root must match the actual prior layout; it is never inferred from the
 manifest's directory. The source remote must match the destination owner.
 

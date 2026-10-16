@@ -74,6 +74,10 @@ status:--porcelain)
 remote:get-url)
     printf '%s\n' 'git@github.com:dragginzgame/shared-tooling.git'
     ;;
+cat-file:-t)
+    [[ "$3" == "${SNAPSHOT_TEST_REVISION:-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}" ]] || exit 1
+    printf 'commit\n'
+    ;;
 ls-tree:-z)
     path="$5"
     [[ -z "${SNAPSHOT_TEST_READ_LOG:-}" ]] || printf 'mode:%s\n' "$path" >> "$SNAPSHOT_TEST_READ_LOG"

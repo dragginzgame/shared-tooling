@@ -17,6 +17,8 @@ for scenario in success occupied checksum-occupied output-link inventory-link in
     cd "$fixture/$scenario"
     mkdir -p 'evidence tree/scratch/release/.git/release-state' bin
     printf 'readable diagnostics\n' > diagnostics.tar.gz
+    shasum -a 256 diagnostics.tar.gz > diagnostics.tar.gz.sha256
+    cp diagnostics.tar.gz.sha256 expected-diagnostics.sha256
     printf 'source identity\n' > 'evidence tree/source.txt'
     printf 'index\n' > 'evidence tree/scratch/release/.git/index'
     printf 'intent\n' > 'evidence tree/scratch/release/.git/release-state/attempt.plan'
@@ -45,7 +47,7 @@ HASH
             chmod +x bin/shasum ;;
         tar-failure)
             expected=23
-            printf '#!%s\nprintf "partial archive"\nexit 23\n' "$BASH" > bin/tar
+            printf '#!%s\nprintf "partial archive"\necho archive-write-failed >&2\nexit 23\n' "$BASH" > bin/tar
             chmod +x bin/tar ;;
     esac
     status=0
@@ -53,6 +55,8 @@ HASH
         bash "$root/scripts/ci/collect-native-evidence.sh" 'evidence tree' "$output" > result.log 2>&1 || status=$?
     [[ "$status" == "$expected" ]] || exit 1
     [[ "$(cat diagnostics.tar.gz)" == 'readable diagnostics' ]] || exit 1
+    cmp expected-diagnostics.sha256 diagnostics.tar.gz.sha256
+    shasum -a 256 -c diagnostics.tar.gz.sha256 > diagnostic-check.log
     [[ "$(cat 'evidence tree/scratch/release/.git/release-state/attempt.plan')" == intent ]] || exit 1
     [[ "$(cat 'evidence tree/scratch/release/.git/index')" == index ]] || exit 1
     case "$scenario" in
@@ -72,7 +76,9 @@ HASH
         checksum-occupied) [[ ! -e "$output" && "$(cat "$output.sha256")" == 'earlier checksum' ]] ;;
         output-link) [[ -L "$output" && ! -e missing ]] ;;
         inside|alias-inside|hash-failure|inventory-link) [[ ! -e "$output" ]] ;;
-        tar-failure) [[ "$(cat "$output")" == 'partial archive' && ! -e "$output.sha256" ]] ;;
+        tar-failure)
+            [[ "$(cat "$output")" == 'partial archive' && ! -e "$output.sha256" ]]
+            grep -Fx archive-write-failed result.log > /dev/null ;;
         final-hash-failure) tar -tzf "$output" > retained.list; [[ "$(cat "$output.sha256")" == 'partial hash' ]] ;;
     esac
 ); done
