@@ -152,9 +152,16 @@ export_previous_payload() {
 
 check_index_unchanged() {
     local index="$1" path="$2"
-    git -C "$CONSUMER_ROOT" --literal-pathspecs ls-files --stage -z -- "$path" > "$STAGING_DIR/current-index" ||
+    local recorded="$STAGING_DIR/index-$index" observed="$STAGING_DIR/current-index"
+    git -C "$CONSUMER_ROOT" --literal-pathspecs ls-files --stage -z -- "$path" > "$observed" ||
         fail "cannot inspect consumer index: $path"
-    cmp -s "$STAGING_DIR/index-$index" "$STAGING_DIR/current-index" ||
+    # Reobserve Git on every check. Two readable, regular empty records already
+    # prove equality; retain byte comparison for all other index observations.
+    if [[ -f "$recorded" && -r "$recorded" && ! -s "$recorded" &&
+          -f "$observed" && -r "$observed" && ! -s "$observed" ]]; then
+        return 0
+    fi
+    cmp -s "$recorded" "$observed" ||
         fail "consumer index changed during refresh: $path"
 }
 

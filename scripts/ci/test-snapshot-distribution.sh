@@ -54,6 +54,15 @@ fi
 repository="$2"
 if [[ "$repository" != "$SNAPSHOT_TEST_SOURCE_ROOT" ]]; then
     if [[ "${SNAPSHOT_TEST_STATUS_FAIL:-}" == true && "$3" == --literal-pathspecs && "$4" == status ]]; then exit 9; fi
+    if [[ "${SNAPSHOT_TEST_INDEX_FAIL:-}" == true && "$3" == --literal-pathspecs && "$4" == ls-files ]]; then
+        "$REAL_GIT" "$@"
+        # Admit the initial empty checkpoint, then fail its empty re-observation.
+        if [[ "$8" == .shared-tooling.snapshot ]]; then
+            [[ ! -e "$SNAPSHOT_TEST_INDEX_MARKER" ]] || exit 73
+            : > "$SNAPSHOT_TEST_INDEX_MARKER"
+        fi
+        exit 0
+    fi
     exec "$REAL_GIT" "$@"
 fi
 shift 2
@@ -143,6 +152,21 @@ for path in VERSION scripts/ci/sample.sh; do
         exit 1
     fi
     [[ ! -e "$consumer_root/.shared-tooling.snapshot" && ! -e "$consumer_root/scripts" ]] || exit 1
+done
+
+# Empty index output is meaningful only after a successful observation.
+for operation in preview apply; do
+    refresh=(bash "$source_root/scripts/distribution/refresh-consumer.sh"
+        --source "$source_root" --consumer "$consumer_root" --entrypoint scripts/ci/sample.sh)
+    [[ "$operation" != preview ]] || refresh+=(--preview)
+    if SNAPSHOT_TEST_INDEX_FAIL=true SNAPSHOT_TEST_INDEX_MARKER="$FIXTURE/index-$operation" \
+        PATH="$FIXTURE/bin:$PATH" "${refresh[@]}" \
+        > "$FIXTURE/failed-index-$operation.log" 2>&1; then
+        echo 'snapshot distribution test failed: failed empty index observation was accepted' >&2
+        exit 1
+    fi
+    [[ ! -e "$consumer_root/.shared-tooling.snapshot" && ! -e "$consumer_root/scripts" ]] || exit 1
+    [[ "$(cat "$consumer_root/VERSION")" == 8.8.8 ]] || exit 1
 done
 
 if ! SNAPSHOT_TEST_READ_LOG="$FIXTURE/selected-reads" SNAPSHOT_TEST_SOURCE_DRIFT=true PATH="$FIXTURE/bin:$PATH" \

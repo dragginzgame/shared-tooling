@@ -44,6 +44,25 @@ cp CHANGELOG.md "$FIXTURE/pending-notes"
 bash "$ROOT/scripts/release/metadata.sh" preflight
 cmp CHANGELOG.md "$FIXTURE/pending-notes"
 
+# Unsupported pending syntax must identify the correction before either
+# preflight or preparation changes metadata, including a heading with tabs.
+for heading in '## [0.1.1] - Unreleased' $'##\t[0.1.1]  -\tUnreleased'; do
+    printf '# Changelog\n\n%s\n\n- Pending change.\n' "$heading" > CHANGELOG.md
+    cp CHANGELOG.md "$FIXTURE/unsupported-notes"
+    for operation in preflight prepare; do
+        if bash "$ROOT/scripts/release/metadata.sh" "$operation" \
+            > "$FIXTURE/unsupported-$operation.out" 2> "$FIXTURE/unsupported-$operation.err"; then
+            echo 'release metadata test failed: unsupported pending suffix accepted' >&2; exit 1
+        fi
+        [[ ! -s "$FIXTURE/unsupported-$operation.out" ]] || exit 1
+        rg -F "line 3: $heading" "$FIXTURE/unsupported-$operation.err" >/dev/null
+        rg -F 'expected pending heading: ## [0.1.1]' "$FIXTURE/unsupported-$operation.err" >/dev/null
+        cmp CHANGELOG.md "$FIXTURE/unsupported-notes"
+        [[ "$(cat VERSION)" == 0.1.0 ]] || exit 1
+    done
+done
+cp "$FIXTURE/pending-notes" CHANGELOG.md
+
 # Invalid identity must stop every preparation path before changing either file.
 for bad in invalid-version 01.1.0 0.1.0-beta; do
     printf '%s\n' "$bad" > VERSION
