@@ -135,13 +135,16 @@ for mode in --toolchain-file --workspace-manifest; do
     done
 done
 FAIL_AT=0
-for invalid in malformed missing-channel option-channel invalid-profile invalid-component invalid-target path-toolchain missing-floor invalid-floor extra-argument late-option; do
+for invalid in malformed missing-channel option-channel invalid-profile false-profile invalid-component false-components invalid-target newline-target path-toolchain missing-floor invalid-floor extra-argument late-option; do
     arguments=(--toolchain-file "$fixture/invalid.toml")
     case "$invalid" in
         malformed) printf '[toolchain\n' > "$fixture/invalid.toml" ;;
         missing-channel) printf '[toolchain]\nprofile = "minimal"\n' > "$fixture/invalid.toml" ;;
         option-channel) printf '[toolchain]\nchannel = "--help"\n' > "$fixture/invalid.toml" ;;
         invalid-profile) printf '[toolchain]\nchannel = "stable"\nprofile = "unknown"\n' > "$fixture/invalid.toml" ;;
+        false-profile) printf '[toolchain]\nchannel = "stable"\nprofile = false\n' > "$fixture/invalid.toml" ;;
+        false-components) printf '[toolchain]\nchannel = "stable"\ncomponents = false\n' > "$fixture/invalid.toml" ;;
+        newline-target) printf '[toolchain]\nchannel = "stable"\ntargets = ["wasm32-unknown-unknown\\n"]\n' > "$fixture/invalid.toml" ;;
         invalid-component) printf '[toolchain]\nchannel = "stable"\ncomponents = ["two words"]\n' > "$fixture/invalid.toml" ;;
         invalid-target) printf '[toolchain]\nchannel = "stable"\ntargets = "wasm32-unknown-unknown"\n' > "$fixture/invalid.toml" ;;
         path-toolchain) printf '[toolchain]\nchannel = "stable"\npath = "/some/compiler"\n' > "$fixture/invalid.toml" ;;

@@ -18,13 +18,13 @@ if [[ "${1:-}" == --toolchain-file || "${1:-}" == --workspace-manifest ]]; then
     if [[ "$mode" == --toolchain-file ]]; then
         [[ $# == 0 ]] || usage
         selection="$(printf '%s' "$document" | jq -er '
-            def token: type == "string" and test("^[A-Za-z0-9][A-Za-z0-9_.+-]*$");
+            def token: type == "string" and test("\\A[A-Za-z0-9][A-Za-z0-9_.+-]*\\z");
             .toolchain | select(type == "object") |
             select(.channel | token) |
-            select((.profile // "minimal") | IN("minimal", "default", "complete")) |
+            select((if has("profile") then .profile else "minimal" end) | IN("minimal", "default", "complete")) |
             select((has("path") | not)) |
-            select((.components // []) | type == "array" and all(.[]; token)) |
-            select((.targets // []) | type == "array" and all(.[]; token)) |
+            select((if has("components") then .components else [] end) | type == "array" and all(.[]; token)) |
+            select((if has("targets") then .targets else [] end) | type == "array" and all(.[]; token)) |
             .channel, "--profile", (.profile // "minimal"),
             ((.components // [])[] | "--component", .),
             ((.targets // [])[] | "--target", .)
@@ -35,7 +35,7 @@ if [[ "${1:-}" == --toolchain-file || "${1:-}" == --workspace-manifest ]]; then
     fi
     version="$(printf '%s' "$document" | jq -er '
         .workspace.package."rust-version" |
-        select(type == "string" and test("^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"))
+        select(type == "string" and test("\\A[0-9]+\\.[0-9]+(\\.[0-9]+)?\\z"))
     ')"
     set -- "$version" "$@"
 fi
