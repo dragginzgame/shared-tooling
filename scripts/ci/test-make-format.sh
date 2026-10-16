@@ -156,5 +156,16 @@ logs=("$fixture"/formatting.*)
 [[ ${#logs[@]} == 2 ]] || exit 1
 grep -Fx 'selected path with spaces' "$fixture"/formatting.*
 grep -Fx formatter-error "$fixture"/formatting.*
+# Successful standalone formatting removes only its own log, preserving the
+# exact failed-command evidence retained above.
+mkdir "$fixture/retained-logs"
+for log in "${logs[@]}"; do cp "$log" "$fixture/retained-logs/${log##*/}"; done
+bash "$root/scripts/ci/run-formatting.sh" --write \
+    bash -c 'echo successful-formatter-detail' > "$fixture/success"
+printf 'Formatting... ok\n' > "$fixture/expected-output"
+cmp "$fixture/expected-output" "$fixture/success"
+remaining=("$fixture"/formatting.*)
+[[ ${#remaining[@]} == 2 ]] || exit 1
+for log in "${logs[@]}"; do cmp "$log" "$fixture/retained-logs/${log##*/}"; done
 echo 'Shared formatting Make commands passed (substitute Cargo; no installation)'
 fixture_complete=true

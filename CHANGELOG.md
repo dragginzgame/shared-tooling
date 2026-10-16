@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.15.10]
+
+- Qualify standalone formatting success and cleanup at the wrapper owner,
+  preserving earlier failure logs byte-for-byte
+  ([PR #240 — Standalone formatting and retained-log qualification](https://github.com/dragginzgame/shared-tooling/pull/240)).
+- Qualify missing workspace versions and duplicate TOML tables at the Cargo
+  version-reader owner, keeping release-adapter checks focused on their boundary
+  ([PR #241 — Keep exhaustive qualification at Shared owners](https://github.com/dragginzgame/shared-tooling/pull/241)).
+
 ## [0.15.9]
 
 - Read Rust setup selections from existing toolchain or workspace TOML policy,
