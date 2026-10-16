@@ -2,6 +2,9 @@
 
 ## [0.16.1]
 
+- Qualify repeated validation failures at the logger owner, preserving prior log
+  bytes for both ordinary retention and unusable destination fallbacks.
+
 - Read snapshot companion headers with Bash instead of launching a parser for
   each payload, preserving literal second-line selection and EOF handling
   ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
