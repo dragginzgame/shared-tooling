@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Shared companions: scripts/ci/cargo-release-preflight.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
-unset RELEASE_MAKE
+unset RELEASE_MAKE PREFLIGHT_REAL_FETCH
 ROOT="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture="$(fixture_create "${TMPDIR:-/tmp}/cargo-preflight.XXXXXX")"
@@ -10,11 +10,14 @@ trap 'fixture_finish "$?" "$fixture" "Cargo preflight fixture retained"' EXIT
 mkdir -p "$fixture/bin" "$fixture/tool root" "$fixture/selected source"
 printf 'first pin\n' > "$fixture/first pins"
 printf 'second pin\n' > "$fixture/second pins"
+PREFLIGHT_REAL_CARGO="$(command -v cargo)"
+export PREFLIGHT_REAL_CARGO
 cat > "$fixture/bin/cargo" <<'CARGO'
 #!/usr/bin/env bash
 set -euo pipefail
 printf 'cargo:%s:%s\n' "$PWD" "$*" >> "$PREFLIGHT_EVENTS"
 [[ -z "${IC_METRICS_RELEASE_CACHE_PREPARE+x}" ]] || exit 99
+if [[ "${PREFLIGHT_REAL_FETCH:-0}" == 1 ]]; then exec "$PREFLIGHT_REAL_CARGO" "$@"; fi
 [[ "${PREFLIGHT_FETCH_STATUS:-0}" == 0 ]] || exit "$PREFLIGHT_FETCH_STATUS"
 if [[ -n "${PREFLIGHT_CACHE:-}" && ! -e "$PREFLIGHT_CACHE/input" ]]; then
     if [[ "$*" == *' --offline' || "${CARGO_NET_OFFLINE:-false}" == true ||
@@ -89,8 +92,8 @@ for kind in fetch make pin invalid; do
         *) [[ $(wc -l < "$PREFLIGHT_EVENTS") -eq 2 ]] || exit 1 ;;
     esac
 done
-# Shared owns simulated cache/tool states. Consumers retain actual Cargo-policy
-# admission, preparation-authority routing, selected pins and Git custody.
+# Shared owns Cargo-policy admission and simulated cache/tool states. Consumers
+# retain preparation-authority routing, selected pins and Git custody.
 printf 'unchanged manifest\n' > Cargo.toml
 printf 'unchanged lock\n' > Cargo.lock
 cp Cargo.toml "$fixture/original.toml"
@@ -140,6 +143,57 @@ for scenario in cold standalone-offline environment-offline config-offline fetch
     [[ "$(cat "$PREFLIGHT_CACHE/old-tool")" == 'old executable' ]] || exit 1
     cmp "$fixture/original.toml" Cargo.toml
     cmp "$fixture/original.lock" Cargo.lock
+); done
+# Real Cargo must honor both offline surfaces before a tool effect. Use a frozen
+# one-dependency workspace, independent of consumer history, source caches and
+# dependency graphs. Neither case prepares sources or accesses the network.
+for policy in environment config; do (
+    unset CARGO_NET_OFFLINE PREFLIGHT_FETCH_STATUS PREFLIGHT_CACHE
+    export PREFLIGHT_REAL_FETCH=1 CARGO_HOME="$fixture/real-cargo-home-$policy"
+    workspace="$fixture/real-cargo-$policy"
+    mkdir -p "$CARGO_HOME" "$workspace/src"
+    cat > "$workspace/Cargo.toml" <<'TOML'
+[package]
+name = "offline-policy-fixture"
+version = "0.0.0"
+edition = "2021"
+[workspace]
+[dependencies]
+cfg-if = "=1.0.5"
+TOML
+    printf '#![no_std]\n' > "$workspace/src/lib.rs"
+    cat > "$workspace/Cargo.lock" <<'LOCK'
+version = 4
+
+[[package]]
+name = "cfg-if"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
+
+[[package]]
+name = "offline-policy-fixture"
+version = "0.0.0"
+dependencies = [
+ "cfg-if",
+]
+LOCK
+    cp "$workspace/Cargo.toml" "$workspace/original.toml"
+    cp "$workspace/Cargo.lock" "$workspace/original.lock"
+    if [[ "$policy" == config ]]; then printf '[net]\noffline = true\n' > "$CARGO_HOME/config.toml"; fi
+    cd "$workspace"
+    : > "$PREFLIGHT_EVENTS"
+    status=0
+    if [[ "$policy" == environment ]]; then
+        CARGO_NET_OFFLINE=true run 1 > "$workspace/preflight.log" 2>&1 || status=$?
+    else
+        run 1 > "$workspace/preflight.log" 2>&1 || status=$?
+    fi
+    [[ "$status" == 101 ]] || exit 1
+    printf 'cargo:%s:fetch --locked\n' "$PWD" > "$workspace/expected-events"
+    cmp "$workspace/expected-events" "$PREFLIGHT_EVENTS"
+    cmp original.toml Cargo.toml
+    cmp original.lock Cargo.lock
 ); done
 fixture_complete=true
 echo 'Locked Cargo preparation, ordered tool checks and multi-pin refusal passed'

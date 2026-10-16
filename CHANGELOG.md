@@ -2,6 +2,11 @@
 
 ## [0.15.6]
 
+- Own release-preflight cache/tool cases and real Cargo environment/configuration
+  offline-policy qualification beside the shared helper. Consumers retain their
+  actual adapter/runner and Git-custody checks
+  ([PR #228 — Cargo preflight qualification](https://github.com/dragginzgame/shared-tooling/pull/228)).
+
 - Refuse failed Git file-mode observations during snapshot refresh even when
   they emit a complete row, before publishing payloads or a manifest
   ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
@@ -52,9 +57,6 @@
   ([PR #223 — Rust action companion](https://github.com/dragginzgame/shared-tooling/pull/223)).
 
 ## [0.15.4]
-
-- Own simulated release-preflight cold/warm cache, offline and tool-failure
-  cases beside the shared helper; consumers retain their adapter/runner checks.
 
 - Make maintenance runners and scheduler files optional for consumers while
   retaining shared task guidance. Existing snapshots use explicit selection and
