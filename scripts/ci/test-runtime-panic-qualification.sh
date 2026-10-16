@@ -46,7 +46,7 @@ for scenario in unprepared compiler rustfmt build clippy semantics; do
         > "$fixture/$scenario.log" 2>&1 || status=$?
     [[ "$status" == "$expected" ]] || exit 1
     if [[ "$scenario" == unprepared ]]; then
-        [[ ! -e "$fixture/$scenario" && "$(wc -l < "$QUALIFICATION_EVENTS")" == 1 ]] || exit 1
+        [[ ! -e "$fixture/$scenario" && "$(wc -l < "$QUALIFICATION_EVENTS")" -eq 1 ]] || exit 1
     else
         cmp "$ROOT/scripts/ci/check-runtime-panics.rs" "$fixture/$scenario/workspace/crates/scanner/src/main.rs"
         cmp "$ROOT/ci/runtime-panics/Cargo.lock.in" "$fixture/$scenario/workspace/Cargo.lock"

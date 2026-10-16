@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.15.7]
+
+- Qualify real Cargo environment and configuration offline refusal on a frozen
+  minimal graph before tool dispatch, preserving its manifest and lock
+  ([PR #235 — Qualify real Cargo offline policy](https://github.com/dragginzgame/shared-tooling/pull/235)).
+- Reuse exit-retention checks across caller-selected completion variables and
+  physical scratch roots, including relative paths and aliases. Require a fresh
+  child receipt on repeated probes while preserving earlier retained evidence
+  ([PR #234 — Reuse fixture exit qualification](https://github.com/dragginzgame/shared-tooling/pull/234)).
+- Accept padded BSD line counts in scanner qualification so native macOS
+  refusal checks reach the full retained-failure matrix
+  ([#225 — Structural Rust runtime panic scanner](https://github.com/dragginzgame/shared-tooling/issues/225)).
+
 ## [0.15.6]
 
 - Refuse failed Git file-mode observations during snapshot refresh even when
