@@ -89,7 +89,7 @@ fixture_probe_exit() {
 
 fixture_probe_exits() {
     local failure
-    for failure in nounset nounset-function command nonzero premature completed failed-completion; do
+    for failure in nounset nounset-function command nonzero premature completed failed-completion cleanup-failure; do
         fixture_probe_exit "$1" "$2" "$3" "$4" "$failure" "${@:5}" || return
     done
 }

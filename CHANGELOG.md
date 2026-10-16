@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.15.8]
+
+- Include cleanup refusal in the standard fixture exit-probe roster, so consumers
+  no longer append that common case separately.
+
 ## [0.15.7]
 
 - Qualify real Cargo environment and configuration offline refusal on a frozen

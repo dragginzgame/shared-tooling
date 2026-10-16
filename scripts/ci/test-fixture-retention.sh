@@ -38,7 +38,6 @@ for name in format-tools tool-commands rust-tools release-runner host-tools ic-t
     export FIXTURE_PROBE_DIRECTORY_VARIABLE
     fixture_probe_exits "$source" "$fixture" "$ROOT" "$name" ${probe_args[@]+"${probe_args[@]}"} || exit 1
     if [[ "$name" == ic-tools ]]; then
-        fixture_probe_exit "$source" "$fixture" "$ROOT" "$name" cleanup-failure || exit 1
         grep -F 'IC fixture cleanup started:' "$fixture/$name-cleanup-failure.log" > /dev/null
         grep -E 'IC fixture cleanup finished: [0-9]+s, status 37' "$fixture/$name-cleanup-failure.log" > /dev/null
     fi
