@@ -2,6 +2,10 @@
 
 ## [0.15.2]
 
+- Keep exhaustive Make flag permutations and common-tool leaf failures with
+  their producer. Offer a four-mode per-target consumer admission probe while
+  preserving independent target effects and parallel-dispatch checks.
+
 - Carry the common-tool preparation action and Make-fixture bootstrap from
   [PR #227](https://github.com/dragginzgame/shared-tooling/pull/227) onto the
   reviewed Metrics adoption source, preserving its existing evidence helpers.

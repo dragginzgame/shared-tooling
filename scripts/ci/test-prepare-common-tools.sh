@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Shared companions: .github/actions/prepare-common-tools/action.yml scripts/ci/fixture-lifecycle.sh scripts/ci/extract-workflow-step.sh scripts/ci/prepare-make-fixture.sh
 set -euo pipefail
+unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
+unset VALIDATION_REPOSITORY_ROOT VALIDATION_RUNNER_SNAPSHOT_PATH
 ROOT="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
@@ -62,6 +64,80 @@ for failure in success install check; do
             >> "$fixture/expected-path"
     fi
     cmp "$fixture/expected-calls" "$fixture/prepare-calls"
+    cmp "$fixture/expected-path" "$fixture/prepare-path"
+done
+# Exercise the real shared Make aggregate beneath the action. Only installer
+# leaves are substituted; no download, store mutation or Cargo build is selected.
+aggregate="$fixture/aggregate checkout"
+mkdir -p "$aggregate/scripts/dev"
+bash "$ROOT/scripts/ci/prepare-make-fixture.sh" "$ROOT" "$aggregate"
+# shellcheck disable=SC2016 # Make expands its own checkout path.
+printf 'override SHARED_TOOLING_ROOT := $(CURDIR)\ninclude make/tools.mk\n' > "$aggregate/Makefile"
+for tool in host ic rust; do
+    cat > "$aggregate/scripts/dev/install-$tool-tools.sh" <<'INSTALLER'
+#!/usr/bin/env bash
+set -euo pipefail
+phase="${0##*/}"
+phase="${phase%.sh}"
+case "${!#}" in
+    --preflight) phase="$phase-preflight" ;;
+    --check) phase="${phase#install-}"; phase="${phase%-tools}-tools-check" ;;
+esac
+printf '%s\n' "$phase" >> "$PREPARE_CALLS"
+printf '%s stdout\n' "$phase"
+printf '%s stderr\n' "$phase" >&2
+[[ "$phase" != "$PREPARE_FAILURE" ]] || exit 43
+INSTALLER
+done
+export PREPARE_REAL_MAKE
+PREPARE_REAL_MAKE="$(command -v make)"
+cat > "$fixture/prepare-bin/make" <<'MAKE'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "${1:-}" == --no-print-directory ]]; then shift; fi
+case "$*" in install-tools|tools-check) printf '%s\n' "$*" >> "$PREPARE_CALLS" ;; esac
+exec "$PREPARE_REAL_MAKE" --no-print-directory "$@" "MAKE=$0" "MAKE_COMMAND=$PREPARE_REAL_MAKE"
+MAKE
+phases=(install-tools install-ic-tools-preflight install-rust-tools-preflight
+        install-host-tools install-ic-tools install-rust-tools
+        tools-check host-tools-check ic-tools-check rust-tools-check)
+for failure in success install-ic-tools-preflight install-rust-tools-preflight \
+    install-host-tools install-ic-tools install-rust-tools \
+    host-tools-check ic-tools-check rust-tools-check; do
+    rm -f "$fixture/prepare runner/tools-install.log" "$fixture/prepare runner/tools-check.log"
+    : > "$fixture/prepare-calls"
+    printf 'existing PATH entry\n' > "$fixture/prepare-path"
+    prepare_status=0
+    (cd "$aggregate" && PATH="$fixture/prepare-bin:$PATH" \
+        PREPARE_CALLS="$fixture/prepare-calls" PREPARE_FAILURE="$failure" \
+        RUNNER_TEMP="$fixture/prepare runner" GITHUB_WORKSPACE="$aggregate" \
+        GITHUB_PATH="$fixture/prepare-path" \
+        "$BASH" --noprofile --norc -e -o pipefail "$fixture/prepare-action.sh") \
+        > "$fixture/aggregate-$failure.log" 2>&1 || prepare_status=$?
+    expected=2
+    [[ "$failure" != success ]] || expected=0
+    [[ "$prepare_status" == "$expected" ]] || exit 1
+    : > "$fixture/expected-calls"
+    log=tools-install.log
+    for phase in "${phases[@]}"; do
+        printf '%s\n' "$phase" >> "$fixture/expected-calls"
+        if [[ "$phase" == tools-check ]]; then log=tools-check.log; fi
+        case "$phase" in
+            install-tools|tools-check) ;;
+            *) grep -Fx "$phase stdout" "$fixture/prepare runner/$log" > /dev/null
+               grep -Fx "$phase stderr" "$fixture/prepare runner/$log" > /dev/null ;;
+        esac
+        if [[ "$phase" == "$failure" ]]; then break; fi
+    done
+    cmp "$fixture/expected-calls" "$fixture/prepare-calls"
+    if [[ "$log" == tools-install.log ]]; then
+        [[ ! -e "$fixture/prepare runner/tools-check.log" ]] || exit 1
+    fi
+    printf 'existing PATH entry\n' > "$fixture/expected-path"
+    if [[ "$failure" == success ]]; then
+        printf '%s\n' "$aggregate/.tools/host/bin" "$aggregate/.tools/ic/bin" \
+            "$aggregate/.tools/rust/common/bin" >> "$fixture/expected-path"
+    fi
     cmp "$fixture/expected-path" "$fixture/prepare-path"
 done
 # Reject forbidden raw and resolved directories before publishing any payload.
