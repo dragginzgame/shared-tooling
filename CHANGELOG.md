@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.15.9]
+
+- Qualify common publication eligibility with real local Git histories and bare
+  destinations, keeping package selection and upload recovery consumer-owned.
+
 ## [0.15.8]
 
 - Include cleanup refusal in the standard fixture exit probes, preserving

@@ -48,6 +48,7 @@ if [[ "${PUBLICATION_TEST_FAILURE:-}" == remote && "$*" == 'remote get-url --pus
 if [[ "${PUBLICATION_TEST_FAILURE:-}" == observation && "$1" == ls-remote ]]; then exit 43; fi
 GIT
 chmod +x "$fixture/bin/git"
+original_path="$PATH"
 export PATH="$fixture/bin:$PATH"
 cd "$fixture/consumer"
 checker="$fixture/snapshot/scripts/ci/check-publication.sh"
@@ -100,5 +101,82 @@ for suffix in $'\n' $'\r'; do
  rm "$fixture/alias"
  rmdir "$bad"
 done
+
+# Own native Git eligibility alongside the ordering tests above. Only registry
+# transport is substituted; the actual checker, source/version/tag helpers and
+# local bare destination participate. No publication command can be dispatched.
+(
+    export PATH="$original_path"
+    unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
+    unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_NAMESPACE
+    repository="$fixture/real publication checkout"
+    destination="$fixture/publication destination.git"
+    mkdir -p "$repository" "$fixture/registry-bin"
+    cat > "$fixture/registry-bin/curl" <<'CURL'
+#!/usr/bin/env bash
+printf '%s' "${PUBLICATION_HTTP:-404}"
+exit "${PUBLICATION_TRANSPORT:-0}"
+CURL
+    chmod +x "$fixture/registry-bin/curl"
+    export PATH="$fixture/registry-bin:$PATH"
+    git init --quiet --initial-branch=main "$repository"
+    git init --quiet --bare "$destination"
+    cd "$repository"
+    git config user.name 'Publication fixture'
+    git config user.email fixture@example.invalid
+    git config commit.gpgSign false
+    git config tag.gpgSign false
+    git config core.hooksPath /dev/null
+    git remote add origin "$destination"
+    printf '[workspace]\nmembers = []\n\n[workspace.package]\nversion = "1.2.3"\n' > Cargo.toml
+    printf 'Publication fixture\n' > README.md
+    git add -- Cargo.toml README.md
+    git commit --quiet -m 'Fixture release'
+    commit="$(git rev-parse HEAD)"
+    tag=refs/tags/v1.2.3
+    git tag -a v1.2.3 -m 'Fixture release'
+    tag_object="$(git rev-parse "$tag")"
+    git push --quiet origin "$tag"
+    checker="$root/scripts/ci/check-publication.sh"
+    refuse_real() {
+        local label="$1" expected="$2" status=0
+        shift 2
+        "$@" > "$fixture/real-$label.log" 2>&1 || status=$?
+        [[ "$status" != 0 ]] || { echo "Unexpected real-Git acceptance: $label" >&2; exit 1; }
+        grep -F -- "$expected" "$fixture/real-$label.log" > /dev/null
+    }
+    "$BASH" "$checker" example-crate origin
+    printf '\nStaged fixture change\n' >> README.md
+    git add -- README.md
+    git restore --source=HEAD --worktree -- README.md
+    refuse_real staged "staged: README.md" "$BASH" "$checker" example-crate origin
+    git restore --source=HEAD --staged -- README.md
+    printf '\nUnstaged fixture change\n' >> README.md
+    refuse_real unstaged "unstaged: README.md" "$BASH" "$checker" example-crate origin
+    git restore --source=HEAD --worktree -- README.md
+    touch untracked-source
+    refuse_real untracked "untracked: untracked-source" "$BASH" "$checker" example-crate origin
+    rm untracked-source
+    refuse_real present "already exists on crates.io" env PUBLICATION_HTTP=200 "$BASH" "$checker" example-crate origin
+    refuse_real unavailable "HTTP 503" env PUBLICATION_HTTP=503 "$BASH" "$checker" example-crate origin
+    refuse_real transport "transport failure" env PUBLICATION_HTTP=200 PUBLICATION_TRANSPORT=7 "$BASH" "$checker" example-crate origin
+    git update-ref "$tag" "$commit"
+    refuse_real lightweight "must be annotated" "$BASH" "$checker" example-crate origin
+    git update-ref "$tag" "$tag_object"
+    git commit --quiet --allow-empty -m 'Fixture descendant'
+    refuse_real wrong-head "does not point to" "$BASH" "$checker" example-crate origin
+    git update-ref refs/heads/main "$commit"
+    git -C "$destination" update-ref -d "$tag"
+    refuse_real missing-remote "cannot verify the pushed release tag" "$BASH" "$checker" example-crate origin
+    git -C "$destination" update-ref "$tag" "$commit"
+    refuse_real conflicting-remote "remote release tag differs" "$BASH" "$checker" example-crate origin
+    git -C "$destination" update-ref "$tag" "$tag_object"
+    git remote set-url --add --push origin "$destination"
+    git remote set-url --add --push origin "$fixture/another.git"
+    refuse_real multiple-destinations "select exactly one push destination" "$BASH" "$checker" example-crate origin
+    git config --unset-all remote.origin.pushurl
+    "$BASH" "$checker" example-crate origin
+    [[ "$(git rev-parse HEAD)" == "$commit" && "$(git rev-parse "$tag")" == "$tag_object" && -z "$(git status --porcelain)" ]] || exit 1
+)
 fixture_complete=true
-echo 'Publication admission ordering passed (substitute observations; no upload or Git writes)'
+echo 'Publication ordering and real-Git eligibility passed (substitute registry; no upload)'
