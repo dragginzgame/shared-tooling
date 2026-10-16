@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.16.2]
+
+- Qualify the retained logger status for every Cargo/logger failure combination
+  at the publication helper owner, allowing consumers to keep only their own
+  adapter propagation and lock-release proof.
+
 ## [0.16.1]
 
 - Read snapshot companion headers with Bash instead of launching a parser for
