@@ -2,6 +2,9 @@
 
 ## [0.15.1]
 
+- Reuse exit-retention qualification with caller-selected completion variables and
+  physical scratch roots, including relative paths and directory aliases.
+
 - Let the shared evidence action upload a caller-prepared archive and collection
   log, retaining available diagnostics before reporting incomplete inputs.
 

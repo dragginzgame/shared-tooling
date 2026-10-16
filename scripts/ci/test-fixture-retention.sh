@@ -78,6 +78,36 @@ if fixture_probe_prefix "$fixture/consumer.sh" "$fixture/invalid.sh" ROOT 'bad;n
 FIXTURE_PROBE_DIRECTORY_VARIABLE=fixture
 export FIXTURE_PROBE_DIRECTORY_VARIABLE
 
+# Consumer collectors may use another completion marker and a RUNNER_TEMP root.
+# Exercise absolute, relative and aliased scratch paths without running bodies.
+mkdir "$fixture/selected scratch"
+ln -s "$fixture/selected scratch" "$fixture/scratch alias"
+cat > "$fixture/collector.sh" <<'PROBE'
+#!/usr/bin/env bash
+set -euo pipefail
+script_root=unused
+source "$script_root/scripts/ci/fixture-lifecycle.sh"
+metadata="$(fixture_create "$RUNNER_TEMP/collector.XXXXXX")"
+collection_complete=false
+trap 'status=$?; fixture_complete="$collection_complete"; fixture_finish "$status" "$metadata" "Collector retained"' EXIT
+printf forbidden > "$script_root/collector-body-ran"
+PROBE
+relative_scratch="$(perl -MFile::Spec -e 'print File::Spec->abs2rel($ARGV[0], $ARGV[1])' "$fixture/selected scratch" "$ROOT")"
+for scratch in "$fixture/selected scratch" "$relative_scratch" "$fixture/scratch alias"; do
+    (cd "$ROOT" && CDPATH="$fixture" RUNNER_TEMP="$scratch" \
+        FIXTURE_PROBE_ROOT_VARIABLE=script_root FIXTURE_PROBE_DIRECTORY_VARIABLE=metadata \
+        FIXTURE_PROBE_COMPLETION_VARIABLE=collection_complete FIXTURE_PROBE_TEMPORARY_ROOT="$scratch" \
+        fixture_probe_exits "$fixture/collector.sh" "$fixture" "$ROOT" collector) || exit 1
+done
+[[ ! -e "$ROOT/collector-body-ran" ]] || exit 1
+# Reject injected completion-variable source before allocating or running a child.
+if FIXTURE_PROBE_COMPLETION_VARIABLE='bad;name' fixture_probe_exit \
+    "$fixture/collector.sh" "$fixture" "$ROOT" invalid-completion completed; then exit 1; fi
+[[ ! -e "$fixture/invalid-completion-completed.exit" ]] || exit 1
+# Temporary completion selections must not change the default caller contract.
+FIXTURE_PROBE_ROOT_VARIABLE=repository_root FIXTURE_PROBE_DIRECTORY_VARIABLE=temporary_root \
+    fixture_probe_exit "$fixture/consumer.sh" "$fixture" "$ROOT" default-after-custom completed || exit 1
+
 # A diagnostic fixture may intentionally keep its successful result.
 cat > "$fixture/retained-owner.sh" <<'PROBE'
 #!/usr/bin/env bash

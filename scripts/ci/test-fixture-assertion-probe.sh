@@ -53,6 +53,11 @@ ASSERTIONS
 # shellcheck disable=SC2016 # Bindings and the prefix execute/match in the child.
 fixture_probe_assertion "$fixture/owner.sh" "$fixture" "$root" selected \
     --selected "$fixture/assertions" '[[ "$selected" ==' 'selected=wrong' || exit 1
+# Function-owned guards retain their return status in the generated child.
+sed 's/|| exit 1/|| return 1/' "$fixture/assertions" > "$fixture/function-assertion"
+# shellcheck disable=SC2016 # Literal function guard selected by the owner.
+fixture_probe_assertion "$fixture/owner.sh" "$fixture" "$root" function-guard \
+    --selected "$fixture/function-assertion" '[[ "$selected" ==' 'selected=wrong' || exit 1
 for failure in missing duplicate ignored setup early; do
     cp "$fixture/assertions" "$fixture/selected-$failure"
     bindings=selected=wrong
