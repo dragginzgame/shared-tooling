@@ -2,6 +2,11 @@
 
 ## [0.16.0]
 
+- Qualify the release runner's Cargo/tool-preflight failure boundary at its shared
+  owner, alongside reporter partial output and archive diagnostic-checksum
+  custody. Consumer fixtures can retain their actual routing and payload checks
+  without repeating generic tool inventories or archive command interception.
+
 ### Breaking
 
 - Require `--install-dir` for CI binary installation, removing environment and

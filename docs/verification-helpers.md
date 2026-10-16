@@ -850,6 +850,19 @@ own YAML-to-JSON selection, ordering/condition assertions and actual execution;
 extraction grants no authority to execute unreviewed workflow code. Focused
 coverage is `scripts/ci/test-workflow-step.sh`.
 
+## Producer and consumer fixture boundaries
+
+Shared's Cargo preflight fixture runs the real release runner against cold,
+offline, fetch-failed and tool-failed preparation, proving refusal before version
+preparation and retention of its isolated source/index. Consumers keep their
+preparation-authority routing, exact package/pin selections and recovery custody.
+The tool-version report fixture owns catalog/admission/probe mechanics, including
+partial stdout/stderr. Workflow fixtures can substitute that reporter boundary
+while checking their own log names, status and later-step refusal.
+The native archive fixture owns partial tar/hash failures and preservation of
+readable diagnostics plus their checksum. Consumers retain a real archive round
+trip for their selected payloads and workflow-level collector failure propagation.
+
 ## Consumer flow qualification
 
 Source `scripts/ci/make-adapter-probes.sh` for

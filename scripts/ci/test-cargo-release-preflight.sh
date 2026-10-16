@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/cargo-release-preflight.sh scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/cargo-release-preflight.sh scripts/ci/run-release.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 unset RELEASE_MAKE PREFLIGHT_REAL_FETCH
+unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES RELEASE_COMMIT
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+export RELEASE_DELIVERY=direct
 ROOT="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture="$(fixture_create "${TMPDIR:-/tmp}/cargo-preflight.XXXXXX")"
@@ -10,6 +13,8 @@ trap 'fixture_finish "$?" "$fixture" "Cargo preflight fixture retained"' EXIT
 mkdir -p "$fixture/bin" "$fixture/tool root" "$fixture/selected source"
 printf 'first pin\n' > "$fixture/first pins"
 printf 'second pin\n' > "$fixture/second pins"
+PREFLIGHT_REAL_MAKE="$(command -v make)"
+export PREFLIGHT_REAL_MAKE
 PREFLIGHT_REAL_CARGO="$(command -v cargo)"
 export PREFLIGHT_REAL_CARGO
 cat > "$fixture/bin/cargo" <<'CARGO'
@@ -98,6 +103,8 @@ printf 'unchanged manifest\n' > Cargo.toml
 printf 'unchanged lock\n' > Cargo.lock
 cp Cargo.toml "$fixture/original.toml"
 cp Cargo.lock "$fixture/original.lock"
+# Scenario exports are intentionally private to each independent subshell.
+# shellcheck disable=SC2030
 for scenario in cold standalone-offline environment-offline config-offline fetch-failure warm-offline \
     tool-cold tool-install-failure tool-check-failure tool-standalone-missing tool-offline-missing; do (
     export PREFLIGHT_CACHE="$fixture/$scenario"
@@ -143,6 +150,94 @@ for scenario in cold standalone-offline environment-offline config-offline fetch
     [[ "$(cat "$PREFLIGHT_CACHE/old-tool")" == 'old executable' ]] || exit 1
     cmp "$fixture/original.toml" Cargo.toml
     cmp "$fixture/original.lock" Cargo.lock
+); done
+# Each matrix owns its own environment; do not reuse a subshell selection.
+unset PREFLIGHT_CACHE CARGO_NET_OFFLINE PREFLIGHT_FETCH_STATUS PREFLIGHT_FAIL_TARGET
+# Qualify the real runner/helper boundary here. A successful cold preflight
+# reaches only a deliberately failing validation; every setup refusal stops
+# earlier. Real Git objects and a bare destination belong solely to this fixture.
+export PREFLIGHT_SHARED_ROOT="$ROOT" PREFLIGHT_FIXTURE_MAKE="$fixture/bin/make"
+cat > "$fixture/release-make" <<'ADAPTER'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ $# == 4 && "$1" == --no-print-directory && "$2" == -C && "$3" == "$PREFLIGHT_TOOL_ROOT" ]]; then
+    exec "$PREFLIGHT_FIXTURE_MAKE" "$@"
+fi
+target=''
+for argument in "$@"; do
+    case "$argument" in
+        RELEASE_*=*) export "$argument" ;;
+        release-*) target="$argument" ;;
+    esac
+done
+case "$target" in
+    release-version) cat version ;;
+    release-preflight)
+        exec bash "$PREFLIGHT_SHARED_ROOT/scripts/ci/cargo-release-preflight.sh" "$PREFLIGHT_TOOL_ROOT" 1 \
+            --pin "$PREFLIGHT_SECOND_PIN" --check offline-check --prepare install --prepare offline-check ;;
+    release-verify) printf 'validation\n' >> "$PREFLIGHT_EVENTS"; exit 83 ;;
+    '') exec "$PREFLIGHT_REAL_MAKE" "$@" ;;
+    *) echo "unexpected release phase: $target" >&2; exit 99 ;;
+esac
+ADAPTER
+chmod +x "$fixture/release-make"
+mkdir "$fixture/git-templates"
+export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TEMPLATE_DIR="$fixture/git-templates"
+git init --bare --quiet "$fixture/destination.git"
+# This matrix initializes every selection; no prior subshell value is reused.
+# shellcheck disable=SC2031
+for scenario in cold offline fetch-failure tool-install-failure tool-check-failure; do (
+    unset CARGO_NET_OFFLINE PREFLIGHT_FETCH_STATUS PREFLIGHT_FAIL_TARGET
+    workspace="$fixture/runner-$scenario"
+    mkdir "$workspace"
+    cd "$workspace"
+    git init --quiet
+    git symbolic-ref HEAD refs/heads/main
+    printf '0.1.1\n' > version
+    printf 'unchanged manifest\n' > Cargo.toml
+    printf 'unchanged lock\n' > Cargo.lock
+    git add -- version Cargo.toml Cargo.lock
+    tree="$(git write-tree)"
+    source_commit="$(printf 'Isolated runner preflight fixture\n' | \
+        GIT_AUTHOR_NAME=Fixture GIT_AUTHOR_EMAIL=fixture@example.invalid \
+        GIT_COMMITTER_NAME=Fixture GIT_COMMITTER_EMAIL=fixture@example.invalid git commit-tree "$tree")"
+    git update-ref HEAD "$source_commit"
+    git remote add origin "$fixture/destination.git"
+    cp .git/index "$fixture/runner-index"
+    export PREFLIGHT_CACHE="$fixture/runner-cache-$scenario"
+    mkdir "$PREFLIGHT_CACHE"
+    printf 'old executable\n' > "$PREFLIGHT_CACHE/old-tool"
+    case "$scenario" in
+        offline) export CARGO_NET_OFFLINE=true ;;
+        fetch-failure) export PREFLIGHT_FETCH_STATUS=47 ;;
+        tool-install-failure) export PREFLIGHT_FAIL_TARGET=install ;;
+        tool-check-failure) export PREFLIGHT_FAIL_TARGET=offline-check ;;
+    esac
+    : > "$PREFLIGHT_EVENTS"
+    status=0
+    RELEASE_MAKE="$fixture/release-make" bash "$ROOT/scripts/ci/run-release.sh" patch origin main \
+        > "$workspace.log" 2>&1 || status=$?
+    expected=1
+    [[ "$scenario" != cold ]] || expected=83
+    [[ "$status" == "$expected" ]] || exit 1
+    printf 'cargo:%s:fetch --locked\n' "$PWD" > "$fixture/expected"
+    case "$scenario" in
+        cold) printf 'make:install\nmake:offline-check\nvalidation\n' >> "$fixture/expected" ;;
+        tool-install-failure) printf 'make:install\n' >> "$fixture/expected" ;;
+        tool-check-failure) printf 'make:install\nmake:offline-check\n' >> "$fixture/expected" ;;
+    esac
+    cmp "$fixture/expected" "$PREFLIGHT_EVENTS"
+    [[ "$(cat version)" == 0.1.1 && "$(git rev-parse HEAD)" == "$source_commit" ]]
+    [[ "$(cat Cargo.toml)" == 'unchanged manifest' && "$(cat Cargo.lock)" == 'unchanged lock' ]]
+    [[ "$(cat "$PREFLIGHT_CACHE/old-tool")" == 'old executable' ]]
+    case "$scenario" in
+        offline|fetch-failure) [[ ! -e "$PREFLIGHT_CACHE/input" ]] ;;
+        *) [[ -f "$PREFLIGHT_CACHE/input" ]] ;;
+    esac
+    cmp .git/index "$fixture/runner-index"
+    for plan in .git/release-state/*.plan; do [[ ! -e "$plan" ]] || exit 1; done
+    [[ ! -e .git/release-state/lock && -z "$(git tag --list)" ]]
+    [[ -z "$(git ls-remote --refs origin)" ]]
 ); done
 # Real Cargo must honor both offline surfaces before a tool effect. Use a frozen
 # one-dependency workspace, independent of consumer history, source caches and
