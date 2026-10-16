@@ -164,7 +164,7 @@ Consumers can use `make_probe_target_admission` from
 unsafe behaviors (`-i`, `-n`, `-t`, `-q`), requiring status 2 and no recorded
 effects. Keep local target rosters, effect stubs, parallel descriptor checks,
 diagnostic selection and recovery-state custody at the consumer. The existing
-`make_probe_execution_modes` retains the full matrix for producer qualification.
+The full execution-mode matrix lives in the producer fixture; it is not exported.
 The common-tool action fixture executes the actual shared Make aggregates with
 only installer leaves substituted; it admits phase order, failure stopping,
 stdout/stderr retention and PATH publication. No tools are installed by it.

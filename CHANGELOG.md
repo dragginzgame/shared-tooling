@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.16.0]
+
+- Stop exporting the producer-only exhaustive Make execution-mode probe. Consumer
+  admission checks use `make_probe_target_admission`; parallel-dispatch checks
+  remain available. This removes a documented helper and requires a minor release.
+- Qualify missing workspace tables/versions and duplicate tables at the Cargo
+  version-reader owner, alongside existing malformed-version and duplicate-key
+  checks, so release adapters need only verify their own failure boundary.
+
 ## [0.15.8]
 
 - Include cleanup refusal in the standard fixture exit probes, preserving

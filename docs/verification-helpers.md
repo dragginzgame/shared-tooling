@@ -850,11 +850,13 @@ coverage is `scripts/ci/test-workflow-step.sh`.
 ## Consumer flow qualification
 
 Source `scripts/ci/make-adapter-probes.sh` for
-`make_probe_execution_modes MAKE MAKEFILE DIRECTORY EVENTS TARGET...` and
+`make_probe_target_admission MAKE MAKEFILE DIRECTORY EVENTS TARGET...` and
 `make_probe_parallel_dispatch` with the same arguments. Callers prepare reviewed
-Makefiles and substituted effects. The first checks unsafe direct/inherited
-execution modes and hidden flag assignments; the second requires observable
-dispatch under a real pipe jobserver. Both fail when required assertions disagree.
+Makefiles and substituted effects. The first checks each unsafe behavior once;
+the second requires observable dispatch under a real pipe jobserver. Exhaustive
+flag aliases and hidden assignments stay in `test-consumer-flow-probes.sh`.
+The producer-only `make_probe_execution_modes` is no longer exported; consumer
+admission checks use `make_probe_target_admission` instead.
 
 `fixture_probe_effect SCRIPT RUN PREFIX STATUS BASH MARKER` runs a fixture with
 caller-prepared PATH/environment, captures `result.log` and `status.txt`, and
