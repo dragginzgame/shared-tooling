@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.19.0]
+
+### Breaking
+
+- Make the five-tool IC bundle a product selection instead of a mandatory
+  prerequisite for every library. Consumers using IC executables must register
+  `install-ic-tools`/`ic-tools-check` in the ordered local target lists and publish
+  `.tools/ic/bin` explicitly before adopting. Common setup/action PATH and default
+  version reports cover host/Cargo tools; explicit IC catalog reporting remains.
+  Existing installed sets and standalone IC commands are retained unchanged
+  ([#253 — Make the IC executable bundle an explicit product selection](https://github.com/dragginzgame/shared-tooling/issues/253)).
+
 ## [0.18.0] - 2026-10-16
 
 ## [0.17.0]

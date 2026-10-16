@@ -176,8 +176,9 @@ stdout/stderr retention and PATH publication. No tools are installed by it.
 
 The optional `.github/actions/prepare-common-tools` action runs `make install-tools`
 then `make tools-check`, retaining complete `tools-install.log` and `tools-check.log`
-under `RUNNER_TEMP`. It appends common host/IC/Cargo executable directories to
-`GITHUB_PATH` only after both commands succeed. Consumers own compiler setup,
+under `RUNNER_TEMP`. It appends common host/Cargo executable directories to
+`GITHUB_PATH` only after both commands succeed. Selected IC consumers publish
+their admitted `.tools/ic/bin` separately. Consumers own compiler setup,
 Make's ordered local extensions, caches and product gates. The action requires
 an existing checkout, `RUNNER_TEMP` and `GITHUB_PATH`; it does not select a compiler.
 

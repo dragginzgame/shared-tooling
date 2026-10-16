@@ -114,9 +114,9 @@ contributions.
 
 ### Local IC executables
 
-Use `make install-tools` for the complete common host, IC and Cargo toolsets,
-and `make tools-check` for offline verification. Every repository gets the same
-12 executables, including tools it does not currently use; setup runs host, IC
+Use `make install-tools` for the common host and Cargo toolsets,
+and `make tools-check` for offline verification. The IC bundle is explicitly
+selected by product workflows through ordered local targets; setup runs host
 and Rust steps in order. Setup first checks platform support and the selected
 Rust/Cargo toolchain without downloads or installations. The [required tool inventory](docs/local-setup.md#required-tool-inventory)
 is the shared setup list for every repository. See [local setup](docs/local-setup.md)
