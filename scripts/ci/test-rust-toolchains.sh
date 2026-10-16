@@ -165,6 +165,32 @@ for invalid in malformed missing-channel option-channel invalid-profile invalid-
         boolean-*|newline-*) grep -F 'Rust policy has no valid' "$fixture/output" >/dev/null ;;
     esac
 done
+# The read-only entrypoint works before Rust/Cargo setup, including relative
+# manifests with spaces and an explicitly selected prepared parser.
+mkdir "$fixture/parsers"
+ln -s "$(command -v yq)" "$fixture/parsers/yq"
+ln -s "$(command -v jq)" "$fixture/parsers/jq"
+reader="$root/scripts/ci/read-cargo-workspace-rust-version.sh"
+for floor in 1.91 1.91.0; do
+    printf "[workspace.package]\nrust-version = '%s' # comment\n" "$floor" > "$fixture/policy files/Cargo.toml"
+    actual="$(cd "$fixture" && PATH="$fixture/parsers" YQ="$fixture/parsers/yq" "$BASH" "$reader" 'policy files/Cargo.toml')"
+    [[ "$actual" == "$floor" ]] || exit 1
+done
+for invalid in 'false' '1.91' '"1.91.0-nightly"' '" 1.91.0"' '"1.91.0\r"'; do
+    printf '[workspace.package]\nrust-version = %s\n' "$invalid" > "$fixture/invalid.toml"
+    status=0
+    "$BASH" "$reader" "$fixture/invalid.toml" > "$fixture/output" 2> "$fixture/error" || status=$?
+    [[ "$status" != 0 && ! -s "$fixture/output" ]] || exit 1
+done
+for arguments in absent extra; do
+    status=0
+    if [[ "$arguments" == absent ]]; then
+        "$BASH" "$reader" > "$fixture/output" 2>&1 || status=$?
+    else
+        "$BASH" "$reader" "$fixture/policy files/Cargo.toml" extra > "$fixture/output" 2>&1 || status=$?
+    fi
+    [[ "$status" == 2 ]] || exit 1
+done
 # Omitted optional fields use defaults; explicit profiles remain intact.
 for profile in omitted default complete; do
     printf '[toolchain]\nchannel = "stable"\n' > "$fixture/valid.toml"
@@ -222,6 +248,9 @@ PARSER
         PATH="$fixture/failing-$parser:$fixture/bin:$PATH" "$BASH" "$root/scripts/dev/prepare-rust-toolchain.sh" "$mode" "$fixture/policy files/$file" > "$fixture/output" 2>&1 || status=$?
         [[ "$status" == 37 && ! -s "$fixture/calls" ]] || exit 1
     done
+    status=0
+    PATH="$fixture/failing-$parser:$PATH" "$BASH" "$reader" "$fixture/policy files/Cargo.toml" > "$fixture/output" 2> "$fixture/error" || status=$?
+    [[ "$status" == 37 && ! -s "$fixture/output" ]] || exit 1
 done
 fixture_complete=true
 printf 'Rust toolchain action fixtures passed\n'

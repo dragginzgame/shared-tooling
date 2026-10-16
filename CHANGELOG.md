@@ -2,6 +2,11 @@
 
 ## [0.16.0]
 
+- Share the read-only workspace Rust-floor projection between explicit Rust
+  setup and consumer validation. It needs prepared TOML/JSON parsers without
+  requiring Cargo/Rust or performing installation; failed parser observations
+  publish no selection.
+
 ### Breaking
 
 - Require `--install-dir` for CI binary installation, removing environment and
