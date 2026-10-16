@@ -1,5 +1,7 @@
 # Changelog
 
+## [0.17.2] - 2026-10-16
+
 ## [0.17.1]
 
 - Keep expected type-documentation rejections out of passing CI output, replay
