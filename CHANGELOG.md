@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.15.9]
+
+- Qualify standalone formatting success and cleanup at the wrapper owner,
+  preserving exact earlier failure logs while removing only the successful log.
+
 ## [0.15.8]
 
 - Include cleanup refusal in the standard fixture exit probes, preserving
