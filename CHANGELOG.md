@@ -1,11 +1,12 @@
 # Changelog
 
-## [0.15.6]
+## [0.15.7]
 
-- Own release-preflight cache/tool cases and real Cargo environment/configuration
-  offline-policy qualification beside the shared helper. Consumers retain their
-  actual adapter/runner and Git-custody checks
-  ([PR #228 — Cargo preflight qualification](https://github.com/dragginzgame/shared-tooling/pull/228)).
+- Qualify real Cargo environment/configuration offline refusal on a frozen
+  minimal graph before tool dispatch. Consumers retain their actual
+  adapter/runner and Git-custody checks.
+
+## [0.15.6]
 
 - Refuse failed Git file-mode observations during snapshot refresh even when
   they emit a complete row, before publishing payloads or a manifest
