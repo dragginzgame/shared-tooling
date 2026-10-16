@@ -1,5 +1,56 @@
 # Changelog
 
+## [0.15.6]
+
+- Refuse failed Git file-mode observations during snapshot refresh even when
+  they emit a complete row, before publishing payloads or a manifest
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
+- Preserve the release adapter's selected Make executable during Cargo preflight,
+  including paths with spaces and exact failure propagation
+  ([PR #233 — Honor selected Make during Cargo release preflight](https://github.com/dragginzgame/shared-tooling/pull/233)).
+- Avoid external path-utility launches during snapshot refresh, reusing each
+  output parent while retaining source, consumer and index drift checks
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
+- Compile and exercise the shared Rust panic scanner in each native CI lane,
+  using a locked producer-only fixture without changing consumer dependency
+  selection. Retain exact source inputs, compiler identity and failure logs
+  ([#225 — Structural Rust runtime panic scanner](https://github.com/dragginzgame/shared-tooling/issues/225)).
+- Qualify selected-source release metadata refusals and retained inputs,
+  including invalid Git identities and Git commands that emit output then fail
+  ([PR #232 — Selected-source metadata qualification](https://github.com/dragginzgame/shared-tooling/pull/232)).
+
+## [0.15.5]
+
+- Share structural Rust runtime-panic scanning as snapshot source, including
+  raw identifiers and generic method calls inside macro tokens. Consumers retain
+  their selected dependencies and production-source inventories
+  ([#225 — Structural Rust runtime panic scanner](https://github.com/dragginzgame/shared-tooling/issues/225),
+  [PR #226 — Shared scanner source](https://github.com/dragginzgame/shared-tooling/pull/226)).
+- Share hosted common-tool preparation and disposable Make fixture setup,
+  preserving ordered setup/check logs, failure status and PATH publication.
+  Reject forbidden directory paths before copying fixture inputs
+  ([PR #227 — Common preparation and fixtures](https://github.com/dragginzgame/shared-tooling/pull/227)).
+- Offer focused per-target Make admission checks while keeping exhaustive flag
+  and installer-failure permutations with the shared producer
+  ([PR #231 — Producer qualification matrices](https://github.com/dragginzgame/shared-tooling/pull/231)).
+- Replay explicitly selected fixture diagnostics without replacing the original
+  failure status or taking over retention policy
+  ([PR #221 — Fixture diagnostic replay](https://github.com/dragginzgame/shared-tooling/pull/221)).
+- Upload caller-prepared failure archives and collection logs without collecting
+  tools again; retain available diagnostics before reporting incomplete inputs.
+  Ordinary collection still refuses missing roots before any collection effects
+  ([PR #230 — Prepared failure evidence](https://github.com/dragginzgame/shared-tooling/pull/230)).
+- Own native diagnostic-store and candidate-archive regressions, focused snapshot
+  verification, and downloaded-archive rejection cases at Shared Tooling
+  ([PR #222 — Native diagnostics](https://github.com/dragginzgame/shared-tooling/pull/222),
+  [PR #224 — Verifier qualification](https://github.com/dragginzgame/shared-tooling/pull/224)).
+- Expand simulated release-preflight cache and tool-admission coverage; consumers
+  retain actual adapter, runner and recovery checks
+  ([PR #228 — Release-preflight cases](https://github.com/dragginzgame/shared-tooling/pull/228)).
+- Correct Rust preparation adoption guidance to include its automatically exported
+  helper companion
+  ([PR #223 — Rust action companion](https://github.com/dragginzgame/shared-tooling/pull/223)).
+
 ## [0.15.4]
 
 - Own simulated release-preflight cold/warm cache, offline and tool-failure
@@ -9,16 +60,6 @@
   retaining shared task guidance. Existing snapshots use explicit selection and
   guarded retirement to remove these files
   ([PR #220 — Optional maintenance runtime](https://github.com/dragginzgame/shared-tooling/pull/220)).
-
-### Pending integration
-
-- Share structural Rust runtime-panic scanning, including detection of raw
-  identifiers such as `r#unwrap()` and `r#panic!()` inside and outside macros.
-  Consumers retain their source inventories and dependency selections
-  ([PR #226 — Shared Rust panic scanner](https://github.com/dragginzgame/shared-tooling/pull/226)).
-- Share hosted common-tool preparation and Make fixture setup. Reject CR/LF
-  directory paths and resolved aliases before copying fixture files
-  ([PR #227 — Common tool preparation and fixture setup](https://github.com/dragginzgame/shared-tooling/pull/227)).
 
 ## [0.15.3]
 

@@ -18,11 +18,18 @@ run:
 MAKE
 real_make="$(command -v make)"
 make_probe_execution_modes "$real_make" "$fixture/Makefile" "$fixture" "$FLOW_EVENTS" run
+make_probe_target_admission "$real_make" "$fixture/Makefile" "$fixture" "$FLOW_EVENTS" run
 make_probe_parallel_dispatch "$real_make" "$fixture/Makefile" "$fixture" "$FLOW_EVENTS" run
 # A permissive Makefile must not be accepted as evidence of safe admission.
 # shellcheck disable=SC2016 # Make expands the literal variable in the fixture.
 printf 'run:\n\t@printf called >> "$(FLOW_EVENTS)"\n' > "$fixture/bad.mk"
 if make_probe_execution_modes "$real_make" "$fixture/bad.mk" "$fixture" "$FLOW_EVENTS" run; then exit 1; fi
+if make_probe_target_admission "$real_make" "$fixture/bad.mk" "$fixture" "$FLOW_EVENTS" run; then exit 1; fi
+# No-event refusal is independent of a failing status: an effect followed by a
+# normal Make error must not qualify as parse-time admission.
+# shellcheck disable=SC2016 # Make expands the fixture variable.
+printf '$(shell printf called >> "$(FLOW_EVENTS)")\n$(error refused)\nrun:\n' > "$fixture/effect-before-error.mk"
+if make_probe_target_admission "$real_make" "$fixture/effect-before-error.mk" "$fixture" "$FLOW_EVENTS" run; then exit 1; fi
 cat > "$fixture/effect.sh" <<'CHILD'
 #!/usr/bin/env bash
 set -euo pipefail

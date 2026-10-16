@@ -84,6 +84,8 @@ jobs:
           "$ACTIONLINT_BIN" .github/workflows/*.yml
           make check-pins
           make check-doc-links
+      - name: Qualify independent downloaded-evidence readers
+        run: python3 scripts/ci/test-failure-evidence.py
       - name: Scan repository history for secrets
         shell: bash
         run: |
@@ -224,6 +226,14 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/portable-fixtures"
           bash scripts/ci/qualify-wasm-opt.sh "$RUNNER_TEMP/portable-fixtures/wasm-opt"
+      - name: Prepare the runtime scanner qualification compiler
+        if: needs.change-scope.outputs.scope != 'docs'
+        id: runtime-scanner-compiler
+        run: bash scripts/dev/prepare-rust-toolchain.sh 1.88.0 --component rustfmt,clippy
+      - name: Qualify native runtime scanner compilation and semantics
+        if: needs.change-scope.outputs.scope != 'docs'
+        id: runtime-scanner
+        run: bash scripts/ci/qualify-runtime-panics.sh 1.88.0 "$RUNNER_TEMP/portable-fixtures/runtime-scanner"
       - name: Run portable regression set with prepared tools
         if: needs.change-scope.outputs.scope != 'docs'
         shell: bash
