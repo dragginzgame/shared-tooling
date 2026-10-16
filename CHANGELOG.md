@@ -2,6 +2,10 @@
 
 ## [0.17.1]
 
+- Keep expected type-documentation rejections out of passing CI output, replay
+  unexpected failures from retained case logs, reject signal-terminated checks
+  and print Unicode diagnostic names without encoding warnings
+  ([#255 — Retain type-doc diagnostics and reject signal-terminated checks](https://github.com/dragginzgame/shared-tooling/issues/255)).
 - Avoid external comparisons for empty snapshot index records while retaining
   every Git re-observation, staged-change refusal and publication recheck
   ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).

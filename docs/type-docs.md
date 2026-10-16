@@ -29,3 +29,5 @@ aliases are outside this check's selected declaration kinds.
 
 Select the checker as a canonical snapshot entrypoint; this guide is its companion.
 Run `perl scripts/ci/test-type-docs.pl` for isolated selection/layout fixtures.
+Expected rejection diagnostics stay in per-case logs; an unexpected result
+replays its output and retains the fixture directory for inspection.
