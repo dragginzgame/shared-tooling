@@ -105,5 +105,55 @@ for invalid in missing option value comma trailing; do
     PATH="$fixture/bin:$PATH" "$BASH" "$root/scripts/dev/prepare-rust-toolchain.sh" ${arguments[@]+"${arguments[@]}"} > "$fixture/output" 2>&1 || status=$?
     [[ "$status" == 2 && ! -s "$fixture/calls" ]] || exit 1
 done
+mkdir "$fixture/policy files"
+cat > "$fixture/policy files/rust-toolchain.toml" <<'TOML'
+[toolchain]
+channel = '1.99.0' # Literal strings, comments and multiline arrays are TOML.
+profile = "minimal"
+components = [
+  "rustfmt", "clippy",
+]
+targets = ["wasm32-unknown-unknown"]
+TOML
+printf '[workspace.package]\nrust-version = "1.91.0"\n' > "$fixture/policy files/Cargo.toml"
+for mode in --toolchain-file --workspace-manifest; do
+    if [[ "$mode" == --toolchain-file ]]; then
+        arguments=("$mode" "$fixture/policy files/rust-toolchain.toml")
+        printf '%s\0' toolchain install 1.99.0 --profile minimal --component rustfmt --component clippy --target wasm32-unknown-unknown > "$fixture/expected"
+    else
+        arguments=("$mode" "$fixture/policy files/Cargo.toml" --target wasm32-unknown-unknown)
+        printf '%s\0' toolchain install 1.91.0 --profile minimal --target wasm32-unknown-unknown > "$fixture/expected"
+    fi
+    for FAIL_AT in 0 1; do
+        : > "$fixture/calls"; : > "$fixture/actual"
+        status=0
+        PATH="$fixture/bin:$PATH" "$BASH" "$root/scripts/dev/prepare-rust-toolchain.sh" "${arguments[@]}" > "$fixture/output" 2>&1 || status=$?
+        expected_status=0
+        [[ "$FAIL_AT" != 1 ]] || expected_status=49
+        [[ "$status" == "$expected_status" ]] || exit 1
+        cmp "$fixture/expected" "$fixture/actual"
+    done
+done
+FAIL_AT=0
+for invalid in malformed missing-channel option-channel invalid-profile invalid-component invalid-target path-toolchain missing-floor invalid-floor extra-argument late-option; do
+    arguments=(--toolchain-file "$fixture/invalid.toml")
+    case "$invalid" in
+        malformed) printf '[toolchain\n' > "$fixture/invalid.toml" ;;
+        missing-channel) printf '[toolchain]\nprofile = "minimal"\n' > "$fixture/invalid.toml" ;;
+        option-channel) printf '[toolchain]\nchannel = "--help"\n' > "$fixture/invalid.toml" ;;
+        invalid-profile) printf '[toolchain]\nchannel = "stable"\nprofile = "unknown"\n' > "$fixture/invalid.toml" ;;
+        invalid-component) printf '[toolchain]\nchannel = "stable"\ncomponents = ["two words"]\n' > "$fixture/invalid.toml" ;;
+        invalid-target) printf '[toolchain]\nchannel = "stable"\ntargets = "wasm32-unknown-unknown"\n' > "$fixture/invalid.toml" ;;
+        path-toolchain) printf '[toolchain]\nchannel = "stable"\npath = "/some/compiler"\n' > "$fixture/invalid.toml" ;;
+        missing-floor) arguments=(--workspace-manifest "$fixture/invalid.toml"); printf '[workspace.package]\nversion = "1.0.0"\n' > "$fixture/invalid.toml" ;;
+        invalid-floor) arguments=(--workspace-manifest "$fixture/invalid.toml"); printf '[workspace.package]\nrust-version = "--help"\n' > "$fixture/invalid.toml" ;;
+        extra-argument) arguments=(--toolchain-file "$fixture/policy files/rust-toolchain.toml" --target other) ;;
+        late-option) arguments=(--workspace-manifest "$fixture/policy files/Cargo.toml" --target wasm32-unknown-unknown --unknown value) ;;
+    esac
+    : > "$fixture/calls"
+    status=0
+    PATH="$fixture/bin:$PATH" "$BASH" "$root/scripts/dev/prepare-rust-toolchain.sh" "${arguments[@]}" > "$fixture/output" 2>&1 || status=$?
+    [[ "$status" != 0 && ! -s "$fixture/calls" ]] || exit 1
+done
 fixture_complete=true
 printf 'Rust toolchain action fixtures passed\n'

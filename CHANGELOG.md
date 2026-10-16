@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.15.9]
+
+- Read explicit Rust setup selections from existing toolchain/workspace TOML
+  using prepared host parsers, with complete admission before rustup dispatch.
+
 ## [0.15.8]
 
 - Include cleanup refusal in the standard fixture exit probes, preserving
