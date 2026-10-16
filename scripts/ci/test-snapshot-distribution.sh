@@ -601,6 +601,41 @@ if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-con
 [[ ! -s "$FIXTURE/preview-conflict.out" ]] || exit 1
 diff -r "$FIXTURE/preview-dirty" "$preview_consumer"
 
+# Companion headers are literal line-two declarations, including EOF without LF.
+# Empty/one-line inputs, later comments and malformed Markdown declare nothing.
+header_consumer="$FIXTURE/header-consumer"
+git init -q "$header_consumer"
+header_arguments=()
+for header in empty.sh one-line.sh late.sh unterminated.sh spaces.sh valid.md shell.md malformed.md not-markdown.txt; do
+    path="header-$header"
+    case "$header" in
+        empty.sh) : > "$source_root/$path" ;;
+        one-line.sh) printf '# Shared companions: missing-header-payload' > "$source_root/$path" ;;
+        late.sh) printf '#!/bin/sh\n\n# Shared companions: missing-header-payload\n' > "$source_root/$path" ;;
+        unterminated.sh) printf '#!/bin/sh\n# Shared companions: header-eof-leaf.txt' > "$source_root/$path" ;;
+        spaces.sh) printf '#!/bin/sh\n# Shared companions: \theader-spaces-leaf.txt   \n' > "$source_root/$path" ;;
+        valid.md) printf '# Guide\n<!-- Shared companions: header-markdown-leaf.txt -->\n' > "$source_root/$path" ;;
+        shell.md) printf '# Guide\n# Shared companions: header-shell-leaf.txt\n' > "$source_root/$path" ;;
+        malformed.md) printf '# Guide\n<!-- Shared companions: missing-header-payload -->extra\n' > "$source_root/$path" ;;
+        not-markdown.txt) printf '# Note\n<!-- Shared companions: missing-header-payload -->\n' > "$source_root/$path" ;;
+    esac
+    cp "$source_root/$path" "$revision_root/$path"
+    header_arguments+=(--entrypoint "$path")
+done
+for leaf in eof spaces markdown shell; do
+    printf 'literal leaf %s' "$leaf" > "$source_root/header-$leaf-leaf.txt"
+    cp "$source_root/header-$leaf-leaf.txt" "$revision_root/header-$leaf-leaf.txt"
+done
+PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$header_consumer" "${header_arguments[@]}" \
+    > "$FIXTURE/header-refresh.log"
+for header in empty.sh one-line.sh late.sh unterminated.sh spaces.sh valid.md shell.md malformed.md not-markdown.txt; do
+    cmp "$revision_root/header-$header" "$header_consumer/header-$header"
+done
+for leaf in eof spaces markdown shell; do
+    cmp "$revision_root/header-$leaf-leaf.txt" "$header_consumer/header-$leaf-leaf.txt"
+done
+
 selection_consumer="$FIXTURE/selection"
 mkdir "$selection_consumer"
 git init -q "$selection_consumer"

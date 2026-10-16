@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.16.1]
+
+- Read snapshot companion headers with Bash instead of launching a parser for
+  each payload, preserving literal second-line selection and EOF handling
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
+- Share the read-only workspace Rust-floor projection between explicit Rust
+  setup and consumer validation. It uses prepared TOML/JSON parsers without
+  requiring Cargo/Rust or performing installation; failed parser observations
+  publish no selection
+  ([PR #246 — Share read-only workspace Rust floor selection](https://github.com/dragginzgame/shared-tooling/pull/246)).
+- Qualify exact working-file and Git index preservation when release-source
+  checks admit an allowed metadata edit or refuse an unapproved rename source
+  ([PR #242 — Own release-source allowance and rename preservation checks](https://github.com/dragginzgame/shared-tooling/pull/242)).
+- Qualify release-source refusal of failed Git observations even when they emit
+  plausible output, and invalid selections before Git dispatch, with input
+  preservation and scratch cleanup.
+
 ## [0.16.0]
 
 ### Breaking
