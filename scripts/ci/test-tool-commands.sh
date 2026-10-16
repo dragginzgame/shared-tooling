@@ -152,27 +152,6 @@ for target in install-tools tools-check install-rust-tools rust-tools-check cloc
     done
 done
 
-# Ordinary setup/check/LOC commands above work without any fleet reporter.
-# An omitted optional report must explain its owner, without invoking a sibling.
-: > "$TOOL_COMMAND_LOG"
-if make --no-print-directory -C "$consumer" cloc-tooling > "$fixture/no-fleet.log" 2>&1; then
-    echo 'accepted unselected fleet report' >&2; exit 1
-fi
-grep -F 'Fleet tooling reports are optional: run make cloc-tooling in Shared Tooling' "$fixture/no-fleet.log"
-[[ ! -s "$TOOL_COMMAND_LOG" ]] || exit 1
-
-# Explicitly selected fleet tooling remains available through the same include.
-cat > "$snapshot/scripts/dev/cloc-tooling.pl" <<'PERL'
-use strict;
-use warnings;
-open my $log, '>>', $ENV{TOOL_COMMAND_LOG} or die $!;
-print {$log} "cloc-tooling.pl <$ARGV[0]>\n";
-PERL
-: > "$TOOL_COMMAND_LOG"
-make --no-print-directory -C "$consumer" cloc-tooling CLOC_PARENT="$fixture" > "$fixture/tooling.log" 2>&1
-printf 'cloc-tooling.pl <%s>\n' "$fixture" > "$fixture/expected"
-cmp "$fixture/expected" "$TOOL_COMMAND_LOG"
-
 # Product tools extend the ordered recipe rather than racing as prerequisites.
 cat >> "$consumer/Makefile" <<'MAKE'
 LOCAL_TOOL_INSTALL_TARGETS += install-product install-second

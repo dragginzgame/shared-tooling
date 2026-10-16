@@ -87,6 +87,7 @@ cat >"$FIXTURE/bin/curl" <<'SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
 
+[[ -z "${INSTALLER_TEST_PROBES:-}" ]] || printf 'download\n' >> "$INSTALLER_TEST_PROBES"
 output=""
 url=""
 while [[ $# -gt 0 ]]; do
@@ -140,10 +141,32 @@ gitleaks_checksum="$(checksum_sha256 "$archives/gitleaks_8.30.1_linux_x64.tar.gz
 shellcheck_checksum="$(checksum_sha256 "$archives/shellcheck-v0.11.0.linux.x86_64.tar.xz")"
 sccache_checksum="$(checksum_sha256 "$archives/$sccache_package.tar.gz")"
 
-PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+# A destination must be part of the invocation before any setup effect.
+mkdir "$FIXTURE/admission-bin"
+cat > "$FIXTURE/admission-bin/uname" <<'SCRIPT'
+#!/usr/bin/env bash
+printf 'host probe\n' >> "$INSTALLER_TEST_PROBES"
+exit 93
+SCRIPT
+chmod +x "$FIXTURE/admission-bin/uname"
+for destination in omitted environment empty; do
+    arguments=(actionlint --version 1.7.12 --sha256 "$actionlint_checksum")
+    [[ "$destination" != empty ]] || arguments+=(--install-dir '')
+    destination_env=''
+    [[ "$destination" != environment ]] || destination_env="$FIXTURE/unselected-$destination"
+    : > "$FIXTURE/destination-probes"
+    status=0
+    TOOL_INSTALL_DIR="$destination_env" INSTALLER_TEST_PROBES="$FIXTURE/destination-probes" \
+        PATH="$FIXTURE/admission-bin:$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+        bash "$ROOT/scripts/ci/install-ci-tool.sh" "${arguments[@]}" > "$FIXTURE/destination-$destination.log" 2>&1 || status=$?
+    [[ "$status" == 2 && ! -e "$FIXTURE/unselected-$destination" && ! -s "$FIXTURE/destination-probes" ]] || exit 1
+done
+
+TOOL_INSTALL_DIR="$FIXTURE/unselected-environment" PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     bash "$ROOT/scripts/ci/install-ci-tool.sh" sccache --version 0.17.0 \
     --sha256 "$sccache_checksum" --install-dir "$FIXTURE/installed" >/dev/null
 [[ "$("$FIXTURE/installed/sccache" --version)" == 'sccache 0.17.0' ]] || exit 1
+[[ ! -e "$FIXTURE/unselected-environment" ]] || exit 1
 
 
 PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \

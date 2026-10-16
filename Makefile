@@ -4,6 +4,7 @@ export RELEASE_DELIVERY ?= direct
 SHELLCHECK ?= shellcheck
 CLOC_REPORT := $(CURDIR)/scripts/dev/cloc-siblings.sh
 CLOC_ROOT = $(CLOC_PARENT)
+CLOC_PARENT ?= $(CURDIR)/..
 SHARED_TOOLING_RUST := 0
 include make/consumer.mk
 
@@ -11,7 +12,7 @@ include make/consumer.mk
         release-version release-preflight release-verify \
         release-prepare-version release-prepared-check release-files \
         release-commit-check release-committed-check release-tagged-check release-push-check \
-        release-merged-preflight check-cargo-tool-versions check-tool-catalogs test-licenses
+        release-merged-preflight check-cargo-tool-versions check-tool-catalogs test-licenses cloc-tooling
 
 help:
 	@echo "Current local version: make version"
@@ -31,6 +32,9 @@ help:
 
 tasks:
 	@cat tasks/README.md
+
+cloc-tooling:
+	@perl scripts/dev/cloc-tooling.pl "$(CLOC_PARENT)"
 
 test-licenses:
 	perl scripts/ci/test-license.pl

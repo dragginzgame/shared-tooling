@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.16.0]
+
+### Breaking
+
+- Require `--install-dir` for CI binary installation, removing environment and
+  home-directory destination selection. Update installer invocations before
+  adopting this release
+  ([#244 — Require explicit CI tool installation destinations](https://github.com/dragginzgame/shared-tooling/issues/244)).
+- Require explicit assertion source, prefix and contradictory bindings for
+  retention probes. The probe executes only owner initialization and the selected
+  assertion; migrate inferred-assertion callers to `--selected` before refresh
+  ([#245 — Require explicit assertion selection in retention probes](https://github.com/dragginzgame/shared-tooling/issues/245)).
+- Keep `make cloc-tooling` and `CLOC_PARENT` in Shared Tooling's own Makefile.
+  Consumer includes no longer export the fleet command; run it centrally or
+  explicitly select and invoke the Perl reporter when adopting this release
+  ([#243 — Keep fleet tooling Make command at its Shared Tooling owner](https://github.com/dragginzgame/shared-tooling/issues/243)).
+- Remove the exported exhaustive Make execution-mode probe. Consumers must use
+  `make_probe_target_admission` for target admission when adopting this release;
+  parallel-dispatch checks remain available. The complete flag matrix stays in
+  the producer fixture
+  ([PR #241 — Keep exhaustive qualification at Shared owners](https://github.com/dragginzgame/shared-tooling/pull/241)).
+
 ## [0.15.10]
 
 - Qualify standalone formatting success and cleanup at the wrapper owner,

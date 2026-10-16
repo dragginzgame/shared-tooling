@@ -292,8 +292,9 @@ The explicit manifest selects only that graph and its Cargo target directory;
 metadata runs from its directory with the selected lockfile, offline. Default
 root reporting and sibling totals do not automatically combine independent graphs.
 
-Use `make cloc-tooling [CLOC_PARENT=/path/to/projects]` to find where sibling
-repositories maintain the most CI and tooling code. For per-file evidence:
+From Shared Tooling, use `make cloc-tooling [CLOC_PARENT=/path/to/projects]` to
+find where sibling repositories maintain the most CI and tooling code. For
+per-file evidence:
 
 ```bash
 perl scripts/dev/cloc-tooling.pl --json /path/to/projects > tooling-inventory.json
@@ -479,10 +480,13 @@ the executable with a rename on the destination filesystem.
 ```bash
 scripts/ci/install-ci-tool.sh actionlint \
   --version 1.7.12 \
-  --sha256 <platform-sha256>
+  --sha256 <platform-sha256> \
+  --install-dir /path/to/ci-bin
 ```
 
-Use `--install-dir` or `TOOL_INSTALL_DIR` to change the destination.
+Since 0.16.0, `--install-dir` is required. Add the destination to each invocation
+before adopting this release; the environment variable `TOOL_INSTALL_DIR` and
+the former home-directory default no longer select a write target.
 
 ### Sibling GitHub dashboard
 
