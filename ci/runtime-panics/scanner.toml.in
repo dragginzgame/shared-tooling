@@ -1,0 +1,14 @@
+[package]
+name = "shared-runtime-scanner-qualification"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+proc-macro2.workspace = true
+syn.workspace = true
+
+[[bin]]
+name = "shared-runtime-scanner"
+path = "src/main.rs"

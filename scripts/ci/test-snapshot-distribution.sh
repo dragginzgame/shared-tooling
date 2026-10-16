@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/ci/test-snapshot-verifier.sh
 set -euo pipefail
 
 ROOT="$0"
@@ -13,6 +13,7 @@ FIXTURE="${FIXTURE%/.}"
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture_complete=false
 trap 'fixture_finish "$?" "$FIXTURE" "Failed snapshot-distribution fixture retained"' EXIT
+"$BASH" "$ROOT/scripts/ci/test-snapshot-verifier.sh"
 # Match refresh-consumer physical paths when TMPDIR contains a host alias.
 FIXTURE="$(cd "$FIXTURE" && pwd -P)"
 REAL_GIT="$(command -v git)"
@@ -82,6 +83,7 @@ ls-tree:-z)
         [[ ! -x "$committed_file" ]] || mode=100755
         printf '%s blob bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\t%s\0' "$mode" "$path"
     fi
+    if [[ "${SNAPSHOT_TEST_MODE_FAIL:-}" == "$path" ]]; then exit 73; fi
     ;;
 cat-file:blob)
     path="${3#*:}"
@@ -127,6 +129,18 @@ if SNAPSHOT_TEST_BLOB_FAIL=scripts/ci/sample.sh PATH="$FIXTURE/bin:$PATH" \
     --entrypoint scripts/ci/sample.sh > "$FIXTURE/failed-blob.log" 2>&1; then exit 1; fi
 [[ ! -e "$consumer_root/.shared-tooling.snapshot" && ! -e "$consumer_root/scripts" ]] || exit 1
 
+# Even a complete mode row cannot authorize export after its Git command fails.
+for path in VERSION scripts/ci/sample.sh; do
+    if SNAPSHOT_TEST_MODE_FAIL="$path" PATH="$FIXTURE/bin:$PATH" \
+        bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+        --source "$source_root" --consumer "$consumer_root" \
+        --entrypoint scripts/ci/sample.sh > "$FIXTURE/failed-mode.log" 2>&1; then
+        echo 'snapshot distribution test failed: failed Git mode output was accepted' >&2
+        exit 1
+    fi
+    [[ ! -e "$consumer_root/.shared-tooling.snapshot" && ! -e "$consumer_root/scripts" ]] || exit 1
+done
+
 if ! SNAPSHOT_TEST_READ_LOG="$FIXTURE/selected-reads" SNAPSHOT_TEST_SOURCE_DRIFT=true PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" \
@@ -170,10 +184,6 @@ for suffix in $'\n' $'\n\n' $'\r' $'\r\n' $'\nchild'; do
     ln -s "$bad_consumer" "$FIXTURE/consumer-alias"
     ln -s "$bad_source" "$FIXTURE/source-alias"
     for candidate in "$bad_consumer" "$FIXTURE/consumer-alias"; do
-        if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$candidate" \
-            > "$FIXTURE/path-verify.log" 2>&1; then
-            echo 'snapshot verifier accepted a forbidden directory name' >&2; exit 1
-        fi
         if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
             --source "$source_root" --consumer "$candidate" > "$FIXTURE/path-refresh.log" 2>&1; then
             echo 'snapshot refresh accepted a forbidden consumer directory' >&2; exit 1
@@ -194,22 +204,11 @@ done
 # Relative inputs and ordinary physical aliases stay valid under hostile CDPATH.
 ln -s "$consumer_root" "$FIXTURE/consumer-alias"
 ln -s "$source_root" "$FIXTURE/source-alias"
-(cd "$FIXTURE"; CDPATH="$FIXTURE/source" bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" \
-    --consumer consumer-alias) > "$FIXTURE/path-normal-verify.log"
 (cd "$FIXTURE"; CDPATH="$FIXTURE/source" PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source source-alias --consumer consumer-alias) > "$FIXTURE/path-normal-refresh.log"
 cmp "$FIXTURE/path-manifest" "$consumer_root/.shared-tooling.snapshot"
 
-# A resolved custom-manifest parent must obey the same directory policy.
-mkdir "$consumer_root/config"$'\n'
-cp "$FIXTURE/path-manifest" "$consumer_root/config"$'\n'/snapshot
-ln -s $'config\n' "$consumer_root/config-alias"
-if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer_root" \
-    --manifest config-alias/snapshot > "$FIXTURE/path-manifest-parent.log" 2>&1; then
-    echo 'snapshot verifier accepted a forbidden resolved manifest parent' >&2; exit 1
-fi
-rm "$consumer_root/config-alias"
 # Git output has one record terminator. Extra pathname bytes and observation
 # failures cannot be normalized into the valid source root beside them.
 for suffix in $'\n' $'\r'; do
@@ -321,25 +320,6 @@ done
 if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --read-manifest "$FIXTURE/version-manifest" \
     --consumer "$consumer_root" > "$FIXTURE/mixed-mode.out" 2> "$FIXTURE/mixed-mode.err"; then exit 1; fi
 [[ ! -s "$FIXTURE/mixed-mode.out" ]] || exit 1
-
-# The checksum helper is inspected data, never verification authority. Neither
-# helper-only corruption nor corruption of both helper and payload may pass.
-export SNAPSHOT_HELPER_EXECUTED="$FIXTURE/helper-executed"
-for corruption in helper both; do
-    cat > "$consumer_root/scripts/ci/verify-file-checksum.sh" <<'SCRIPT'
-#!/usr/bin/env bash
-: > "$SNAPSHOT_HELPER_EXECUTED"
-exit 0
-SCRIPT
-    if [[ "$corruption" == both ]]; then
-        printf '# changed payload\n' >> "$consumer_root/scripts/ci/sample.sh"
-    fi
-    if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer_root" \
-        > "$FIXTURE/corrupt-$corruption.log" 2>&1; then exit 1; fi
-    [[ ! -e "$SNAPSHOT_HELPER_EXECUTED" ]] || exit 1
-    cp -p "$revision_root/scripts/ci/verify-file-checksum.sh" "$consumer_root/scripts/ci/"
-    cp -p "$revision_root/scripts/ci/sample.sh" "$consumer_root/scripts/ci/"
-done
 
 # Exercise the independent bootstrap on both backends; output that looks valid
 # must not hide failure, and a failed selected backend must not fall back.

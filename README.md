@@ -181,6 +181,10 @@ selection, deletion authorization, retained evidence and interrupted retries.
   caller's workspace, rejects zero passing tests and retains failed output.
   It requires the normal libtest summary format and preserves Cargo arguments
   and network policy. Cargo and logging failures remain failures.
+- [The structural Rust panic scanner](docs/rust-source-checks.md) checks selected
+  production source, including macro tokens and conservative test-only cfg
+  exclusion. Consumers compile the snapshot source with their own locked
+  dependencies and retain application inventory and policy selection.
 - `scripts/ci/run-formatting.sh --check|--write COMMAND [ARG ...]` reports one
   success line or a short failure summary with the full retained log path.
   `make/rust-format.mk` uses it for Rust formatting; custom workspace/frontend
