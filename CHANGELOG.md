@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.15.8]
+
+- Qualify nested workflow discovery and failed Git inventories at the dependency
+  checker owner, including plausible partial output and scratch cleanup. Consumers
+  can retain their actual command wiring instead of repeating these cases.
+
 ## [0.15.7]
 
 - Qualify real Cargo environment and configuration offline refusal on a frozen
