@@ -1048,7 +1048,9 @@ copies explicit reviewed roots and their transitive line-two `Shared companions`
 declarations, preserving file modes. It shares the declaration reader with the
 snapshot exporter; inspected payloads are never executed. Cycles are deduplicated.
 The complete closure and destination parents are admitted before any copying;
-unsafe paths, symlink traversal, missing inputs and overlapping roots refuse.
+unsafe paths, symlink traversal and missing inputs refuse. The fixture must not
+contain the source root. Scratch beneath the source is permitted, but the entire
+copy plan refuses before effects if an output would overwrite any selected input.
 Existing regular fixture files may be replaced. Callers own an idle disposable
 destination and stable reviewed source; copying does not protect against
 concurrent mutation. The helper neither creates a snapshot nor proves supplier

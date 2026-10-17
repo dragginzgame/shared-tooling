@@ -25,6 +25,9 @@
 
 ### Changed
 
+- Permit script fixtures beneath their source checkout, preserving consumer
+  evidence destinations. Refuse source/output collisions across the complete
+  companion closure before copying any input.
 - Replay retained baseline and hook logs when formatting adoption fails,
   preserving the original status and scratch inputs. Consumers can delegate
   diagnostics without wrapping the checker in a second fixture lifecycle.
