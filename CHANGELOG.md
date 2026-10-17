@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.2]
+
+- Share atomic validation/prepared release receipts and exact identity/payload
+  checks. Consumers retain file inventories, gates and release policy; failed
+  generation and symlinks cannot replace accepted evidence
+  ([#278](https://github.com/dragginzgame/shared-tooling/issues/278)).
+
 ## [0.22.1]
 
 ### Added
