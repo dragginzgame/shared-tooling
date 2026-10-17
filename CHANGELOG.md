@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.22.1]
+## [0.22.2]
 
 ### Added
 
@@ -10,6 +10,21 @@
 - Check prepared Cargo archives against explicit package paths and a source commit,
   then retrieve that commit into a fresh Git store. Retain provenance evidence
   without packaging, uploading or selecting consumer eligibility and recovery.
+
+## [0.22.1]
+
+### Added
+
+- Prepare disposable script fixtures from explicit roots and their declared
+  companion closure, reusing snapshot distribution's nonexecuting reader. Keep
+  export measurements bound to frozen helper blobs, including that reader
+  ([#274 — Prepare script fixtures from their declared companion closure](https://github.com/dragginzgame/shared-tooling/issues/274)).
+
+### Changed
+
+- Update the canonical evidence and snapshot-comparison uploaders to the exact
+  7.0.2 source, preserving archive preparation and failure policy
+  ([#275 — Update the canonical artifact uploader to 7.0.2](https://github.com/dragginzgame/shared-tooling/issues/275)).
 
 ## [0.22.0]
 
