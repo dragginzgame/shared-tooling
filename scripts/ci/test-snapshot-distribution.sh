@@ -29,6 +29,7 @@ mkdir -p \
 git init -q "$consumer_root"
 printf '8.8.8\n' > "$consumer_root/VERSION"
 
+cp "$ROOT/scripts/ci/shared-companions.sh" "$source_root/scripts/ci/"
 cp "$ROOT/scripts/ci/verify-file-checksum.sh" "$source_root/scripts/ci/"
 cp "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" "$source_root/scripts/ci/"
 cp "$ROOT/scripts/distribution/refresh-consumer.sh" "$source_root/scripts/distribution/"
