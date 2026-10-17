@@ -13,12 +13,13 @@ export PRETTIER_BIN="$ROOT/ci/frontend/node_modules/.bin/prettier"
 export PRETTIER_VERSION
 PRETTIER_VERSION="$(jq -er '.packages["node_modules/prettier"].version' "$ROOT/ci/frontend/package-lock.json")"
 [[ "$("$PRETTIER_BIN" --version)" == "$PRETTIER_VERSION" ]] || exit 1
-records="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" values "$ROOT/ci/tool-versions.env")"
-while IFS=$'\t' read -r catalog_key catalog_value; do
-    printf -v "$catalog_key" '%s' "$catalog_value"
+records="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" rust "$ROOT/ci/tool-versions.env")"
+while IFS=$'\t' read -r tool version _ _; do
+    case "$tool" in
+        CARGO_SORT) bash "$ROOT/scripts/ci/check-format-tools.sh" "$version" ;;
+        CARGO_SORT_DERIVES) [[ "$(cargo sort-derives --version)" == "cargo-sort-derives $version" ]] || exit 1 ;;
+    esac
 done <<< "$records"
-bash "$ROOT/scripts/ci/check-format-tools.sh" "$SHARED_TOOLING_CARGO_SORT_VERSION"
-[[ "$(cargo sort-derives --version)" == "cargo-sort-derives $SHARED_TOOLING_CARGO_SORT_DERIVES_VERSION" ]] || exit 1
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/frontend-format-test.XXXXXX")"
 fixture="$(CDPATH="" cd -P -- "$fixture" && printf '%s/.' "$PWD")"
 fixture="${fixture%/.}"
@@ -107,11 +108,15 @@ selected=$'docs/selected [1]\nname.ts'
 printf 'const value={text:"selected"};\n' > "$selected"
 printf 'export const view=()=> <div title="example">hello</div>;\n' > docs/view.tsx
 printf '{"ok":true,"items":[1,2]}\n' > docs/data.json
+printf 'export const moduleValue={text:"module"};\n' > docs/module.mjs
+printf '<template><span>{{value}}</span></template>\n' > docs/view.vue
+printf '\000unknown format: {\n' > docs/opaque.fixture-data
+cp docs/opaque.fixture-data "$fixture/unknown-before"
 printf 'not valid TypeScript: {\n' > docs/generated.ts
 cp docs/generated.ts "$fixture/ignored-before"
 git add Makefile Cargo.toml crates package.json package-lock.json .prettierrc.json .prettierignore \
     scripts/ci/check-make-execution.sh scripts/dev/format-frontend.sh \
-    "$selected" docs/view.tsx docs/data.json docs/generated.ts
+    "$selected" docs/view.tsx docs/data.json docs/module.mjs docs/view.vue docs/opaque.fixture-data docs/generated.ts
 cp package-lock.json "$fixture/lock-before"
 # A closer untracked config must neither control snapshot formatting nor get staged.
 printf '{"semi": true, "singleQuote": false}\n' > docs/.prettierrc.json
@@ -122,6 +127,10 @@ cp docs/untracked.ts "$fixture/untracked-before"
 bash .githooks/pre-commit > "$fixture/format.log" 2>&1
 [[ "$(cat "$selected")" == "const value = { text: 'selected' }" ]] || exit 1
 [[ "$(git show ":$selected")" == "$(cat "$selected")" ]] || exit 1
+[[ "$(cat docs/module.mjs)" == "export const moduleValue = { text: 'module' }" ]] || exit 1
+"$PRETTIER_BIN" --config .prettierrc.json --check docs/module.mjs docs/view.vue >> "$fixture/format.log" 2>&1
+[[ "$(git show :docs/module.mjs)" == "$(cat docs/module.mjs)" && "$(git show :docs/view.vue)" == "$(cat docs/view.vue)" ]] || exit 1
+cmp docs/opaque.fixture-data "$fixture/unknown-before"
 [[ "$(git show :crates/example/src/lib.rs)" == 'pub fn example() {}' ]] || exit 1
 git show :crates/example/src/macros.rs > "$fixture/staged-macros.rs"
 cmp "$fixture/expected-macros.rs" "$fixture/staged-macros.rs"
@@ -184,7 +193,9 @@ bash .githooks/pre-commit >> "$fixture/format.log" 2>&1
 # exercise full tracked scope with an unselected formatting error.
 mkdir docs/checked
 mv docs/view.tsx docs/checked/view.tsx
-git add docs/view.tsx docs/checked/view.tsx
+cp docs/module.mjs docs/checked/module.mjs
+cp docs/opaque.fixture-data docs/checked/opaque.fixture-data
+git add docs/view.tsx docs/checked
 bash scripts/dev/format-frontend.sh --check docs/checked >> "$fixture/format.log" 2>&1
 printf 'const value={text:"not formatted"};\n' > docs/checked/view.tsx
 tree="$(git write-tree)"
@@ -192,6 +203,16 @@ cp docs/checked/view.tsx "$fixture/check-before"
 expect_failure bash scripts/dev/format-frontend.sh --check docs/checked
 [[ "$(git write-tree)" == "$tree" ]] || exit 1
 cmp docs/checked/view.tsx "$fixture/check-before"
+printf 'export const moduleValue={text:"broken"};\n' > docs/checked/module.mjs
+expect_failure bash scripts/dev/format-frontend.sh --check docs/checked
+grep -F docs/checked/module.mjs "$fixture/refusal.log" > /dev/null
+# Every selected path still passes scope and symlink admission, including types
+# the previous allowlist skipped. Keep outside bytes unchanged on refusal.
+ln -s "$fixture/unknown-before" docs/checked/redirect.fixture-data
+git add docs/checked/redirect.fixture-data
+expect_failure bash scripts/dev/format-frontend.sh --check docs/checked
+grep -F 'formatter inputs may not traverse symlinks' "$fixture/refusal.log" > /dev/null
+cmp docs/checked/opaque.fixture-data "$fixture/unknown-before"
 cmp package-lock.json "$fixture/lock-before"
 echo "Real Prettier $PRETTIER_VERSION and Rust hook preservation checks passed ($(node --version))"
 fixture_complete=true

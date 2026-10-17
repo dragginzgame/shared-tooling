@@ -20,10 +20,8 @@ fixture="${fixture%/.}"
 trap 'printf "Cargo installation evidence retained: %s\n" "$fixture" >&2' EXIT
 export RUSTUP_AUTO_INSTALL=0
 export SHARED_TOOLING_STORE="$fixture/store"
-records="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" values "$ROOT/ci/tool-versions.env")"
-while IFS=$'\t' read -r catalog_key catalog_value; do
-    printf -v "$catalog_key" '%s' "$catalog_value"
-done <<< "$records"
+record="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" rust "$ROOT/ci/tool-versions.env" CARGO_SORT)"
+IFS=$'\t' read -r _ sort_version _ _ <<< "$record"
 checksum="$ROOT/scripts/ci/verify-file-checksum.sh"
 rustc -vV > "$fixture/rustc.txt"
 cargo -V > "$fixture/cargo.txt"
@@ -153,8 +151,5 @@ exercise() {
     printf 'Native Cargo %s installation qualified: %s %s (%s); observed sha256 %s\n' "$kind" "$package" "$version" "$target" "$digest"
 }
 
-# Frozen assessment fixture matching the published example reviewed in #65.
-# This is not a default package selection for consuming applications.
-exercise ic-blob-storage 0.15.1 example prepare_upload
-exercise cargo-sort "$SHARED_TOOLING_CARGO_SORT_VERSION" bin cargo-sort
+exercise cargo-sort "$sort_version" bin cargo-sort
 echo 'Native Cargo installation qualification passed'

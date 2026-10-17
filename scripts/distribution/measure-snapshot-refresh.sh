@@ -69,14 +69,18 @@ after_blob="$(git -C "$ROOT" rev-parse "$after:$runner_path")"
 git clone --quiet --no-hardlinks --no-checkout "$ROOT" "$selected/source" > "$selected/source.log" 2>&1
 git -C "$selected/source" checkout --quiet --detach "$payload" >> "$selected/source.log" 2>&1
 git -C "$selected/source" remote set-url origin https://github.com/dragginzgame/shared-tooling
-# Freeze the two runner-local integrity helpers with the payload too. Only the
-# selected exporter blob varies; do not introduce unrecorded working-tree code.
-for helper in verify-file-checksum.sh verify-shared-tooling-snapshot.sh; do
+# Freeze runner-local helpers with the payload too. Only the selected exporter
+# blob varies; do not introduce unrecorded working-tree code. Historical payloads
+# without the declaration reader still support their self-contained exporters.
+helpers=(verify-file-checksum.sh verify-shared-tooling-snapshot.sh)
+reader="$(git -C "$ROOT" ls-tree --name-only "$payload" -- scripts/ci/shared-companions.sh)"
+[[ -z "$reader" ]] || helpers+=(shared-companions.sh)
+for helper in "${helpers[@]}"; do
     blob="$(git -C "$ROOT" rev-parse "$payload:scripts/ci/$helper")"
     printf 'integrity_blob\t%s\t%s\n' "$helper" "$blob" >> "$selected/identities.txt"
     for side in before after; do
         mkdir -p "$selected/$side/scripts/ci"
-        cp "$selected/source/scripts/ci/$helper" "$selected/$side/scripts/ci/"
+        git -C "$ROOT" show "$payload:scripts/ci/$helper" > "$selected/$side/scripts/ci/$helper"
     done
 done
 printf 'phase\tpair\tside\tseconds\n' > "$selected/samples.tsv"

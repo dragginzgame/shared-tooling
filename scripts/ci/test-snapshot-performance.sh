@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/distribution/measure-snapshot-refresh.sh scripts/ci/fixture-lifecycle.sh scripts/ci/extract-workflow-step.sh scripts/ci/archive-evidence.sh scripts/ci/verify-file-checksum.sh .github/workflows/snapshot-performance.yml
+# Shared companions: scripts/distribution/measure-snapshot-refresh.sh scripts/ci/shared-companions.sh scripts/ci/fixture-lifecycle.sh scripts/ci/extract-workflow-step.sh scripts/ci/archive-evidence.sh scripts/ci/verify-file-checksum.sh .github/workflows/snapshot-performance.yml
 set -euo pipefail
 ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
@@ -17,16 +17,40 @@ revision="$(git -C "$ROOT" rev-parse HEAD)"
 MEASUREMENT_REAL_GIT="$(command -v git)"
 export MEASUREMENT_REAL_GIT MEASUREMENT_REVISION="$revision"
 export MEASUREMENT_EXECUTED="$fixture/executed"
+export MEASUREMENT_READER_SOURCE="$ROOT/scripts/ci/shared-companions.sh"
+MEASUREMENT_READER_BLOB="$(git hash-object "$MEASUREMENT_READER_SOURCE")"
+export MEASUREMENT_READER_BLOB
 mkdir "$fixture/bin"
 cat > "$fixture/bin/git" <<'GIT'
 #!/usr/bin/env bash
 set -euo pipefail
+if [[ "$MEASUREMENT_MODE" == reader-* ]]; then
+    if [[ "${3:-}" == ls-tree && "${7:-}" == scripts/ci/shared-companions.sh ]]; then
+        echo scripts/ci/shared-companions.sh; exit 0
+    elif [[ "${3:-}" == rev-parse && "${4:-}" == "$MEASUREMENT_REVISION:scripts/ci/shared-companions.sh" ]]; then
+        echo "$MEASUREMENT_READER_BLOB"; exit 0
+    elif [[ "${3:-}" == show && "${4:-}" == "$MEASUREMENT_REVISION:scripts/ci/shared-companions.sh" ]]; then
+        if [[ "$MEASUREMENT_MODE" == reader-read-failure ]]; then
+            printf 'printf executed > "$MEASUREMENT_EXECUTED"\n'; exit 74
+        fi
+        cat "$MEASUREMENT_READER_SOURCE"; exit 0
+    fi
+fi
 if [[ "${3:-}" == show && "${4:-}" == "$MEASUREMENT_REVISION:scripts/distribution/refresh-consumer.sh" ]]; then
     case "$MEASUREMENT_MODE" in
         read-failure)
             printf '#!/usr/bin/env bash\nprintf executed > "$MEASUREMENT_EXECUTED"\n'
             exit 73 ;;
         exit-failure) printf '#!/usr/bin/env bash\nexit 47\n'; exit 0 ;;
+        reader-present|reader-read-failure)
+            cat <<'RUNNER'
+#!/usr/bin/env bash
+set -euo pipefail
+source "${BASH_SOURCE[0]%/scripts/distribution/*}/scripts/ci/shared-companions.sh"
+declare -F read_shared_companions > /dev/null
+exit 47
+RUNNER
+            exit 0 ;;
         signal) printf '#!/usr/bin/env bash\nkill -TERM "$$"\n'; exit 0 ;;
         verify-failure|mismatch)
             "$MEASUREMENT_REAL_GIT" "$@"
@@ -60,7 +84,7 @@ status=0
     "$fixture/bad-revision" > "$fixture/refusal.log" 2>&1 || status=$?
 [[ "$status" == 2 && ! -e "$fixture/bad-revision" ]] || exit 1
 
-for mode in read-failure exit-failure signal verify-failure mismatch; do
+for mode in read-failure reader-present reader-read-failure exit-failure signal verify-failure mismatch; do
     status=0
     PATH="$fixture/bin:$PATH" MEASUREMENT_MODE="$mode" "$BASH" \
         "$ROOT/scripts/distribution/measure-snapshot-refresh.sh" "$revision" "$revision" "$revision" \
@@ -68,6 +92,13 @@ for mode in read-failure exit-failure signal verify-failure mismatch; do
     [[ "$status" != 0 && ! -e "$fixture/$mode/complete.txt" && ! -e "$MEASUREMENT_EXECUTED" ]] || exit 1
     case "$mode" in
         read-failure) [[ "$status" == 73 && ! -e "$fixture/$mode/samples.tsv" ]] || exit 1 ;;
+        reader-present)
+            [[ "$status" == 47 ]] || exit 1
+            for side in before after; do
+                cmp "$MEASUREMENT_READER_SOURCE" "$fixture/$mode/$side/scripts/ci/shared-companions.sh"
+            done
+            grep -F "$MEASUREMENT_READER_BLOB" "$fixture/$mode/identities.txt" > /dev/null ;;
+        reader-read-failure) [[ "$status" == 74 && ! -e "$fixture/$mode/samples.tsv" ]] || exit 1 ;;
         exit-failure) [[ "$status" == 47 && ! -s "$fixture/$mode/warmup-0-before.seconds" ]] || exit 1 ;;
         signal)
             [[ ! -s "$fixture/$mode/warmup-0-before.seconds" ]] || exit 1

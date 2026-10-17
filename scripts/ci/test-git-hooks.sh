@@ -8,11 +8,9 @@ ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
-records="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" values "$ROOT/ci/tool-versions.env")"
-while IFS=$'\t' read -r catalog_key catalog_value; do
-    printf -v "$catalog_key" '%s' "$catalog_value"
-done <<< "$records"
-bash "$ROOT/scripts/ci/check-format-tools.sh" "$SHARED_TOOLING_CARGO_SORT_VERSION"
+record="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" rust "$ROOT/ci/tool-versions.env" CARGO_SORT)"
+IFS=$'\t' read -r _ sort_version _ _ <<< "$record"
+bash "$ROOT/scripts/ci/check-format-tools.sh" "$sort_version"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/git-hooks-test.XXXXXX")"
 FIXTURE="$(CDPATH="" cd -P -- "$FIXTURE" && printf '%s/.' "$PWD")"
 FIXTURE="${FIXTURE%/.}"
@@ -122,7 +120,7 @@ case "$*" in
     *) exit 1 ;;
 esac
 TOOL
-    printf '%s\n' "$SHARED_TOOLING_CARGO_SORT_VERSION" > .tools/rust/common/bin/version
+    printf '%s\n' "$sort_version" > .tools/rust/common/bin/version
     for kind in host ic; do
         printf '#!/usr/bin/env bash\nexit 0\n' > ".tools/$kind/bin/hook-fixture-$kind"
         chmod +x ".tools/$kind/bin/hook-fixture-$kind"
@@ -624,20 +622,37 @@ for spelling in absolute relative alias; do
         > "$FIXTURE/adoption-$spelling.log" 2>&1
     [[ -z "$(ls -A "$FIXTURE/adoption-temp")" ]] || exit 1
 done
-# A genuine baseline failure still retains its checkout and diagnostic log under
-# that same physical parent, without modifying the consumer's source or index.
-printf '#!/usr/bin/env bash\necho fixture-prerequisite-failed >&2\nexit 23\n' > .tools/host/bin/hook-fixture-prerequisite
-if (cd "$FIXTURE"; unset RUNNER_TEMP; TMPDIR=adoption-temp-alias \
-    bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$consumer" alpha/src/lib.rs \
-    alpha/Cargo.toml --no-dependency-tables "${overlays[@]}") \
-    > "$FIXTURE/adoption-failure.log" 2>&1; then
-    echo 'formatting adoption accepted a failed prerequisite' >&2; exit 1
+# Baseline and hook failures replay their own logs, retain the same inputs and
+# preserve Make's status without modifying the consumer's source or index.
+for failure in base worktree; do
+    cat > .tools/host/bin/hook-fixture-prerequisite <<'PREREQUISITE'
+#!/usr/bin/env bash
+if [[ "${PWD##*/}" == "$ADOPTION_FAILURE_CASE" ]]; then
+    echo "fixture-$ADOPTION_FAILURE_CASE-stdout"
+    echo "fixture-$ADOPTION_FAILURE_CASE-stderr" >&2
+    exit 23
 fi
-retained="$(sed -n 's/^Formatting adoption evidence retained: //p' "$FIXTURE/adoption-failure.log")"
-[[ "$retained" == "$temp_parent/"* && -s "$retained/baseline.log" ]] || exit 1
-grep -Fx fixture-prerequisite-failed "$retained/baseline.log" >/dev/null
-cmp .git/index "$FIXTURE/adoption-index"
-cmp alpha/src/lib.rs "$FIXTURE/adoption-source"
+PREREQUISITE
+    status=0
+    (cd "$FIXTURE"; unset RUNNER_TEMP; TMPDIR=adoption-temp-alias \
+        ADOPTION_FAILURE_CASE="$failure" \
+        bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$consumer" alpha/src/lib.rs \
+        alpha/Cargo.toml --no-dependency-tables "${overlays[@]}") \
+        > "$FIXTURE/adoption-failure.log" 2>&1 || status=$?
+    [[ "$status" == 2 ]] || { echo "unexpected adoption status: $status" >&2; exit 1; }
+    retained="$(sed -n 's/^Formatting adoption evidence retained: //p' "$FIXTURE/adoption-failure.log")"
+    [[ "$retained" == "$temp_parent/"* ]] || exit 1
+    case "$failure" in
+        base) diagnostic="$retained/baseline.log" ;;
+        worktree) diagnostic="$retained/refresh/.git/formatting.log" ;;
+    esac
+    for stream in stdout stderr; do
+        grep -Fx "fixture-$failure-$stream" "$diagnostic" >/dev/null
+        grep -Fx "fixture-$failure-$stream" "$FIXTURE/adoption-failure.log" >/dev/null
+    done
+    cmp .git/index "$FIXTURE/adoption-index"
+    cmp alpha/src/lib.rs "$FIXTURE/adoption-source"
+done
 # Mixed frontend selection uses prepared tools but only snapshot file inputs.
 new_fixture frontend
 mkdir frontend
@@ -657,8 +672,8 @@ if [[ "$1" == --version ]]; then echo 99.1.0; exit "${PRETTIER_VERSION_STATUS:-0
 [[ -z "${PRETTIER_CALL_MARKER:-}" ]] || touch "$PRETTIER_CALL_MARKER"
 [[ "${PRETTIER_FIXTURE_FAIL:-}" != yes ]] || exit 9
 mode="$1"
-[[ "$2" == -- ]] || exit 1
-shift 2
+[[ "$2" == --ignore-unknown && "$3" == -- ]] || exit 1
+shift 3
 for path in "$@"; do
     if [[ "$mode" == --check ]]; then
         if grep -q unformatted "$path"; then exit 1; fi

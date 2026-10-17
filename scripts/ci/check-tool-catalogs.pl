@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Shared companions: scripts/ci/tool-catalog-records.pl
+# Shared companions: scripts/ci/tool-catalog-records.pl scripts/ci/verify-shared-tooling-snapshot.sh
 use strict;
 use warnings;
 use Cwd qw(abs_path);
@@ -81,22 +81,27 @@ my $exit = eval {
                         or die "conflicting/empty catalog ownership\n";
                     $row->{owner} = "exception: $caller->{exception}";
                 } else {
-                    my $manifest = read_file(local_path($caller->{snapshot}));
+                    my $manifest_path = local_path($caller->{snapshot});
                     scalar_text($caller->{snapshot_root}) or die "missing snapshot consumer root\n";
                     my $base = $caller->{snapshot_root} eq '.' ? $consumer : abs_path("$consumer/$caller->{snapshot_root}");
                     defined($base) && $base !~ /[\0\r\n]/ && ($base eq $consumer || index($base, "$consumer/") == 0)
                         or die "invalid snapshot root\n";
-                    my @revision = $manifest =~ /^revision\t([0-9a-f]{40}|[0-9a-f]{64})$/mg;
-                    @revision == 1 or die "invalid snapshot revision\n";
-                    my @matched;
+                    # Read with our reviewed grammar owner, never consumer code.
+                    open my $reader, '-|', 'bash', "$RealBin/verify-shared-tooling-snapshot.sh", '--read-manifest', $manifest_path
+                        or die "cannot start snapshot reader: $!\n";
+                    my $manifest = do { local $/; <$reader> // '' };
+                    close $reader or die "invalid owning snapshot manifest\n";
+                    my ($revision, @matched);
                     for my $line (split /\n/, $manifest) {
-                        next unless $line =~ /^file\t([0-9a-f]{64})\t[-x]\t(.+)$/;
-                        my ($digest, $path) = ($1, $2);
+                        my ($record, @values) = split /\t/, $line, -1;
+                        if ($record eq 'revision') { $revision = $values[0]; }
+                        next unless $record eq 'file';
+                        my ($digest, undef, $path) = @values;
                         my $resolved = abs_path("$base/$path");
                         push @matched, $digest if defined($resolved) && $resolved eq $catalog;
                     }
                     @matched == 1 && $matched[0] eq sha256_hex(read_file($catalog)) or die "catalog missing or changed in owning snapshot\n";
-                    $row->{owner} = "snapshot $caller->{snapshot} at $revision[0]";
+                    $row->{owner} = "snapshot $caller->{snapshot} at $revision";
                 }
                 open my $parser, '-|', $^X, "$RealBin/tool-catalog-records.pl", $group->{kind}, $catalog
                     or die "cannot start catalog parser: $!\n";
