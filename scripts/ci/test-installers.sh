@@ -244,6 +244,7 @@ fi
 
 # All shared public entry points exercise the same preservation boundary.
 for tool in actionlint gitleaks shellcheck sccache; do
+    bash "$ROOT/scripts/ci/install-ci-tool.sh" "$tool" --help > "$FIXTURE/$tool-help.log" 2>&1
     case "$tool" in
         actionlint) version=1.7.12; digest="$actionlint_checksum"; archive=actionlint_1.7.12_linux_amd64.tar.gz ;;
         gitleaks) version=8.30.1; digest="$gitleaks_checksum"; archive=gitleaks_8.30.1_linux_x64.tar.gz ;;

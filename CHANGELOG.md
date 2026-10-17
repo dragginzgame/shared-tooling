@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.20.0]
+
+### Added
+
+- Check consumer-owned Cargo dependency boundaries across canonical package names,
+  including renamed, target-specific, build and development dependencies. Refuse
+  failed, incomplete or mismatched metadata before reporting success; run locked
+  and offline without changing dependency selection
+  ([PR #257 — Add declarative Cargo dependency boundaries](https://github.com/dragginzgame/shared-tooling/pull/257),
+  [Storage #4 — Adopt fail-closed dependency-boundary admission](https://github.com/dragginzgame/ic-storage/issues/4)).
+- Declare supported release-delivery modes once in a consumer-owned data file.
+  Common Make admission and standalone metadata entrypoints reuse the same
+  read-only check, rejecting unsupported selections before effects while leaving
+  unrelated goals unchanged
+  ([#258 — Declare consumer-supported release delivery once](https://github.com/dragginzgame/shared-tooling/issues/258)).
+
+### Fixed
+
+- Keep installer CLI smoke checks with their owning fixture instead of a second
+  portable-runner roster. Remove the stale YQ call that made 0.19 Linux CI exit
+  after all named shell fixtures had passed
+  ([#266 — Retire standalone YQ installation](https://github.com/dragginzgame/shared-tooling/issues/266)).
+
+### Breaking
+
+- Common setup, offline checks and action PATH publication now cover host/Cargo
+  tools. Repositories using IC executables must select `install-ic-tools` and
+  `ic-tools-check` in their ordered local target lists and publish `.tools/ic/bin`
+  explicitly. Existing installations and reviewed tool pins are retained.
+- Formatting hooks and their adoption checks expose only common host/Cargo
+  paths by default. Product formatters requiring IC tools must select their
+  prepared IC PATH explicitly, including the original tool root for index exports.
+- Version reporting defaults to host/Cargo selections. Pass both the version
+  catalog and IC pin catalog to include IC admission and observations
+  ([#253 — Make the IC executable bundle an explicit product selection](https://github.com/dragginzgame/shared-tooling/issues/253),
+  [PR #254](https://github.com/dragginzgame/shared-tooling/pull/254)).
+
 ## [0.19.0]
 
 ### Breaking

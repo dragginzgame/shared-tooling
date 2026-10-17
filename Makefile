@@ -6,6 +6,10 @@ CLOC_REPORT := $(CURDIR)/scripts/dev/cloc-siblings.sh
 CLOC_ROOT = $(CLOC_PARENT)
 CLOC_PARENT ?= $(CURDIR)/..
 SHARED_TOOLING_RUST := 0
+# Shared qualifies IC provisioning and optimization as its own product workflow.
+LOCAL_TOOL_INSTALL_TARGETS += install-ic-tools
+LOCAL_TOOL_CHECK_TARGETS += ic-tools-check
+export PATH := $(CURDIR)/.tools/ic/bin:$(PATH)
 include make/consumer.mk
 
 .PHONY: help tasks version check-shell check-pins check-doc-links check-release-commands test-portable ci \
@@ -62,7 +66,7 @@ check-doc-links:
 	perl scripts/ci/check-documentation-links.pl --root . *.md audits/*.md rules/*.md tasks/*.md docs/*.md docs/principles/*.md docs/changelog/*.md
 
 check-release-commands:
-	bash scripts/ci/check-release-commands.sh . make/consumer.mk make/tools.mk make/release.mk make/execution.mk scripts/ci/check-make-execution.sh
+	bash scripts/ci/check-release-commands.sh . make/consumer.mk make/tools.mk make/release.mk make/execution.mk scripts/ci/check-make-execution.sh scripts/ci/check-release-delivery.sh
 
 ci:
 	+@bash scripts/ci/run-validation-targets.sh --fail-fast check-shell check-pins check-doc-links test-portable

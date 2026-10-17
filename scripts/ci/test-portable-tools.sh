@@ -121,7 +121,9 @@ run_fixture test-license.pl perl "$ROOT/scripts/ci/test-license.pl"
 run_fixture test-crates-io-version.sh bash "$ROOT/scripts/ci/test-crates-io-version.sh"
 run_fixture test-cargo-tool-versions.sh bash "$ROOT/scripts/ci/test-cargo-tool-versions.sh"
 run_fixture test-release-commands.sh bash "$ROOT/scripts/ci/test-release-commands.sh"
+run_fixture test-release-delivery.sh bash "$ROOT/scripts/ci/test-release-delivery.sh"
 run_fixture test-checker-retention.sh bash "$ROOT/scripts/ci/test-checker-retention.sh"
+run_fixture test-cargo-dependency-boundaries.sh bash "$ROOT/scripts/ci/test-cargo-dependency-boundaries.sh"
 run_fixture test-dependency-pins.sh bash "$ROOT/scripts/ci/test-dependency-pins.sh"
 run_fixture test-npm-pins.sh bash "$ROOT/scripts/ci/test-npm-pins.sh"
 run_fixture test-cargo-metadata.sh bash "$ROOT/scripts/ci/test-cargo-metadata.sh"
@@ -154,15 +156,6 @@ run_fixture test-release-source.sh bash "$ROOT/scripts/ci/test-release-source.sh
 run_fixture test-release-changes.sh bash "$ROOT/scripts/ci/test-release-changes.sh"
 
 run_fixture test-sccache-launcher.sh bash "$ROOT/scripts/ci/test-sccache-launcher.sh"
-
-for installer in actionlint gitleaks shellcheck sccache yq; do
-    bash "$ROOT/scripts/ci/install-ci-tool.sh" "$installer" --help >/dev/null 2>&1
-    if bash "$ROOT/scripts/ci/install-ci-tool.sh" "$installer" \
-        --version 1.0.0 --sha256 invalid >/dev/null 2>&1; then
-        echo "portable tools test failed: $installer accepted an invalid checksum" >&2
-        exit 1
-    fi
-done
 
 bash "$ROOT/scripts/dev/gh-ci.sh" --help >/dev/null 2>&1
 

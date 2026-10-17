@@ -60,7 +60,7 @@ for failure in success install check; do
     fi
     if [[ "$failure" == success ]]; then
         printf '%s\n' "$fixture/prepare checkout/.tools/host/bin" \
-            "$fixture/prepare checkout/.tools/ic/bin" "$fixture/prepare checkout/.tools/rust/common/bin" \
+            "$fixture/prepare checkout/.tools/rust/common/bin" \
             >> "$fixture/expected-path"
     fi
     cmp "$fixture/expected-calls" "$fixture/prepare-calls"
@@ -98,48 +98,57 @@ if [[ "${1:-}" == --no-print-directory ]]; then shift; fi
 case "$*" in install-tools|tools-check) printf '%s\n' "$*" >> "$PREPARE_CALLS" ;; esac
 exec "$PREPARE_REAL_MAKE" --no-print-directory "$@" "MAKE=$0" "MAKE_COMMAND=$PREPARE_REAL_MAKE"
 MAKE
-phases=(install-tools install-ic-tools-preflight install-rust-tools-preflight
-        install-host-tools install-ic-tools install-rust-tools
-        tools-check host-tools-check ic-tools-check rust-tools-check)
-for failure in success install-ic-tools-preflight install-rust-tools-preflight \
-    install-host-tools install-ic-tools install-rust-tools \
-    host-tools-check ic-tools-check rust-tools-check; do
-    rm -f "$fixture/prepare runner/tools-install.log" "$fixture/prepare runner/tools-check.log"
-    : > "$fixture/prepare-calls"
-    printf 'existing PATH entry\n' > "$fixture/prepare-path"
-    prepare_status=0
-    (cd "$aggregate" && PATH="$fixture/prepare-bin:$PATH" \
-        PREPARE_CALLS="$fixture/prepare-calls" PREPARE_FAILURE="$failure" \
-        RUNNER_TEMP="$fixture/prepare runner" GITHUB_WORKSPACE="$aggregate" \
-        GITHUB_PATH="$fixture/prepare-path" \
-        "$BASH" --noprofile --norc -e -o pipefail "$fixture/prepare-action.sh") \
-        > "$fixture/aggregate-$failure.log" 2>&1 || prepare_status=$?
-    expected=2
-    [[ "$failure" != success ]] || expected=0
-    [[ "$prepare_status" == "$expected" ]] || exit 1
-    : > "$fixture/expected-calls"
-    log=tools-install.log
-    for phase in "${phases[@]}"; do
-        printf '%s\n' "$phase" >> "$fixture/expected-calls"
-        if [[ "$phase" == tools-check ]]; then log=tools-check.log; fi
-        case "$phase" in
-            install-tools|tools-check) ;;
-            *) grep -Fx "$phase stdout" "$fixture/prepare runner/$log" > /dev/null
-               grep -Fx "$phase stderr" "$fixture/prepare runner/$log" > /dev/null ;;
-        esac
-        if [[ "$phase" == "$failure" ]]; then break; fi
+for selection in common ic; do
+    unset LOCAL_TOOL_INSTALL_TARGETS LOCAL_TOOL_CHECK_TARGETS
+    phases=(install-tools install-rust-tools-preflight install-host-tools install-rust-tools
+            tools-check host-tools-check rust-tools-check)
+    failures=(success install-rust-tools-preflight install-host-tools install-rust-tools
+              host-tools-check rust-tools-check)
+    if [[ "$selection" == ic ]]; then
+        export LOCAL_TOOL_INSTALL_TARGETS=install-ic-tools LOCAL_TOOL_CHECK_TARGETS=ic-tools-check
+        phases=(install-tools install-rust-tools-preflight install-host-tools install-rust-tools install-ic-tools
+                tools-check host-tools-check rust-tools-check ic-tools-check)
+        failures+=(install-ic-tools ic-tools-check)
+    fi
+    for failure in "${failures[@]}"; do
+        rm -f "$fixture/prepare runner/tools-install.log" "$fixture/prepare runner/tools-check.log"
+        : > "$fixture/prepare-calls"
+        printf 'existing PATH entry\n' > "$fixture/prepare-path"
+        prepare_status=0
+        (cd "$aggregate" && PATH="$fixture/prepare-bin:$PATH" \
+            PREPARE_CALLS="$fixture/prepare-calls" PREPARE_FAILURE="$failure" \
+            RUNNER_TEMP="$fixture/prepare runner" GITHUB_WORKSPACE="$aggregate" \
+            GITHUB_PATH="$fixture/prepare-path" \
+            "$BASH" --noprofile --norc -e -o pipefail "$fixture/prepare-action.sh") \
+            > "$fixture/aggregate-$failure.log" 2>&1 || prepare_status=$?
+        expected=2
+        [[ "$failure" != success ]] || expected=0
+        [[ "$prepare_status" == "$expected" ]] || exit 1
+        : > "$fixture/expected-calls"
+        log=tools-install.log
+        for phase in "${phases[@]}"; do
+            printf '%s\n' "$phase" >> "$fixture/expected-calls"
+            if [[ "$phase" == tools-check ]]; then log=tools-check.log; fi
+            case "$phase" in
+                install-tools|tools-check) ;;
+                *) grep -Fx "$phase stdout" "$fixture/prepare runner/$log" > /dev/null
+                   grep -Fx "$phase stderr" "$fixture/prepare runner/$log" > /dev/null ;;
+            esac
+            if [[ "$phase" == "$failure" ]]; then break; fi
+        done
+        cmp "$fixture/expected-calls" "$fixture/prepare-calls"
+        if [[ "$log" == tools-install.log ]]; then
+            [[ ! -e "$fixture/prepare runner/tools-check.log" ]] || exit 1
+        fi
+        printf 'existing PATH entry\n' > "$fixture/expected-path"
+        if [[ "$failure" == success ]]; then
+            printf '%s\n' "$aggregate/.tools/host/bin" \
+                "$aggregate/.tools/rust/common/bin" >> "$fixture/expected-path"
+        fi
+        cmp "$fixture/expected-path" "$fixture/prepare-path"
     done
-    cmp "$fixture/expected-calls" "$fixture/prepare-calls"
-    if [[ "$log" == tools-install.log ]]; then
-        [[ ! -e "$fixture/prepare runner/tools-check.log" ]] || exit 1
-    fi
-    printf 'existing PATH entry\n' > "$fixture/expected-path"
-    if [[ "$failure" == success ]]; then
-        printf '%s\n' "$aggregate/.tools/host/bin" "$aggregate/.tools/ic/bin" \
-            "$aggregate/.tools/rust/common/bin" >> "$fixture/expected-path"
-    fi
-    cmp "$fixture/expected-path" "$fixture/prepare-path"
 done
+unset LOCAL_TOOL_INSTALL_TARGETS LOCAL_TOOL_CHECK_TARGETS
 # Reject forbidden raw and resolved directories before publishing any payload.
 mkdir "$fixture/clean-output"
 for suffix in $'\n' $'\r' $'\r\n'; do

@@ -409,7 +409,7 @@ for phase in install check; do
     cp "$ROOT/make/tools.mk" "$ROOT/make/execution.mk" "$native/make/"
     mkdir -p "$native/scripts/ci"
     cp "$ROOT/scripts/ci/check-make-execution.sh" "$native/scripts/ci/"
-    printf 'include make/tools.mk\n' > "$native/Makefile"
+    printf 'LOCAL_TOOL_INSTALL_TARGETS += install-ic-tools\nLOCAL_TOOL_CHECK_TARGETS += ic-tools-check\ninclude make/tools.mk\n' > "$native/Makefile"
     for tool in host rust; do
         printf '#!/usr/bin/env bash\nexit 0\n' > "$native/scripts/dev/install-$tool-tools.sh"
     done

@@ -96,10 +96,14 @@ tree="$(git write-tree)"
 bash .githooks/pre-commit > output
 [[ "$(git write-tree)" == "$tree" && "$(cat Cargo.toml)" == unformatted ]] || exit 1
 
-# Prepared checkout-local tools stay discoverable without a caller PATH export.
+# Common checkout-local tools stay discoverable without a caller PATH export.
+# Product formatters explicitly select IC tools; common-only formatters must not
+# discover an unselected IC executable even when an old bundle is still present.
 # The tools are untracked; formatter inputs still come from the selected index.
+for selection in common ic; do
+export HOOK_FIXTURE_IC="$selection"
 for tools in prepared missing wrong; do
-    new_fixture "local tools $tools"
+    new_fixture "local tools $selection $tools"
     mkdir -p .tools/host/bin .tools/ic/bin .tools/rust/common/bin
     cat > .tools/rust/common/bin/hook-fixture-cargo <<'TOOL'
 #!/usr/bin/env bash
@@ -109,7 +113,11 @@ case "$*" in
     'fmt --version') echo 'rustfmt fixture' ;;
     'sort --workspace')
         hook-fixture-host
-        hook-fixture-ic
+        if [[ "$HOOK_FIXTURE_IC" == ic ]]; then
+            hook-fixture-ic
+        elif command -v hook-fixture-ic > /dev/null; then
+            echo 'unselected IC tool became visible' >&2; exit 1
+        fi
         bash scripts/fixture-fmt.sh ;;
     *) exit 1 ;;
 esac
@@ -128,6 +136,11 @@ fmt:
 	env hook-fixture-cargo sort --workspace
 include ci/tool-versions.env
 MAKE
+    if [[ "$selection" == ic ]]; then
+        cat >> Makefile <<'MAKE'
+export PATH := $(or $(SHARED_TOOLING_FORMAT_TOOLS_FROM),$(CURDIR))/.tools/ic/bin:$(PATH)
+MAKE
+    fi
     git add Makefile
     printf 'unformatted unrelated working edit\n' > README.md
     # env resolves the exported recipe PATH even with Apple's posix_spawn Make.
@@ -149,6 +162,8 @@ MAKE
     fi
     [[ "$(cat README.md)" == 'unformatted unrelated working edit' ]] || exit 1
 done
+done
+unset HOOK_FIXTURE_IC
 
 new_fixture partial
 printf 'unformatted selected\n' > partial.rs

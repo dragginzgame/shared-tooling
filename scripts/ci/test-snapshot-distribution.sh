@@ -779,6 +779,7 @@ scripts/ci/test-cloc.sh scripts/dev/cloc.sh
 scripts/ci/test-cloc-tooling.sh scripts/dev/cloc-tooling.pl
 scripts/ci/test-crates-io-version.sh scripts/ci/check-crates-io-version.sh
 scripts/ci/test-dependency-pins.sh scripts/ci/check-dependency-pins.sh
+scripts/ci/test-cargo-dependency-boundaries.sh scripts/ci/check-cargo-dependency-boundaries.sh
 scripts/ci/test-evidence-archive.sh scripts/ci/archive-evidence.sh
 scripts/ci/test-evidence-checksums.sh scripts/ci/verify-evidence-checksums.sh
 scripts/ci/test-format-tools.sh scripts/ci/check-format-tools.sh
@@ -789,6 +790,7 @@ scripts/ci/test-rust-tools.sh scripts/dev/install-rust-tools.sh
 scripts/ci/test-rustsec-db.sh scripts/ci/prepare-rustsec-db.sh
 scripts/ci/test-tool-commands.sh make/tools.mk
 make/release.mk scripts/ci/run-release.sh
+make/release.mk scripts/ci/check-release-delivery.sh
 make/rust-format.mk make/tools.mk
 make/consumer.mk make/rust-format.mk
 scripts/ci/test-make-consumer.sh make/consumer.mk
