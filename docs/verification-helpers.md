@@ -224,6 +224,25 @@ Cargo also checks package structure. The reader never chooses a Git commit,
 updates a version or lockfile, or finalizes release notes. Consumers own selection
 of working versus committed sources and their release/preparation transactions.
 
+## Saved Cargo source context
+
+```bash
+bash scripts/ci/read-cargo-source-context.sh /path/to/repo COMMIT manifest.json crates/library apps/cli
+```
+
+The caller supplies admitted root-manifest JSON and explicit relative member
+directories. The helper reads package names from that exact local commit and
+returns the saved `source_root`, `manifest` and `members` context accepted by the
+Cargo metadata renderers. Current member files are never read. Missing members,
+invalid paths, duplicate package identities and failed Git/TOML readers refuse
+without a partial context. Git, jq and prepared Mike Farah yq are required; no
+Cargo invocation, fetch, installation, editing or Git mutation occurs.
+
+Consumers retain root-manifest authentication, member/package eligibility,
+version policy and independent graph admission. This input preparation does not
+implement a TOML editor and survives the planned editor replacement in
+[#273 — Adopt released IC Build Cargo editor and retire Perl renderers](https://github.com/dragginzgame/shared-tooling/issues/273).
+
 ## CI binary installers
 
 Use `scripts/ci/install-ci-tool.sh TOOL` for actionlint, shellcheck, gitleaks,
