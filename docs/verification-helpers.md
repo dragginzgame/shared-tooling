@@ -644,6 +644,13 @@ to this contract can include previously skipped formats such as `.mjs` and
 
 ## Consumer formatting-hook adoption
 
+On failure, the checker replays its existing baseline and per-checkout hook logs
+to stderr before reporting the retained fixture directory. Diagnostic replay is
+best effort and preserves the original failure status; successful checks remove
+their scratch directory. Consumers need no outer fixture for log replay or custody.
+Nested formatter logs stay inside that fixture, including expected rejection
+logs; inherited `RUNNER_TEMP` evidence remains untouched.
+
 ```sh
 bash scripts/ci/check-formatting-hooks.sh "$PWD" crates/example/src/lib.rs \
   crates/example/Cargo.toml /tmp/example-unsorted.toml ci/tool-versions.env
@@ -871,6 +878,20 @@ delivered Shared contribution; focused coverage is
 
 ## Workflow run extraction
 
+`fixture_run_steps BASH COMMAND_DIRECTORY LOG_DIRECTORY STEP OUTCOME_VARIABLE ...`
+is a sourced helper in `scripts/ci/fixture-workflow-steps.sh`. It executes explicit
+`STEP.sh` files in caller order with Bash's `-e -o pipefail`, capturing combined
+output in `LOG_DIRECTORY/STEP.log`. Directories must already exist. Step IDs use
+shell identifier characters; outcome variables use uppercase identifiers.
+Invalid argument shapes/names refuse with status 2 before execution or outcome
+changes. Outcomes are exported as `skipped`, then `success` or `failure`; the
+first failed child returns its exact status and later steps remain skipped.
+
+Callers own script extraction, action substitutes, selected order, environment,
+assertions, log destinations and retention. This is a shell fixture executor,
+not an evaluator of GitHub expressions or proof of hosted action behavior.
+Select the helper as its own snapshot entrypoint; it has no shared dependencies.
+
 `scripts/ci/extract-workflow-step.sh STEPS_JSON STEP_ID` emits the selected run
 body from one JSON array of workflow steps. It requires exactly one matching
 object with a nonblank string `run` and no `uses`. Missing/duplicate selections,
@@ -1029,7 +1050,9 @@ copies explicit reviewed roots and their transitive line-two `Shared companions`
 declarations, preserving file modes. It shares the declaration reader with the
 snapshot exporter; inspected payloads are never executed. Cycles are deduplicated.
 The complete closure and destination parents are admitted before any copying;
-unsafe paths, symlink traversal, missing inputs and overlapping roots refuse.
+unsafe paths, symlink traversal and missing inputs refuse. The fixture must not
+contain the source root. Scratch beneath the source is permitted, but the entire
+copy plan refuses before effects if an output would overwrite any selected input.
 Existing regular fixture files may be replaced. Callers own an idle disposable
 destination and stable reviewed source; copying does not protect against
 concurrent mutation. The helper neither creates a snapshot nor proves supplier

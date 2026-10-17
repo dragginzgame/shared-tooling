@@ -19,7 +19,6 @@ for directory in "$source_root" "$fixture_root"; do
     case "$directory" in *$'\n'*|*$'\r'*) fixture_fail 'resolved directory contains CR/LF' ;; esac
 done
 case "$source_root/" in "$fixture_root/"*) fixture_fail 'roots overlap' ;; esac
-case "$fixture_root/" in "$source_root/"*) fixture_fail 'roots overlap' ;; esac
 helper="${BASH_SOURCE[0]}"
 [[ "$helper" == /* ]] || helper="$PWD/$helper"
 # shellcheck source=scripts/ci/shared-companions.sh
@@ -73,6 +72,14 @@ while [[ "$cursor" -lt "${#payloads[@]}" ]]; do
         [[ "$selected" == true ]] || payloads+=("$companion")
     done
     cursor=$((cursor + 1))
+done
+# Scratch may live beneath the source (for example target/evidence). Refuse any
+# output that would overwrite a selected input, including transitive companions,
+# before creating directories or copying an earlier admitted root.
+for path in "${payloads[@]}"; do
+    for input in "${payloads[@]}"; do
+        [[ "$fixture_root/$path" != "$source_root/$input" ]] || fixture_fail "output overlaps selected input: $path"
+    done
 done
 for path in "${payloads[@]}"; do
     [[ "$path" != */* ]] || mkdir -p "$fixture_root/${path%/*}"

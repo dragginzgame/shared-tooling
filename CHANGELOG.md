@@ -25,6 +25,12 @@
 
 ### Changed
 
+- Permit script fixtures beneath their source checkout, preserving consumer
+  evidence destinations. Refuse source/output collisions across the complete
+  companion closure before copying any input.
+- Replay retained baseline and hook logs when formatting adoption fails,
+  preserving the original status and scratch inputs. Consumers can delegate
+  diagnostics without wrapping the checker in a second fixture lifecycle.
 - Normalize installer OS/architecture aliases through one read-only observer,
   retaining each toolset's asset matrix and rejecting failed host observations
   before installation or download.
@@ -75,6 +81,9 @@
 
 ### Added
 
+- Share ordered shell fixture execution, per-step logs and exported outcomes.
+  Preserve the first failure status and skip subsequent steps; callers retain
+  workflow policy, action substitutes, assertions and evidence custody.
 - Compare repeated snapshot exports on Linux and both native macOS hosts through
   an opt-in workflow. Both exporters use one frozen payload, retain alternating
   timing samples and verify matching receipts and files. Routine CI stays focused
