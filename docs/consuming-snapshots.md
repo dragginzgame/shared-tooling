@@ -926,3 +926,24 @@ snapshot-owned wrappers; preserve modified or consumer-owned files for review.
 Refresh `test-installers.sh` too if selected, then qualify the same installer
 failure cases and each declared native host. No storage layout or tool upgrade
 is part of this command change.
+
+
+## Cargo dependency boundaries
+
+Adopt `scripts/ci/check-cargo-dependency-boundaries.sh` as a snapshot entrypoint
+and run it with `--consumer /absolute/repository/path`. The checker uses locked,
+offline Cargo metadata; prepare the selected toolchain and lockfile first. It
+requires Perl with JSON::PP. Policy lives in `ci/cargo-dependency-boundaries.json`:
+
+```json
+[
+  {"dependency": "ic-stable-structures", "allowed_packages": ["ic-storage"]}
+]
+```
+
+Each rule restricts a canonical dependency package name to the listed workspace
+packages. An empty allowed list bans that dependency everywhere in the workspace.
+Renames do not bypass the rule. Normal, build, development and target-specific
+direct dependencies are included. Transitive dependencies are not restricted.
+Malformed, duplicate or unknown policy fields fail closed. This opt-in policy
+is separate from version pinning; consumers choose their own ownership rules.

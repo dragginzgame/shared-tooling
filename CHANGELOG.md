@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.17.3]
+
+- Add an opt-in Cargo dependency-boundary check with consumer-owned allowed
+  package lists. Check canonical names across renamed, target-specific and
+  development dependencies without fetching or changing the lockfile.
+
 ## [0.17.2] - 2026-10-16
 
 ## [0.17.1]
