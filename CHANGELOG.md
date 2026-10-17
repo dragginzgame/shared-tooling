@@ -4,6 +4,9 @@
 
 ### Added
 
+- Share ordered shell fixture execution, per-step logs and exported outcomes.
+  Preserve the first failure status and skip subsequent steps; callers retain
+  workflow policy, action substitutes, assertions and evidence custody.
 - Compare repeated snapshot exports on Linux and both native macOS hosts through
   an opt-in workflow. Both exporters use one frozen payload, retain alternating
   timing samples and verify matching receipts and files. Routine CI stays focused
