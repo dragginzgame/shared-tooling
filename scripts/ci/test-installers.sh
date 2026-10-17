@@ -66,8 +66,28 @@ case "$1" in
 -m) printf '%s\n' "${INSTALLER_TEST_ARCH:-x86_64}" ;;
 *) exit 2 ;;
 esac
+[[ "$1" != "${INSTALLER_TEST_UNAME_FAILURE:-}" ]] || exit 79
 SCRIPT
 chmod +x "$FIXTURE/bin/uname"
+
+# Alias normalization is shared; asset scope remains with each installer.
+for os in Linux Darwin; do
+    for architecture in x86_64 amd64 arm64 aarch64; do
+        expected_architecture=x86_64
+        case "$architecture" in arm64|aarch64) expected_architecture=arm64 ;; esac
+        observed="$(PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_OS="$os" INSTALLER_TEST_ARCH="$architecture" \
+            bash "$ROOT/scripts/dev/host-platform.sh")"
+        [[ "$observed" == "$os:$expected_architecture" ]] || exit 1
+    done
+done
+for observer in -s -m; do
+    status=0
+    PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_UNAME_FAILURE="$observer" \
+        bash "$ROOT/scripts/ci/install-ci-tool.sh" actionlint --version 1.7.12 \
+        --sha256 "$(printf '%064d' 0)" --install-dir "$FIXTURE/failed-observer" \
+        > "$FIXTURE/observer.log" 2>&1 || status=$?
+    [[ "$status" == 79 && ! -e "$FIXTURE/failed-observer" ]] || exit 1
+done
 
 cat >"$FIXTURE/bin/curl" <<'SCRIPT'
 #!/usr/bin/env bash
@@ -82,7 +102,7 @@ while [[ $# -gt 0 ]]; do
         output="$2"
         shift 2
         ;;
-    --proto | --proto-redir | --retry | --retry-delay | --connect-timeout | --max-time)
+    --proto | --proto-redir | --retry | --retry-delay | --retry-max-time | --connect-timeout | --max-time)
         shift 2
         ;;
     -* )
@@ -142,8 +162,9 @@ for tool in actionlint shellcheck gitleaks; do
         --install-dir "$FIXTURE/catalog-installed" > "$FIXTURE/catalog-$tool.log"
     [[ -x "$FIXTURE/catalog-installed/$tool" ]] || exit 1
 done
-mkdir -p "$FIXTURE/snapshot/scripts/ci" "$FIXTURE/snapshot/ci"
+mkdir -p "$FIXTURE/snapshot/scripts/ci" "$FIXTURE/snapshot/scripts/dev" "$FIXTURE/snapshot/ci"
 cp "$ROOT/scripts/ci/"{install-ci-tool.sh,tool-catalog-records.pl,verify-file-checksum.sh} "$FIXTURE/snapshot/scripts/ci/"
+cp "$ROOT/scripts/dev/"{tool-store.sh,host-platform.sh} "$FIXTURE/snapshot/scripts/dev/"
 cp "$FIXTURE/ci.env" "$FIXTURE/snapshot/ci/tool-versions.env"
 PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     bash "$FIXTURE/snapshot/scripts/ci/install-ci-tool.sh" actionlint \

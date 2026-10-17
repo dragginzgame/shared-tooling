@@ -753,8 +753,12 @@ scripts/ci/check-type-docs.pl scripts/ci/RustSource.pm
 scripts/dev/check-cargo-tool-versions.pl scripts/ci/StableVersion.pm
 scripts/dev/delete-github-tags-up-to.pl scripts/ci/StableVersion.pm
 scripts/ci/check-tool-catalogs.pl scripts/ci/ic-tool-pins.awk
+scripts/ci/check-tool-catalogs.pl scripts/ci/verify-shared-tooling-snapshot.sh
 scripts/ci/cargo-tool-cache-key.sh scripts/ci/tool-catalog-records.pl
 scripts/dev/install-host-tools.sh scripts/ci/tool-catalog-records.pl
+scripts/dev/install-host-tools.sh scripts/dev/host-platform.sh
+scripts/dev/install-ic-tools.sh scripts/dev/host-platform.sh
+scripts/ci/install-ci-tool.sh scripts/dev/host-platform.sh
 scripts/ci/install-ci-tool.sh scripts/ci/tool-catalog-records.pl
 scripts/ci/check-formatting-hooks.sh scripts/ci/fixture-lifecycle.sh
 scripts/dev/install-rust-tools.sh scripts/ci/tool-catalog-records.pl

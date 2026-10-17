@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/check-release-delivery.sh scripts/ci/prepare-make-fixture.sh
+# Shared companions: scripts/ci/check-release-delivery.sh scripts/ci/prepare-script-fixture.sh make/release.mk
 set -euo pipefail
 # Qualify common admission independently of any release runner or Git effects.
 root="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
@@ -41,7 +41,7 @@ printf 'direct' > "$fixture/policy"
 bash "$helper" "$fixture/policy" direct
 # Exercise the real include and canonical hook roster; effects are only sentinels.
 mkdir "$fixture/consumer"
-bash "$root/scripts/ci/prepare-make-fixture.sh" "$root" "$fixture/consumer"
+bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$fixture/consumer" make/release.mk
 cat > "$fixture/consumer/Makefile" <<'MAKE'
 .DEFAULT_GOAL := help
 SHARED_TOOLING_ROOT := $(CURDIR)
