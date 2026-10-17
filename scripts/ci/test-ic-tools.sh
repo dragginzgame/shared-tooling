@@ -57,7 +57,7 @@ pins="$fixture/pins.tsv"
 for tool in quill icp didc ic-wasm wasm-opt; do
     case "$tool" in
         quill) version=0.5.4; report="quill $version" ;;
-        icp) version=1.6.0; report="icp $version" ;;
+        icp) version=1.7.0; report="icp $version" ;;
         didc) version=0.6.2; report="didc $version" ;;
         ic-wasm) version=0.11.1; report="ic-wasm $version" ;;
         wasm-opt) version=132; report="wasm-opt version $version (version_$version)" ;;

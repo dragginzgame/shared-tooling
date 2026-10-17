@@ -21,9 +21,11 @@ if [[ "${1:-}" == --toolchain-file || "${1:-}" == --workspace-manifest ]]; then
         directory="$(cd -P -- "${file%/*}" && printf '%s/.' "$PWD")"
         case "$directory" in *$'\n'*|*$'\r'*) echo 'resolved Rust policy directory contains CR/LF' >&2; exit 2 ;; esac
         document="$("${YQ:-yq}" -p toml -o json '.' "$file")"
-        selection="$(printf '%s' "$document" | jq -er '
+        selection="$(printf '%s' "$document" | jq -ers '
             def token: type == "string" and test("^[A-Za-z0-9]") and
                 (test("[^A-Za-z0-9_.+-]") | not);
+            if length != 1 then error("expected one Rust policy document") else .[0] end |
+            select(type == "object") |
             .toolchain | select(type == "object") |
             select(.channel | token) |
             select((has("profile") | not) or (.profile | IN("minimal", "default", "complete"))) |

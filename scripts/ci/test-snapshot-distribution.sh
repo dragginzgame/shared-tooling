@@ -758,8 +758,6 @@ scripts/dev/install-host-tools.sh scripts/ci/tool-catalog-records.pl
 scripts/dev/install-rust-tools.sh scripts/ci/tool-catalog-records.pl
 scripts/dev/check-cargo-tool-versions.pl scripts/ci/tool-catalog-records.pl
 scripts/ci/test-tool-catalogs.pl scripts/ci/check-tool-catalogs.pl
-scripts/ci/check-publication.sh scripts/ci/check-crates-io-version.sh
-scripts/ci/test-publication.sh scripts/ci/check-publication.sh
 scripts/ci/run-cargo-publication.sh scripts/ci/check-make-execution.sh
 scripts/ci/test-cargo-publication-attempt.sh scripts/ci/run-cargo-publication.sh
 scripts/ci/run-release.sh scripts/ci/check-release-tag.sh

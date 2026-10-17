@@ -1,5 +1,44 @@
 # Changelog
 
+## [0.21.0]
+
+### Added
+
+- Compare repeated snapshot exports on Linux and both native macOS hosts through
+  an opt-in workflow. Both exporters use one frozen payload, retain alternating
+  timing samples and verify matching receipts and files. Routine CI stays focused
+  on correctness; native performance acceptance still requires observed results
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
+- Package comparison evidence through the canonical archiver so downloads retain
+  hidden snapshot receipts, logs and incomplete attempts. Exclude source clones
+  and Git stores, and preserve packaging failures
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
+
+### Changed
+
+- Consume validated host-tool records directly during installation, preserving
+  payload authentication and offline checks without reconstructing catalog
+  environment variables or repeating catalog admission.
+- Select ICP CLI 1.7.0 for the three supported IC-tool hosts using official
+  release-asset digests. Other tool pins and explicit setup policy are unchanged;
+  adopters run IC-tool setup before offline checks with the new catalog
+  ([#268 — Adopt ICP CLI 1.7.0](https://github.com/dragginzgame/shared-tooling/issues/268)).
+
+### Fixed
+
+- Require one complete Rust policy observation before publishing a workspace
+  compiler floor or preparing a toolchain. Reject ambiguous parser streams before
+  Rustup while preserving valid bootstrap inputs and parser failure statuses
+  ([#270 — Reject ambiguous Rust bootstrap policy observations](https://github.com/dragginzgame/shared-tooling/issues/270)).
+
+### Breaking
+
+- Remove the complete Cargo publication preflight command. Consumers own package,
+  registry and release-tag policy while reusing the shared source, version, tag
+  and registry observers. IC Jobs adopts its local policy in
+  [PR #67 — Own publication admission locally](https://github.com/dragginzgame/ic-jobs/pull/67);
+  integrate that caller before adopting this snapshot.
+
 ## [0.20.0]
 
 ### Added
