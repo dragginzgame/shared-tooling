@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: .github/actions/prepare-common-tools/action.yml scripts/ci/fixture-lifecycle.sh scripts/ci/extract-workflow-step.sh scripts/ci/prepare-make-fixture.sh
+# Shared companions: .github/actions/prepare-common-tools/action.yml scripts/ci/fixture-lifecycle.sh scripts/ci/extract-workflow-step.sh scripts/ci/prepare-script-fixture.sh make/tools.mk
 set -euo pipefail
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 unset VALIDATION_REPOSITORY_ROOT VALIDATION_RUNNER_SNAPSHOT_PATH
@@ -70,7 +70,7 @@ done
 # leaves are substituted; no download, store mutation or Cargo build is selected.
 aggregate="$fixture/aggregate checkout"
 mkdir -p "$aggregate/scripts/dev"
-bash "$ROOT/scripts/ci/prepare-make-fixture.sh" "$ROOT" "$aggregate"
+bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$aggregate" make/tools.mk
 # shellcheck disable=SC2016 # Make expands its own checkout path.
 printf 'override SHARED_TOOLING_ROOT := $(CURDIR)\ninclude make/tools.mk\n' > "$aggregate/Makefile"
 for tool in host ic rust; do
@@ -157,7 +157,7 @@ for suffix in $'\n' $'\r' $'\r\n'; do
     ln -s "$forbidden" "$fixture/directory-alias"
     for selected in "$forbidden" "$fixture/directory-alias"; do
         status=0
-        bash "$ROOT/scripts/ci/prepare-make-fixture.sh" "$ROOT" "$selected" \
+        bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$selected" make/tools.mk \
             > "$fixture/rejected-output.log" 2>&1 || status=$?
         [[ "$status" == 2 && ! -e "$forbidden/make" && ! -e "$forbidden/scripts" ]] || exit 1
     done
@@ -167,7 +167,7 @@ for suffix in $'\n' $'\r' $'\r\n'; do
     cp -p "$ROOT/scripts/ci/check-make-execution.sh" "$ROOT/scripts/ci/run-formatting.sh" "$forbidden/scripts/ci/"
     for selected in "$forbidden" "$fixture/directory-alias"; do
         status=0
-        bash "$ROOT/scripts/ci/prepare-make-fixture.sh" "$selected" "$fixture/clean-output" \
+        bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$selected" "$fixture/clean-output" make/tools.mk \
             > "$fixture/rejected-source.log" 2>&1 || status=$?
         [[ "$status" == 2 && ! -e "$fixture/clean-output/make" ]] || exit 1
     done

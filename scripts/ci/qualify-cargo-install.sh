@@ -151,8 +151,5 @@ exercise() {
     printf 'Native Cargo %s installation qualified: %s %s (%s); observed sha256 %s\n' "$kind" "$package" "$version" "$target" "$digest"
 }
 
-# Frozen assessment fixture matching the published example reviewed in #65.
-# This is not a default package selection for consuming applications.
-exercise ic-blob-storage 0.15.1 example prepare_upload
 exercise cargo-sort "$sort_version" bin cargo-sort
 echo 'Native Cargo installation qualification passed'

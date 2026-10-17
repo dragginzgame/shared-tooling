@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.22.2]
+## [0.23.1]
 
 ### Added
 
@@ -10,6 +10,41 @@
 - Check prepared Cargo archives against explicit package paths and a source commit,
   then retrieve that commit into a fresh Git store. Retain provenance evidence
   without packaging, uploading or selecting consumer eligibility and recovery.
+
+## [0.23.0]
+
+### Breaking
+
+- Move the frozen Blob example-installation assessment to
+  [IC Blob Storage PR #80 — Own frozen published-example installation qualification](https://github.com/dragginzgame/ic-blob-storage/pull/80).
+  Integrate that owner before adoption; Shared keeps common Cargo binary
+  qualification and installer mechanics
+  ([#280 — Retire frozen Blob example assessment after native owner qualification](https://github.com/dragginzgame/shared-tooling/issues/280)).
+- Frontend formatting delegates language recognition to pinned Prettier. Review
+  `.prettierignore` before adoption: supported formats such as `.mjs` and `.vue`
+  now participate without a Shared Tooling extension allowlist.
+- Catalog ownership checks require the canonical snapshot manifest grammar.
+  Refresh incomplete or malformed ownership receipts before adoption; selected
+  catalog hashing remains separate from whole-snapshot verification.
+- Remove the separate Make-fixture copier. Select Make roots through the script
+  companion-closure preparer, then apply consumer-owned adapters and substitutions.
+- Remove the local semantic Wasm qualification command and CI step. Integrate
+  [IC Build PR #62 — Own native Wasm optimizer qualification](https://github.com/dragginzgame/ic-build/pull/62)
+  before adopting this snapshot; its native matrix owns the optimizer/cache/reply
+  oracle. Shared retains archive integrity and executable installation checks
+  ([#277 — Retire semantic Wasm qualification after IC Build native coverage](https://github.com/dragginzgame/shared-tooling/issues/277)).
+
+### Changed
+
+- Normalize installer OS/architecture aliases through one read-only observer,
+  retaining each toolset's asset matrix and rejecting failed host observations
+  before installation or download.
+- Carry the GitHub dashboard's displayed closed-PR count directly through rows,
+  totals and layout, preserving merge timestamps, pagination and partial errors.
+- Common Rust setup projects validated catalog records directly into tool
+  selections, removing the reconstructed variables and duplicate default roster.
+- CI binary installation reuses the host/IC downloader's bounded transient-retry
+  policy while retaining checksum admission, atomic publication and failed stages.
 
 ## [0.22.1]
 
