@@ -12,7 +12,21 @@
   Existing installed sets and standalone IC commands are retained unchanged
   ([#253 — Make the IC executable bundle an explicit product selection](https://github.com/dragginzgame/shared-tooling/issues/253)).
 
-## [0.18.0] - 2026-10-16
+## [0.17.2] - 2026-10-16
+
+## [0.17.1]
+
+- Keep expected type-documentation rejections out of passing CI output, replay
+  unexpected failures from retained case logs, reject signal-terminated checks
+  and print Unicode diagnostic names without encoding warnings
+  ([#255 — Retain type-doc diagnostics and reject signal-terminated checks](https://github.com/dragginzgame/shared-tooling/issues/255)).
+- Avoid external comparisons for empty snapshot index records while retaining
+  every Git re-observation, staged-change refusal and publication recheck
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
+- Identify invalid pending changelog headings with their source line and the
+  expected numbered spelling before release preparation; retain strict candidate
+  and exact-date recovery checks
+  ([#252 — Explain unsupported pending changelog headings](https://github.com/dragginzgame/shared-tooling/issues/252)).
 
 ## [0.17.0]
 
