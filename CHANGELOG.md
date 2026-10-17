@@ -2,6 +2,13 @@
 
 ## [0.19.0]
 
+### Added
+
+- Let consumers declare supported release deliveries once in a data file.
+  Shared Make admission and standalone metadata adapters can reuse the same
+  read-only check, preserving refusal before effects and unrelated-goal behavior
+  ([#258 — Declare consumer-supported release delivery once](https://github.com/dragginzgame/shared-tooling/issues/258)).
+
 ### Breaking
 
 - Make the five-tool IC bundle a product selection instead of a mandatory

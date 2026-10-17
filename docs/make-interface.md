@@ -14,6 +14,21 @@ sets `SHARED_TOOLING_RUST := 0` before the include; it still prepares the comple
 common toolset, but does not expose Rust formatting or hook installation.
 The include preserves the consumer's default goal, even when declared later.
 Parsing it never installs tools, activates hooks or starts a release.
+
+To restrict release delivery, set `RELEASE_DELIVERY_POLICY` before the include
+to a consumer-owned regular data file containing `direct`, `pr`, or both, one
+per line. The common include refuses unsupported selections before any standard
+release command or metadata hook. Unset selection defaults to direct; an explicit
+empty selection refuses. Unrelated goals do not read the policy. Without a policy
+file, the existing direct/PR contract is unchanged. `SHARED_RELEASE_TARGETS`
+provides the canonical command/hook roster for consumer declarations.
+
+Standalone metadata entrypoints call
+`bash scripts/ci/check-release-delivery.sh "$policy_file" "${RELEASE_DELIVERY-direct}"`
+before effects, using that same file; never source it as shell code. An empty
+file-path argument admits the standard direct/PR set. File selection and delivery
+choice remain consumer-owned; this helper grants no release or merge authority.
+
 Selecting `make/consumer.mk` as a snapshot entrypoint includes the common
 installers, common pin catalogs and default LOC helper through their declared
 dependencies. Product pin exceptions remain consumer-owned; optional fleet
