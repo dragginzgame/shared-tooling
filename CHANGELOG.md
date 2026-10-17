@@ -4,6 +4,9 @@
 
 ### Added
 
+- Read caller-selected Cargo member identities from an exact local Git commit
+  into saved-source renderer context, independently of mutable member checkouts.
+  Root admission, package/version selection and editing remain caller-owned.
 - Check prepared Cargo archives against explicit package paths and a source commit,
   then retrieve that commit into a fresh Git store. Retain provenance evidence
   without packaging, uploading or selecting consumer eligibility and recovery.

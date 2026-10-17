@@ -59,6 +59,7 @@ run_fixture test-cargo-release-preflight.sh bash "$ROOT/scripts/ci/test-cargo-re
 run_fixture test-cargo-package-provenance.sh bash "$ROOT/scripts/ci/test-cargo-package-provenance.sh"
 run_fixture test-release-changelog.sh bash "$ROOT/scripts/ci/test-release-changelog.sh"
 run_fixture test-saved-cargo-manifest.pl perl "$ROOT/scripts/ci/test-saved-cargo-manifest.pl"
+run_fixture test-cargo-source-context.sh bash "$ROOT/scripts/ci/test-cargo-source-context.sh"
 run_fixture test-workflow-step.sh bash "$ROOT/scripts/ci/test-workflow-step.sh"
 run_fixture test-fixture-completion.sh bash "$ROOT/scripts/ci/test-fixture-completion.sh"
 run_fixture test-fixture-log-replay.sh bash "$ROOT/scripts/ci/test-fixture-log-replay.sh"
