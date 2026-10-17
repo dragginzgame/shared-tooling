@@ -67,6 +67,13 @@ mod nested {
 const RAW: &str = r###"
 pub struct NotCode;
 "###;
+const BYTE_RAW: &[u8] = br##"
+pub enum NotByteCode {}
+"##;
+const TEXT: &str = "escaped \" braces { }
+pub trait NotStringCode {}";
+const BYTE: u8 = b'{';
+const CHAR: char = '}';
 // pub enum NotCodeEither {}
 /* outer /* nested */
 pub trait NotCode {}
@@ -103,6 +110,8 @@ check("mod nested {\n    pub enum Missing {}\n}\n", 1);
 check($wrong_name, 1);
 check("pub fn helper() {}\nstruct Private;\n", 0);
 check("const X: &str = r#\"unterminated", 255);
+check("/* outer /* closed inner */", 255);
+check("const X: &[u8] = br##\"unterminated\"#", 255);
 run_checker(undef, "$root/missing");
 run_checker(undef, $root, $file);
 check($valid, 0);

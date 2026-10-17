@@ -6,6 +6,7 @@ use File::Temp qw(tempdir);
 use File::Compare qw(compare);
 use IPC::Open3;
 use Symbol qw(gensym);
+use POSIX qw(WIFEXITED WEXITSTATUS);
 
 my $root = "$FindBin::Bin/../..";
 sub run {
@@ -14,8 +15,13 @@ sub run {
     my $pid = open3(undef, my $out, $err, @args);
     my $stdout = do { local $/; <$out> } // "";
     my $stderr = do { local $/; <$err> } // "";
-    waitpid($pid, 0);
-    return ($? >> 8, $stdout, $stderr);
+    waitpid($pid, 0) == $pid or die "cannot wait for version checker: $!\n";
+    my $status = $?;
+    unless (WIFEXITED($status)) {
+        print STDERR $stdout, $stderr;
+        die "version checker did not exit normally (wait status $status): @args\n";
+    }
+    return (WEXITSTATUS($status), $stdout, $stderr);
 }
 for my $case (
     ["0.1.1", "0.1.0", 1], ["0.1.0", "0.1.1", -1], ["1.0.0", "1.0.0", 0],

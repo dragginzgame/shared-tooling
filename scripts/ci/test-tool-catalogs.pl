@@ -9,6 +9,7 @@ use File::Path qw(make_path remove_tree);
 use FindBin qw($RealBin);
 use JSON::PP;
 use Test::More;
+use POSIX qw(WIFEXITED WEXITSTATUS);
 my $root = abs_path("$RealBin/../..");
 my $fixture = abs_path(tempdir('tool-catalogs.XXXXXX', TMPDIR => 1, CLEANUP => 0));
 my $complete;
@@ -38,8 +39,12 @@ sub run_check {
     write_file('bindings.json', encode_json($config));
     open my $output, '-|', $^X, "$root/scripts/ci/check-tool-catalogs.pl", '--consumer', $fixture, '--bindings', 'bindings.json', '--json' or die $!;
     my $bytes = do { local $/; <$output> }; close $output;
-    my $status = $? >> 8;
-    return ($status, length($bytes) ? decode_json($bytes) : {});
+    my $status = $?;
+    unless (WIFEXITED($status)) {
+        print STDERR $bytes // '';
+        die "catalog checker did not exit normally (wait status $status)\n";
+    }
+    return (WEXITSTATUS($status), length($bytes) ? decode_json($bytes) : {});
 }
 my ($status, $result) = run_check();
 is($status, 0, 'all IC callers use qualified 132; unused 133 coexists');

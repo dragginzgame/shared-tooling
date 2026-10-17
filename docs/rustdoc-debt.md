@@ -25,7 +25,9 @@ be removed explicitly. Added or resolved items return status 1; malformed JSON,
 missing source/baseline and unsupported macro identities refuse with nonzero
 status. Success does not rewrite the caller's baseline or sources.
 
-The small scanner skips literals, raw strings and nested comments while finding
+The shared `scripts/ci/RustSource.pm` tokenizer skips literals, raw strings and
+nested comments for this checker and the section-style type checker. Canonical
+snapshot entrypoint selection includes the module automatically. This checker finds
 struct/enum/variant/impl owners. It is not a Rust parser, resolver or API inventory.
 Expanded diagnostics need explicit identities and remain refused. Compiler
 warning shape and source custody remain consumer qualification obligations.

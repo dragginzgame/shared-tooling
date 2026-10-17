@@ -235,7 +235,7 @@ cmp "$fixture/expected" "$TOOL_COMMAND_LOG"
 mkdir -p "$snapshot/scripts/ci" "$snapshot/ci" "$consumer/ci" "$fixture/bin"
 cp "$ROOT/scripts/dev/install-ic-tools.sh" "$ROOT/scripts/dev/install-rust-tools.sh" "$snapshot/scripts/dev/"
 cp "$ROOT/scripts/dev/tool-store.sh" "$ROOT/scripts/dev/cargo-tool-build.sh" "$snapshot/scripts/dev/"
-cp "$ROOT/scripts/ci/ic-tool-pins.awk" "$ROOT/scripts/ci/verify-file-checksum.sh" "$snapshot/scripts/ci/"
+cp "$ROOT/scripts/ci/"{ic-tool-pins.awk,verify-file-checksum.sh,tool-catalog-records.pl} "$snapshot/scripts/ci/"
 cp "$ROOT/ci/ic-tools.tsv" "$ROOT/ci/tool-versions.env" "$snapshot/ci/"
 cat > "$fixture/bin/uname" <<'SCRIPT'
 #!/usr/bin/env bash
@@ -255,7 +255,7 @@ done
 chmod +x "$fixture/bin/uname"
 export TOOL_PREFLIGHT_PROBES="$fixture/preflight-probes"
 # Keep only these prerequisites in PATH to model genuinely absent Rust commands.
-for tool in bash make awk sort grep; do ln -s "$(command -v "$tool")" "$fixture/bin/$tool"; done
+for tool in bash make awk sort grep perl; do ln -s "$(command -v "$tool")" "$fixture/bin/$tool"; done
 # GNU Make may execute the guard's printf directly instead of via a shell builtin.
 ln -s "$(type -P printf)" "$fixture/bin/printf"
 real_make="$(command -v make)"

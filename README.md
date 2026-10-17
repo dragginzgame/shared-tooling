@@ -249,6 +249,9 @@ emits one document containing the selected `manifest`, a `crates` array and
 `inline_fns`; crate rows also carry `crate`. Percentages use the same one-decimal
 rounding as the table. Failure returns nonzero without a partial JSON document.
 The sibling report consumes these counts and keeps its existing table format.
+Each admitted source path counts once, even when another file has identical
+contents. One per-file cloc projection supplies both runtime and test totals;
+duplicate-content suppression no longer changes the report's source inventory.
 
 The report discovers Cargo workspace members from `cargo metadata`; package
 names and directory layouts do not need to follow a shared prefix. Metadata
@@ -467,17 +470,20 @@ Cargo workspace and does not activate the Rust hook in its own checkout.
 
 ### Checksum-verified tool installers
 
-The actionlint, Gitleaks, ShellCheck, sccache and yq installers require the consuming
+The actionlint, Gitleaks, ShellCheck and sccache installers require the consuming
 repository to supply an exact version and the SHA-256 digest for the detected
 platform. Shared Tooling owns secure download and verification mechanics; each
 consumer continues to own version policy.
 
 The sccache binary installer currently selects only the reviewed Linux x86-64
 asset. It retains failed candidates and uses the same shared installation
-command as actionlint, Gitleaks, ShellCheck and standalone yq. Select
+command as actionlint, Gitleaks and ShellCheck. Select
 `scripts/ci/install-ci-tool.sh` in its snapshot. All reject failed
 version probes and directory destinations, retain failed candidates and replace
 the executable with a rename on the destination filesystem.
+
+YQ uses the common host bundle through `make install-host-tools` and
+`make host-tools-check`; the standalone CI installer no longer accepts `yq`.
 
 ```bash
 scripts/ci/install-ci-tool.sh actionlint \

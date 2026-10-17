@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/ci/tool-catalog-records.pl
 set -euo pipefail
 
 # Explicit npm ci preparation is separate; this test only uses installed tools.
@@ -13,8 +13,10 @@ export PRETTIER_BIN="$ROOT/ci/frontend/node_modules/.bin/prettier"
 export PRETTIER_VERSION
 PRETTIER_VERSION="$(jq -er '.packages["node_modules/prettier"].version' "$ROOT/ci/frontend/package-lock.json")"
 [[ "$("$PRETTIER_BIN" --version)" == "$PRETTIER_VERSION" ]] || exit 1
-# shellcheck source=/dev/null
-source "$ROOT/ci/tool-versions.env"
+records="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" values "$ROOT/ci/tool-versions.env")"
+while IFS=$'\t' read -r catalog_key catalog_value; do
+    printf -v "$catalog_key" '%s' "$catalog_value"
+done <<< "$records"
 bash "$ROOT/scripts/ci/check-format-tools.sh" "$SHARED_TOOLING_CARGO_SORT_VERSION"
 [[ "$(cargo sort-derives --version)" == "cargo-sort-derives $SHARED_TOOLING_CARGO_SORT_DERIVES_VERSION" ]] || exit 1
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/frontend-format-test.XXXXXX")"

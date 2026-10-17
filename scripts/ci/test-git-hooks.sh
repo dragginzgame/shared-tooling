@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: .githooks/pre-commit scripts/dev/install-git-hooks.sh scripts/ci/check-make-execution.sh scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh scripts/ci/check-formatting-hooks.sh scripts/dev/format-frontend.sh make/consumer.mk make/tools.mk make/release.mk make/rust-format.mk make/execution.mk ci/tool-versions.env scripts/ci/fixture-lifecycle.sh
+# Shared companions: .githooks/pre-commit scripts/dev/install-git-hooks.sh scripts/ci/check-make-execution.sh scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh scripts/ci/check-formatting-hooks.sh scripts/dev/format-frontend.sh make/consumer.mk make/tools.mk make/release.mk make/rust-format.mk make/execution.mk ci/tool-versions.env scripts/ci/fixture-lifecycle.sh scripts/ci/tool-catalog-records.pl
 set -euo pipefail
 
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
@@ -8,8 +8,10 @@ ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
-# shellcheck source=/dev/null
-source "$ROOT/ci/tool-versions.env"
+records="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" values "$ROOT/ci/tool-versions.env")"
+while IFS=$'\t' read -r catalog_key catalog_value; do
+    printf -v "$catalog_key" '%s' "$catalog_value"
+done <<< "$records"
 bash "$ROOT/scripts/ci/check-format-tools.sh" "$SHARED_TOOLING_CARGO_SORT_VERSION"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/git-hooks-test.XXXXXX")"
 FIXTURE="$(CDPATH="" cd -P -- "$FIXTURE" && printf '%s/.' "$PWD")"

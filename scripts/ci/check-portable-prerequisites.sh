@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared companions: scripts/ci/tool-catalog-records.pl scripts/ci/check-format-tools.sh ci/tool-versions.env
 set -euo pipefail
 
 # Repository-local suite setup; consumer validation owns its own prerequisites.
@@ -19,8 +20,10 @@ if [[ "$missing" == 1 ]]; then
     exit 1
 fi
 # Reuse the exact formatter pin and offline toolchain admission owner.
-# shellcheck source=/dev/null
-source "$ROOT/ci/tool-versions.env"
+records="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" values "$ROOT/ci/tool-versions.env")"
+while IFS=$'\t' read -r catalog_key catalog_value; do
+    printf -v "$catalog_key" '%s' "$catalog_value"
+done <<< "$records"
 if ! bash "$ROOT/scripts/ci/check-format-tools.sh" "$SHARED_TOOLING_CARGO_SORT_VERSION"; then
     echo 'See docs/local-setup.md for explicit Cargo/rustfmt/cargo-sort setup; no tools were installed.' >&2
     exit 1

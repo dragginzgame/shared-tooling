@@ -1,5 +1,53 @@
 # Changelog
 
+## [0.19.0]
+
+### Breaking
+
+- Retire standalone `install-ci-tool.sh yq`; prepare and check YQ through the
+  common host bundle instead. Other CI installers retain authenticated atomic
+  publication and failure preservation
+  ([#266 — Retire standalone YQ installation](https://github.com/dragginzgame/shared-tooling/issues/266)).
+- Move full native recovery-archive packaging and its fixtures into IC Metrics.
+  Remove the former `collect-native-evidence.sh` snapshot entrypoint on adoption;
+  preserve hidden Git recovery state through Metrics' local helper and keep
+  sanitized diagnostics on the shared exporter
+  ([Metrics #89 — Own native recovery-archive packaging](https://github.com/dragginzgame/ic-metrics/issues/89),
+  [Metrics PR #88](https://github.com/dragginzgame/ic-metrics/pull/88)).
+- Require literal Host/Rust tool catalogs for installation, inspection and cache
+  keys. Replace computed catalogs and duplicate assignments with complete literal
+  selections before adoption
+  ([#263 — Require literal data-only tool catalogs](https://github.com/dragginzgame/shared-tooling/issues/263)).
+- Retire the release-prose heuristic and its fixture; remove consumer invocations
+  and snapshot entrypoints while retaining metadata and receipt checks
+  ([#264 — Retire the release-prose heuristic](https://github.com/dragginzgame/shared-tooling/issues/264)).
+- Count every selected Rust source path in LOC reports, including identical file
+  contents. Runtime and test totals share one per-file count instead of separate
+  duplicate-suppressing passes
+  ([#265 — Count Rust LOC from one per-file projection](https://github.com/dragginzgame/shared-tooling/issues/265)).
+- Retire the README dependency-example version renderer and its fixture. Consumers
+  must remove its snapshot entrypoint and automatic README rewriting before
+  adoption; IC Memory tracks that update separately
+  ([#260 — Retire the README version renderer](https://github.com/dragginzgame/shared-tooling/issues/260),
+  [Memory #119 — Retire README version rendering](https://github.com/dragginzgame/ic-memory/issues/119)).
+
+### Changed
+
+- Reuse canonical stable-version comparison in tag maintenance while preserving
+  minor-only cutoffs, arbitrary-size components, tag-spelling ordering and the
+  existing deletion authorization, lease and recovery boundaries
+  ([#267 — Reuse stable-version comparison in tag maintenance](https://github.com/dragginzgame/shared-tooling/issues/267)).
+- Share literal/comment masking between documentation checkers while preserving
+  source offsets, Unicode identifiers and separate documentation policies
+  ([#261 — Share Rust lexical masking](https://github.com/dragginzgame/shared-tooling/issues/261)).
+- Use canonical stable-version admission across Cargo release helpers, retaining
+  exact large components and separate release bounds
+  ([#262 — Use canonical stable-version admission](https://github.com/dragginzgame/shared-tooling/issues/262)).
+
+- Reject signal-terminated version-ordering and tool-catalog fixture checks even
+  when they emit valid output, preserving normal checker exit classifications
+  ([#256 — Reject signal-terminated ordering and catalog checks](https://github.com/dragginzgame/shared-tooling/issues/256)).
+
 ## [0.17.2] - 2026-10-16
 
 ## [0.17.1]

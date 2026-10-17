@@ -1,10 +1,13 @@
 #!/usr/bin/env perl
-# Shared companions: docs/rustdoc-debt.md
+# Shared companions: docs/rustdoc-debt.md scripts/ci/RustSource.pm
 use strict;
 use warnings;
 use JSON::PP qw(decode_json encode_json);
 use Encode qw(decode FB_CROAK LEAVE_SRC);
 use Getopt::Long qw(GetOptionsFromArray);
+use FindBin qw($RealBin);
+use lib $RealBin;
+use RustSource qw(tokens);
 
 sub read_bytes {
     my ($path) = @_;
@@ -13,37 +16,6 @@ sub read_bytes {
     my $bytes = <$fh>;
     close $fh or die "close $path: $!\n";
     return $bytes;
-}
-
-# Skip Rust literals and nested comments before interpreting owner delimiters.
-sub tokens {
-    my ($source) = @_;
-    my @tokens;
-    while ($source =~ m{//[^\n]*|/\*|(?:br|r)(\#*)"|b?"(?:\\.|[^"\\])*"|b?'(?:\\.|[^'\\])'|(?:r\#)?[_\p{XID_Start}][\p{XID_Continue}]*|[^\s]}sg) {
-        my ($token, $hashes) = ($&, $1);
-        next if $token =~ m{^//};
-        if ($token eq '/*') {
-            my ($depth, $offset) = (1, pos($source));
-            while ($depth) {
-                my $opening = index($source, '/*', $offset);
-                my $closing = index($source, '*/', $offset);
-                die "unterminated Rust block comment\n" if $closing < 0;
-                if ($opening >= 0 && $opening < $closing) { ++$depth; $offset = $opening + 2; }
-                else { --$depth; $offset = $closing + 2; }
-            }
-            pos($source) = $offset;
-            next;
-        }
-        if (defined $hashes) {
-            my $closing = index($source, '"' . $hashes, pos($source));
-            die "unterminated Rust raw string\n" if $closing < 0;
-            pos($source) = $closing + 1 + length($hashes);
-            next;
-        }
-        next if index($token, '"') >= 0 || $token =~ /^'.*'$/s;
-        push @tokens, $token;
-    }
-    return @tokens;
 }
 
 sub owner_path {

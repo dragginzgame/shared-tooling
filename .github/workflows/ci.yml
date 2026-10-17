@@ -55,7 +55,10 @@ jobs:
       - name: Install pinned validation tools
         shell: bash
         run: |
-          source ci/tool-versions.env
+          records="$(perl scripts/ci/tool-catalog-records.pl values ci/tool-versions.env)"
+          while IFS=$'\t' read -r catalog_key catalog_value; do
+            printf -v "$catalog_key" '%s' "$catalog_value"
+          done <<< "$records"
           tool_dir="$RUNNER_TEMP/shared-tooling-bin"
           actionlint_bin="$(bash scripts/ci/install-ci-tool.sh actionlint \
             --version "$SHARED_TOOLING_ACTIONLINT_VERSION" \

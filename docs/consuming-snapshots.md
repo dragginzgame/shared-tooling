@@ -563,9 +563,9 @@ Select fixtures according to their documented effects and local authority rather
 than editing vendored tests or invoking an unauthorized broader suite.
 Pinning adoption also requires the checker and its jq module, prepared Git/jq/yq
 tools (and Cargo for Rust workspaces), a CI/release invocation, and consumer-owned
-qualification for locked builds and external inputs. Consumers may also vendor
-`scripts/ci/install-ci-tool.sh` (selecting `yq`) and the checksum
-helper; choose and record their own reviewed version and platform digests.
+qualification for locked builds and external inputs. Prepare YQ through the
+common host bundle with `make install-host-tools` and `make host-tools-check`;
+its reviewed version and platform digests live in the selected tool catalog.
 Resolve existing exceptions under the
 [pinning policy](../rules/dependency-pinning.md) before claiming adoption.
 

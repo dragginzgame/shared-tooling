@@ -668,12 +668,13 @@ selection_consumer="$FIXTURE/selection"
 mkdir "$selection_consumer"
 git init -q "$selection_consumer"
 for path in scripts/ci/run-validation-targets.sh scripts/ci/check-make-execution.sh \
-    scripts/ci/run-release.sh scripts/ci/next-release-version.sh scripts/ci/validate-release-inputs.pl \
+    scripts/ci/run-release.sh scripts/ci/next-release-version.sh scripts/ci/validate-release-inputs.pl scripts/ci/StableVersion.pm \
     scripts/ci/check-release-tag.sh scripts/ci/fixture-lifecycle.sh \
     scripts/ci/test-release-runner.sh scripts/ci/finalize-release-changelog.awk \
     scripts/ci/test-host-tools.sh scripts/ci/test-ic-tools.sh scripts/ci/test-tool-evidence.sh \
     scripts/ci/test-tool-store.sh scripts/dev/tool-store.sh scripts/dev/install-host-tools.sh \
-    scripts/dev/cargo-tool-build.sh scripts/dev/install-rust-tools.sh; do
+    scripts/dev/cargo-tool-build.sh scripts/dev/install-rust-tools.sh \
+    scripts/ci/tool-catalog-records.pl scripts/ci/ic-tool-pins.awk; do
     mkdir -p "$source_root/${path%/*}" "$revision_root/${path%/*}"
     cp -p "$ROOT/$path" "$source_root/$path"
     cp -p "$ROOT/$path" "$revision_root/$path"
@@ -723,6 +724,7 @@ for directory in scripts make ci .githooks .github; do
     [[ ! -d "$ROOT/$directory" ]] || fixture_directories+=("$directory")
 done
 (cd "$ROOT" && rg --files --hidden "${fixture_directories[@]}") > "$FIXTURE/companion-sources"
+printf '%s\n' docs/type-docs.md docs/rustdoc-debt.md >> "$FIXTURE/companion-sources"
 while IFS= read -r path; do
     mkdir -p "$source_root/$(dirname "$path")" "$revision_root/$(dirname "$path")"
     [[ -e "$source_root/$path" ]] || cp -p "$ROOT/$path" "$source_root/$path"
@@ -743,9 +745,18 @@ while read -r entry missing; do
     [[ ! -e "$selected_consumer/scripts" && ! -e "$selected_consumer/.shared-tooling.snapshot" ]] || exit 1
 done <<'COMPANIONS'
 scripts/ci/compare-stable-versions.pl scripts/ci/StableVersion.pm
+scripts/ci/validate-release-inputs.pl scripts/ci/StableVersion.pm
+scripts/ci/rewrite-local-lock-versions.pl scripts/ci/StableVersion.pm
+scripts/ci/render-cargo-workspace-version.pl scripts/ci/StableVersion.pm
+scripts/ci/check-type-docs.pl scripts/ci/RustSource.pm
+scripts/ci/check-public-docs.pl scripts/ci/RustSource.pm
 scripts/dev/check-cargo-tool-versions.pl scripts/ci/StableVersion.pm
+scripts/dev/delete-github-tags-up-to.pl scripts/ci/StableVersion.pm
 scripts/ci/check-tool-catalogs.pl scripts/ci/ic-tool-pins.awk
 scripts/ci/cargo-tool-cache-key.sh scripts/ci/tool-catalog-records.pl
+scripts/dev/install-host-tools.sh scripts/ci/tool-catalog-records.pl
+scripts/dev/install-rust-tools.sh scripts/ci/tool-catalog-records.pl
+scripts/dev/check-cargo-tool-versions.pl scripts/ci/tool-catalog-records.pl
 scripts/ci/test-tool-catalogs.pl scripts/ci/check-tool-catalogs.pl
 scripts/ci/check-publication.sh scripts/ci/check-crates-io-version.sh
 scripts/ci/test-publication.sh scripts/ci/check-publication.sh

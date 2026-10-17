@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/verify-file-checksum.sh scripts/dev/install-rust-tools.sh ci/tool-versions.env
+# Shared companions: scripts/ci/verify-file-checksum.sh scripts/dev/install-rust-tools.sh ci/tool-versions.env scripts/ci/tool-catalog-records.pl
 set -euo pipefail
 
 # Explicit native qualification, separate from the offline portable suite.
@@ -20,8 +20,10 @@ fixture="${fixture%/.}"
 trap 'printf "Cargo installation evidence retained: %s\n" "$fixture" >&2' EXIT
 export RUSTUP_AUTO_INSTALL=0
 export SHARED_TOOLING_STORE="$fixture/store"
-# shellcheck source=/dev/null
-source "$ROOT/ci/tool-versions.env"
+records="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" values "$ROOT/ci/tool-versions.env")"
+while IFS=$'\t' read -r catalog_key catalog_value; do
+    printf -v "$catalog_key" '%s' "$catalog_value"
+done <<< "$records"
 checksum="$ROOT/scripts/ci/verify-file-checksum.sh"
 rustc -vV > "$fixture/rustc.txt"
 cargo -V > "$fixture/cargo.txt"
