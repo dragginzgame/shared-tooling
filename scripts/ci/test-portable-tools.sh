@@ -53,8 +53,6 @@ run_fixture test-portable-prerequisites.sh bash "$ROOT/scripts/ci/test-portable-
 run_fixture test-fixture-timing.sh bash "$ROOT/scripts/ci/test-fixture-timing.sh"
 run_fixture test-fixture-allocation.sh bash "$ROOT/scripts/ci/test-fixture-allocation.sh"
 run_fixture test-cargo-formatting-fixture.sh bash "$ROOT/scripts/ci/test-cargo-formatting-fixture.sh"
-run_fixture test-public-docs.pl perl "$ROOT/scripts/ci/test-public-docs.pl"
-run_fixture test-public-docs.sh bash "$ROOT/scripts/ci/test-public-docs.sh"
 run_fixture test-cargo-release-preflight.sh bash "$ROOT/scripts/ci/test-cargo-release-preflight.sh"
 run_fixture test-cargo-package-provenance.sh bash "$ROOT/scripts/ci/test-cargo-package-provenance.sh"
 run_fixture test-release-changelog.sh bash "$ROOT/scripts/ci/test-release-changelog.sh"

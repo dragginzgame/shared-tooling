@@ -724,7 +724,7 @@ for directory in scripts make ci .githooks .github; do
     [[ ! -d "$ROOT/$directory" ]] || fixture_directories+=("$directory")
 done
 (cd "$ROOT" && rg --files --hidden "${fixture_directories[@]}") > "$FIXTURE/companion-sources"
-printf '%s\n' docs/type-docs.md docs/rustdoc-debt.md >> "$FIXTURE/companion-sources"
+printf '%s\n' docs/type-docs.md >> "$FIXTURE/companion-sources"
 while IFS= read -r path; do
     mkdir -p "$source_root/$(dirname "$path")" "$revision_root/$(dirname "$path")"
     [[ -e "$source_root/$path" ]] || cp -p "$ROOT/$path" "$source_root/$path"
@@ -749,12 +749,13 @@ scripts/ci/validate-release-inputs.pl scripts/ci/StableVersion.pm
 scripts/ci/rewrite-local-lock-versions.pl scripts/ci/StableVersion.pm
 scripts/ci/render-cargo-workspace-version.pl scripts/ci/StableVersion.pm
 scripts/ci/check-type-docs.pl scripts/ci/RustSource.pm
-scripts/ci/check-public-docs.pl scripts/ci/RustSource.pm
 scripts/dev/check-cargo-tool-versions.pl scripts/ci/StableVersion.pm
 scripts/dev/delete-github-tags-up-to.pl scripts/ci/StableVersion.pm
 scripts/ci/check-tool-catalogs.pl scripts/ci/ic-tool-pins.awk
 scripts/ci/cargo-tool-cache-key.sh scripts/ci/tool-catalog-records.pl
 scripts/dev/install-host-tools.sh scripts/ci/tool-catalog-records.pl
+scripts/ci/install-ci-tool.sh scripts/ci/tool-catalog-records.pl
+scripts/ci/check-formatting-hooks.sh scripts/ci/fixture-lifecycle.sh
 scripts/dev/install-rust-tools.sh scripts/ci/tool-catalog-records.pl
 scripts/dev/check-cargo-tool-versions.pl scripts/ci/tool-catalog-records.pl
 scripts/ci/test-tool-catalogs.pl scripts/ci/check-tool-catalogs.pl

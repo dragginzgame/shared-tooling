@@ -8,11 +8,9 @@ ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
-records="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" values "$ROOT/ci/tool-versions.env")"
-while IFS=$'\t' read -r catalog_key catalog_value; do
-    printf -v "$catalog_key" '%s' "$catalog_value"
-done <<< "$records"
-bash "$ROOT/scripts/ci/check-format-tools.sh" "$SHARED_TOOLING_CARGO_SORT_VERSION"
+record="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" rust "$ROOT/ci/tool-versions.env" CARGO_SORT)"
+IFS=$'\t' read -r _ sort_version _ _ <<< "$record"
+bash "$ROOT/scripts/ci/check-format-tools.sh" "$sort_version"
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/git-hooks-test.XXXXXX")"
 FIXTURE="$(CDPATH="" cd -P -- "$FIXTURE" && printf '%s/.' "$PWD")"
 FIXTURE="${FIXTURE%/.}"
@@ -122,7 +120,7 @@ case "$*" in
     *) exit 1 ;;
 esac
 TOOL
-    printf '%s\n' "$SHARED_TOOLING_CARGO_SORT_VERSION" > .tools/rust/common/bin/version
+    printf '%s\n' "$sort_version" > .tools/rust/common/bin/version
     for kind in host ic; do
         printf '#!/usr/bin/env bash\nexit 0\n' > ".tools/$kind/bin/hook-fixture-$kind"
         chmod +x ".tools/$kind/bin/hook-fixture-$kind"

@@ -470,10 +470,12 @@ Cargo workspace and does not activate the Rust hook in its own checkout.
 
 ### Checksum-verified tool installers
 
-The actionlint, Gitleaks, ShellCheck and sccache installers require the consuming
-repository to supply an exact version and the SHA-256 digest for the detected
-platform. Shared Tooling owns secure download and verification mechanics; each
-consumer continues to own version policy.
+The actionlint, Gitleaks and ShellCheck installers select validated version and
+SHA-256 records from the executing snapshot's `ci/tool-versions.env`. These
+default CI assets are qualified for Linux x86-64. Select `--catalog FILE` for a
+reviewed catalog exception, or supply both `--version` and `--sha256` for an
+explicit tool/platform exception. Catalog and explicit-pin inputs are exclusive.
+The sccache installer always requires explicit version and SHA-256 pins.
 
 The sccache binary installer currently selects only the reviewed Linux x86-64
 asset. It retains failed candidates and uses the same shared installation
@@ -487,8 +489,6 @@ YQ uses the common host bundle through `make install-host-tools` and
 
 ```bash
 scripts/ci/install-ci-tool.sh actionlint \
-  --version 1.7.12 \
-  --sha256 <platform-sha256> \
   --install-dir /path/to/ci-bin
 ```
 

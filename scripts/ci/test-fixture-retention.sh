@@ -28,7 +28,7 @@ done
 printf '#!/bin/sh\nexit 99\n' > "$fixture/exit-input/prefix-checker"
 chmod +x "$fixture/exit-input/prefix-checker"
 export RETENTION_EXIT_PATH="$fixture/exit-path"
-for name in format-tools tool-commands rust-tools release-runner host-tools ic-tools fixture-retention snapshot-verifier runtime-panics prepare-common-tools check-formatting-hooks; do
+for name in format-tools tool-commands rust-tools release-runner host-tools ic-tools fixture-retention snapshot-verifier runtime-panics prepare-common-tools check-formatting-hooks installers evidence-download; do
     source="$ROOT/scripts/ci/test-$name.sh"
     probe_args=()
     if [[ "$name" == check-formatting-hooks ]]; then
@@ -37,6 +37,7 @@ for name in format-tools tool-commands rust-tools release-runner host-tools ic-t
     fi
     FIXTURE_PROBE_DIRECTORY_VARIABLE=fixture
     [[ "$name" != release-runner ]] || FIXTURE_PROBE_DIRECTORY_VARIABLE=FIXTURE_ROOT
+    [[ "$name" != installers ]] || FIXTURE_PROBE_DIRECTORY_VARIABLE=FIXTURE
     if [[ "$name" == runtime-panics ]]; then
         FIXTURE_PROBE_DIRECTORY_VARIABLE=scratch
         probe_args=("$fixture/exit-input/prefix-checker")
