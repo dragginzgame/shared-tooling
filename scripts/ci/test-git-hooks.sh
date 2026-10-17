@@ -94,7 +94,8 @@ tree="$(git write-tree)"
 bash .githooks/pre-commit > output
 [[ "$(git write-tree)" == "$tree" && "$(cat Cargo.toml)" == unformatted ]] || exit 1
 
-# Prepared checkout-local tools stay discoverable without a caller PATH export.
+# Common checkout-local tools stay discoverable without a caller PATH export.
+# This product fixture explicitly selects the IC path its formatter uses.
 # The tools are untracked; formatter inputs still come from the selected index.
 for tools in prepared missing wrong; do
     new_fixture "local tools $tools"
@@ -120,6 +121,7 @@ TOOL
     chmod +x .tools/rust/common/bin/hook-fixture-cargo
     cat > Makefile <<'MAKE'
 include make/tools.mk
+export PATH := $(CURDIR)/.tools/ic/bin:$(PATH)
 .PHONY: fmt
 fmt:
 	bash scripts/ci/check-format-tools.sh $(SHARED_TOOLING_CARGO_SORT_VERSION) hook-fixture-cargo
