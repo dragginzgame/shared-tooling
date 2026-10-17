@@ -252,5 +252,40 @@ PARSER
     PATH="$fixture/failing-$parser:$PATH" "$BASH" "$reader" "$fixture/policy files/Cargo.toml" > "$fixture/output" 2> "$fixture/error" || status=$?
     [[ "$status" == 37 && ! -s "$fixture/output" ]] || exit 1
 done
+# A successful parser observation still has to contain exactly one policy.
+# Slurp before selecting so no valid prefix or suffix can authorize setup.
+cat > "$fixture/stream-parser" <<'PARSER'
+#!/usr/bin/env bash
+printf '%s' "$RUST_TEST_POLICY_JSON"
+PARSER
+chmod +x "$fixture/stream-parser"
+IFS= read -r policy <<'JSON'
+{"toolchain":{"channel":"1.91.0"},"workspace":{"package":{"rust-version":"1.91.0"}}}
+JSON
+for stream in empty multiple null-prefix array-suffix malformed-suffix; do
+    case "$stream" in
+        empty) RUST_TEST_POLICY_JSON='' ;;
+        multiple) RUST_TEST_POLICY_JSON="$policy"$'\n'"$policy" ;;
+        null-prefix) RUST_TEST_POLICY_JSON=$'null\n'"$policy" ;;
+        array-suffix) RUST_TEST_POLICY_JSON="$policy"$'\n[]' ;;
+        malformed-suffix) RUST_TEST_POLICY_JSON="$policy"$'\n{' ;;
+    esac
+    export RUST_TEST_POLICY_JSON
+    status=0
+    YQ="$fixture/stream-parser" "$BASH" "$reader" "$fixture/policy files/Cargo.toml" \
+        > "$fixture/output" 2> "$fixture/error" || status=$?
+    [[ "$status" != 0 && ! -s "$fixture/output" ]] || exit 1
+    for mode in --toolchain-file --workspace-manifest; do
+        file=rust-toolchain.toml
+        [[ "$mode" != --workspace-manifest ]] || file=Cargo.toml
+        : > "$fixture/calls"
+        status=0
+        PATH="$fixture/bin:$PATH" YQ="$fixture/stream-parser" "$BASH" \
+            "$root/scripts/dev/prepare-rust-toolchain.sh" "$mode" "$fixture/policy files/$file" \
+            > "$fixture/output" 2> "$fixture/error" || status=$?
+        [[ "$status" != 0 && ! -s "$fixture/output" && ! -s "$fixture/calls" ]] || exit 1
+    done
+done
+echo 'Single Rust policy observation and refusal before setup passed (parser/Rustup substitutes)'
 fixture_complete=true
 printf 'Rust toolchain action fixtures passed\n'

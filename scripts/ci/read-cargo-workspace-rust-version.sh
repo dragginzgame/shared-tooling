@@ -12,7 +12,9 @@ directory="$(cd -P -- "${file%/*}" && printf '%s/.' "$PWD")"
 case "$directory" in *$'\n'*|*$'\r'*) echo 'resolved Rust policy directory contains CR/LF' >&2; exit 2 ;; esac
 # Capture each observation before publishing: plausible output cannot hide failure.
 document="$("${YQ:-yq}" -p toml -o json '.' "$file")"
-version="$(printf '%s' "$document" | jq -er '
+version="$(printf '%s' "$document" | jq -ers '
+    if length != 1 then error("expected one Rust policy document") else .[0] end |
+    select(type == "object") |
     .workspace.package."rust-version" |
     select(type == "string" and (test("[\r\n]") | not)) |
     select(test("^[0-9]+\\.[0-9]+(\\.[0-9]+)?$"))
