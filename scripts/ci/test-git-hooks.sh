@@ -577,7 +577,12 @@ CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0 bash .githooks/pre-commit > output
 # Exercise the adoption helper with this consumer's real Cargo targets, including
 # inherited Make/Git identities that must not redirect the disposable checkout.
 mkdir -p .tools/host/bin
-printf '#!/usr/bin/env bash\nexit 0\n' > .tools/host/bin/hook-fixture-prerequisite
+cat > .tools/host/bin/hook-fixture-prerequisite <<'PREREQUISITE'
+#!/usr/bin/env bash
+# Model an expected formatter rejection whose retained log belongs to adoption.
+bash scripts/ci/run-formatting.sh --check bash -c 'echo retained-formatter-log; exit 43' > /dev/null
+[[ $? == 43 ]]
+PREREQUISITE
 chmod +x .tools/host/bin/hook-fixture-prerequisite
 cat >> Makefile <<'MAKE'
 .PHONY: local-tools
@@ -604,6 +609,8 @@ GIT_INDEX_FILE="$FIXTURE/incorrect-index" MAKEFLAGS='--just-print' \
 # alpha has no dependency tables; qualify the same real formatter without
 # inventing dependencies or weakening manifest/index preservation checks.
 mkdir "$FIXTURE/adoption-temp"
+mkdir "$FIXTURE/adoption-runner-temp"
+printf 'parent evidence\n' > "$FIXTURE/adoption-runner-temp/sentinel"
 ln -s "$FIXTURE/adoption-temp" "$FIXTURE/adoption-temp-alias"
 temp_parent="$(cd -P "$FIXTURE/adoption-temp" && printf '%s/.' "$PWD")"
 temp_parent="${temp_parent%/.}"
@@ -616,11 +623,13 @@ for spelling in absolute relative alias; do
         relative) selected_tmp=adoption-temp ;;
         alias) selected_tmp=adoption-temp-alias ;;
     esac
-    (cd "$FIXTURE"; unset RUNNER_TEMP; TMPDIR="$selected_tmp" \
+    (cd "$FIXTURE"; RUNNER_TEMP="$FIXTURE/adoption-runner-temp" TMPDIR="$selected_tmp" \
         bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$consumer" alpha/src/lib.rs \
         alpha/Cargo.toml --no-dependency-tables "${overlays[@]}") \
         > "$FIXTURE/adoption-$spelling.log" 2>&1
     [[ -z "$(ls -A "$FIXTURE/adoption-temp")" ]] || exit 1
+    [[ "$(ls -A "$FIXTURE/adoption-runner-temp")" == sentinel ]] || exit 1
+    [[ "$(cat "$FIXTURE/adoption-runner-temp/sentinel")" == 'parent evidence' ]] || exit 1
 done
 # Baseline and hook failures replay their own logs, retain the same inputs and
 # preserve Make's status without modifying the consumer's source or index.
@@ -630,6 +639,7 @@ for failure in base worktree; do
 if [[ "${PWD##*/}" == "$ADOPTION_FAILURE_CASE" ]]; then
     echo "fixture-$ADOPTION_FAILURE_CASE-stdout"
     echo "fixture-$ADOPTION_FAILURE_CASE-stderr" >&2
+    printf 'fixture-formatter-detail\n' > "$(mktemp "$RUNNER_TEMP/formatting.XXXXXX")"
     exit 23
 fi
 PREREQUISITE
@@ -650,6 +660,7 @@ PREREQUISITE
         grep -Fx "fixture-$failure-$stream" "$diagnostic" >/dev/null
         grep -Fx "fixture-$failure-$stream" "$FIXTURE/adoption-failure.log" >/dev/null
     done
+    grep -Fx fixture-formatter-detail "$FIXTURE/adoption-failure.log" >/dev/null
     cmp .git/index "$FIXTURE/adoption-index"
     cmp alpha/src/lib.rs "$FIXTURE/adoption-source"
 done

@@ -648,6 +648,8 @@ On failure, the checker replays its existing baseline and per-checkout hook logs
 to stderr before reporting the retained fixture directory. Diagnostic replay is
 best effort and preserves the original failure status; successful checks remove
 their scratch directory. Consumers need no outer fixture for log replay or custody.
+Nested formatter logs stay inside that fixture, including expected rejection
+logs; inherited `RUNNER_TEMP` evidence remains untouched.
 
 ```sh
 bash scripts/ci/check-formatting-hooks.sh "$PWD" crates/example/src/lib.rs \
