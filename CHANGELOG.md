@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.23.1]
+
+- Keep the hook fixture's prepared Prettier substitute aligned with the
+  formatter's `--ignore-unknown` invocation, preserving selected-file and
+  failure-isolation qualification.
+
 ## [0.23.0]
 
 ### Breaking
