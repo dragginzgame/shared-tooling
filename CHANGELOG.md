@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.15.5]
+
+- Share atomic validation/prepared release receipts and exact identity/payload
+  checks. Consumers keep their file inventories, validation gates and release
+  policy; failed generation and symlinks cannot replace accepted evidence.
+
 ## [0.15.4]
 
 - Make maintenance runners and scheduler files optional for consumers while
