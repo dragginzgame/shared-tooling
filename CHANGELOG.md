@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.20.1]
+
+### Added
+
+- Check prepared Cargo archives against explicit package paths and a source commit,
+  then retrieve that commit into a fresh Git store. Retain provenance evidence
+  without packaging, uploading or selecting consumer eligibility and recovery.
+
 ## [0.20.0]
 
 ### Added
