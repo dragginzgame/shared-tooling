@@ -227,7 +227,12 @@ of working versus committed sources and their release/preparation transactions.
 ## CI binary installers
 
 Use `scripts/ci/install-ci-tool.sh TOOL` for actionlint, shellcheck, gitleaks,
-sccache. Supply exact `--version`, `--sha256` and `--install-dir` arguments.
+sccache. Always supply `--install-dir`. The first three tools use validated
+version/checksum records from the snapshot's `ci/tool-versions.env`, currently
+qualified for Linux x86-64. `--catalog FILE` selects a reviewed catalog exception.
+Alternatively supply both `--version` and `--sha256` for an explicit tool/platform
+exception; these cannot be combined with `--catalog`. Sccache requires explicit
+pins. A missing, malformed or unsupported catalog selection refuses before setup.
 Prepare YQ through `make install-host-tools` and admit it with
 `make host-tools-check`; standalone YQ installation is retired.
 Since 0.16.0, installation requires an explicit destination; add the flag before
@@ -243,8 +248,20 @@ introduced at the executable destination during setup is refused, and a late
 symlink is replaced without following its target. Perl must be available before
 setup starts; no tool is downloaded when this prerequisite is missing.
 This does not merge repository-local host/IC bundle activation
-or change any consumer's pins. Include the command and checksum verifier
-in snapshots.
+or change any consumer's explicit pins. The command declares its checksum
+verifier, catalog reader and default catalog as snapshot companions.
+
+`tool-catalog-records.pl host|rust|ic|ci CATALOG [TOOL]` emits validated
+tab-separated tool, version, host and digest records. Rust records use `all` and
+`-` for host and digest. Optional tool selection filters only after the entire
+selected group is admitted; an unknown tool refuses without partial output.
+CI records normalize asset-specific host spellings to `LINUX_AMD64`.
+Callers select records directly; the former raw `values` projection is removed.
+For example, obtain the formatter pin without recreating catalog variables:
+
+```bash
+perl scripts/ci/tool-catalog-records.pl rust ci/tool-versions.env CARGO_SORT
+```
 
 `install-ci-tool.sh sccache` uses the same explicit version, SHA-256 and installation
 directory arguments. Its reviewed asset scope is Linux x86-64, using the

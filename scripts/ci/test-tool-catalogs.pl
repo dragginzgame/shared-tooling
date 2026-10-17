@@ -29,6 +29,36 @@ my $qualified = $ic; $qualified =~ s/wasm-opt\t[0-9]+\t/wasm-opt\t132\t/g;
 write_file('ci/default.tsv', $ic);
 write_file('ci/qualified.tsv', $qualified);
 write_file('ci/host.env', read_file("$root/ci/tool-versions.env"));
+sub run_records {
+    my (@arguments) = @_;
+    open my $output, '-|', $^X, "$root/scripts/ci/tool-catalog-records.pl", @arguments or die $!;
+    my $bytes = do { local $/; <$output> // '' }; close $output;
+    my $status = $?;
+    WIFEXITED($status) or die "catalog parser did not exit normally\n";
+    return (WEXITSTATUS($status), $bytes);
+}
+my ($record_status, $record_bytes) = run_records('rust', 'ci/host.env', 'CARGO_SORT');
+is($record_status, 0, 'select one admitted Rust pin');
+like($record_bytes, qr/\ACARGO_SORT\t[0-9.]+\tall\t-\n\z/, 'selection retains the typed record');
+($record_status, $record_bytes) = run_records('host', 'ci/host.env', 'JQ');
+is($record_status, 0, 'select host tool across its qualified hosts');
+is(scalar(split /\n/, $record_bytes), 4, 'host selection preserves all four host identities');
+($record_status, $record_bytes) = run_records('ic', 'ci/default.tsv', 'quill');
+is($record_status, 0, 'select IC tool through the canonical pin parser');
+like($record_bytes, qr/\Aquill\t/, 'IC selection retains canonical lowercase tool identity');
+($record_status, $record_bytes) = run_records('ci', 'ci/host.env');
+is($record_status, 0, 'admit the common CI pins');
+is(scalar(split /\n/, $record_bytes), 3, 'one record per reviewed CI tool');
+like($record_bytes, qr/^SHELLCHECK\t[^\t]+\tLINUX_AMD64\t[0-9a-f]{64}$/m, 'asset-specific checksum keys project one host identity');
+($record_status, $record_bytes) = run_records('rust', 'ci/host.env', 'UNKNOWN');
+isnt($record_status, 0, 'missing selected tool refuses');
+is($record_bytes, '', 'missing selection publishes no records');
+my $invalid_ci = read_file("$fixture/ci/host.env");
+$invalid_ci =~ s/(SHARED_TOOLING_GITLEAKS_SHA256_LINUX_X64=)[^\n]+/${1}invalid/;
+write_file('ci/invalid-ci.env', $invalid_ci);
+($record_status, $record_bytes) = run_records('ci', 'ci/invalid-ci.env', 'ACTIONLINT');
+isnt($record_status, 0, 'selection cannot hide invalid records in its catalog group');
+is($record_bytes, '', 'incomplete admission publishes no partial records');
 write_file('caller.sh', "# reviewed consumer adapter\n");
 sub binding_entry {
     my ($role, $catalog) = @_;

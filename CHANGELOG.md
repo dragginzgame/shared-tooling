@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.22.0]
+
+### Changed
+
+- Select common CI binary pins directly from the reviewed tool catalog. Linux
+  x86-64 callers need only a tool and installation directory; explicit catalog
+  exceptions and paired version/checksum inputs remain available. Reuse the
+  shared fixture lifecycle for formatting adoption, installer and download checks,
+  preserving failed evidence and cleanup failures.
+
+### Breaking
+
+- Remove the raw catalog `values` projection. Consume validated `host`, `rust`,
+  `ic` or `ci` records, optionally selecting a tool after complete group admission.
+- Move the temporary public-documentation debt checker, guide and dedicated
+  fixtures to IC Query. Integrate
+  [Query PR #76 — Own public documentation debt tooling](https://github.com/dragginzgame/ic-query/pull/76)
+  before adopting this snapshot; other consumers must own any local debt policy
+  ([Query #75 — Own temporary public-documentation debt policy](https://github.com/dragginzgame/ic-query/issues/75)).
+  The common section-style type checker and Rust tokenizer remain shared.
+
 ## [0.21.0]
 
 ### Added

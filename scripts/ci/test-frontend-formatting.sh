@@ -13,12 +13,13 @@ export PRETTIER_BIN="$ROOT/ci/frontend/node_modules/.bin/prettier"
 export PRETTIER_VERSION
 PRETTIER_VERSION="$(jq -er '.packages["node_modules/prettier"].version' "$ROOT/ci/frontend/package-lock.json")"
 [[ "$("$PRETTIER_BIN" --version)" == "$PRETTIER_VERSION" ]] || exit 1
-records="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" values "$ROOT/ci/tool-versions.env")"
-while IFS=$'\t' read -r catalog_key catalog_value; do
-    printf -v "$catalog_key" '%s' "$catalog_value"
+records="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" rust "$ROOT/ci/tool-versions.env")"
+while IFS=$'\t' read -r tool version _ _; do
+    case "$tool" in
+        CARGO_SORT) bash "$ROOT/scripts/ci/check-format-tools.sh" "$version" ;;
+        CARGO_SORT_DERIVES) [[ "$(cargo sort-derives --version)" == "cargo-sort-derives $version" ]] || exit 1 ;;
+    esac
 done <<< "$records"
-bash "$ROOT/scripts/ci/check-format-tools.sh" "$SHARED_TOOLING_CARGO_SORT_VERSION"
-[[ "$(cargo sort-derives --version)" == "cargo-sort-derives $SHARED_TOOLING_CARGO_SORT_DERIVES_VERSION" ]] || exit 1
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/frontend-format-test.XXXXXX")"
 fixture="$(CDPATH="" cd -P -- "$fixture" && printf '%s/.' "$PWD")"
 fixture="${fixture%/.}"

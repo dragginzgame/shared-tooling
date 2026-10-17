@@ -1,22 +1,16 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/install-ci-tool.sh
+# Shared companions: scripts/ci/install-ci-tool.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 
 ROOT="$0"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
-FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-installers-test.XXXXXX")"
+# shellcheck source=scripts/ci/fixture-lifecycle.sh
+source "$ROOT/scripts/ci/fixture-lifecycle.sh"
+FIXTURE="$(fixture_create "${TMPDIR:-/tmp}/shared-tooling-installers-test.XXXXXX")"
 fixture_complete=false
-finish() {
-    local status=$?
-    # Bash 3.2 may report zero after nounset before assertions finish.
-    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
-    if [[ "$status" == 0 ]]; then rm -rf "$FIXTURE"
-    else echo "Installer fixtures retained: $FIXTURE" >&2; fi
-    exit "$status"
-}
-trap finish EXIT
+trap 'fixture_finish "$?" "$FIXTURE" "Installer fixtures retained"' EXIT
 
 archives="$FIXTURE/archives"
 payloads="$FIXTURE/payloads"
@@ -132,6 +126,55 @@ actionlint_checksum="$(checksum_sha256 "$archives/actionlint_1.7.12_linux_amd64.
 gitleaks_checksum="$(checksum_sha256 "$archives/gitleaks_8.30.1_linux_x64.tar.gz")"
 shellcheck_checksum="$(checksum_sha256 "$archives/shellcheck-v0.11.0.linux.x86_64.tar.xz")"
 sccache_checksum="$(checksum_sha256 "$archives/$sccache_package.tar.gz")"
+
+# Default and explicitly selected catalogs use the same authenticated installer.
+cat > "$FIXTURE/ci.env" <<CATALOG
+SHARED_TOOLING_ACTIONLINT_VERSION=1.7.12
+SHARED_TOOLING_ACTIONLINT_SHA256_LINUX_AMD64=$actionlint_checksum
+SHARED_TOOLING_SHELLCHECK_VERSION=0.11.0
+SHARED_TOOLING_SHELLCHECK_SHA256_LINUX_X86_64=$shellcheck_checksum
+SHARED_TOOLING_GITLEAKS_VERSION=8.30.1
+SHARED_TOOLING_GITLEAKS_SHA256_LINUX_X64=$gitleaks_checksum
+CATALOG
+for tool in actionlint shellcheck gitleaks; do
+    PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+        bash "$ROOT/scripts/ci/install-ci-tool.sh" "$tool" --catalog "$FIXTURE/ci.env" \
+        --install-dir "$FIXTURE/catalog-installed" > "$FIXTURE/catalog-$tool.log"
+    [[ -x "$FIXTURE/catalog-installed/$tool" ]] || exit 1
+done
+mkdir -p "$FIXTURE/snapshot/scripts/ci" "$FIXTURE/snapshot/ci"
+cp "$ROOT/scripts/ci/"{install-ci-tool.sh,tool-catalog-records.pl,verify-file-checksum.sh} "$FIXTURE/snapshot/scripts/ci/"
+cp "$FIXTURE/ci.env" "$FIXTURE/snapshot/ci/tool-versions.env"
+PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+    bash "$FIXTURE/snapshot/scripts/ci/install-ci-tool.sh" actionlint \
+    --install-dir "$FIXTURE/default-installed" > "$FIXTURE/default-catalog.log"
+[[ -x "$FIXTURE/default-installed/actionlint" ]] || exit 1
+for invalid in missing malformed duplicate executable conflict; do
+    cp "$FIXTURE/ci.env" "$FIXTURE/invalid.env"
+    arguments=(actionlint --catalog "$FIXTURE/invalid.env" --install-dir "$FIXTURE/refused-$invalid")
+    case "$invalid" in
+        missing) arguments=(actionlint --catalog "$FIXTURE/missing.env" --install-dir "$FIXTURE/refused-$invalid") ;;
+        malformed) printf '\nSHARED_TOOLING_GITLEAKS_VERSION=invalid\n' > "$FIXTURE/invalid.env" ;;
+        duplicate) cat "$FIXTURE/ci.env" >> "$FIXTURE/invalid.env" ;;
+        executable) printf '\ntouch SHOULD_NOT_EXIST\n' >> "$FIXTURE/invalid.env" ;;
+        conflict) arguments+=(--version 1.7.12 --sha256 "$actionlint_checksum") ;;
+    esac
+    status=0
+    PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+        bash "$ROOT/scripts/ci/install-ci-tool.sh" "${arguments[@]}" > "$FIXTURE/catalog-$invalid.log" 2>&1 || status=$?
+    [[ "$status" != 0 && ! -e "$FIXTURE/refused-$invalid" ]] || exit 1
+done
+
+for host in Linux:arm64 Darwin:x86_64 Darwin:arm64; do
+    status=0
+    : > "$FIXTURE/catalog-host-probes"
+    INSTALLER_TEST_OS="${host%:*}" INSTALLER_TEST_ARCH="${host#*:}" \
+        INSTALLER_TEST_PROBES="$FIXTURE/catalog-host-probes" PATH="$FIXTURE/bin:$PATH" \
+        INSTALLER_TEST_ARCHIVES="$archives" \
+        bash "$ROOT/scripts/ci/install-ci-tool.sh" actionlint --catalog "$FIXTURE/ci.env" \
+        --install-dir "$FIXTURE/unqualified-host" > "$FIXTURE/catalog-host.log" 2>&1 || status=$?
+    [[ "$status" != 0 && ! -e "$FIXTURE/unqualified-host" && ! -s "$FIXTURE/catalog-host-probes" ]] || exit 1
+done
 
 # A destination must be part of the invocation before any setup effect.
 mkdir "$FIXTURE/admission-bin"
