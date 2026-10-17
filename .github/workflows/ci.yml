@@ -55,19 +55,12 @@ jobs:
       - name: Install pinned validation tools
         shell: bash
         run: |
-          source ci/tool-versions.env
           tool_dir="$RUNNER_TEMP/shared-tooling-bin"
           actionlint_bin="$(bash scripts/ci/install-ci-tool.sh actionlint \
-            --version "$SHARED_TOOLING_ACTIONLINT_VERSION" \
-            --sha256 "$SHARED_TOOLING_ACTIONLINT_SHA256_LINUX_AMD64" \
             --install-dir "$tool_dir")"
           shellcheck_bin="$(bash scripts/ci/install-ci-tool.sh shellcheck \
-            --version "$SHARED_TOOLING_SHELLCHECK_VERSION" \
-            --sha256 "$SHARED_TOOLING_SHELLCHECK_SHA256_LINUX_X86_64" \
             --install-dir "$tool_dir")"
           gitleaks_bin="$(bash scripts/ci/install-ci-tool.sh gitleaks \
-            --version "$SHARED_TOOLING_GITLEAKS_VERSION" \
-            --sha256 "$SHARED_TOOLING_GITLEAKS_SHA256_LINUX_X64" \
             --install-dir "$tool_dir")"
           make --no-print-directory install-host-tools
           make --no-print-directory host-tools-check
@@ -84,6 +77,8 @@ jobs:
           "$ACTIONLINT_BIN" .github/workflows/*.yml
           make check-pins
           make check-doc-links
+      - name: Qualify independent downloaded-evidence readers
+        run: python3 scripts/ci/test-failure-evidence.py
       - name: Scan repository history for secrets
         shell: bash
         run: |
@@ -224,6 +219,14 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/portable-fixtures"
           bash scripts/ci/qualify-wasm-opt.sh "$RUNNER_TEMP/portable-fixtures/wasm-opt"
+      - name: Prepare the runtime scanner qualification compiler
+        if: needs.change-scope.outputs.scope != 'docs'
+        id: runtime-scanner-compiler
+        run: bash scripts/dev/prepare-rust-toolchain.sh 1.88.0 --component rustfmt,clippy
+      - name: Qualify native runtime scanner compilation and semantics
+        if: needs.change-scope.outputs.scope != 'docs'
+        id: runtime-scanner
+        run: bash scripts/ci/qualify-runtime-panics.sh 1.88.0 "$RUNNER_TEMP/portable-fixtures/runtime-scanner"
       - name: Run portable regression set with prepared tools
         if: needs.change-scope.outputs.scope != 'docs'
         shell: bash

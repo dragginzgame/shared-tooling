@@ -22,6 +22,9 @@ printf '#!/bin/sh\necho nested\n' > "$source_root/nested.sh"
 chmod +x "$source_root/nested.sh"
 git -C "$source_root" add VERSION primary.sh supplemental.sh nested.sh scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh
 git -C "$source_root" -c commit.gpgsign=false commit -qm source
+git -C "$source_root" -c tag.gpgsign=false tag -a fixture-revision -m 'Non-commit revision object'
+tree_revision="$(git -C "$source_root" rev-parse 'HEAD^{tree}')"
+tag_revision="$(git -C "$source_root" rev-parse refs/tags/fixture-revision)"
 git init -q "$seed"
 bash "$root/scripts/distribution/refresh-consumer.sh" --source "$source_root" --consumer "$seed" --entrypoint primary.sh > "$fixture/root.log"
 bash "$root/scripts/distribution/refresh-consumer.sh" --source "$source_root" --consumer "$seed" --manifest .supplement.snapshot --entrypoint supplemental.sh > "$fixture/supplement.log"
@@ -32,7 +35,21 @@ cp -p "$fixture/nested/.shared-tooling.snapshot" "$fixture/nested/nested.sh" "$s
 cp -p "$fixture/nested/scripts/ci/"*.sh "$seed/helpers/scripts/ci/"
 printf 'unrelated\n' > "$seed/unrelated"
 git -C "$seed" add unrelated
-for subject in valid interrupted edited mode staged staged-receipt forged wrong-source unavailable missing alias duplicate; do
+mkdir "$fixture/kind-bin"
+TAKEOVER_REAL_GIT="$(command -v git)"
+export TAKEOVER_REAL_GIT
+cat > "$fixture/kind-bin/git" <<'STUB'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ $# == 5 && "$1" == -C && "$3" == cat-file && "$4" == -t ]]; then
+    printf 'commit\n'
+    echo 'fixture kind observation failed' >&2
+    exit 73
+fi
+exec "$TAKEOVER_REAL_GIT" "$@"
+STUB
+chmod +x "$fixture/kind-bin/git"
+for subject in valid interrupted edited mode staged staged-receipt forged wrong-source unavailable tree-revision tag-revision failed-kind missing alias duplicate; do
     consumer="$fixture/$subject"
     cp -Rp "$seed" "$consumer"
     case "$subject" in
@@ -41,6 +58,12 @@ for subject in valid interrupted edited mode staged staged-receipt forged wrong-
         staged) git -C "$consumer" add helpers/nested.sh ;;
         staged-receipt) git -C "$consumer" add .supplement.snapshot ;;
         unavailable) sed -E 's/^(revision[[:space:]]+)[0-9a-f]+$/\11111111111111111111111111111111111111111/' "$consumer/.supplement.snapshot" > "$consumer/missing-revision"; mv "$consumer/missing-revision" "$consumer/.supplement.snapshot" ;;
+        tree-revision|tag-revision)
+            revision="$tree_revision"
+            [[ "$subject" != tag-revision ]] || revision="$tag_revision"
+            awk -F '\t' -v OFS='\t' -v revision="$revision" '$1=="revision" {$2=revision} {print}' \
+                "$consumer/.supplement.snapshot" > "$consumer/non-commit-revision"
+            mv "$consumer/non-commit-revision" "$consumer/.supplement.snapshot" ;;
         forged)
             printf 'forged\n' >> "$consumer/helpers/nested.sh"
             digest="$(bash "$root/scripts/ci/verify-file-checksum.sh" --print sha256 "$consumer/helpers/nested.sh")"
@@ -53,9 +76,11 @@ for subject in valid interrupted edited mode staged staged-receipt forged wrong-
     esac
     args=(--source "$source_root" --consumer "$consumer" --takeover-snapshot . .supplement.snapshot --takeover-snapshot helpers .shared-tooling.snapshot)
     [[ "$subject" != duplicate ]] || args+=(--takeover-snapshot . .supplement.snapshot)
+    refresh=(bash "$root/scripts/distribution/refresh-consumer.sh")
+    [[ "$subject" != failed-kind ]] || refresh=(env PATH="$fixture/kind-bin:$PATH" "${refresh[@]}")
     cp -Rp "$consumer" "$fixture/before-$subject"
     status=0
-    bash "$root/scripts/distribution/refresh-consumer.sh" --preview "${args[@]}" > "$fixture/$subject-preview.log" 2>&1 || status=$?
+    "${refresh[@]}" --preview "${args[@]}" > "$fixture/$subject-preview.log" 2>&1 || status=$?
     diff -r "$fixture/before-$subject" "$consumer" > "$fixture/$subject-diff.log" || { cat "$fixture/$subject-diff.log" >&2; exit 1; }
     if [[ "$subject" == valid || "$subject" == interrupted ]]; then
         [[ "$status" == 0 ]] || { cat "$fixture/$subject-preview.log" >&2; exit 1; }
@@ -87,7 +112,11 @@ STUB
         bash "$root/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer" > "$fixture/verify.log"
     else
         [[ "$status" != 0 ]] || exit 1
-        if bash "$root/scripts/distribution/refresh-consumer.sh" "${args[@]}" > "$fixture/$subject-apply.log" 2>&1; then exit 1; fi
+        if "${refresh[@]}" "${args[@]}" > "$fixture/$subject-apply.log" 2>&1; then exit 1; fi
+        if [[ "$subject" == failed-kind ]]; then
+            grep -Fx 'fixture kind observation failed' "$fixture/$subject-preview.log" > /dev/null
+            grep -Fx 'fixture kind observation failed' "$fixture/$subject-apply.log" > /dev/null
+        fi
         diff -r "$fixture/before-$subject" "$consumer" > "$fixture/$subject-diff.log" || { cat "$fixture/$subject-diff.log" >&2; exit 1; }
     fi
 done

@@ -1,22 +1,16 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/install-ci-tool.sh
+# Shared companions: scripts/ci/install-ci-tool.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 
 ROOT="$0"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
-FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-installers-test.XXXXXX")"
+# shellcheck source=scripts/ci/fixture-lifecycle.sh
+source "$ROOT/scripts/ci/fixture-lifecycle.sh"
+FIXTURE="$(fixture_create "${TMPDIR:-/tmp}/shared-tooling-installers-test.XXXXXX")"
 fixture_complete=false
-finish() {
-    local status=$?
-    # Bash 3.2 may report zero after nounset before assertions finish.
-    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
-    if [[ "$status" == 0 ]]; then rm -rf "$FIXTURE"
-    else echo "Installer fixtures retained: $FIXTURE" >&2; fi
-    exit "$status"
-}
-trap finish EXIT
+trap 'fixture_finish "$?" "$FIXTURE" "Installer fixtures retained"' EXIT
 
 archives="$FIXTURE/archives"
 payloads="$FIXTURE/payloads"
@@ -65,14 +59,6 @@ chmod +x "$payloads/sccache/$sccache_package/sccache"
 tar -czf "$archives/$sccache_package.tar.gz" -C "$payloads/sccache" "$sccache_package"
 export INSTALLER_SCCACHE_EXECUTIONS="$FIXTURE/sccache-executions"
 
-for platform in linux_amd64 linux_arm64 darwin_amd64 darwin_arm64; do
-    cat > "$archives/yq_$platform" <<'SCRIPT'
-#!/usr/bin/env bash
-echo 'yq (https://github.com/mikefarah/yq/) version v4.47.2'
-exit "${INSTALLER_YQ_STATUS:-0}"
-SCRIPT
-done
-
 cat >"$FIXTURE/bin/uname" <<'SCRIPT'
 #!/usr/bin/env bash
 case "$1" in
@@ -87,6 +73,7 @@ cat >"$FIXTURE/bin/curl" <<'SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
 
+[[ -z "${INSTALLER_TEST_PROBES:-}" ]] || printf 'download\n' >> "$INSTALLER_TEST_PROBES"
 output=""
 url=""
 while [[ $# -gt 0 ]]; do
@@ -140,10 +127,81 @@ gitleaks_checksum="$(checksum_sha256 "$archives/gitleaks_8.30.1_linux_x64.tar.gz
 shellcheck_checksum="$(checksum_sha256 "$archives/shellcheck-v0.11.0.linux.x86_64.tar.xz")"
 sccache_checksum="$(checksum_sha256 "$archives/$sccache_package.tar.gz")"
 
+# Default and explicitly selected catalogs use the same authenticated installer.
+cat > "$FIXTURE/ci.env" <<CATALOG
+SHARED_TOOLING_ACTIONLINT_VERSION=1.7.12
+SHARED_TOOLING_ACTIONLINT_SHA256_LINUX_AMD64=$actionlint_checksum
+SHARED_TOOLING_SHELLCHECK_VERSION=0.11.0
+SHARED_TOOLING_SHELLCHECK_SHA256_LINUX_X86_64=$shellcheck_checksum
+SHARED_TOOLING_GITLEAKS_VERSION=8.30.1
+SHARED_TOOLING_GITLEAKS_SHA256_LINUX_X64=$gitleaks_checksum
+CATALOG
+for tool in actionlint shellcheck gitleaks; do
+    PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+        bash "$ROOT/scripts/ci/install-ci-tool.sh" "$tool" --catalog "$FIXTURE/ci.env" \
+        --install-dir "$FIXTURE/catalog-installed" > "$FIXTURE/catalog-$tool.log"
+    [[ -x "$FIXTURE/catalog-installed/$tool" ]] || exit 1
+done
+mkdir -p "$FIXTURE/snapshot/scripts/ci" "$FIXTURE/snapshot/ci"
+cp "$ROOT/scripts/ci/"{install-ci-tool.sh,tool-catalog-records.pl,verify-file-checksum.sh} "$FIXTURE/snapshot/scripts/ci/"
+cp "$FIXTURE/ci.env" "$FIXTURE/snapshot/ci/tool-versions.env"
 PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+    bash "$FIXTURE/snapshot/scripts/ci/install-ci-tool.sh" actionlint \
+    --install-dir "$FIXTURE/default-installed" > "$FIXTURE/default-catalog.log"
+[[ -x "$FIXTURE/default-installed/actionlint" ]] || exit 1
+for invalid in missing malformed duplicate executable conflict; do
+    cp "$FIXTURE/ci.env" "$FIXTURE/invalid.env"
+    arguments=(actionlint --catalog "$FIXTURE/invalid.env" --install-dir "$FIXTURE/refused-$invalid")
+    case "$invalid" in
+        missing) arguments=(actionlint --catalog "$FIXTURE/missing.env" --install-dir "$FIXTURE/refused-$invalid") ;;
+        malformed) printf '\nSHARED_TOOLING_GITLEAKS_VERSION=invalid\n' > "$FIXTURE/invalid.env" ;;
+        duplicate) cat "$FIXTURE/ci.env" >> "$FIXTURE/invalid.env" ;;
+        executable) printf '\ntouch SHOULD_NOT_EXIST\n' >> "$FIXTURE/invalid.env" ;;
+        conflict) arguments+=(--version 1.7.12 --sha256 "$actionlint_checksum") ;;
+    esac
+    status=0
+    PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+        bash "$ROOT/scripts/ci/install-ci-tool.sh" "${arguments[@]}" > "$FIXTURE/catalog-$invalid.log" 2>&1 || status=$?
+    [[ "$status" != 0 && ! -e "$FIXTURE/refused-$invalid" ]] || exit 1
+done
+
+for host in Linux:arm64 Darwin:x86_64 Darwin:arm64; do
+    status=0
+    : > "$FIXTURE/catalog-host-probes"
+    INSTALLER_TEST_OS="${host%:*}" INSTALLER_TEST_ARCH="${host#*:}" \
+        INSTALLER_TEST_PROBES="$FIXTURE/catalog-host-probes" PATH="$FIXTURE/bin:$PATH" \
+        INSTALLER_TEST_ARCHIVES="$archives" \
+        bash "$ROOT/scripts/ci/install-ci-tool.sh" actionlint --catalog "$FIXTURE/ci.env" \
+        --install-dir "$FIXTURE/unqualified-host" > "$FIXTURE/catalog-host.log" 2>&1 || status=$?
+    [[ "$status" != 0 && ! -e "$FIXTURE/unqualified-host" && ! -s "$FIXTURE/catalog-host-probes" ]] || exit 1
+done
+
+# A destination must be part of the invocation before any setup effect.
+mkdir "$FIXTURE/admission-bin"
+cat > "$FIXTURE/admission-bin/uname" <<'SCRIPT'
+#!/usr/bin/env bash
+printf 'host probe\n' >> "$INSTALLER_TEST_PROBES"
+exit 93
+SCRIPT
+chmod +x "$FIXTURE/admission-bin/uname"
+for destination in omitted environment empty; do
+    arguments=(actionlint --version 1.7.12 --sha256 "$actionlint_checksum")
+    [[ "$destination" != empty ]] || arguments+=(--install-dir '')
+    destination_env=''
+    [[ "$destination" != environment ]] || destination_env="$FIXTURE/unselected-$destination"
+    : > "$FIXTURE/destination-probes"
+    status=0
+    TOOL_INSTALL_DIR="$destination_env" INSTALLER_TEST_PROBES="$FIXTURE/destination-probes" \
+        PATH="$FIXTURE/admission-bin:$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
+        bash "$ROOT/scripts/ci/install-ci-tool.sh" "${arguments[@]}" > "$FIXTURE/destination-$destination.log" 2>&1 || status=$?
+    [[ "$status" == 2 && ! -e "$FIXTURE/unselected-$destination" && ! -s "$FIXTURE/destination-probes" ]] || exit 1
+done
+
+TOOL_INSTALL_DIR="$FIXTURE/unselected-environment" PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     bash "$ROOT/scripts/ci/install-ci-tool.sh" sccache --version 0.17.0 \
     --sha256 "$sccache_checksum" --install-dir "$FIXTURE/installed" >/dev/null
 [[ "$("$FIXTURE/installed/sccache" --version)" == 'sccache 0.17.0' ]] || exit 1
+[[ ! -e "$FIXTURE/unselected-environment" ]] || exit 1
 
 
 PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
@@ -201,52 +259,13 @@ PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     --install-dir "$FIXTURE/installed" >/dev/null
 "$FIXTURE/installed/shellcheck" --version | grep -F 'version: 0.11.0' >/dev/null
 
-yq_checksum="$(checksum_sha256 "$archives/yq_linux_amd64")"
-for platform in Linux:x86_64 Linux:aarch64 Darwin:x86_64 Darwin:arm64; do
-    PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
-        INSTALLER_TEST_OS="${platform%:*}" INSTALLER_TEST_ARCH="${platform#*:}" \
-        bash "$ROOT/scripts/ci/install-ci-tool.sh" yq --version 4.47.2 --sha256 "$yq_checksum" \
-        --install-dir "$FIXTURE/installed" >/dev/null
-    [[ "$("$FIXTURE/installed/yq" --version)" == 'yq (https://github.com/mikefarah/yq/) version v4.47.2' ]] || exit 1
-done
-for failure in version checksum; do
-    version=4.47.2
-    digest="$yq_checksum"
-    if [[ "$failure" == version ]]; then version=4.47.1; else digest=ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff; fi
-    if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
-        bash "$ROOT/scripts/ci/install-ci-tool.sh" yq --version "$version" --sha256 "$digest" \
-        --install-dir "$FIXTURE/installed" >/dev/null 2>&1; then
-        echo "installer test failed: yq accepted a $failure mismatch" >&2
-        exit 1
-    fi
-    # Failed installation must preserve the previously verified executable.
-    [[ "$("$FIXTURE/installed/yq" --version)" == 'yq (https://github.com/mikefarah/yq/) version v4.47.2' ]] || exit 1
-done
-
-cp "$FIXTURE/installed/yq" "$FIXTURE/original-yq"
-if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" INSTALLER_YQ_STATUS=17 \
-    bash "$ROOT/scripts/ci/install-ci-tool.sh" yq --version 4.47.2 --sha256 "$yq_checksum" \
-    --install-dir "$FIXTURE/installed" > "$FIXTURE/yq-status.log" 2>&1; then exit 1; fi
-cmp "$FIXTURE/original-yq" "$FIXTURE/installed/yq"
-retained=0
-for attempt in "$FIXTURE/installed/.yq-install."*; do
-    [[ -f "$attempt/yq_linux_amd64" ]] || exit 1
-    cmp "$archives/yq_linux_amd64" "$attempt/yq_linux_amd64"
-    retained=$((retained + 1))
-done
-[[ "$retained" == 3 ]] || exit 1
-mkdir -p "$FIXTURE/yq-directory/yq"
-printf 'keep directory contents\n' > "$FIXTURE/yq-directory/yq/existing"
+# An existing directory is consumer-owned and cannot become an install container.
+mkdir -p "$FIXTURE/directory/actionlint"
+printf 'keep directory contents\n' > "$FIXTURE/directory/actionlint/existing"
 if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
-    bash "$ROOT/scripts/ci/install-ci-tool.sh" yq --version 4.47.2 --sha256 "$yq_checksum" \
-    --install-dir "$FIXTURE/yq-directory" > "$FIXTURE/yq-directory.log" 2>&1; then exit 1; fi
-[[ ! -e "$FIXTURE/yq-directory/yq/yq" && "$(cat "$FIXTURE/yq-directory/yq/existing")" == 'keep directory contents' ]] || exit 1
-for version in 3.4.5 4.47.2-rc.1; do
-    if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
-        bash "$ROOT/scripts/ci/install-ci-tool.sh" yq --version "$version" --sha256 "$yq_checksum" \
-        --install-dir "$FIXTURE/yq-unsupported" > "$FIXTURE/yq-version.log" 2>&1; then exit 1; fi
-    [[ ! -e "$FIXTURE/yq-unsupported" ]] || exit 1
-done
+    bash "$ROOT/scripts/ci/install-ci-tool.sh" actionlint --version 1.7.12 --sha256 "$actionlint_checksum" \
+    --install-dir "$FIXTURE/directory" > "$FIXTURE/directory.log" 2>&1; then exit 1; fi
+[[ ! -e "$FIXTURE/directory/actionlint/actionlint" && "$(cat "$FIXTURE/directory/actionlint/existing")" == 'keep directory contents' ]] || exit 1
 
 if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     bash "$ROOT/scripts/ci/install-ci-tool.sh" actionlint \
@@ -268,6 +287,7 @@ fi
 
 # All shared public entry points exercise the same preservation boundary.
 for tool in actionlint gitleaks shellcheck sccache; do
+    bash "$ROOT/scripts/ci/install-ci-tool.sh" "$tool" --help > "$FIXTURE/$tool-help.log" 2>&1
     case "$tool" in
         actionlint) version=1.7.12; digest="$actionlint_checksum"; archive=actionlint_1.7.12_linux_amd64.tar.gz ;;
         gitleaks) version=8.30.1; digest="$gitleaks_checksum"; archive=gitleaks_8.30.1_linux_x64.tar.gz ;;
@@ -322,6 +342,10 @@ for failure in status version; do
         bash "$ROOT/scripts/ci/install-ci-tool.sh" sccache --version 0.17.0 --sha256 "$sccache_checksum" \
         --install-dir "$FIXTURE/installed" > "$FIXTURE/rejected" 2>&1; then exit 1; fi
     cmp "$FIXTURE/original-sccache" "$FIXTURE/installed/sccache"
+done
+for attempt in "$FIXTURE/installed/.sccache-install."*; do
+    [[ -f "$attempt/$sccache_package.tar.gz" ]] || continue
+    cmp "$archives/$sccache_package.tar.gz" "$attempt/$sccache_package.tar.gz"
 done
 # Only the reviewed Linux x86-64 asset is selected; reject other hosts before
 # creating an installation destination or attempting a download.

@@ -129,5 +129,14 @@ cp "$ROOT/scripts/ci/test-cloc-tooling.sh" "$ROOT/scripts/ci/verify-file-checksu
     "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" "$adoption/scripts/ci/"
 cp "$ROOT/scripts/dev/cloc-tooling.pl" "$adoption/scripts/dev/"
 bash "$adoption/scripts/ci/test-cloc-tooling.sh" > "$fixture/adoption.log" 2>&1
+# Fleet Make routing belongs to this producer, with the actual reporter and
+# selected fixture parent. Consumers qualify only their local workspace route.
+make --no-print-directory -C "$ROOT" cloc-tooling "CLOC_PARENT=$export_parent" > "$fixture/central-make.log"
+perl "$ROOT/scripts/dev/cloc-tooling.pl" "$export_parent" > "$fixture/central-direct.log"
+cmp "$fixture/central-make.log" "$fixture/central-direct.log"
+if make --no-print-directory -C "$ROOT" cloc-tooling "CLOC_PARENT=$fixture/missing parent" \
+    > "$fixture/central-failure.log" 2>&1; then
+    echo 'central Make accepted a failed tooling report' >&2; exit 1
+fi
 echo 'Tooling LOC exporter integration and uncommitted consumer fixture passed'
 fixture_complete=true

@@ -114,9 +114,9 @@ contributions.
 
 ### Local IC executables
 
-Use `make install-tools` for the complete common host, IC and Cargo toolsets,
-and `make tools-check` for offline verification. Every repository gets the same
-12 executables, including tools it does not currently use; setup runs host, IC
+Use `make install-tools` for the common host and Cargo toolsets,
+and `make tools-check` for offline verification. The IC bundle is explicitly
+selected by product workflows through ordered local targets; setup runs host
 and Rust steps in order. Setup first checks platform support and the selected
 Rust/Cargo toolchain without downloads or installations. The [required tool inventory](docs/local-setup.md#required-tool-inventory)
 is the shared setup list for every repository. See [local setup](docs/local-setup.md)
@@ -181,6 +181,10 @@ selection, deletion authorization, retained evidence and interrupted retries.
   caller's workspace, rejects zero passing tests and retains failed output.
   It requires the normal libtest summary format and preserves Cargo arguments
   and network policy. Cargo and logging failures remain failures.
+- [The structural Rust panic scanner](docs/rust-source-checks.md) checks selected
+  production source, including macro tokens and conservative test-only cfg
+  exclusion. Consumers compile the snapshot source with their own locked
+  dependencies and retain application inventory and policy selection.
 - `scripts/ci/run-formatting.sh --check|--write COMMAND [ARG ...]` reports one
   success line or a short failure summary with the full retained log path.
   `make/rust-format.mk` uses it for Rust formatting; custom workspace/frontend
@@ -245,6 +249,9 @@ emits one document containing the selected `manifest`, a `crates` array and
 `inline_fns`; crate rows also carry `crate`. Percentages use the same one-decimal
 rounding as the table. Failure returns nonzero without a partial JSON document.
 The sibling report consumes these counts and keeps its existing table format.
+Each admitted source path counts once, even when another file has identical
+contents. One per-file cloc projection supplies both runtime and test totals;
+duplicate-content suppression no longer changes the report's source inventory.
 
 The report discovers Cargo workspace members from `cargo metadata`; package
 names and directory layouts do not need to follow a shared prefix. Metadata
@@ -288,8 +295,9 @@ The explicit manifest selects only that graph and its Cargo target directory;
 metadata runs from its directory with the selected lockfile, offline. Default
 root reporting and sibling totals do not automatically combine independent graphs.
 
-Use `make cloc-tooling [CLOC_PARENT=/path/to/projects]` to find where sibling
-repositories maintain the most CI and tooling code. For per-file evidence:
+From Shared Tooling, use `make cloc-tooling [CLOC_PARENT=/path/to/projects]` to
+find where sibling repositories maintain the most CI and tooling code. For
+per-file evidence:
 
 ```bash
 perl scripts/dev/cloc-tooling.pl --json /path/to/projects > tooling-inventory.json
@@ -436,8 +444,9 @@ passes that environment through without learning product-specific variable names
 
 `scripts/ci/run-sccache.sh` prevents a long-lived sccache server from inheriting
 an invocation-owned temporary directory that will later be deleted. It defaults
-to `.tmp/sccache-runtime` in the consuming repository. Override discovery with
-`SCCACHE_BIN`, `SCCACHE_REPOSITORY_ROOT`, or `SCCACHE_RUNTIME_DIR`.
+to `.tmp/sccache-runtime` in the consuming repository. Set `SCCACHE_BIN` to the
+absolute path of the selected executable; PATH discovery is not performed.
+Override runtime placement with `SCCACHE_REPOSITORY_ROOT` or `SCCACHE_RUNTIME_DIR`.
 Consumers retain cache-failure policy in an explicit adapter; see
 [launcher adoption](docs/verification-helpers.md#compiler-cache-launcher-adoption).
 
@@ -446,7 +455,8 @@ Consumers retain cache-failure policy in an explicit adapter; see
 The executable `.githooks/pre-commit` formats an isolated copy of the index with
 the consumer's `make fmt`, then refreshes only the selected files. It rejects
 partial staging and preserves unselected files and unrelated working edits.
-The installer refuses to replace an existing hook setup.
+The installer requires `--consumer <repository>` and refuses to replace an
+existing hook setup. `make install-hooks` supplies the destination explicitly.
 Following IcyDB and Canic, `fmt` runs `cargo sort --workspace` to order Cargo.toml
 files before `cargo fmt --all`; `fmt-check` checks both without modifying files.
 The shared `scripts/ci/check-format-tools.sh` admits the consumer's pinned
@@ -460,25 +470,31 @@ Cargo workspace and does not activate the Rust hook in its own checkout.
 
 ### Checksum-verified tool installers
 
-The actionlint, Gitleaks, ShellCheck, sccache and yq installers require the consuming
-repository to supply an exact version and the SHA-256 digest for the detected
-platform. Shared Tooling owns secure download and verification mechanics; each
-consumer continues to own version policy.
+The actionlint, Gitleaks and ShellCheck installers select validated version and
+SHA-256 records from the executing snapshot's `ci/tool-versions.env`. These
+default CI assets are qualified for Linux x86-64. Select `--catalog FILE` for a
+reviewed catalog exception, or supply both `--version` and `--sha256` for an
+explicit tool/platform exception. Catalog and explicit-pin inputs are exclusive.
+The sccache installer always requires explicit version and SHA-256 pins.
 
 The sccache binary installer currently selects only the reviewed Linux x86-64
 asset. It retains failed candidates and uses the same shared installation
-command as actionlint, Gitleaks, ShellCheck and standalone yq. Select
+command as actionlint, Gitleaks and ShellCheck. Select
 `scripts/ci/install-ci-tool.sh` in its snapshot. All reject failed
 version probes and directory destinations, retain failed candidates and replace
 the executable with a rename on the destination filesystem.
 
+YQ uses the common host bundle through `make install-host-tools` and
+`make host-tools-check`; the standalone CI installer no longer accepts `yq`.
+
 ```bash
 scripts/ci/install-ci-tool.sh actionlint \
-  --version 1.7.12 \
-  --sha256 <platform-sha256>
+  --install-dir /path/to/ci-bin
 ```
 
-Use `--install-dir` or `TOOL_INSTALL_DIR` to change the destination.
+Since 0.16.0, `--install-dir` is required. Add the destination to each invocation
+before adopting this release; the environment variable `TOOL_INSTALL_DIR` and
+the former home-directory default no longer select a write target.
 
 ### Sibling GitHub dashboard
 

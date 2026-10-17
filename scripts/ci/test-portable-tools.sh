@@ -53,20 +53,20 @@ run_fixture test-portable-prerequisites.sh bash "$ROOT/scripts/ci/test-portable-
 run_fixture test-fixture-timing.sh bash "$ROOT/scripts/ci/test-fixture-timing.sh"
 run_fixture test-fixture-allocation.sh bash "$ROOT/scripts/ci/test-fixture-allocation.sh"
 run_fixture test-cargo-formatting-fixture.sh bash "$ROOT/scripts/ci/test-cargo-formatting-fixture.sh"
-run_fixture test-public-docs.pl perl "$ROOT/scripts/ci/test-public-docs.pl"
-run_fixture test-public-docs.sh bash "$ROOT/scripts/ci/test-public-docs.sh"
 run_fixture test-cargo-release-preflight.sh bash "$ROOT/scripts/ci/test-cargo-release-preflight.sh"
 run_fixture test-release-changelog.sh bash "$ROOT/scripts/ci/test-release-changelog.sh"
 run_fixture test-saved-cargo-manifest.pl perl "$ROOT/scripts/ci/test-saved-cargo-manifest.pl"
 run_fixture test-workflow-step.sh bash "$ROOT/scripts/ci/test-workflow-step.sh"
 run_fixture test-fixture-completion.sh bash "$ROOT/scripts/ci/test-fixture-completion.sh"
+run_fixture test-fixture-log-replay.sh bash "$ROOT/scripts/ci/test-fixture-log-replay.sh"
 run_fixture test-script-paths.sh bash "$ROOT/scripts/ci/test-script-paths.sh"
 run_fixture test-type-docs.pl perl "$ROOT/scripts/ci/test-type-docs.pl"
 run_fixture test-ci-change-selection.pl perl "$ROOT/scripts/ci/test-ci-change-selection.pl"
 run_fixture test-rust-toolchains.sh bash "$ROOT/scripts/ci/test-rust-toolchains.sh"
+run_fixture test-runtime-panic-qualification.sh bash "$ROOT/scripts/ci/test-runtime-panic-qualification.sh"
 run_fixture test-cargo-install-qualification.sh bash "$ROOT/scripts/ci/test-cargo-install-qualification.sh"
 run_fixture test-evidence-archive.sh bash "$ROOT/scripts/ci/test-evidence-archive.sh"
-run_fixture test-native-evidence-archive.sh bash "$ROOT/scripts/ci/test-native-evidence-archive.sh"
+run_fixture test-native-diagnostics.sh bash "$ROOT/scripts/ci/test-native-diagnostics.sh"
 run_fixture test-evidence-download.sh bash "$ROOT/scripts/ci/test-evidence-download.sh"
 run_fixture test-gh-ci.sh bash "$ROOT/scripts/ci/test-gh-ci.sh"
 run_fixture test-github-siblings.sh bash "$ROOT/scripts/ci/test-github-siblings.sh"
@@ -100,18 +100,18 @@ printf '[toolchain]\nchannel = "fixture-unprepared"\n' > "$FIXTURE/rust-consumer
 (cd "$FIXTURE/rust-consumer" && run_fixture test-rust-tools.sh bash "$ROOT/scripts/ci/test-rust-tools.sh")
 run_fixture test-tool-commands.sh bash "$ROOT/scripts/ci/test-tool-commands.sh"
 run_fixture test-make-format.sh bash "$ROOT/scripts/ci/test-make-format.sh"
+run_fixture test-script-fixture.sh bash "$ROOT/scripts/ci/test-script-fixture.sh"
 run_fixture test-make-consumer.sh bash "$ROOT/scripts/ci/test-make-consumer.sh"
+run_fixture test-prepare-common-tools.sh bash "$ROOT/scripts/ci/test-prepare-common-tools.sh"
 run_fixture test-tool-path-contexts.sh bash "$ROOT/scripts/ci/test-tool-path-contexts.sh"
 run_fixture test-evidence-checksums.sh bash "$ROOT/scripts/ci/test-evidence-checksums.sh"
 run_fixture test-file-digests.sh bash "$ROOT/scripts/ci/test-file-digests.sh"
 run_fixture test-rustsec-db.sh bash "$ROOT/scripts/ci/test-rustsec-db.sh"
 run_fixture test-local-lock-versions.pl perl "$ROOT/scripts/ci/test-local-lock-versions.pl"
 run_fixture test-workspace-version-rendering.pl perl "$ROOT/scripts/ci/test-workspace-version-rendering.pl"
-run_fixture test-readme-version-rendering.pl perl "$ROOT/scripts/ci/test-readme-version-rendering.pl"
 run_fixture test-stable-version-ordering.pl perl "$ROOT/scripts/ci/test-stable-version-ordering.pl"
 run_fixture test-tag-maintenance.pl perl "$ROOT/scripts/ci/test-tag-maintenance.pl"
 run_fixture test-verification-helpers.sh bash "$ROOT/scripts/ci/test-verification-helpers.sh"
-run_fixture test-publication.sh bash "$ROOT/scripts/ci/test-publication.sh"
 run_fixture test-cargo-publication-attempt.sh bash "$ROOT/scripts/ci/test-cargo-publication-attempt.sh"
 run_fixture test-tool-catalogs.pl perl "$ROOT/scripts/ci/test-tool-catalogs.pl"
 run_fixture test-documentation-links.pl perl "$ROOT/scripts/ci/test-documentation-links.pl"
@@ -119,7 +119,9 @@ run_fixture test-license.pl perl "$ROOT/scripts/ci/test-license.pl"
 run_fixture test-crates-io-version.sh bash "$ROOT/scripts/ci/test-crates-io-version.sh"
 run_fixture test-cargo-tool-versions.sh bash "$ROOT/scripts/ci/test-cargo-tool-versions.sh"
 run_fixture test-release-commands.sh bash "$ROOT/scripts/ci/test-release-commands.sh"
+run_fixture test-release-delivery.sh bash "$ROOT/scripts/ci/test-release-delivery.sh"
 run_fixture test-checker-retention.sh bash "$ROOT/scripts/ci/test-checker-retention.sh"
+run_fixture test-cargo-dependency-boundaries.sh bash "$ROOT/scripts/ci/test-cargo-dependency-boundaries.sh"
 run_fixture test-dependency-pins.sh bash "$ROOT/scripts/ci/test-dependency-pins.sh"
 run_fixture test-npm-pins.sh bash "$ROOT/scripts/ci/test-npm-pins.sh"
 run_fixture test-cargo-metadata.sh bash "$ROOT/scripts/ci/test-cargo-metadata.sh"
@@ -139,6 +141,7 @@ run_fixture test-consumer-flow-probes.sh bash "$ROOT/scripts/ci/test-consumer-fl
 run_fixture test-fixture-retention.sh bash "$ROOT/scripts/ci/test-fixture-retention.sh"
 run_fixture test-collect-tool-evidence.sh bash "$ROOT/scripts/ci/test-collect-tool-evidence.sh"
 run_fixture test-snapshot-distribution.sh bash "$ROOT/scripts/ci/test-snapshot-distribution.sh"
+run_fixture test-snapshot-performance.sh bash "$ROOT/scripts/ci/test-snapshot-performance.sh"
 run_fixture test-snapshot-takeover.sh bash "$ROOT/scripts/ci/test-snapshot-takeover.sh"
 run_fixture test-snapshot-retirement.sh bash "$ROOT/scripts/ci/test-snapshot-retirement.sh"
 run_fixture test-release-runner.sh bash "$ROOT/scripts/ci/test-release-runner.sh"
@@ -150,62 +153,9 @@ run_fixture test-cargo-release-metadata.sh bash "$ROOT/scripts/ci/test-cargo-rel
 run_fixture test-hosted-failure.sh bash "$ROOT/scripts/ci/test-hosted-failure.sh"
 run_fixture test-release-source.sh bash "$ROOT/scripts/ci/test-release-source.sh"
 run_fixture test-release-receipts.sh bash "$ROOT/scripts/ci/test-release-receipts.sh"
-run_fixture test-release-prose-warning.sh bash "$ROOT/scripts/ci/test-release-prose-warning.sh"
 run_fixture test-release-changes.sh bash "$ROOT/scripts/ci/test-release-changes.sh"
 
-mkdir -p "$FIXTURE/repository" "$FIXTURE/result"
-cat >"$FIXTURE/fake-sccache" <<'SCRIPT'
-#!/usr/bin/env bash
-set -euo pipefail
-printf '%s\n' "$SCCACHE_SERVER_UDS" >"$SCCACHE_TEST_RESULT/socket"
-printf '%s\n' "$TMPDIR" >"$SCCACHE_TEST_RESULT/tmpdir"
-printf '%s\n' "$*" >"$SCCACHE_TEST_RESULT/arguments"
-SCRIPT
-chmod +x "$FIXTURE/fake-sccache"
-
-SCCACHE_BIN="$FIXTURE/fake-sccache" \
-    SCCACHE_REPOSITORY_ROOT="$FIXTURE/repository" \
-    SCCACHE_TEST_RESULT="$FIXTURE/result" \
-    bash "$ROOT/scripts/ci/run-sccache.sh" rustc --version
-
-expected_runtime="$FIXTURE/repository/.tmp/sccache-runtime"
-[[ "$(<"$FIXTURE/result/socket")" == "$expected_runtime/server.sock" ]] || exit 1
-[[ "$(<"$FIXTURE/result/tmpdir")" == "$expected_runtime/tmp" ]] || exit 1
-[[ "$(<"$FIXTURE/result/arguments")" == "rustc --version" ]] || exit 1
-
-# Refused symlink selections must not create anything through the link.
-for selection in parent root child override trailing dot; do
-    probe="$FIXTURE/sccache-$selection"
-    mkdir -p "$probe/repository" "$probe/outside" "$probe/result"
-    runtime="$probe/repository/.tmp/sccache-runtime"
-    case "$selection" in
-        parent) ln -s "$probe/outside" "$probe/repository/.tmp" ;;
-        root) mkdir "$probe/repository/.tmp"; ln -s "$probe/outside" "$runtime" ;;
-        child) mkdir -p "$runtime"; ln -s "$probe/outside" "$runtime/tmp" ;;
-        override) runtime="$probe/explicit"; ln -s "$probe/outside" "$runtime" ;;
-        trailing) runtime="$probe/explicit"; ln -s "$probe/outside" "$runtime"; runtime="$runtime///" ;;
-        dot) runtime="$probe/explicit"; ln -s "$probe/outside" "$runtime"; runtime="$runtime/." ;;
-    esac
-    if SCCACHE_BIN="$FIXTURE/fake-sccache" SCCACHE_REPOSITORY_ROOT="$probe/repository" \
-        SCCACHE_RUNTIME_DIR="$runtime" SCCACHE_TEST_RESULT="$probe/result" \
-        bash "$ROOT/scripts/ci/run-sccache.sh" rustc --version > "$probe/refusal.log" 2>&1; then
-        echo "accepted symlinked sccache path: $selection" >&2; exit 1
-    fi
-    [[ -z "$(ls -A "$probe/outside")" && ! -e "$probe/result/arguments" ]] || exit 1
-done
-SCCACHE_BIN="$FIXTURE/fake-sccache" SCCACHE_REPOSITORY_ROOT="$FIXTURE/repository" \
-    SCCACHE_RUNTIME_DIR="$FIXTURE/explicit-runtime" SCCACHE_TEST_RESULT="$FIXTURE/result" \
-    bash "$ROOT/scripts/ci/run-sccache.sh" --show-stats
-[[ "$(<"$FIXTURE/result/tmpdir")" == "$FIXTURE/explicit-runtime/tmp" ]] || exit 1
-
-for installer in actionlint gitleaks shellcheck sccache yq; do
-    bash "$ROOT/scripts/ci/install-ci-tool.sh" "$installer" --help >/dev/null 2>&1
-    if bash "$ROOT/scripts/ci/install-ci-tool.sh" "$installer" \
-        --version 1.0.0 --sha256 invalid >/dev/null 2>&1; then
-        echo "portable tools test failed: $installer accepted an invalid checksum" >&2
-        exit 1
-    fi
-done
+run_fixture test-sccache-launcher.sh bash "$ROOT/scripts/ci/test-sccache-launcher.sh"
 
 bash "$ROOT/scripts/dev/gh-ci.sh" --help >/dev/null 2>&1
 

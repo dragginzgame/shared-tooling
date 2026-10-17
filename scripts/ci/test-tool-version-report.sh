@@ -57,6 +57,19 @@ mkdir "$fixture/impostor"
 printf '#!/bin/sh\nexit 99\n' > "$fixture/impostor/jq"
 chmod +x "$fixture/impostor/jq"
 PATH="$fixture/impostor:$PATH" bash "$snapshot/scripts/ci/report-tool-versions.sh" "$consumer" > "$fixture/report" 2> "$fixture/errors"
+[[ "$(grep -c '^admit ' "$REPORT_EVENTS")" == 2 ]]
+[[ "$(grep -c '^probe ' "$REPORT_EVENTS")" == 7 ]]
+if grep -q '^admit ic$' "$REPORT_EVENTS"; then exit 1; fi
+# A host/Rust-only report neither reads an IC catalog nor admits its executables.
+mv "$snapshot/ci/ic-tools.tsv" "$snapshot/ci/ic-tools.saved"
+: > "$REPORT_EVENTS"
+bash "$snapshot/scripts/ci/report-tool-versions.sh" "$consumer" "$snapshot/ci/tool-versions.env" > "$fixture/common-only-report" 2> "$fixture/common-only-errors"
+[[ "$(grep -c '^admit ' "$REPORT_EVENTS")" == 2 ]]
+if grep -q '^admit ic$' "$REPORT_EVENTS"; then exit 1; fi
+mv "$snapshot/ci/ic-tools.saved" "$snapshot/ci/ic-tools.tsv"
+: > "$REPORT_EVENTS"
+PATH="$fixture/impostor:$PATH" bash "$snapshot/scripts/ci/report-tool-versions.sh" "$consumer" \
+    "$snapshot/ci/tool-versions.env" "$snapshot/ci/ic-tools.tsv" > "$fixture/report" 2> "$fixture/errors"
 [[ "$(grep -c '^admit ' "$REPORT_EVENTS")" == 3 ]]
 [[ "$(grep -c '^probe ' "$REPORT_EVENTS")" == 12 ]]
 for tool in jq yq rg cloc cargo-sort cargo-sort-derives candid-extractor icp didc ic-wasm quill wasm-opt; do
@@ -64,15 +77,15 @@ for tool in jq yq rg cloc cargo-sort cargo-sort-derives candid-extractor icp did
 done
 digest="$(bash "$snapshot/scripts/ci/verify-file-checksum.sh" --print sha256 "$consumer/host bin/jq")"
 grep -F "sha256=$digest" "$fixture/report" > /dev/null
-for failure in admit-host admit-rust admit-ic jq cargo-sort-derives wasm-opt; do
+for failure in admit-host admit-rust admit-ic jq cloc cargo-sort-derives wasm-opt; do
     : > "$REPORT_EVENTS"
     status=0
-    REPORT_FAILURE="$failure" bash "$snapshot/scripts/ci/report-tool-versions.sh" "$consumer" > "$fixture/$failure.out" 2> "$fixture/$failure.err" || status=$?
+    REPORT_FAILURE="$failure" bash "$snapshot/scripts/ci/report-tool-versions.sh" "$consumer" "$snapshot/ci/tool-versions.env" "$snapshot/ci/ic-tools.tsv" > "$fixture/$failure.out" 2> "$fixture/$failure.err" || status=$?
     case "$failure" in
         admit-*) [[ "$status" == 37 ]]; grep -Fx partial-admission "$fixture/$failure.out" > /dev/null ;;
         *) [[ "$status" == 43 ]]; grep -Fx "observed $failure" "$fixture/$failure.out" > /dev/null; grep -Fx "probe stderr $failure" "$fixture/$failure.err" > /dev/null ;;
     esac
-    case "$failure" in admit-host|jq) ! grep -q 'admit rust' "$REPORT_EVENTS" ;; admit-rust|cargo-sort-derives) ! grep -q 'admit ic' "$REPORT_EVENTS" ;; esac
+    case "$failure" in admit-host|jq|cloc) ! grep -q 'admit rust' "$REPORT_EVENTS" ;; admit-rust|cargo-sort-derives) ! grep -q 'admit ic' "$REPORT_EVENTS" ;; esac
 done
 # Invalid catalogs refuse before admission; no implicit preparation is allowed.
 # shellcheck disable=SC2016 # Invalid literal catalog must never execute.

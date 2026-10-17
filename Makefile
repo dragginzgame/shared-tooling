@@ -4,33 +4,41 @@ export RELEASE_DELIVERY ?= direct
 SHELLCHECK ?= shellcheck
 CLOC_REPORT := $(CURDIR)/scripts/dev/cloc-siblings.sh
 CLOC_ROOT = $(CLOC_PARENT)
+CLOC_PARENT ?= $(CURDIR)/..
 SHARED_TOOLING_RUST := 0
+# Shared qualifies IC provisioning and optimization as its own product workflow.
+LOCAL_TOOL_INSTALL_TARGETS += install-ic-tools
+LOCAL_TOOL_CHECK_TARGETS += ic-tools-check
+export PATH := $(CURDIR)/.tools/ic/bin:$(PATH)
 include make/consumer.mk
 
 .PHONY: help tasks version check-shell check-pins check-doc-links check-release-commands test-portable ci \
         release-version release-preflight release-verify \
         release-prepare-version release-prepared-check release-files \
         release-commit-check release-committed-check release-tagged-check release-push-check \
-        release-merged-preflight check-cargo-tool-versions check-tool-catalogs test-licenses
+        release-merged-preflight check-cargo-tool-versions check-tool-catalogs test-licenses cloc-tooling
 
 help:
 	@echo "Current local version: make version"
 	@echo "Repeatable maintenance catalog: make tasks"
 	@echo "Sibling Rust LOC summaries: make cloc [CLOC_PARENT=/path/to/projects]"
 	@echo "Sibling CI/tooling inventory: make cloc-tooling [CLOC_PARENT=/path/to/projects]"
-	@echo "Focused: check-shell, check-pins, check-doc-links, check-release-commands, test-portable"
+	@echo "Focused: affected script fixtures, check-pins, check-doc-links, check-release-commands"
 	@echo "Local IC executables: install-ic-tools; offline verification: ic-tools-check"
 	@echo "Complete common host, IC and Rust toolset: install-tools; offline verification: tools-check"
 	@echo "Pinned Cargo tools: install-rust-tools; offline verification: rust-tools-check"
 	@echo "Cargo tool freshness (online, read-only): check-cargo-tool-versions"
 	@echo "Caller catalog agreement (offline, opt-in): check-tool-catalogs TOOL_CATALOG_BINDINGS=path"
-	@echo "Full delivery gate: ci (required before handing off code changes)"
+	@echo "Full release/explicit-check gates: ci, test-portable, check-shell"
 	@echo "Maintainer releases: release-patch, release-minor, release-major"
 	@echo "Delivery: direct by default; RELEASE_DELIVERY=pr selects review then merged validation/tag"
 	@echo "Recovery: rerun the normal release target; saved releases reconcile automatically"
 
 tasks:
 	@cat tasks/README.md
+
+cloc-tooling:
+	@perl scripts/dev/cloc-tooling.pl "$(CLOC_PARENT)"
 
 test-licenses:
 	perl scripts/ci/test-license.pl
@@ -58,7 +66,7 @@ check-doc-links:
 	perl scripts/ci/check-documentation-links.pl --root . *.md audits/*.md rules/*.md tasks/*.md docs/*.md docs/principles/*.md docs/changelog/*.md
 
 check-release-commands:
-	bash scripts/ci/check-release-commands.sh . make/consumer.mk make/tools.mk make/release.mk make/execution.mk scripts/ci/check-make-execution.sh
+	bash scripts/ci/check-release-commands.sh . make/consumer.mk make/tools.mk make/release.mk make/execution.mk scripts/ci/check-make-execution.sh scripts/ci/check-release-delivery.sh
 
 ci:
 	+@bash scripts/ci/run-validation-targets.sh --fail-fast check-shell check-pins check-doc-links test-portable

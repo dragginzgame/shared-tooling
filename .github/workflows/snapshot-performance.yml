@@ -1,0 +1,86 @@
+name: Snapshot refresh comparison
+
+# Explicit paired native measurements for #219, separate from routine CI.
+on:
+  workflow_dispatch:
+    inputs:
+      before:
+        description: Before exporter commit (full lowercase SHA)
+        required: true
+        type: string
+      after:
+        description: After exporter commit (full lowercase SHA)
+        required: true
+        type: string
+      payload:
+        description: Shared payload commit used by both exporters (full lowercase SHA)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  paired-exports:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Compare repeated exports on one native host
+        id: comparison
+        env:
+          BEFORE: ${{ inputs.before }}
+          AFTER: ${{ inputs.after }}
+          PAYLOAD: ${{ inputs.payload }}
+        run: |
+          /bin/bash scripts/distribution/measure-snapshot-refresh.sh "$BEFORE" "$AFTER" "$PAYLOAD" \
+            "$RUNNER_TEMP/snapshot-comparison" 2>&1 | tee "$RUNNER_TEMP/snapshot-comparison.log"
+      - name: Package measurements and incomplete attempts
+        id: archive
+        if: always()
+        run: |
+          inputs=()
+          if [[ -f "$RUNNER_TEMP/snapshot-comparison.log" ]]; then
+            inputs+=("$RUNNER_TEMP" snapshot-comparison.log)
+          fi
+          # Select retained observations and consumers, excluding the source
+          # checkout. The canonical archiver preserves hidden receipts while
+          # excluding Git stores at every selected depth.
+          shopt -s nullglob
+          for path in "$RUNNER_TEMP/snapshot-comparison/"*; do
+            [[ "${path##*/}" != source ]] || continue
+            inputs+=("$RUNNER_TEMP" "snapshot-comparison/${path##*/}")
+          done
+          bash scripts/ci/archive-evidence.sh "$RUNNER_TEMP/snapshot-comparison.tar.gz" \
+            "${inputs[@]}" > "$RUNNER_TEMP/snapshot-comparison-archive.log" 2>&1
+          bash scripts/ci/verify-file-checksum.sh --print sha256 \
+            "$RUNNER_TEMP/snapshot-comparison.tar.gz" > "$RUNNER_TEMP/snapshot-comparison.sha256"
+      - name: Retain packaged measurements
+        id: upload
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: snapshot-comparison-${{ matrix.os }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/snapshot-comparison.tar.gz
+            ${{ runner.temp }}/snapshot-comparison.sha256
+            ${{ runner.temp }}/snapshot-comparison-archive.log
+            ${{ runner.temp }}/snapshot-comparison.log
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30

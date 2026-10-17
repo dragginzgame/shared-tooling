@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/verify-file-checksum.sh scripts/dev/install-rust-tools.sh ci/tool-versions.env
+# Shared companions: scripts/ci/verify-file-checksum.sh scripts/dev/install-rust-tools.sh ci/tool-versions.env scripts/ci/tool-catalog-records.pl
 set -euo pipefail
 
 # Explicit native qualification, separate from the offline portable suite.
@@ -20,8 +20,8 @@ fixture="${fixture%/.}"
 trap 'printf "Cargo installation evidence retained: %s\n" "$fixture" >&2' EXIT
 export RUSTUP_AUTO_INSTALL=0
 export SHARED_TOOLING_STORE="$fixture/store"
-# shellcheck source=/dev/null
-source "$ROOT/ci/tool-versions.env"
+record="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" rust "$ROOT/ci/tool-versions.env" CARGO_SORT)"
+IFS=$'\t' read -r _ sort_version _ _ <<< "$record"
 checksum="$ROOT/scripts/ci/verify-file-checksum.sh"
 rustc -vV > "$fixture/rustc.txt"
 cargo -V > "$fixture/cargo.txt"
@@ -154,5 +154,5 @@ exercise() {
 # Frozen assessment fixture matching the published example reviewed in #65.
 # This is not a default package selection for consuming applications.
 exercise ic-blob-storage 0.15.1 example prepare_upload
-exercise cargo-sort "$SHARED_TOOLING_CARGO_SORT_VERSION" bin cargo-sort
+exercise cargo-sort "$sort_version" bin cargo-sort
 echo 'Native Cargo installation qualification passed'

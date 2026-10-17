@@ -27,7 +27,11 @@ done
 git add -- README.md AGENTS.md CONTRIBUTING.md Cargo.lock
 git -c user.name=Fixture -c user.email=fixture@example.invalid commit --quiet -m fixture
 check() { bash "$ROOT/scripts/ci/check-release-source.sh" "$@" > "$fixture/output" 2>&1; }
-refuse() { if check "$@"; then echo 'unexpected release source admission' >&2; exit 1; fi; }
+refuse() {
+    refusal_status=0
+    check "$@" || refusal_status=$?
+    [[ "$refusal_status" != 0 ]] || { echo 'unexpected release source admission' >&2; exit 1; }
+}
 check
 [[ ! -s "$fixture/output" ]] || exit 1
 
@@ -37,6 +41,11 @@ cp Cargo.lock "$fixture/lock"
 cp .git/index "$fixture/index"
 refuse
 grep -F 'unstaged: Cargo.lock' "$fixture/output" > /dev/null
+cmp Cargo.lock "$fixture/lock"
+cmp .git/index "$fixture/index"
+# Literal admission must preserve the same working bytes and index too.
+check --allow Cargo.lock
+[[ ! -s "$fixture/output" ]] || exit 1
 cmp Cargo.lock "$fixture/lock"
 cmp .git/index "$fixture/index"
 git checkout-index --force -- Cargo.lock
@@ -68,8 +77,12 @@ git checkout-index --force -- CONTRIBUTING.md
 rm "$untracked"
 mv README.md renamed.md
 git add -- README.md renamed.md
+cp .git/index "$fixture/index"
+cp renamed.md "$fixture/renamed"
 refuse --allow renamed.md
 grep -F 'staged: README.md' "$fixture/output" > /dev/null
+cmp .git/index "$fixture/index"
+cmp renamed.md "$fixture/renamed"
 git read-tree HEAD
 git checkout-index --force -- README.md
 rm renamed.md
@@ -84,17 +97,58 @@ case "$1" in
     rev-parse) phase=checkout ;;
     status) phase=status ;;
 esac
-if [[ "$phase" == "$SOURCE_TEST_FAIL" ]]; then echo "observation-error-$phase" >&2; exit 9; fi
+printf '%s\n' "$phase" >> "$SOURCE_TEST_EVENTS"
+if [[ "$phase" == "$SOURCE_TEST_FAIL" ]]; then
+    case "$SOURCE_TEST_OUTPUT" in
+        empty) ;;
+        root) printf '\n' ;;
+        allowed) printf ' M Cargo.lock\0' ;;
+        forbidden) printf '?? forbidden.txt\0' ;;
+    esac
+    echo "observation-error-$phase" >&2
+    exit 9
+fi
 exec "$SOURCE_TEST_GIT" "$@"
 STUB
 chmod +x "$fixture/bin/git"
 cp .git/index "$fixture/index"
+cp Cargo.lock "$fixture/lock"
+export SOURCE_TEST_EVENTS="$fixture/git-events"
+mkdir "$fixture/scratch"
 for phase in checkout status; do
-    SOURCE_TEST_FAIL="$phase" PATH="$fixture/bin:$PATH" refuse
-    grep -F "observation-error-$phase" "$fixture/output" > /dev/null
-    grep -F 'cannot inspect' "$fixture/output" > /dev/null
-    if grep -F 'uncommitted paths' "$fixture/output" > /dev/null; then exit 1; fi
+    outputs=(empty)
+    if [[ "$phase" == checkout ]]; then outputs+=(root); else outputs+=(allowed forbidden); fi
+    for output in "${outputs[@]}"; do
+        SOURCE_TEST_FAIL="$phase" SOURCE_TEST_OUTPUT="$output" TMPDIR="$fixture/scratch" \
+            PATH="$fixture/bin:$PATH" refuse --allow Cargo.lock
+        [[ "$refusal_status" == 1 ]] || exit 1
+        grep -F "observation-error-$phase" "$fixture/output" > /dev/null
+        grep -F 'cannot inspect' "$fixture/output" > /dev/null
+        if grep -F 'uncommitted paths' "$fixture/output" > /dev/null; then exit 1; fi
+        cmp .git/index "$fixture/index"
+        cmp Cargo.lock "$fixture/lock"
+        [[ -z "$(ls -A "$fixture/scratch")" ]] || exit 1
+    done
+done
+
+# Invalid selections refuse before Git observation or scratch allocation.
+for invalid in missing empty absolute parent dot repeated-separator unknown; do
+    case "$invalid" in
+        missing) arguments=(--allow) ;;
+        empty) arguments=(--allow '') ;;
+        absolute) arguments=(--allow /Cargo.lock) ;;
+        parent) arguments=(--allow ../Cargo.lock) ;;
+        dot) arguments=(--allow ./Cargo.lock) ;;
+        repeated-separator) arguments=(--allow directory//Cargo.lock) ;;
+        unknown) arguments=(--unknown) ;;
+    esac
+    : > "$SOURCE_TEST_EVENTS"
+    SOURCE_TEST_FAIL=unused SOURCE_TEST_OUTPUT=empty TMPDIR="$fixture/scratch" \
+        PATH="$fixture/bin:$PATH" refuse "${arguments[@]}"
+    [[ "$refusal_status" == 2 && ! -s "$SOURCE_TEST_EVENTS" ]] || exit 1
+    [[ -z "$(ls -A "$fixture/scratch")" ]] || exit 1
     cmp .git/index "$fixture/index"
+    cmp Cargo.lock "$fixture/lock"
 done
 check
 echo 'Release source diagnostics, observation failures and preservation tests passed'

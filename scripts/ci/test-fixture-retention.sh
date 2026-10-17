@@ -25,8 +25,10 @@ mkdir -p "$fixture/exit-input/src" "$fixture/exit-input/.githooks" "$fixture/exi
 for input in src/lib.rs Cargo.toml Makefile README.md .githooks/pre-commit scripts/dev/install-git-hooks.sh scripts/ci/check-make-execution.sh; do
     printf 'retained input\n' > "$fixture/exit-input/$input"
 done
+printf '#!/bin/sh\nexit 99\n' > "$fixture/exit-input/prefix-checker"
+chmod +x "$fixture/exit-input/prefix-checker"
 export RETENTION_EXIT_PATH="$fixture/exit-path"
-for name in format-tools tool-commands rust-tools release-runner host-tools ic-tools fixture-retention check-formatting-hooks; do
+for name in format-tools tool-commands rust-tools release-runner host-tools ic-tools fixture-retention snapshot-verifier runtime-panics prepare-common-tools check-formatting-hooks installers evidence-download; do
     source="$ROOT/scripts/ci/test-$name.sh"
     probe_args=()
     if [[ "$name" == check-formatting-hooks ]]; then
@@ -35,10 +37,14 @@ for name in format-tools tool-commands rust-tools release-runner host-tools ic-t
     fi
     FIXTURE_PROBE_DIRECTORY_VARIABLE=fixture
     [[ "$name" != release-runner ]] || FIXTURE_PROBE_DIRECTORY_VARIABLE=FIXTURE_ROOT
+    [[ "$name" != installers ]] || FIXTURE_PROBE_DIRECTORY_VARIABLE=FIXTURE
+    if [[ "$name" == runtime-panics ]]; then
+        FIXTURE_PROBE_DIRECTORY_VARIABLE=scratch
+        probe_args=("$fixture/exit-input/prefix-checker")
+    fi
     export FIXTURE_PROBE_DIRECTORY_VARIABLE
     fixture_probe_exits "$source" "$fixture" "$ROOT" "$name" ${probe_args[@]+"${probe_args[@]}"} || exit 1
     if [[ "$name" == ic-tools ]]; then
-        fixture_probe_exit "$source" "$fixture" "$ROOT" "$name" cleanup-failure || exit 1
         grep -F 'IC fixture cleanup started:' "$fixture/$name-cleanup-failure.log" > /dev/null
         grep -E 'IC fixture cleanup finished: [0-9]+s, status 37' "$fixture/$name-cleanup-failure.log" > /dev/null
     fi
@@ -77,6 +83,60 @@ if fixture_probe_prefix "$fixture/consumer.sh" "$fixture/invalid.sh" ROOT 'bad;n
 [[ ! -e "$fixture/invalid.sh" ]] || exit 1
 FIXTURE_PROBE_DIRECTORY_VARIABLE=fixture
 export FIXTURE_PROBE_DIRECTORY_VARIABLE
+
+# Consumer collectors may use another completion marker and a RUNNER_TEMP root.
+# Exercise absolute, relative and aliased scratch paths without running bodies.
+mkdir "$fixture/selected scratch"
+ln -s "$fixture/selected scratch" "$fixture/scratch alias"
+cat > "$fixture/collector.sh" <<'PROBE'
+#!/usr/bin/env bash
+set -euo pipefail
+script_root=unused
+source "$script_root/scripts/ci/fixture-lifecycle.sh"
+metadata="$(fixture_create "$RUNNER_TEMP/collector.XXXXXX")"
+collection_complete=false
+trap 'status=$?; fixture_complete="$collection_complete"; fixture_finish "$status" "$metadata" "Collector retained"' EXIT
+printf forbidden > "$script_root/collector-body-ran"
+PROBE
+relative_scratch="$(perl -MFile::Spec -e 'print File::Spec->abs2rel($ARGV[0], $ARGV[1])' "$fixture/selected scratch" "$ROOT")"
+for scratch in "$fixture/selected scratch" "$relative_scratch" "$fixture/scratch alias"; do
+    (cd "$ROOT" && CDPATH="$fixture" RUNNER_TEMP="$scratch" \
+        FIXTURE_PROBE_ROOT_VARIABLE=script_root FIXTURE_PROBE_DIRECTORY_VARIABLE=metadata \
+        FIXTURE_PROBE_COMPLETION_VARIABLE=collection_complete FIXTURE_PROBE_TEMPORARY_ROOT="$scratch" \
+        fixture_probe_exits "$fixture/collector.sh" "$fixture" "$ROOT" collector) || exit 1
+done
+[[ ! -e "$ROOT/collector-body-ran" ]] || exit 1
+# Reject injected completion-variable source before allocating or running a child.
+if FIXTURE_PROBE_COMPLETION_VARIABLE='bad;name' fixture_probe_exit \
+    "$fixture/collector.sh" "$fixture" "$ROOT" invalid-completion completed; then exit 1; fi
+[[ ! -e "$fixture/invalid-completion-completed.exit" ]] || exit 1
+# Temporary completion selections must not change the default caller contract.
+FIXTURE_PROBE_ROOT_VARIABLE=repository_root FIXTURE_PROBE_DIRECTORY_VARIABLE=temporary_root \
+    fixture_probe_exit "$fixture/consumer.sh" "$fixture" "$ROOT" default-after-custom completed || exit 1
+
+# Repeated names must reject an early child exit even if an old receipt and its
+# retained evidence (or successful cleanup) would otherwise match the outcome.
+cat > "$fixture/reused-owner.sh" <<'PROBE'
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT=unused
+source "$ROOT/scripts/ci/fixture-lifecycle.sh"
+if [[ -n "${RETENTION_INIT_EXIT:-}" ]]; then exit "$RETENTION_INIT_EXIT"; fi
+fixture="$(fixture_create "$TMPDIR/reused-owner.XXXXXX")"
+fixture_complete=false
+trap 'fixture_finish "$?" "$fixture" "Reused owner retained"' EXIT
+PROBE
+for outcome in nounset completed; do
+    fixture_probe_exit "$fixture/reused-owner.sh" "$fixture" "$ROOT" reused "$outcome" || exit 1
+    previous_retained="$fixture_probe_retained"
+    early_status=1
+    [[ "$outcome" != completed ]] || early_status=0
+    status=0
+    RETENTION_INIT_EXIT="$early_status" fixture_probe_exit \
+        "$fixture/reused-owner.sh" "$fixture" "$ROOT" reused "$outcome" || status=$?
+    [[ "$status" != 0 && -z "$fixture_probe_retained" && ! -e "$fixture/reused-$outcome.exit" ]] || exit 1
+    if [[ "$outcome" == nounset ]]; then [[ -f "$previous_retained/exit-evidence" ]] || exit 1; fi
+done
 
 # A diagnostic fixture may intentionally keep its successful result.
 cat > "$fixture/retained-owner.sh" <<'PROBE'
@@ -156,28 +216,30 @@ mkdir "$fixture/physical parent" "$fixture/decoy" "$fixture/changed-cwd"
 printf 'unrelated evidence\n' > "$fixture/decoy/payload"
 export RETENTION_ALIAS="$fixture/tmp-alias" RETENTION_DECOY="$fixture/decoy"
 export RETENTION_CHANGED_CWD="$fixture/changed-cwd"
-for name in format-tools release-runner fixture-retention; do
+for name in format-tools release-runner fixture-retention runtime-panics; do
     awk '
         { print }
         /^trap .* EXIT$/ { found=1; exit }
         END { if (!found) exit 1 }
     ' "$ROOT/scripts/ci/test-$name.sh" > "$fixture/exit-source/scripts/ci/anchor-probe.sh"
     cat >> "$fixture/exit-source/scripts/ci/anchor-probe.sh" <<'PROBE'
-directory="${fixture:-${FIXTURE_ROOT:-}}"
+directory="${fixture:-${FIXTURE_ROOT:-${scratch:-}}}"
 printf '%s\n' "$directory" > "$RETENTION_EXIT_PATH"
 printf 'retained evidence\n' > "$directory/payload"
 cd "$RETENTION_CHANGED_CWD"
 rm "$RETENTION_ALIAS"
 ln -s "$RETENTION_DECOY" "$RETENTION_ALIAS"
-if [[ "$1" == failed ]]; then exit 23; fi
+if [[ "$RETENTION_ANCHOR_OUTCOME" == failed ]]; then exit 23; fi
 fixture_complete=true
 PROBE
     for outcome in completed failed; do
+        probe_args=("$outcome")
+        [[ "$name" != runtime-panics ]] || probe_args=("$fixture/exit-input/prefix-checker")
         rm -f "$RETENTION_ALIAS"
         ln -s "$fixture/physical parent" "$RETENTION_ALIAS"
         status=0
-        (cd "$fixture" && CDPATH="$fixture" TMPDIR=tmp-alias "$BASH" \
-            "$fixture/exit-source/scripts/ci/anchor-probe.sh" "$outcome") \
+        (cd "$fixture" && CDPATH="$fixture" TMPDIR=tmp-alias RETENTION_ANCHOR_OUTCOME="$outcome" "$BASH" \
+            "$fixture/exit-source/scripts/ci/anchor-probe.sh" "${probe_args[@]}") \
             > "$fixture/anchor-$name-$outcome.log" 2>&1 || status=$?
         retained="$(cat "$RETENTION_EXIT_PATH")"
         [[ "$retained" == "$fixture/physical parent/"* ]] || exit 1
@@ -348,7 +410,7 @@ for phase in install check; do
     cp "$ROOT/make/tools.mk" "$ROOT/make/execution.mk" "$native/make/"
     mkdir -p "$native/scripts/ci"
     cp "$ROOT/scripts/ci/check-make-execution.sh" "$native/scripts/ci/"
-    printf 'include make/tools.mk\n' > "$native/Makefile"
+    printf 'LOCAL_TOOL_INSTALL_TARGETS += install-ic-tools\nLOCAL_TOOL_CHECK_TARGETS += ic-tools-check\ninclude make/tools.mk\n' > "$native/Makefile"
     for tool in host rust; do
         printf '#!/usr/bin/env bash\nexit 0\n' > "$native/scripts/dev/install-$tool-tools.sh"
     done

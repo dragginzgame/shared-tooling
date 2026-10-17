@@ -1,10 +1,351 @@
 # Changelog
 
-## [0.15.5]
+## [0.22.2]
 
 - Share atomic validation/prepared release receipts and exact identity/payload
-  checks. Consumers keep their file inventories, validation gates and release
-  policy; failed generation and symlinks cannot replace accepted evidence.
+  checks. Consumers retain file inventories, gates and release policy; failed
+  generation and symlinks cannot replace accepted evidence
+  ([#278](https://github.com/dragginzgame/shared-tooling/issues/278)).
+
+## [0.22.1]
+
+### Added
+
+- Prepare disposable script fixtures from explicit roots and their declared
+  companion closure, reusing snapshot distribution's nonexecuting reader. Keep
+  export measurements bound to frozen helper blobs, including that reader
+  ([#274 — Prepare script fixtures from their declared companion closure](https://github.com/dragginzgame/shared-tooling/issues/274)).
+
+### Changed
+
+- Update the canonical evidence and snapshot-comparison uploaders to the exact
+  7.0.2 source, preserving archive preparation and failure policy
+  ([#275 — Update the canonical artifact uploader to 7.0.2](https://github.com/dragginzgame/shared-tooling/issues/275)).
+
+## [0.22.0]
+
+### Changed
+
+- Select common CI binary pins directly from the reviewed tool catalog. Linux
+  x86-64 callers need only a tool and installation directory; explicit catalog
+  exceptions and paired version/checksum inputs remain available. Reuse the
+  shared fixture lifecycle for formatting adoption, installer and download checks,
+  preserving failed evidence and cleanup failures.
+
+### Breaking
+
+- Remove the raw catalog `values` projection. Consume validated `host`, `rust`,
+  `ic` or `ci` records, optionally selecting a tool after complete group admission.
+- Move the temporary public-documentation debt checker, guide and dedicated
+  fixtures to IC Query. Integrate
+  [Query PR #76 — Own public documentation debt tooling](https://github.com/dragginzgame/ic-query/pull/76)
+  before adopting this snapshot; other consumers must own any local debt policy
+  ([Query #75 — Own temporary public-documentation debt policy](https://github.com/dragginzgame/ic-query/issues/75)).
+  The common section-style type checker and Rust tokenizer remain shared.
+
+## [0.21.0]
+
+### Added
+
+- Compare repeated snapshot exports on Linux and both native macOS hosts through
+  an opt-in workflow. Both exporters use one frozen payload, retain alternating
+  timing samples and verify matching receipts and files. Routine CI stays focused
+  on correctness; native performance acceptance still requires observed results
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
+- Package comparison evidence through the canonical archiver so downloads retain
+  hidden snapshot receipts, logs and incomplete attempts. Exclude source clones
+  and Git stores, and preserve packaging failures
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
+
+### Changed
+
+- Consume validated host-tool records directly during installation, preserving
+  payload authentication and offline checks without reconstructing catalog
+  environment variables or repeating catalog admission.
+- Select ICP CLI 1.7.0 for the three supported IC-tool hosts using official
+  release-asset digests. Other tool pins and explicit setup policy are unchanged;
+  adopters run IC-tool setup before offline checks with the new catalog
+  ([#268 — Adopt ICP CLI 1.7.0](https://github.com/dragginzgame/shared-tooling/issues/268)).
+
+### Fixed
+
+- Require one complete Rust policy observation before publishing a workspace
+  compiler floor or preparing a toolchain. Reject ambiguous parser streams before
+  Rustup while preserving valid bootstrap inputs and parser failure statuses
+  ([#270 — Reject ambiguous Rust bootstrap policy observations](https://github.com/dragginzgame/shared-tooling/issues/270)).
+
+### Breaking
+
+- Remove the complete Cargo publication preflight command. Consumers own package,
+  registry and release-tag policy while reusing the shared source, version, tag
+  and registry observers. IC Jobs adopts its local policy in
+  [PR #67 — Own publication admission locally](https://github.com/dragginzgame/ic-jobs/pull/67);
+  integrate that caller before adopting this snapshot.
+
+## [0.20.0]
+
+### Added
+
+- Check consumer-owned Cargo dependency boundaries across canonical package names,
+  including renamed, target-specific, build and development dependencies. Refuse
+  failed, incomplete or mismatched metadata before reporting success; run locked
+  and offline without changing dependency selection
+  ([PR #257 — Add declarative Cargo dependency boundaries](https://github.com/dragginzgame/shared-tooling/pull/257),
+  [Storage #4 — Adopt fail-closed dependency-boundary admission](https://github.com/dragginzgame/ic-storage/issues/4)).
+- Declare supported release-delivery modes once in a consumer-owned data file.
+  Common Make admission and standalone metadata entrypoints reuse the same
+  read-only check, rejecting unsupported selections before effects while leaving
+  unrelated goals unchanged
+  ([#258 — Declare consumer-supported release delivery once](https://github.com/dragginzgame/shared-tooling/issues/258)).
+
+### Fixed
+
+- Keep installer CLI smoke checks with their owning fixture instead of a second
+  portable-runner roster. Remove the stale YQ call that made 0.19 Linux CI exit
+  after all named shell fixtures had passed
+  ([#266 — Retire standalone YQ installation](https://github.com/dragginzgame/shared-tooling/issues/266)).
+
+### Breaking
+
+- Common setup, offline checks and action PATH publication now cover host/Cargo
+  tools. Repositories using IC executables must select `install-ic-tools` and
+  `ic-tools-check` in their ordered local target lists and publish `.tools/ic/bin`
+  explicitly. Existing installations and reviewed tool pins are retained.
+- Formatting hooks and their adoption checks expose only common host/Cargo
+  paths by default. Product formatters requiring IC tools must select their
+  prepared IC PATH explicitly, including the original tool root for index exports.
+- Version reporting defaults to host/Cargo selections. Pass both the version
+  catalog and IC pin catalog to include IC admission and observations
+  ([#253 — Make the IC executable bundle an explicit product selection](https://github.com/dragginzgame/shared-tooling/issues/253),
+  [PR #254](https://github.com/dragginzgame/shared-tooling/pull/254)).
+
+## [0.19.0]
+
+### Breaking
+
+- Retire standalone `install-ci-tool.sh yq`; prepare and check YQ through the
+  common host bundle instead. Other CI installers retain authenticated atomic
+  publication and failure preservation
+  ([#266 — Retire standalone YQ installation](https://github.com/dragginzgame/shared-tooling/issues/266)).
+- Move full native recovery-archive packaging and its fixtures into IC Metrics.
+  Remove the former `collect-native-evidence.sh` snapshot entrypoint on adoption;
+  preserve hidden Git recovery state through Metrics' local helper and keep
+  sanitized diagnostics on the shared exporter
+  ([Metrics #89 — Own native recovery-archive packaging](https://github.com/dragginzgame/ic-metrics/issues/89),
+  [Metrics PR #88](https://github.com/dragginzgame/ic-metrics/pull/88)).
+- Require literal Host/Rust tool catalogs for installation, inspection and cache
+  keys. Replace computed catalogs and duplicate assignments with complete literal
+  selections before adoption
+  ([#263 — Require literal data-only tool catalogs](https://github.com/dragginzgame/shared-tooling/issues/263)).
+- Retire the release-prose heuristic and its fixture; remove consumer invocations
+  and snapshot entrypoints while retaining metadata and receipt checks
+  ([#264 — Retire the release-prose heuristic](https://github.com/dragginzgame/shared-tooling/issues/264)).
+- Count every selected Rust source path in LOC reports, including identical file
+  contents. Runtime and test totals share one per-file count instead of separate
+  duplicate-suppressing passes
+  ([#265 — Count Rust LOC from one per-file projection](https://github.com/dragginzgame/shared-tooling/issues/265)).
+- Retire the README dependency-example version renderer and its fixture. Consumers
+  must remove its snapshot entrypoint and automatic README rewriting before
+  adoption; IC Memory tracks that update separately
+  ([#260 — Retire the README version renderer](https://github.com/dragginzgame/shared-tooling/issues/260),
+  [Memory #119 — Retire README version rendering](https://github.com/dragginzgame/ic-memory/issues/119)).
+
+### Changed
+
+- Reuse canonical stable-version comparison in tag maintenance while preserving
+  minor-only cutoffs, arbitrary-size components, tag-spelling ordering and the
+  existing deletion authorization, lease and recovery boundaries
+  ([#267 — Reuse stable-version comparison in tag maintenance](https://github.com/dragginzgame/shared-tooling/issues/267)).
+- Share literal/comment masking between documentation checkers while preserving
+  source offsets, Unicode identifiers and separate documentation policies
+  ([#261 — Share Rust lexical masking](https://github.com/dragginzgame/shared-tooling/issues/261)).
+- Use canonical stable-version admission across Cargo release helpers, retaining
+  exact large components and separate release bounds
+  ([#262 — Use canonical stable-version admission](https://github.com/dragginzgame/shared-tooling/issues/262)).
+
+- Reject signal-terminated version-ordering and tool-catalog fixture checks even
+  when they emit valid output, preserving normal checker exit classifications
+  ([#256 — Reject signal-terminated ordering and catalog checks](https://github.com/dragginzgame/shared-tooling/issues/256)).
+
+## [0.17.2] - 2026-10-16
+
+## [0.17.1]
+
+- Keep expected type-documentation rejections out of passing CI output, replay
+  unexpected failures from retained case logs, reject signal-terminated checks
+  and print Unicode diagnostic names without encoding warnings
+  ([#255 — Retain type-doc diagnostics and reject signal-terminated checks](https://github.com/dragginzgame/shared-tooling/issues/255)).
+- Avoid external comparisons for empty snapshot index records while retaining
+  every Git re-observation, staged-change refusal and publication recheck
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
+- Identify invalid pending changelog headings with their source line and the
+  expected numbered spelling before release preparation; retain strict candidate
+  and exact-date recovery checks
+  ([#252 — Explain unsupported pending changelog headings](https://github.com/dragginzgame/shared-tooling/issues/252)).
+
+## [0.17.0]
+
+### Breaking
+
+- Require `--consumer <repository>` for hook installation. Update direct setup
+  callers before snapshot adoption; `make install-hooks` already supplies it.
+- Require `SCCACHE_BIN` to select an absolute executable file for the stable
+  compiler-cache launcher. Remove implicit PATH discovery; consumers select
+  the binary or their own cache-failure adapter explicitly before launch.
+
+### Changed
+
+- Qualify repeated validation-log retention and Cargo/logger status combinations
+  at their Shared owners. Earlier failure bytes survive retries and unusable
+  evidence destinations; consumers retain their adapter and lock-cleanup checks
+  ([PR #249 — Repeated logger failures](https://github.com/dragginzgame/shared-tooling/pull/249),
+  [PR #250 — Publication logger status](https://github.com/dragginzgame/shared-tooling/pull/250)).
+- Require a commit object when proving prior snapshot ownership, including
+  takeover receipts. Refuse tree/tag identities and failed type observations
+  before changing consumer files
+  ([#248 — Require commit objects for prior snapshot ownership proofs](https://github.com/dragginzgame/shared-tooling/issues/248)).
+- Avoid repeated directory-creation commands for existing snapshot payload
+  parents, retaining manifest admission, drift checks and atomic replacement
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
+- Qualify release preflight refusals at the shared runner/helper boundary,
+  preserving source, index and existing tools before version preparation.
+  Shared fixtures also own reporter partial output and archive diagnostic
+  checksum preservation, keeping consumer checks focused on their own adapters
+  ([PR #247 — Keep generic release and evidence qualification at Shared owners](https://github.com/dragginzgame/shared-tooling/pull/247)).
+
+## [0.16.1]
+
+- Read snapshot companion headers with Bash instead of launching a parser for
+  each payload, preserving literal second-line selection and EOF handling
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
+- Share the read-only workspace Rust-floor projection between explicit Rust
+  setup and consumer validation. It uses prepared TOML/JSON parsers without
+  requiring Cargo/Rust or performing installation; failed parser observations
+  publish no selection
+  ([PR #246 — Share read-only workspace Rust floor selection](https://github.com/dragginzgame/shared-tooling/pull/246)).
+- Qualify exact working-file and Git index preservation when release-source
+  checks admit an allowed metadata edit or refuse an unapproved rename source
+  ([PR #242 — Own release-source allowance and rename preservation checks](https://github.com/dragginzgame/shared-tooling/pull/242)).
+- Qualify release-source refusal of failed Git observations even when they emit
+  plausible output, and invalid selections before Git dispatch, with input
+  preservation and scratch cleanup.
+
+## [0.16.0]
+
+### Breaking
+
+- Require `--install-dir` for CI binary installation, removing environment and
+  home-directory destination selection. Update installer invocations before
+  adopting this release
+  ([#244 — Require explicit CI tool installation destinations](https://github.com/dragginzgame/shared-tooling/issues/244)).
+- Require explicit assertion source, prefix and contradictory bindings for
+  retention probes. The probe executes only owner initialization and the selected
+  assertion; migrate inferred-assertion callers to `--selected` before refresh
+  ([#245 — Require explicit assertion selection in retention probes](https://github.com/dragginzgame/shared-tooling/issues/245)).
+- Keep `make cloc-tooling` and `CLOC_PARENT` in Shared Tooling's own Makefile.
+  Consumer includes no longer export the fleet command; run it centrally or
+  explicitly select and invoke the Perl reporter when adopting this release
+  ([#243 — Keep fleet tooling Make command at its Shared Tooling owner](https://github.com/dragginzgame/shared-tooling/issues/243)).
+- Remove the exported exhaustive Make execution-mode probe. Consumers must use
+  `make_probe_target_admission` for target admission when adopting this release;
+  parallel-dispatch checks remain available. The complete flag matrix stays in
+  the producer fixture
+  ([PR #241 — Keep exhaustive qualification at Shared owners](https://github.com/dragginzgame/shared-tooling/pull/241)).
+
+## [0.15.10]
+
+- Qualify standalone formatting success and cleanup at the wrapper owner,
+  preserving earlier failure logs byte-for-byte
+  ([PR #240 — Standalone formatting and retained-log qualification](https://github.com/dragginzgame/shared-tooling/pull/240)).
+- Qualify missing workspace versions and duplicate TOML tables at the Cargo
+  version-reader owner, keeping release-adapter checks focused on their boundary
+  ([PR #241 — Keep exhaustive qualification at Shared owners](https://github.com/dragginzgame/shared-tooling/pull/241)).
+
+## [0.15.9]
+
+- Read Rust setup selections from existing toolchain or workspace TOML policy,
+  rejecting invalid selections and directory paths before installation
+  ([PR #239 — Read Rust setup selections from TOML policy](https://github.com/dragginzgame/shared-tooling/pull/239)).
+- Qualify common publication eligibility with real local Git histories and bare
+  destinations, keeping package selection and upload recovery consumer-owned
+  ([PR #238 — Real-Git publication eligibility qualification](https://github.com/dragginzgame/shared-tooling/pull/238)).
+
+## [0.15.8]
+
+- Include cleanup refusal in the standard fixture exit probes, preserving
+  caller-specific diagnostic checks without a duplicate injection
+  ([PR #237 — Include cleanup refusal in standard exit probes](https://github.com/dragginzgame/shared-tooling/pull/237)).
+- Qualify nested workflow discovery and failed Git inventories at the dependency
+  checker owner, including partial output and scratch cleanup
+  ([PR #236 — Qualify dependency workflow inventory failures](https://github.com/dragginzgame/shared-tooling/pull/236)).
+- Keep scanner semantic-fixture evidence and cleanup anchored when temporary
+  directory aliases change. Native qualification retains and checksums the
+  shared lifecycle companion with its source inputs
+  ([#225 — Structural Rust runtime panic scanner](https://github.com/dragginzgame/shared-tooling/issues/225)).
+
+## [0.15.7]
+
+- Qualify real Cargo environment and configuration offline refusal on a frozen
+  minimal graph before tool dispatch, preserving its manifest and lock
+  ([PR #235 — Qualify real Cargo offline policy](https://github.com/dragginzgame/shared-tooling/pull/235)).
+- Reuse exit-retention checks across caller-selected completion variables and
+  physical scratch roots, including relative paths and aliases. Require a fresh
+  child receipt on repeated probes while preserving earlier retained evidence
+  ([PR #234 — Reuse fixture exit qualification](https://github.com/dragginzgame/shared-tooling/pull/234)).
+- Accept padded BSD line counts in scanner qualification so native macOS
+  refusal checks reach the full retained-failure matrix
+  ([#225 — Structural Rust runtime panic scanner](https://github.com/dragginzgame/shared-tooling/issues/225)).
+
+## [0.15.6]
+
+- Refuse failed Git file-mode observations during snapshot refresh even when
+  they emit a complete row, before publishing payloads or a manifest
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
+- Preserve the release adapter's selected Make executable during Cargo preflight,
+  including paths with spaces and exact failure propagation
+  ([PR #233 — Honor selected Make during Cargo release preflight](https://github.com/dragginzgame/shared-tooling/pull/233)).
+- Avoid external path-utility launches during snapshot refresh, reusing each
+  output parent while retaining source, consumer and index drift checks
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
+- Compile and exercise the shared Rust panic scanner in each native CI lane,
+  using a locked producer-only fixture without changing consumer dependency
+  selection. Retain exact source inputs, compiler identity and failure logs
+  ([#225 — Structural Rust runtime panic scanner](https://github.com/dragginzgame/shared-tooling/issues/225)).
+- Qualify selected-source release metadata refusals and retained inputs,
+  including invalid Git identities and Git commands that emit output then fail
+  ([PR #232 — Selected-source metadata qualification](https://github.com/dragginzgame/shared-tooling/pull/232)).
+
+## [0.15.5]
+
+- Share structural Rust runtime-panic scanning as snapshot source, including
+  raw identifiers and generic method calls inside macro tokens. Consumers retain
+  their selected dependencies and production-source inventories
+  ([#225 — Structural Rust runtime panic scanner](https://github.com/dragginzgame/shared-tooling/issues/225),
+  [PR #226 — Shared scanner source](https://github.com/dragginzgame/shared-tooling/pull/226)).
+- Share hosted common-tool preparation and disposable Make fixture setup,
+  preserving ordered setup/check logs, failure status and PATH publication.
+  Reject forbidden directory paths before copying fixture inputs
+  ([PR #227 — Common preparation and fixtures](https://github.com/dragginzgame/shared-tooling/pull/227)).
+- Offer focused per-target Make admission checks while keeping exhaustive flag
+  and installer-failure permutations with the shared producer
+  ([PR #231 — Producer qualification matrices](https://github.com/dragginzgame/shared-tooling/pull/231)).
+- Replay explicitly selected fixture diagnostics without replacing the original
+  failure status or taking over retention policy
+  ([PR #221 — Fixture diagnostic replay](https://github.com/dragginzgame/shared-tooling/pull/221)).
+- Upload caller-prepared failure archives and collection logs without collecting
+  tools again; retain available diagnostics before reporting incomplete inputs.
+  Ordinary collection still refuses missing roots before any collection effects
+  ([PR #230 — Prepared failure evidence](https://github.com/dragginzgame/shared-tooling/pull/230)).
+- Own native diagnostic-store and candidate-archive regressions, focused snapshot
+  verification, and downloaded-archive rejection cases at Shared Tooling
+  ([PR #222 — Native diagnostics](https://github.com/dragginzgame/shared-tooling/pull/222),
+  [PR #224 — Verifier qualification](https://github.com/dragginzgame/shared-tooling/pull/224)).
+- Expand simulated release-preflight cache and tool-admission coverage; consumers
+  retain actual adapter, runner and recovery checks
+  ([PR #228 — Release-preflight cases](https://github.com/dragginzgame/shared-tooling/pull/228)).
+- Correct Rust preparation adoption guidance to include its automatically exported
+  helper companion
+  ([PR #223 — Rust action companion](https://github.com/dragginzgame/shared-tooling/pull/223)).
 
 ## [0.15.4]
 
@@ -12,16 +353,6 @@
   retaining shared task guidance. Existing snapshots use explicit selection and
   guarded retirement to remove these files
   ([PR #220 — Optional maintenance runtime](https://github.com/dragginzgame/shared-tooling/pull/220)).
-
-### Pending integration
-
-- Share structural Rust runtime-panic scanning, including detection of raw
-  identifiers such as `r#unwrap()` and `r#panic!()` inside and outside macros.
-  Consumers retain their source inventories and dependency selections
-  ([PR #226 — Shared Rust panic scanner](https://github.com/dragginzgame/shared-tooling/pull/226)).
-- Share hosted common-tool preparation and Make fixture setup. Reject CR/LF
-  directory paths and resolved aliases before copying fixture files
-  ([PR #227 — Common tool preparation and fixture setup](https://github.com/dragginzgame/shared-tooling/pull/227)).
 
 ## [0.15.3]
 
@@ -46,7 +377,6 @@
 
 ## [0.15.2]
 
-<<<<<<< HEAD
 - Add a contributor agreement granting Toko Studios explicit alternative
   licensing rights, with contributor/employer authority and signed-scope records.
   Acceptance and existing-contribution clearance remain separately recorded.
@@ -54,7 +384,6 @@
 - Prepare Dragginz license 1.1 with contributor patent grants and defensive
   patent termination. The current text preserves permanent Toko Studios rights;
   existing licenses and grants remain unchanged without deliberate adoption.
-=======
 - Separate optional maintenance runner/systemd selection roots from the governance
   catalog. Keep task guidance available without operational payloads; explicit
   opt-in and guarded retirement use the existing snapshot exporter contract.
@@ -66,7 +395,6 @@
 - Support explicit verified snapshot ownership handover during consumer refresh,
   preserving source proof, local edits, index custody and selected entrypoints.
 
->>>>>>> a7275930209088c61ea4bb1f98a2d03ccfc3807d
 
 - Complete saved-source Cargo dependency projection, previously noted as pending
   in 0.15.1. Archived manifests now use recorded workspace identity without

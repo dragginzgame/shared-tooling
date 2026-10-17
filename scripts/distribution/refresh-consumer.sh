@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
+# Shared companions: scripts/ci/shared-companions.sh
 set -euo pipefail
 
 SCRIPT_ROOT="${BASH_SOURCE[0]}"
 [[ "$SCRIPT_ROOT" == /* ]] || SCRIPT_ROOT="$PWD/$SCRIPT_ROOT"
 SCRIPT_ROOT="$(cd -P "${SCRIPT_ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 SCRIPT_ROOT="${SCRIPT_ROOT%/.}"
+# shellcheck source=scripts/ci/shared-companions.sh
+source "$SCRIPT_ROOT/scripts/ci/shared-companions.sh"
 SOURCE_ROOT="$SCRIPT_ROOT"
 CONSUMER_ROOT=""
 MANIFEST_PATH=".shared-tooling.snapshot"
@@ -109,16 +112,20 @@ consumer_state() {
 
 committed_mode() {
     local revision="$1" path="$2" tree_entry tree_metadata entry_mode entry_type mode=""
-    while IFS= read -r -d '' tree_entry; do
-        [[ "${tree_entry#*$'\t'}" == "$path" ]] || continue
-        tree_metadata="${tree_entry%%$'\t'*}"
-        read -r entry_mode entry_type _ <<<"$tree_metadata"
-        [[ "$entry_type" == blob && "$entry_mode" =~ ^100(644|755)$ ]] ||
-            fail "source revision does not contain a regular file: $path"
-        mode="$entry_mode"
-    done < <(git -C "$SOURCE_ROOT" ls-tree -z "$revision" -- "$path")
-    [[ -n "$mode" ]] || fail "source file is not recorded in revision $revision: $path"
-    printf '%s\n' "$mode"
+    # pipefail carries a failed Git observation even after a complete row. A
+    # process substitution hides that status, and Bash 3.2 cannot wait for it.
+    git -C "$SOURCE_ROOT" ls-tree -z "$revision" -- "$path" | {
+        while IFS= read -r -d '' tree_entry; do
+            [[ "${tree_entry#*$'\t'}" == "$path" ]] || continue
+            tree_metadata="${tree_entry%%$'\t'*}"
+            read -r entry_mode entry_type _ <<<"$tree_metadata"
+            [[ "$entry_type" == blob && "$entry_mode" =~ ^100(644|755)$ ]] ||
+                fail "source revision does not contain a regular file: $path"
+            mode="$entry_mode"
+        done
+        [[ -n "$mode" ]] || fail "source file is not recorded in revision $revision: $path"
+        printf '%s\n' "$mode"
+    }
 }
 
 check_consumer_unchanged() {
@@ -130,9 +137,12 @@ check_consumer_unchanged() {
 # The manifest alone cannot authorize replacing or retiring consumer bytes.
 # Resolve its ownership claim against the exact earlier source for both paths.
 export_previous_payload() {
-    local index="$1" output="$2" path mode executable=-
+    local index="$1" output="$2" path mode revision_kind executable=-
     path="${previous_sources[$index]}"
     local revision="${previous_revisions[$index]}"
+    revision_kind="$(git -C "$SOURCE_ROOT" cat-file -t "$revision")" ||
+        fail "cannot inspect previous snapshot revision"
+    [[ "$revision_kind" == commit ]] || fail "previous snapshot revision is not an available commit"
     mode="$(committed_mode "$revision" "$path")" || fail "previous snapshot source is unavailable: $path"
     [[ "$mode" != 100755 ]] || executable=x
     [[ "$executable" == "${previous_modes[$index]}" ]] || fail "previous snapshot mode disagrees with its source: $path"
@@ -145,9 +155,16 @@ export_previous_payload() {
 
 check_index_unchanged() {
     local index="$1" path="$2"
-    git -C "$CONSUMER_ROOT" --literal-pathspecs ls-files --stage -z -- "$path" > "$STAGING_DIR/current-index" ||
+    local recorded="$STAGING_DIR/index-$index" observed="$STAGING_DIR/current-index"
+    git -C "$CONSUMER_ROOT" --literal-pathspecs ls-files --stage -z -- "$path" > "$observed" ||
         fail "cannot inspect consumer index: $path"
-    cmp -s "$STAGING_DIR/index-$index" "$STAGING_DIR/current-index" ||
+    # Reobserve Git on every check. Two readable, regular empty records already
+    # prove equality; retain byte comparison for all other index observations.
+    if [[ -f "$recorded" && -r "$recorded" && ! -s "$recorded" &&
+          -f "$observed" && -r "$observed" && ! -s "$observed" ]]; then
+        return 0
+    fi
+    cmp -s "$recorded" "$observed" ||
         fail "consumer index changed during refresh: $path"
 }
 
@@ -409,15 +426,12 @@ while [[ "$cursor" -lt "${#proposed[@]}" ]]; do
     # These observations belong to the immutable selected revision. Retain them
     # for export; mutable checkout and consumer admission still run below.
     source_modes[cursor]="$(committed_mode "$source_revision" "$path")" || fail "cannot read committed companion source: $path"
-    mkdir -p "$staged_files/$(dirname "$path")"
+    staged_parent="$staged_files"
+    if [[ "$path" == */* ]]; then staged_parent+="/${path%/*}"; fi
+    [[ -d "$staged_parent" ]] || mkdir -p "$staged_parent"
     git -C "$SOURCE_ROOT" cat-file blob "$source_revision:$path" > "$staged_files/$path" || fail "cannot inspect companions: $path"
-    declaration="$(sed -n '2s/^# Shared companions: //p' "$staged_files/$path")"
-    if [[ "$path" == *.md && -z "$declaration" ]]; then
-        declaration="$(sed -n '2s/^<!-- Shared companions: \(.*\) -->$/\1/p' "$staged_files/$path")"
-    fi
-    companions=()
-    read -r -a companions <<< "$declaration"
-    for companion in ${companions[@]+"${companions[@]}"}; do
+    read_shared_companions "$staged_files/$path" "$path"
+    for companion in ${shared_companions[@]+"${shared_companions[@]}"}; do
         validate_relative_path "$companion"
         selected=false
         for existing in "${proposed[@]}"; do
@@ -518,8 +532,6 @@ for index in "${!files[@]}"; do
         { [[ ! -x "$STAGING_DIR/previous-file" ]] && [[ -x "$destination" ]]; }; then
         fail "consumer destination has local changes; preserve or reconcile them before refreshing: $path"
     fi
-    [[ "$(git -C "$SOURCE_ROOT" cat-file -t "${previous_revisions[$previous_index]}")" == commit ]] ||
-        fail "previous snapshot revision is not an available commit"
 done
 
 # Retire stale payloads automatically. Prove ownership against
@@ -543,8 +555,6 @@ for previous_index in "${!previous_files[@]}"; do
         fail "cannot inspect retirement index: $path"
     git -C "$CONSUMER_ROOT" --literal-pathspecs diff --cached --quiet -- "$path" ||
         fail "retirement has staged changes: $path"
-    [[ "$(git -C "$SOURCE_ROOT" cat-file -t "${previous_revisions[$previous_index]}")" == commit ]] ||
-        fail "previous snapshot revision is not an available commit"
     export_previous_payload "$previous_index" "$STAGING_DIR/retire-$index"
     destination="$CONSUMER_ROOT/$path"
     if [[ -e "$destination" ]]; then
@@ -609,16 +619,18 @@ if [[ "$preview" == true ]]; then
 fi
 
 # Prepare a custom manifest's parent before replacing any consumer files.
-mkdir -p "$(dirname "$manifest")" || fail "cannot create consumer manifest directory"
+mkdir -p "${manifest%/*}" || fail "cannot create consumer manifest directory"
 
 for index in "${!files[@]}"; do
     path="${files[$index]}"
     check_consumer_unchanged "$path" "${consumer_states[$index]}"
     check_index_unchanged "$index" "$path"
-    mkdir -p "$CONSUMER_ROOT/$(dirname "$path")"
+    destination_parent="$CONSUMER_ROOT"
+    if [[ "$path" == */* ]]; then destination_parent+="/${path%/*}"; fi
+    [[ -d "$destination_parent" ]] || mkdir -p "$destination_parent"
     # Copy beside the destination so even a mounted subtree gets an atomic
     # rename. A failed/interrupted copy must leave the admitted old bytes intact.
-    replacement="$(mktemp "$CONSUMER_ROOT/$(dirname "$path")/.shared-tooling-payload.XXXXXX")"
+    replacement="$(mktemp "$destination_parent/.shared-tooling-payload.XXXXXX")"
     cp -p "$staged_files/$path" "$replacement"
     check_consumer_unchanged "$path" "${consumer_states[$index]}"
     check_index_unchanged "$index" "$path"

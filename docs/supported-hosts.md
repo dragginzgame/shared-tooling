@@ -173,7 +173,7 @@ required to run setup. Make targets and CI select this same local tool set.
 | Nonempty Cargo test helper | Cargo with normal libtest summaries, `awk`, and `tee` |
 | Exact release-tag checker | Git and the caller's selected exact commit/version |
 | Exact crates.io observation | Bash/curl for presence; metadata mode additionally requires jq and curl 8.4.0+ for bounded downloads |
-| `scripts/ci/run-sccache.sh` | An executable `sccache` binary |
+| `scripts/ci/run-sccache.sh` | An absolute executable file selected through `SCCACHE_BIN` |
 | Snapshot verification | A SHA-256 implementation |
 | Snapshot refresh | Git, a clean Shared Tooling checkout, and a SHA-256 implementation |
 | Dependency pin checker | Git, jq, Mike Farah yq v4.47.2+; Cargo when Cargo manifests exist |
@@ -283,6 +283,17 @@ the selected temporary root while preserving pipeline failure status.
 The local composite action `.github/actions/retain-failure-evidence/action.yml`
 owns that path selection and uploads one `evidence.tar.gz` created by the shared
 evidence archiver, including hidden inputs and excluding `.git` metadata.
+Consumers with a product-specific collector may instead pass absolute
+`prepared-archive` and `collection-log` paths. That branch never selects tools,
+repackages evidence or runs a collector; the caller owns original collection
+status, archive safety and content qualification. Both files are required inputs,
+but a missing or final-symlink file is excluded while the other is still uploaded;
+completeness then fails after upload. Relative/multiline, glob-pattern or identical paths are
+rejected. The prepared branch runs even after a previous step fails or is
+cancelled, preserving the caller's log independently of archive creation.
+`temp-root` and `repository-root` remain required by the collecting branch only.
+Uploads use zero ZIP compression because the selected archive is already compressed.
+
 The same action collects a
 disposable negative qualification on each native host: the real IC installer
 downloads Quill and rejects an intentionally incorrect pin, then offline checking
@@ -325,3 +336,43 @@ pass is not hosted upload evidence: qualification requires the matching run's
 successful download/verification on Linux and both macOS hosts.
 The full IC set currently excludes Linux ARM64 because its Quill release has
 no matching ARM64 asset. No translation or source build is substituted silently.
+
+## Snapshot export measurements
+
+Shared Tooling's manual [Snapshot refresh comparison workflow](https://github.com/dragginzgame/shared-tooling/blob/main/.github/workflows/snapshot-performance.yml)
+supplies comparable repeated native observations for
+[#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219).
+Select full lowercase commit SHAs for the before exporter, after exporter and
+one payload shared by both. Both exporter revisions must support the three fixed
+entrypoints: snapshot refresh, Rust-tool installation and release runner. The
+workflow needs those commits in the fetched repository history; it installs no
+tools and runs no release or full portable gate.
+The two runner-local integrity helpers are frozen with the common payload, so
+only the exporter blob varies. Both exporters must support those helper inputs.
+
+On each host, one warmup pair precedes six measurement pairs with alternating
+execution order. Each export starts with a fresh consumer and the same selected
+Bash/Git/checksum tools. Monotonic timings exclude checkout, consumer setup and
+verification. Every consumer passes snapshot verification, and paired receipts
+and payloads must match. `identities.txt` records commit/blob and host/tool
+identities; `samples.tsv` keeps raw ordered observations. Failed attempts retain
+logs and inputs and cannot produce `complete.txt`.
+
+The workflow packages selected observations, runner files and consumer trees
+through the canonical archiver before upload. Hidden snapshot receipts survive
+the archive round trip; source clones and Git stores are excluded. Successful
+packaging retains the archive, SHA-256 and packaging/command logs for both
+complete and incomplete measurement attempts.
+A packaging failure remains a job failure and retains any partial archive;
+it does not reconstruct a missing measurement completion receipt.
+
+From a Shared Tooling checkout, the same comparison can run locally through
+`bash scripts/distribution/measure-snapshot-refresh.sh BEFORE AFTER PAYLOAD NEW-DIRECTORY`.
+The payload supplies both runners' integrity helpers and, when present, their
+shared companion reader; its blob is recorded with the other frozen helpers.
+Select a payload containing that reader when measuring exporters that require
+it. Historical payloads remain suitable for their self-contained exporters.
+Use an absent evidence directory beneath an existing parent, with no CR/LF in
+either path. Evidence is retained on success and failure. The bounded export
+workload does not establish a whole-suite speedup; compare repeated samples
+within each host and retain the distinct Linux/macOS observations.

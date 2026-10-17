@@ -23,10 +23,13 @@ fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Owner retained"' EXIT
 status=0
 [[ "$status" == 0 ]] || exit 1
-[[ "$1" == selected ]] || exit 42
+printf 'unexpected body execution\n' > "$TMPDIR/owner-body"
 fixture_complete=true
 OWNER
-fixture_probe_assertion "$fixture/owner.sh" "$fixture" "$root" owner selected || exit 1
+# shellcheck disable=SC2016 # Select the actual owner assertion and contradict it.
+fixture_probe_assertion "$fixture/owner.sh" "$fixture" "$root" owner \
+    --selected "$fixture/owner.sh" '[[ "$status" ==' 'status=97' || exit 1
+[[ ! -e "$fixture/owner-body" ]] || exit 1
 # Missing layout markers must be refused before any child execution.
 for marker in anchor trap assertion; do
     # Keep regex literals in the program: awk -v interprets backslashes again.
@@ -37,13 +40,17 @@ for marker in anchor trap assertion; do
         { print }
     ' "$fixture/owner.sh" > "$fixture/unsupported.sh"
     status=0
-    fixture_probe_assertion "$fixture/unsupported.sh" "$fixture" "$root" "$marker" selected || status=$?
+    # shellcheck disable=SC2016 # Literal owner assertion selected by the caller.
+    fixture_probe_assertion "$fixture/unsupported.sh" "$fixture" "$root" "$marker" \
+        --selected "$fixture/unsupported.sh" '[[ "$status" ==' 'status=97' || status=$?
     [[ "$status" != 0 && ! -f "$fixture/$marker-assertion.path" ]] || exit 1
 done
 # An owner that ignores failed assertions must not be admitted conditionally.
 sed 's/|| exit 1/|| :/' "$fixture/owner.sh" > "$fixture/ignores.sh"
 status=0
-fixture_probe_assertion "$fixture/ignores.sh" "$fixture" "$root" ignores selected || status=$?
+# shellcheck disable=SC2016 # An ignored selected assertion must be rejected.
+fixture_probe_assertion "$fixture/ignores.sh" "$fixture" "$root" ignores \
+    --selected "$fixture/ignores.sh" '[[ "$status" ==' 'status=97' || status=$?
 [[ "$status" == 1 ]] || exit 1
 # A caller can select a literal assertion outside the owner fixture body.
 # Quoting and backslashes stay literal through awk on GNU and BSD hosts.
@@ -53,6 +60,11 @@ ASSERTIONS
 # shellcheck disable=SC2016 # Bindings and the prefix execute/match in the child.
 fixture_probe_assertion "$fixture/owner.sh" "$fixture" "$root" selected \
     --selected "$fixture/assertions" '[[ "$selected" ==' 'selected=wrong' || exit 1
+# Function-owned guards retain their return status in the generated child.
+sed 's/|| exit 1/|| return 1/' "$fixture/assertions" > "$fixture/function-assertion"
+# shellcheck disable=SC2016 # Literal function guard selected by the owner.
+fixture_probe_assertion "$fixture/owner.sh" "$fixture" "$root" function-guard \
+    --selected "$fixture/function-assertion" '[[ "$selected" ==' 'selected=wrong' || exit 1
 for failure in missing duplicate ignored setup early; do
     cp "$fixture/assertions" "$fixture/selected-$failure"
     bindings=selected=wrong
@@ -80,5 +92,17 @@ status=0
 fixture_probe_assertion "$fixture/unsupported.sh" "$fixture" "$root" selected-anchor \
     --selected "$fixture/assertions" '[[ "$selected" ==' 'selected=wrong' || status=$?
 [[ "$status" != 0 && ! -f "$fixture/selected-anchor-assertion.path" ]] || exit 1
+# Missing selection arguments cannot start an owner or allocate its probe tree.
+for invalid in omitted incomplete unknown; do
+    arguments=()
+    case "$invalid" in
+        incomplete) arguments=(--selected "$fixture/assertions") ;;
+        unknown) arguments=(--guess "$fixture/assertions" prefix bindings) ;;
+    esac
+    status=0
+    fixture_probe_assertion "$fixture/owner.sh" "$fixture/unselected-$invalid" "$root" invalid \
+        ${arguments[@]+"${arguments[@]}"} || status=$?
+    [[ "$status" == 2 && ! -e "$fixture/unselected-$invalid" && ! -e "$fixture/owner-body" ]] || exit 1
+done
 echo 'Assertion probe admission and retention passed'
 fixture_complete=true

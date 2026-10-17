@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/ci/test-snapshot-verifier.sh
 set -euo pipefail
 
 ROOT="$0"
@@ -13,6 +13,7 @@ FIXTURE="${FIXTURE%/.}"
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture_complete=false
 trap 'fixture_finish "$?" "$FIXTURE" "Failed snapshot-distribution fixture retained"' EXIT
+"$BASH" "$ROOT/scripts/ci/test-snapshot-verifier.sh"
 # Match refresh-consumer physical paths when TMPDIR contains a host alias.
 FIXTURE="$(cd "$FIXTURE" && pwd -P)"
 REAL_GIT="$(command -v git)"
@@ -28,6 +29,7 @@ mkdir -p \
 git init -q "$consumer_root"
 printf '8.8.8\n' > "$consumer_root/VERSION"
 
+cp "$ROOT/scripts/ci/shared-companions.sh" "$source_root/scripts/ci/"
 cp "$ROOT/scripts/ci/verify-file-checksum.sh" "$source_root/scripts/ci/"
 cp "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" "$source_root/scripts/ci/"
 cp "$ROOT/scripts/distribution/refresh-consumer.sh" "$source_root/scripts/distribution/"
@@ -53,6 +55,15 @@ fi
 repository="$2"
 if [[ "$repository" != "$SNAPSHOT_TEST_SOURCE_ROOT" ]]; then
     if [[ "${SNAPSHOT_TEST_STATUS_FAIL:-}" == true && "$3" == --literal-pathspecs && "$4" == status ]]; then exit 9; fi
+    if [[ "${SNAPSHOT_TEST_INDEX_FAIL:-}" == true && "$3" == --literal-pathspecs && "$4" == ls-files ]]; then
+        "$REAL_GIT" "$@"
+        # Admit the initial empty checkpoint, then fail its empty re-observation.
+        if [[ "$8" == .shared-tooling.snapshot ]]; then
+            [[ ! -e "$SNAPSHOT_TEST_INDEX_MARKER" ]] || exit 73
+            : > "$SNAPSHOT_TEST_INDEX_MARKER"
+        fi
+        exit 0
+    fi
     exec "$REAL_GIT" "$@"
 fi
 shift 2
@@ -73,6 +84,10 @@ status:--porcelain)
 remote:get-url)
     printf '%s\n' 'git@github.com:dragginzgame/shared-tooling.git'
     ;;
+cat-file:-t)
+    [[ "$3" == "${SNAPSHOT_TEST_REVISION:-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}" ]] || exit 1
+    printf 'commit\n'
+    ;;
 ls-tree:-z)
     path="$5"
     [[ -z "${SNAPSHOT_TEST_READ_LOG:-}" ]] || printf 'mode:%s\n' "$path" >> "$SNAPSHOT_TEST_READ_LOG"
@@ -82,6 +97,7 @@ ls-tree:-z)
         [[ ! -x "$committed_file" ]] || mode=100755
         printf '%s blob bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\t%s\0' "$mode" "$path"
     fi
+    if [[ "${SNAPSHOT_TEST_MODE_FAIL:-}" == "$path" ]]; then exit 73; fi
     ;;
 cat-file:blob)
     path="${3#*:}"
@@ -127,6 +143,33 @@ if SNAPSHOT_TEST_BLOB_FAIL=scripts/ci/sample.sh PATH="$FIXTURE/bin:$PATH" \
     --entrypoint scripts/ci/sample.sh > "$FIXTURE/failed-blob.log" 2>&1; then exit 1; fi
 [[ ! -e "$consumer_root/.shared-tooling.snapshot" && ! -e "$consumer_root/scripts" ]] || exit 1
 
+# Even a complete mode row cannot authorize export after its Git command fails.
+for path in VERSION scripts/ci/sample.sh; do
+    if SNAPSHOT_TEST_MODE_FAIL="$path" PATH="$FIXTURE/bin:$PATH" \
+        bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+        --source "$source_root" --consumer "$consumer_root" \
+        --entrypoint scripts/ci/sample.sh > "$FIXTURE/failed-mode.log" 2>&1; then
+        echo 'snapshot distribution test failed: failed Git mode output was accepted' >&2
+        exit 1
+    fi
+    [[ ! -e "$consumer_root/.shared-tooling.snapshot" && ! -e "$consumer_root/scripts" ]] || exit 1
+done
+
+# Empty index output is meaningful only after a successful observation.
+for operation in preview apply; do
+    refresh=(bash "$source_root/scripts/distribution/refresh-consumer.sh"
+        --source "$source_root" --consumer "$consumer_root" --entrypoint scripts/ci/sample.sh)
+    [[ "$operation" != preview ]] || refresh+=(--preview)
+    if SNAPSHOT_TEST_INDEX_FAIL=true SNAPSHOT_TEST_INDEX_MARKER="$FIXTURE/index-$operation" \
+        PATH="$FIXTURE/bin:$PATH" "${refresh[@]}" \
+        > "$FIXTURE/failed-index-$operation.log" 2>&1; then
+        echo 'snapshot distribution test failed: failed empty index observation was accepted' >&2
+        exit 1
+    fi
+    [[ ! -e "$consumer_root/.shared-tooling.snapshot" && ! -e "$consumer_root/scripts" ]] || exit 1
+    [[ "$(cat "$consumer_root/VERSION")" == 8.8.8 ]] || exit 1
+done
+
 if ! SNAPSHOT_TEST_READ_LOG="$FIXTURE/selected-reads" SNAPSHOT_TEST_SOURCE_DRIFT=true PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" \
@@ -170,10 +213,6 @@ for suffix in $'\n' $'\n\n' $'\r' $'\r\n' $'\nchild'; do
     ln -s "$bad_consumer" "$FIXTURE/consumer-alias"
     ln -s "$bad_source" "$FIXTURE/source-alias"
     for candidate in "$bad_consumer" "$FIXTURE/consumer-alias"; do
-        if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$candidate" \
-            > "$FIXTURE/path-verify.log" 2>&1; then
-            echo 'snapshot verifier accepted a forbidden directory name' >&2; exit 1
-        fi
         if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
             --source "$source_root" --consumer "$candidate" > "$FIXTURE/path-refresh.log" 2>&1; then
             echo 'snapshot refresh accepted a forbidden consumer directory' >&2; exit 1
@@ -194,22 +233,11 @@ done
 # Relative inputs and ordinary physical aliases stay valid under hostile CDPATH.
 ln -s "$consumer_root" "$FIXTURE/consumer-alias"
 ln -s "$source_root" "$FIXTURE/source-alias"
-(cd "$FIXTURE"; CDPATH="$FIXTURE/source" bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" \
-    --consumer consumer-alias) > "$FIXTURE/path-normal-verify.log"
 (cd "$FIXTURE"; CDPATH="$FIXTURE/source" PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source source-alias --consumer consumer-alias) > "$FIXTURE/path-normal-refresh.log"
 cmp "$FIXTURE/path-manifest" "$consumer_root/.shared-tooling.snapshot"
 
-# A resolved custom-manifest parent must obey the same directory policy.
-mkdir "$consumer_root/config"$'\n'
-cp "$FIXTURE/path-manifest" "$consumer_root/config"$'\n'/snapshot
-ln -s $'config\n' "$consumer_root/config-alias"
-if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer_root" \
-    --manifest config-alias/snapshot > "$FIXTURE/path-manifest-parent.log" 2>&1; then
-    echo 'snapshot verifier accepted a forbidden resolved manifest parent' >&2; exit 1
-fi
-rm "$consumer_root/config-alias"
 # Git output has one record terminator. Extra pathname bytes and observation
 # failures cannot be normalized into the valid source root beside them.
 for suffix in $'\n' $'\r'; do
@@ -321,25 +349,6 @@ done
 if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --read-manifest "$FIXTURE/version-manifest" \
     --consumer "$consumer_root" > "$FIXTURE/mixed-mode.out" 2> "$FIXTURE/mixed-mode.err"; then exit 1; fi
 [[ ! -s "$FIXTURE/mixed-mode.out" ]] || exit 1
-
-# The checksum helper is inspected data, never verification authority. Neither
-# helper-only corruption nor corruption of both helper and payload may pass.
-export SNAPSHOT_HELPER_EXECUTED="$FIXTURE/helper-executed"
-for corruption in helper both; do
-    cat > "$consumer_root/scripts/ci/verify-file-checksum.sh" <<'SCRIPT'
-#!/usr/bin/env bash
-: > "$SNAPSHOT_HELPER_EXECUTED"
-exit 0
-SCRIPT
-    if [[ "$corruption" == both ]]; then
-        printf '# changed payload\n' >> "$consumer_root/scripts/ci/sample.sh"
-    fi
-    if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer_root" \
-        > "$FIXTURE/corrupt-$corruption.log" 2>&1; then exit 1; fi
-    [[ ! -e "$SNAPSHOT_HELPER_EXECUTED" ]] || exit 1
-    cp -p "$revision_root/scripts/ci/verify-file-checksum.sh" "$consumer_root/scripts/ci/"
-    cp -p "$revision_root/scripts/ci/sample.sh" "$consumer_root/scripts/ci/"
-done
 
 # Exercise the independent bootstrap on both backends; output that looks valid
 # must not hide failure, and a failed selected backend must not fall back.
@@ -621,16 +630,52 @@ if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-con
 [[ ! -s "$FIXTURE/preview-conflict.out" ]] || exit 1
 diff -r "$FIXTURE/preview-dirty" "$preview_consumer"
 
+# Companion headers are literal line-two declarations, including EOF without LF.
+# Empty/one-line inputs, later comments and malformed Markdown declare nothing.
+header_consumer="$FIXTURE/header-consumer"
+git init -q "$header_consumer"
+header_arguments=()
+for header in empty.sh one-line.sh late.sh unterminated.sh spaces.sh valid.md shell.md malformed.md not-markdown.txt; do
+    path="header-$header"
+    case "$header" in
+        empty.sh) : > "$source_root/$path" ;;
+        one-line.sh) printf '# Shared companions: missing-header-payload' > "$source_root/$path" ;;
+        late.sh) printf '#!/bin/sh\n\n# Shared companions: missing-header-payload\n' > "$source_root/$path" ;;
+        unterminated.sh) printf '#!/bin/sh\n# Shared companions: header-eof-leaf.txt' > "$source_root/$path" ;;
+        spaces.sh) printf '#!/bin/sh\n# Shared companions: \theader-spaces-leaf.txt   \n' > "$source_root/$path" ;;
+        valid.md) printf '# Guide\n<!-- Shared companions: header-markdown-leaf.txt -->\n' > "$source_root/$path" ;;
+        shell.md) printf '# Guide\n# Shared companions: header-shell-leaf.txt\n' > "$source_root/$path" ;;
+        malformed.md) printf '# Guide\n<!-- Shared companions: missing-header-payload -->extra\n' > "$source_root/$path" ;;
+        not-markdown.txt) printf '# Note\n<!-- Shared companions: missing-header-payload -->\n' > "$source_root/$path" ;;
+    esac
+    cp "$source_root/$path" "$revision_root/$path"
+    header_arguments+=(--entrypoint "$path")
+done
+for leaf in eof spaces markdown shell; do
+    printf 'literal leaf %s' "$leaf" > "$source_root/header-$leaf-leaf.txt"
+    cp "$source_root/header-$leaf-leaf.txt" "$revision_root/header-$leaf-leaf.txt"
+done
+PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$header_consumer" "${header_arguments[@]}" \
+    > "$FIXTURE/header-refresh.log"
+for header in empty.sh one-line.sh late.sh unterminated.sh spaces.sh valid.md shell.md malformed.md not-markdown.txt; do
+    cmp "$revision_root/header-$header" "$header_consumer/header-$header"
+done
+for leaf in eof spaces markdown shell; do
+    cmp "$revision_root/header-$leaf-leaf.txt" "$header_consumer/header-$leaf-leaf.txt"
+done
+
 selection_consumer="$FIXTURE/selection"
 mkdir "$selection_consumer"
 git init -q "$selection_consumer"
 for path in scripts/ci/run-validation-targets.sh scripts/ci/check-make-execution.sh \
-    scripts/ci/run-release.sh scripts/ci/next-release-version.sh scripts/ci/validate-release-inputs.pl \
+    scripts/ci/run-release.sh scripts/ci/next-release-version.sh scripts/ci/validate-release-inputs.pl scripts/ci/StableVersion.pm \
     scripts/ci/check-release-tag.sh scripts/ci/fixture-lifecycle.sh \
     scripts/ci/test-release-runner.sh scripts/ci/finalize-release-changelog.awk \
     scripts/ci/test-host-tools.sh scripts/ci/test-ic-tools.sh scripts/ci/test-tool-evidence.sh \
     scripts/ci/test-tool-store.sh scripts/dev/tool-store.sh scripts/dev/install-host-tools.sh \
-    scripts/dev/cargo-tool-build.sh scripts/dev/install-rust-tools.sh; do
+    scripts/dev/cargo-tool-build.sh scripts/dev/install-rust-tools.sh \
+    scripts/ci/tool-catalog-records.pl scripts/ci/ic-tool-pins.awk; do
     mkdir -p "$source_root/${path%/*}" "$revision_root/${path%/*}"
     cp -p "$ROOT/$path" "$source_root/$path"
     cp -p "$ROOT/$path" "$revision_root/$path"
@@ -680,6 +725,7 @@ for directory in scripts make ci .githooks .github; do
     [[ ! -d "$ROOT/$directory" ]] || fixture_directories+=("$directory")
 done
 (cd "$ROOT" && rg --files --hidden "${fixture_directories[@]}") > "$FIXTURE/companion-sources"
+printf '%s\n' docs/type-docs.md >> "$FIXTURE/companion-sources"
 while IFS= read -r path; do
     mkdir -p "$source_root/$(dirname "$path")" "$revision_root/$(dirname "$path")"
     [[ -e "$source_root/$path" ]] || cp -p "$ROOT/$path" "$source_root/$path"
@@ -700,12 +746,20 @@ while read -r entry missing; do
     [[ ! -e "$selected_consumer/scripts" && ! -e "$selected_consumer/.shared-tooling.snapshot" ]] || exit 1
 done <<'COMPANIONS'
 scripts/ci/compare-stable-versions.pl scripts/ci/StableVersion.pm
+scripts/ci/validate-release-inputs.pl scripts/ci/StableVersion.pm
+scripts/ci/rewrite-local-lock-versions.pl scripts/ci/StableVersion.pm
+scripts/ci/render-cargo-workspace-version.pl scripts/ci/StableVersion.pm
+scripts/ci/check-type-docs.pl scripts/ci/RustSource.pm
 scripts/dev/check-cargo-tool-versions.pl scripts/ci/StableVersion.pm
+scripts/dev/delete-github-tags-up-to.pl scripts/ci/StableVersion.pm
 scripts/ci/check-tool-catalogs.pl scripts/ci/ic-tool-pins.awk
 scripts/ci/cargo-tool-cache-key.sh scripts/ci/tool-catalog-records.pl
+scripts/dev/install-host-tools.sh scripts/ci/tool-catalog-records.pl
+scripts/ci/install-ci-tool.sh scripts/ci/tool-catalog-records.pl
+scripts/ci/check-formatting-hooks.sh scripts/ci/fixture-lifecycle.sh
+scripts/dev/install-rust-tools.sh scripts/ci/tool-catalog-records.pl
+scripts/dev/check-cargo-tool-versions.pl scripts/ci/tool-catalog-records.pl
 scripts/ci/test-tool-catalogs.pl scripts/ci/check-tool-catalogs.pl
-scripts/ci/check-publication.sh scripts/ci/check-crates-io-version.sh
-scripts/ci/test-publication.sh scripts/ci/check-publication.sh
 scripts/ci/run-cargo-publication.sh scripts/ci/check-make-execution.sh
 scripts/ci/test-cargo-publication-attempt.sh scripts/ci/run-cargo-publication.sh
 scripts/ci/run-release.sh scripts/ci/check-release-tag.sh
@@ -725,6 +779,7 @@ scripts/ci/test-cloc.sh scripts/dev/cloc.sh
 scripts/ci/test-cloc-tooling.sh scripts/dev/cloc-tooling.pl
 scripts/ci/test-crates-io-version.sh scripts/ci/check-crates-io-version.sh
 scripts/ci/test-dependency-pins.sh scripts/ci/check-dependency-pins.sh
+scripts/ci/test-cargo-dependency-boundaries.sh scripts/ci/check-cargo-dependency-boundaries.sh
 scripts/ci/test-evidence-archive.sh scripts/ci/archive-evidence.sh
 scripts/ci/test-evidence-checksums.sh scripts/ci/verify-evidence-checksums.sh
 scripts/ci/test-format-tools.sh scripts/ci/check-format-tools.sh
@@ -735,6 +790,7 @@ scripts/ci/test-rust-tools.sh scripts/dev/install-rust-tools.sh
 scripts/ci/test-rustsec-db.sh scripts/ci/prepare-rustsec-db.sh
 scripts/ci/test-tool-commands.sh make/tools.mk
 make/release.mk scripts/ci/run-release.sh
+make/release.mk scripts/ci/check-release-delivery.sh
 make/rust-format.mk make/tools.mk
 make/consumer.mk make/rust-format.mk
 scripts/ci/test-make-consumer.sh make/consumer.mk
