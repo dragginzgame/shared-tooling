@@ -240,7 +240,7 @@ count_today() {
 # PR connections have no since filter. Walk newest updates first, stopping once
 # a complete page reaches before the cutoff; event timestamps decide the counts.
 count_pr_today() {
-    local index="$1" page counts merged closed added total_merged=0 total_closed=0 total_added=0 cursor='' next
+    local index="$1" page counts closed added total_closed=0 total_added=0 cursor='' next
     page="$(jq -c --arg key "r$index" '.data[$key].prRecent' "$scratch/response")" || return 1
     while :; do
         counts="$(jq -er --arg since "$cutoff" '
@@ -252,12 +252,11 @@ count_pr_today() {
                     ((.state == "OPEN" and .closedAt == null and .mergedAt == null) or
                      (.state == "CLOSED" and (.closedAt | timestamp) and .mergedAt == null) or
                      (.state == "MERGED" and (.closedAt | timestamp) and (.mergedAt | timestamp))))) |
-            [([.nodes[] | select(.state == "MERGED" and .mergedAt >= $since)] | length),
-             ([.nodes[] | select(.state == "CLOSED" and .closedAt >= $since)] | length),
+            [([.nodes[] | select((.state == "MERGED" and .mergedAt >= $since) or
+                                (.state == "CLOSED" and .closedAt >= $since))] | length),
              ([.nodes[] | select(.createdAt >= $since)] | length)] | @tsv
         ' <<< "$page")" || return 1
-        read -r merged closed added <<< "$counts"
-        total_merged=$((total_merged + merged))
+        read -r closed added <<< "$counts"
         total_closed=$((total_closed + closed))
         total_added=$((total_added + added))
         [[ "$(jq -r '.pageInfo.hasNextPage' <<< "$page")" == true ]] || break
@@ -283,7 +282,7 @@ count_pr_today() {
         fi
         page="$(jq -ec 'select((.errors // []) | length == 0) | .data.repository.prRecent' "$scratch/pr-page")" || return 1
     done
-    printf '%s\t%s\t%s' "$total_merged" "$total_closed" "$total_added"
+    printf '%s\t%s' "$total_closed" "$total_added"
 }
 
 colour_open() {
@@ -297,14 +296,14 @@ colour_open() {
 }
 print_counts() {
     local name="$1" open="$2" closed="$3" foreground='' reset=''
-    if [[ "$colour" == true && $# == 11 ]]; then
+    if [[ "$colour" == true && $# == 9 ]]; then
         foreground="$(colour_open "$open" "$max_open")"
         reset=$'\033[39m'
     fi
     print_row "$name" "$(format_count "$open")" "$(format_count "$closed")" \
-        "$(format_count "$8")" "$(format_count "$7")" "$(format_count "$4")" \
-        "$(format_count "$(($5 + $6))")" "$(format_count "${11}")" \
-        "$(format_count "$(($9 + ${10}))")" "$foreground" "$reset"
+        "$(format_count "$7")" "$(format_count "$6")" "$(format_count "$4")" \
+        "$(format_count "$5")" "$(format_count "$9")" \
+        "$(format_count "$8")" "$foreground" "$reset"
 }
 print_error() {
     print_row "$1" ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR
@@ -312,9 +311,9 @@ print_error() {
 
 render() {
     local width="$short_width" show_owner=false expanded_width="$full_width" table_width
-    local i counts name open closed pr_open pr_merged pr_closed today added day_counts total_open=0 total_closed=0
-    local pr_today_merged pr_today_closed pr_today_added pr_day_counts total_pr_today_merged=0 total_pr_today_closed=0 total_pr_today_added=0
-    local total_added=0 total_today=0 total_pr_open=0 total_pr_merged=0 total_pr_closed=0 successful=0 label=TOTAL
+    local i counts name open closed pr_open pr_closed today added day_counts total_open=0 total_closed=0
+    local pr_today_closed pr_today_added pr_day_counts total_pr_today_closed=0 total_pr_today_added=0
+    local total_added=0 total_today=0 total_pr_open=0 total_pr_closed=0 successful=0 label=TOTAL
     local pr_today_width
     local number_width=4 max_open=0 issues_width prs_width closed_width open_width added_width today_group_width
     printf 'Sibling GitHub issues and pull requests | %s\n' "$(date '+%Y-%m-%d %H:%M:%S %Z')"
@@ -328,16 +327,15 @@ render() {
             .data[$key] |
             [.open.totalCount, .closed.totalCount,
              .prOpen.totalCount, .prMerged.totalCount, .prClosed.totalCount] |
-            select(all(.[]; count)) | @tsv
+            select(all(.[]; count)) | [.[0], .[1], .[2], (.[3] + .[4])] | @tsv
         ' "$scratch/response" 2>/dev/null)" && day_counts="$(count_today "$i" 2>> "$scratch/errors")" &&
             pr_day_counts="$(count_pr_today "$i" 2>> "$scratch/errors")"; then
-            read -r open closed pr_open pr_merged pr_closed <<< "$counts"
+            read -r open closed pr_open pr_closed <<< "$counts"
             read -r today added <<< "$day_counts"
-            read -r pr_today_merged pr_today_closed pr_today_added <<< "$pr_day_counts"
-            measure_counts "$open" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added" "$pr_today_merged" "$pr_today_closed" "$pr_today_added" "$((pr_merged + pr_closed))" "$((pr_today_merged + pr_today_closed))"
+            read -r pr_today_closed pr_today_added <<< "$pr_day_counts"
+            measure_counts "$open" "$closed" "$pr_open" "$pr_closed" "$today" "$added" "$pr_today_closed" "$pr_today_added"
             [[ "$open" -le "$max_open" ]] || max_open="$open"
-            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$open" "${repos[$i]}" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added" "$pr_today_merged" "$pr_today_closed" "$pr_today_added" >> "$scratch/rows"
-            total_pr_today_merged=$((total_pr_today_merged + pr_today_merged))
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$open" "${repos[$i]}" "$closed" "$pr_open" "$pr_closed" "$today" "$added" "$pr_today_closed" "$pr_today_added" >> "$scratch/rows"
             total_pr_today_closed=$((total_pr_today_closed + pr_today_closed))
             total_pr_today_added=$((total_pr_today_added + pr_today_added))
             total_today=$((total_today + today))
@@ -345,7 +343,6 @@ render() {
             total_open=$((total_open + open))
             total_closed=$((total_closed + closed))
             total_pr_open=$((total_pr_open + pr_open))
-            total_pr_merged=$((total_pr_merged + pr_merged))
             total_pr_closed=$((total_pr_closed + pr_closed))
             successful=$((successful + 1))
         else
@@ -355,7 +352,7 @@ render() {
     done
     if [[ "$status" != 0 && "$width" -lt 15 ]]; then width=15; fi
     if [[ "$successful" -gt 0 ]]; then
-        measure_counts "$total_open" "$total_closed" "$total_pr_open" "$total_pr_merged" "$total_pr_closed" "$total_today" "$total_added" "$total_pr_today_merged" "$total_pr_today_closed" "$total_pr_today_added" "$((total_pr_merged + total_pr_closed))" "$((total_pr_today_merged + total_pr_today_closed))"
+        measure_counts "$total_open" "$total_closed" "$total_pr_open" "$total_pr_closed" "$total_today" "$total_added" "$total_pr_today_closed" "$total_pr_today_added"
     fi
     open_width="$number_width"
     if [[ "$successful" -lt "$repo_count" && "$open_width" -lt 5 ]]; then open_width=5; fi
@@ -383,18 +380,18 @@ render() {
         "$(center_text OPEN "$open_width")" "$(center_text CLOSED "$closed_width")" \
         "$(center_text ADDED "$added_width")" "$(center_text CLOSED "$closed_width")"
     print_separator
-    while IFS=$'\t' read -r open name closed pr_open pr_merged pr_closed today added pr_today_merged pr_today_closed pr_today_added; do
+    while IFS=$'\t' read -r open name closed pr_open pr_closed today added pr_today_closed pr_today_added; do
         [[ "$show_owner" == true ]] || name="${name#dragginzgame/}"
         if [[ "$open" == -1 ]]; then
             print_error "$name"
         else
-            print_counts "$name" "$open" "$closed" "$pr_open" "$pr_merged" "$pr_closed" "$today" "$added" "$pr_today_merged" "$pr_today_closed" "$pr_today_added"
+            print_counts "$name" "$open" "$closed" "$pr_open" "$pr_closed" "$today" "$added" "$pr_today_closed" "$pr_today_added"
         fi
     done < "$scratch/sorted"
     print_separator
     if [[ "$status" != 0 ]]; then label='TOTAL (partial)'; fi
     if [[ "$successful" -gt 0 ]]; then
-        print_counts "$label" "$total_open" "$total_closed" "$total_pr_open" "$total_pr_merged" "$total_pr_closed" "$total_today" "$total_added" "$total_pr_today_merged" "$total_pr_today_closed" "$total_pr_today_added" total
+        print_counts "$label" "$total_open" "$total_closed" "$total_pr_open" "$total_pr_closed" "$total_today" "$total_added" "$total_pr_today_closed" "$total_pr_today_added" total
     else
         print_error "$label"
     fi

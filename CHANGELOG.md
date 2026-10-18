@@ -1,13 +1,126 @@
 # Changelog
 
-## [0.20.1]
+## [0.23.1]
 
 ### Fixed
 
 - Check current dependency declarations when tracked manifests or workflows have
   been deleted without staging. Preserve the consumer index and refusal of
   dangling symlinks
-  ([#271](https://github.com/dragginzgame/shared-tooling/issues/271)).
+  ([#271 — Dependency pin checker rejects tracked manifest and workflow deletions](https://github.com/dragginzgame/shared-tooling/issues/271)).
+- Align the hook fixture with Prettier's maintained `--ignore-unknown` invocation,
+  preserving selected-file and failure-isolation checks
+  ([PR #281 — Fix hook fixture Prettier argument admission](https://github.com/dragginzgame/shared-tooling/pull/281)).
+
+## [0.23.0]
+
+### Breaking
+
+- Move the frozen Blob example-installation assessment to
+  [IC Blob Storage PR #80 — Own frozen published-example installation qualification](https://github.com/dragginzgame/ic-blob-storage/pull/80).
+  Integrate that owner before adoption; Shared keeps common Cargo binary
+  qualification and installer mechanics
+  ([#280 — Retire frozen Blob example assessment after native owner qualification](https://github.com/dragginzgame/shared-tooling/issues/280)).
+- Frontend formatting delegates language recognition to pinned Prettier. Review
+  `.prettierignore` before adoption: supported formats such as `.mjs` and `.vue`
+  now participate without a Shared Tooling extension allowlist.
+- Catalog ownership checks require the canonical snapshot manifest grammar.
+  Refresh incomplete or malformed ownership receipts before adoption; selected
+  catalog hashing remains separate from whole-snapshot verification.
+- Remove the separate Make-fixture copier. Select Make roots through the script
+  companion-closure preparer, then apply consumer-owned adapters and substitutions.
+- Remove the local semantic Wasm qualification command and CI step. Integrate
+  [IC Build PR #62 — Own native Wasm optimizer qualification](https://github.com/dragginzgame/ic-build/pull/62)
+  before adopting this snapshot; its native matrix owns the optimizer/cache/reply
+  oracle. Shared retains archive integrity and executable installation checks
+  ([#277 — Retire semantic Wasm qualification after IC Build native coverage](https://github.com/dragginzgame/shared-tooling/issues/277)).
+
+### Changed
+
+- Normalize installer OS/architecture aliases through one read-only observer,
+  retaining each toolset's asset matrix and rejecting failed host observations
+  before installation or download.
+- Carry the GitHub dashboard's displayed closed-PR count directly through rows,
+  totals and layout, preserving merge timestamps, pagination and partial errors.
+- Common Rust setup projects validated catalog records directly into tool
+  selections, removing the reconstructed variables and duplicate default roster.
+- CI binary installation reuses the host/IC downloader's bounded transient-retry
+  policy while retaining checksum admission, atomic publication and failed stages.
+
+## [0.22.1]
+
+### Added
+
+- Prepare disposable script fixtures from explicit roots and their declared
+  companion closure, reusing snapshot distribution's nonexecuting reader. Keep
+  export measurements bound to frozen helper blobs, including that reader
+  ([#274 — Prepare script fixtures from their declared companion closure](https://github.com/dragginzgame/shared-tooling/issues/274)).
+
+### Changed
+
+- Update the canonical evidence and snapshot-comparison uploaders to the exact
+  7.0.2 source, preserving archive preparation and failure policy
+  ([#275 — Update the canonical artifact uploader to 7.0.2](https://github.com/dragginzgame/shared-tooling/issues/275)).
+
+## [0.22.0]
+
+### Changed
+
+- Select common CI binary pins directly from the reviewed tool catalog. Linux
+  x86-64 callers need only a tool and installation directory; explicit catalog
+  exceptions and paired version/checksum inputs remain available. Reuse the
+  shared fixture lifecycle for formatting adoption, installer and download checks,
+  preserving failed evidence and cleanup failures.
+
+### Breaking
+
+- Remove the raw catalog `values` projection. Consume validated `host`, `rust`,
+  `ic` or `ci` records, optionally selecting a tool after complete group admission.
+- Move the temporary public-documentation debt checker, guide and dedicated
+  fixtures to IC Query. Integrate
+  [Query PR #76 — Own public documentation debt tooling](https://github.com/dragginzgame/ic-query/pull/76)
+  before adopting this snapshot; other consumers must own any local debt policy
+  ([Query #75 — Own temporary public-documentation debt policy](https://github.com/dragginzgame/ic-query/issues/75)).
+  The common section-style type checker and Rust tokenizer remain shared.
+
+## [0.21.0]
+
+### Added
+
+- Compare repeated snapshot exports on Linux and both native macOS hosts through
+  an opt-in workflow. Both exporters use one frozen payload, retain alternating
+  timing samples and verify matching receipts and files. Routine CI stays focused
+  on correctness; native performance acceptance still requires observed results
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
+- Package comparison evidence through the canonical archiver so downloads retain
+  hidden snapshot receipts, logs and incomplete attempts. Exclude source clones
+  and Git stores, and preserve packaging failures
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219)).
+
+### Changed
+
+- Consume validated host-tool records directly during installation, preserving
+  payload authentication and offline checks without reconstructing catalog
+  environment variables or repeating catalog admission.
+- Select ICP CLI 1.7.0 for the three supported IC-tool hosts using official
+  release-asset digests. Other tool pins and explicit setup policy are unchanged;
+  adopters run IC-tool setup before offline checks with the new catalog
+  ([#268 — Adopt ICP CLI 1.7.0](https://github.com/dragginzgame/shared-tooling/issues/268)).
+
+### Fixed
+
+- Require one complete Rust policy observation before publishing a workspace
+  compiler floor or preparing a toolchain. Reject ambiguous parser streams before
+  Rustup while preserving valid bootstrap inputs and parser failure statuses
+  ([#270 — Reject ambiguous Rust bootstrap policy observations](https://github.com/dragginzgame/shared-tooling/issues/270)).
+
+### Breaking
+
+- Remove the complete Cargo publication preflight command. Consumers own package,
+  registry and release-tag policy while reusing the shared source, version, tag
+  and registry observers. IC Jobs adopts its local policy in
+  [PR #67 — Own publication admission locally](https://github.com/dragginzgame/ic-jobs/pull/67);
+  integrate that caller before adopting this snapshot.
 
 ## [0.20.0]
 

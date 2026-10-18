@@ -55,22 +55,12 @@ jobs:
       - name: Install pinned validation tools
         shell: bash
         run: |
-          records="$(perl scripts/ci/tool-catalog-records.pl values ci/tool-versions.env)"
-          while IFS=$'\t' read -r catalog_key catalog_value; do
-            printf -v "$catalog_key" '%s' "$catalog_value"
-          done <<< "$records"
           tool_dir="$RUNNER_TEMP/shared-tooling-bin"
           actionlint_bin="$(bash scripts/ci/install-ci-tool.sh actionlint \
-            --version "$SHARED_TOOLING_ACTIONLINT_VERSION" \
-            --sha256 "$SHARED_TOOLING_ACTIONLINT_SHA256_LINUX_AMD64" \
             --install-dir "$tool_dir")"
           shellcheck_bin="$(bash scripts/ci/install-ci-tool.sh shellcheck \
-            --version "$SHARED_TOOLING_SHELLCHECK_VERSION" \
-            --sha256 "$SHARED_TOOLING_SHELLCHECK_SHA256_LINUX_X86_64" \
             --install-dir "$tool_dir")"
           gitleaks_bin="$(bash scripts/ci/install-ci-tool.sh gitleaks \
-            --version "$SHARED_TOOLING_GITLEAKS_VERSION" \
-            --sha256 "$SHARED_TOOLING_GITLEAKS_SHA256_LINUX_X64" \
             --install-dir "$tool_dir")"
           make --no-print-directory install-host-tools
           make --no-print-directory host-tools-check
@@ -224,11 +214,6 @@ jobs:
         run: |
           test "$(npm --version)" = "$(jq -er '.engines.npm' ci/frontend/package.json)"
           npm ci --prefix ci/frontend
-      - name: Qualify native Wasm optimization and execution
-        if: needs.change-scope.outputs.scope != 'docs'
-        run: |
-          mkdir -p "$RUNNER_TEMP/portable-fixtures"
-          bash scripts/ci/qualify-wasm-opt.sh "$RUNNER_TEMP/portable-fixtures/wasm-opt"
       - name: Prepare the runtime scanner qualification compiler
         if: needs.change-scope.outputs.scope != 'docs'
         id: runtime-scanner-compiler
