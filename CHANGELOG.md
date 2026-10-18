@@ -9,6 +9,11 @@
   roots, targets, feature selections and policy; failed or malformed Cargo
   observations cannot pass admission.
 
+### Fixed
+
+- Prepare governance snapshot fixtures from their complete companion closure,
+  so exported guides retain newly linked documentation without extra roots.
+
 ## [0.24.3]
 
 ### Changed
