@@ -46,5 +46,16 @@ refuse release_receipt_check prepared release_receipt_payload '' 'selected file'
 release_receipt_check prepared release_receipt_payload "$RELEASE_SOURCE" 'selected file'
 refuse release_receipt_write prepared release_receipt_payload '' 'missing file'
 release_receipt_check prepared release_receipt_payload "$RELEASE_SOURCE" 'selected file'
+mkdir attempts
+release_receipt_archive "$fixture/attempts/archive.XXXXXX" prepared original absent
+archive=("$fixture"/attempts/archive.*)
+cmp prepared "${archive[0]}/prepared"
+cmp original "${archive[0]}/original"
+refuse release_receipt_archive "$fixture/attempts/refused.XXXXXX" prepared validated
+[[ "$(find attempts -name 'refused.*' -print)" == '' ]] || exit 1
+mkdir nested
+cp original nested/original
+refuse release_receipt_archive "$fixture/attempts/collision.XXXXXX" original nested/original
+[[ "$(find attempts -name 'collision.*' -print)" == '' ]] || exit 1
 fixture_complete=true
 printf 'Release receipt fixtures passed\n'

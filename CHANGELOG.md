@@ -4,6 +4,12 @@
 
 ### Added
 
+- Share release metadata preparation with complete original/candidate admission,
+  selected-file installation and byte/mode restoration on caught failure. Keep
+  failed evidence and previous receipt archives while consumers retain rendering,
+  source-bound verification and release policy. Extends
+  [#278 — Share release validation and prepared receipt mechanics](https://github.com/dragginzgame/shared-tooling/issues/278).
+
 - Share atomic validation/prepared release receipts and exact identity/payload
   checks. Consumers retain file inventories, gates and release policy; failed
   generation and symlinks cannot replace accepted evidence
