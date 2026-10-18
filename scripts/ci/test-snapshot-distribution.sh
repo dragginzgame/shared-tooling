@@ -669,7 +669,7 @@ selection_consumer="$FIXTURE/selection"
 mkdir "$selection_consumer"
 git init -q "$selection_consumer"
 for path in scripts/ci/run-validation-targets.sh scripts/ci/check-make-execution.sh \
-    scripts/ci/run-release.sh scripts/ci/next-release-version.sh scripts/ci/validate-release-inputs.pl scripts/ci/StableVersion.pm \
+    scripts/ci/run-release.sh scripts/ci/validate-release-inputs.pl scripts/ci/StableVersion.pm \
     scripts/ci/check-release-tag.sh scripts/ci/fixture-lifecycle.sh \
     scripts/ci/test-release-runner.sh scripts/ci/finalize-release-changelog.awk \
     scripts/ci/test-host-tools.sh scripts/ci/test-ic-tools.sh scripts/ci/test-tool-evidence.sh \
@@ -707,7 +707,7 @@ cmp "$FIXTURE/selection-after" "$selection_consumer/config/selection"
 # Direct-only runner selection remains complete without the optional PR helper.
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$selection_consumer" --manifest config/selection \
-    --add-entrypoint scripts/ci/run-release.sh --add-entrypoint scripts/ci/next-release-version.sh \
+    --add-entrypoint scripts/ci/run-release.sh \
     > "$FIXTURE/selection-direct.log"
 [[ ! -e "$selection_consumer/scripts/ci/release-pr.sh" ]] || exit 1
 # Derive fixture companions without importing optional owner-only tests.
@@ -747,6 +747,8 @@ while read -r entry missing; do
 done <<'COMPANIONS'
 scripts/ci/compare-stable-versions.pl scripts/ci/StableVersion.pm
 scripts/ci/validate-release-inputs.pl scripts/ci/StableVersion.pm
+scripts/ci/tool-catalog-records.pl scripts/ci/StableVersion.pm
+scripts/ci/check-release-commands.sh scripts/ci/prepare-script-fixture.sh
 scripts/ci/rewrite-local-lock-versions.pl scripts/ci/StableVersion.pm
 scripts/ci/render-cargo-workspace-version.pl scripts/ci/StableVersion.pm
 scripts/ci/check-type-docs.pl scripts/ci/RustSource.pm
@@ -756,6 +758,7 @@ scripts/ci/check-tool-catalogs.pl scripts/ci/ic-tool-pins.awk
 scripts/ci/check-tool-catalogs.pl scripts/ci/verify-shared-tooling-snapshot.sh
 scripts/ci/cargo-tool-cache-key.sh scripts/ci/tool-catalog-records.pl
 scripts/dev/install-host-tools.sh scripts/ci/tool-catalog-records.pl
+scripts/dev/install-ic-tools.sh scripts/ci/tool-catalog-records.pl
 scripts/dev/install-host-tools.sh scripts/dev/host-platform.sh
 scripts/dev/install-ic-tools.sh scripts/dev/host-platform.sh
 scripts/ci/install-ci-tool.sh scripts/dev/host-platform.sh
@@ -764,6 +767,7 @@ scripts/ci/check-formatting-hooks.sh scripts/ci/fixture-lifecycle.sh
 scripts/dev/install-rust-tools.sh scripts/ci/tool-catalog-records.pl
 scripts/dev/check-cargo-tool-versions.pl scripts/ci/tool-catalog-records.pl
 scripts/ci/test-tool-catalogs.pl scripts/ci/check-tool-catalogs.pl
+scripts/ci/collect-native-diagnostics.sh scripts/ci/verify-file-checksum.sh
 scripts/ci/run-cargo-publication.sh scripts/ci/check-make-execution.sh
 scripts/ci/test-cargo-publication-attempt.sh scripts/ci/run-cargo-publication.sh
 scripts/ci/run-release.sh scripts/ci/check-release-tag.sh

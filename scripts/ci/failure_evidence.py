@@ -36,8 +36,12 @@ def regular_evidence_archive(path):
 
 
 def verify_compact_tools(members, read, tool_pins, native_host):
-    """Admit caller pins, fresh receipts and compact selection on one native host."""
+    """Verify selected host/IC bundles; unselected evidence remains diagnostic."""
+    if not tool_pins or tool_pins.keys() - {"host", "ic"}:
+        raise ValueError("expected a nonempty host/IC tool selection")
     for kind in ("host", "ic"):
+        if kind not in tool_pins:
+            continue
         prefix = f"tool-evidence/{kind}/"
         if read(prefix + "caller-pins") != tool_pins[kind]:
             raise ValueError("compact evidence uses different caller pins")
@@ -51,13 +55,15 @@ def verify_compact_tools(members, read, tool_pins, native_host):
         active = ".tools/" + selected[1].decode()
         if any(name == active or name.startswith(active + "/") for name in members):
             raise ValueError("verified active tool payload was not compacted")
+    if "ic" not in tool_pins:
+        return
     # The shared installer admits validated records, preserving original
     # receipt bytes across comment/order-only caller changes. Use that
     # same parser rather than inventing a second pin admission schema.
     records = []
     for pins in (read("tool-evidence/ic/pins.tsv"), tool_pins["ic"]):
         parsed = subprocess.run(
-            ["awk", "-v", "records=1", "-f",
+            ["awk", "-f",
              str(Path(__file__).with_name("ic-tool-pins.awk"))],
             input=pins, capture_output=True, check=False,
         )

@@ -110,6 +110,27 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the inclusion boundary and
 [`docs/provenance.md`](docs/provenance.md) for the initial Canic and IcyDB
 contributions.
 
+## Capability ownership
+
+Shared Tooling distributes reviewed commands, source files and governance
+snapshots. It has no Cargo workspace or IC runtime dependency. Its standalone
+Rust scanner is compiled by consumers with their locked dependencies;
+`ci/frontend` is a private Prettier qualification fixture, not an application.
+
+| Capability | Canonical owner and integration boundary |
+| --- | --- |
+| Baseline, fleet inspection, setup, formatting, release mechanics and evidence transport | Shared Tooling: `rules/`, `scripts/`, `make/` and `.github/actions/`. Public commands are documented below; `make/consumer.mk` supplies the consumer Make interface and `scripts/distribution/` exports reviewed snapshots. |
+| Cargo/Wasm builds, artifact caches and Candid extractor execution | [IC Build](https://github.com/dragginzgame/ic-build), including `crates/ic-build/src/artifacts/candid/`. Consumers supply admitted tools, sources, execution policy and budgets. Shared installs selected executables; products own extractor pins and PATH selection. |
+| Host filesystem, artifact and process primitives; IC interpretation | [IC Host Tooling](https://github.com/dragginzgame/ic-host-tooling): `ic-host-fs`, `ic-host-artifacts`, `ic-host-process`, `ic-host-tools` and `ic-host-text`. Tools interprets Candid services/IC responses; Text owns normalization. |
+| PocketIC preparation, admission and lifecycle | [IC Testkit](https://github.com/dragginzgame/ic-testkit). Consumers use its selected CLI and own their canister scenarios. |
+| Frozen published Blob example installation qualification | [IC Blob Storage](https://github.com/dragginzgame/ic-blob-storage), under `scripts/ci/`. Shared retains generic Cargo binary installation qualification. |
+| Full native Metrics recovery archives | [IC Metrics](https://github.com/dragginzgame/ic-metrics), under `scripts/ci/package-native-recovery-evidence.sh`. Shared retains common archive transport and sanitized diagnostics. |
+
+Product repositories retain deployment identity, source custody, release metadata,
+publication policy and acceptance evidence. Shared's Cargo metadata editors remain
+maintained here until an available replacement and its bootstrap contract are
+qualified; an extraction proposal alone does not establish a usable dependency.
+
 ## Current tools
 
 ### Local IC executables
@@ -138,7 +159,9 @@ IC Testkit owns PocketIC setup, offline admission and server lifecycle; see the
 [ownership handoff](docs/ic-tools.md#pocketic-ownership-handoff).
 
 The aggregate includes `make install-rust-tools` and offline `make rust-tools-check`
-for pinned cargo-sort, cargo-sort-derives and candid-extractor under `.tools/rust/common/bin`.
+for pinned cargo-sort and cargo-sort-derives under `.tools/rust/common/bin`.
+Products that extract Candid select and prepare their extractor through the
+[selected Cargo-tool interface](docs/local-setup.md#consumer-selected-cargo-tools).
 Prepare a declared Rust toolchain even for non-Rust repositories. See
 [Rust setup](docs/local-setup.md#rust-development-tools) and the
 [0.3.0 adoption steps](docs/consuming-snapshots.md#complete-toolset-adoption-in-030)

@@ -124,9 +124,10 @@ macOS behavior.
 
 ## Validation
 
-For script changes, run the portable regression test and ShellCheck described
-in `AGENTS.md`. For documentation-only changes, check links, instruction
-consistency and the diff.
+For script changes, run affected focused fixtures and source-following ShellCheck
+under [AGENTS.md](AGENTS.md) and the baseline's
+[validation policy](DRAGGINZGAME.md#validation-and-evidence). For documentation-only
+changes, check links, instruction consistency and the diff.
 Keep scratch and loop variables local to fixture helpers. Construct and assert
 each negative case's intended precondition: a partial-staging case must select
 the intended file before adding its unstaged edit. Do not rely on copied tooling

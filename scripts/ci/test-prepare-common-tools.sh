@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: .github/actions/prepare-common-tools/action.yml scripts/ci/fixture-lifecycle.sh scripts/ci/extract-workflow-step.sh scripts/ci/prepare-script-fixture.sh make/tools.mk
+# Shared companions: .github/actions/prepare-common-tools/action.yml .github/workflows/ci.yml scripts/ci/fixture-lifecycle.sh scripts/ci/extract-workflow-step.sh scripts/ci/prepare-script-fixture.sh scripts/ci/tool-catalog-records.pl ci/tool-versions.env make/tools.mk
 set -euo pipefail
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 unset VALIDATION_REPOSITORY_ROOT VALIDATION_RUNNER_SNAPSHOT_PATH
@@ -173,5 +173,73 @@ for suffix in $'\n' $'\r' $'\r\n'; do
     done
     rm "$fixture/directory-alias"
 done
+# Execute the native CI reuse caller with substitute installers and real path
+# observations. Missing tools in both checkouts must not compare as equal.
+reuse="$fixture/reuse checkout"
+mkdir -p "$reuse/scripts/dev" "$reuse/native-store/host" "$reuse/native-store/ic" \
+    "$reuse/native-store/rust/bin" "$reuse/different/bin" "$reuse/.tools/rust/common"
+bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$reuse" \
+    scripts/ci/tool-catalog-records.pl ci/tool-versions.env
+records="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" rust "$ROOT/ci/tool-versions.env")"
+selected_tool=''
+while IFS=$'\t' read -r name _; do
+    tool="$(printf '%s' "$name" | tr '[:upper:]_' '[:lower:]-')"
+    [[ -n "$selected_tool" ]] || selected_tool="$tool"
+    printf '#!/bin/sh\nexit 0\n' > "$reuse/native-store/rust/bin/$tool"
+    chmod +x "$reuse/native-store/rust/bin/$tool"
+done <<< "$records"
+cp -Rp "$reuse/native-store/rust/bin/." "$reuse/different/bin/"
+ln -s "$reuse/native-store/host" "$reuse/.tools/host"
+ln -s "$reuse/native-store/ic" "$reuse/.tools/ic"
+ln -s "$reuse/native-store/rust/bin" "$reuse/.tools/rust/common/bin"
+for kind in host ic rust; do
+    cat > "$reuse/scripts/dev/install-$kind-tools.sh" <<'INSTALLER'
+#!/usr/bin/env bash
+set -euo pipefail
+kind="${0##*/install-}"; kind="${kind%-tools.sh}"
+consumer="$2"
+[[ "$1" == --consumer && "$consumer" == "$RUNNER_TEMP/portable-fixtures/shared-tools/consumer" ]] || exit 99
+if [[ "${!#}" == --check ]]; then
+    if [[ "$kind" == rust ]]; then
+        case "$NATIVE_REUSE_CASE" in
+            missing) rm "$NATIVE_REUSE_STORE/rust/bin/$NATIVE_REUSE_TOOL" ;;
+            dangling) rm "$NATIVE_REUSE_STORE/rust/bin/$NATIVE_REUSE_TOOL"
+                      ln -s missing "$NATIVE_REUSE_STORE/rust/bin/$NATIVE_REUSE_TOOL" ;;
+            nonexecutable) chmod -x "$NATIVE_REUSE_STORE/rust/bin/$NATIVE_REUSE_TOOL" ;;
+            different) rm "$consumer/.tools/rust/common/bin"
+                       ln -s "$GITHUB_WORKSPACE/different/bin" "$consumer/.tools/rust/common/bin" ;;
+            check-failure) exit 37 ;;
+        esac
+    fi
+else
+    mkdir -p "$consumer/.tools"
+    if [[ "$kind" == rust ]]; then
+        mkdir -p "$consumer/.tools/rust/common"
+        ln -s "$NATIVE_REUSE_STORE/rust/bin" "$consumer/.tools/rust/common/bin"
+    else ln -s "$NATIVE_REUSE_STORE/$kind" "$consumer/.tools/$kind"; fi
+fi
+INSTALLER
+done
+yq -o json '.' "$ROOT/.github/workflows/ci.yml" | jq -e '[.jobs[].steps[]]' > "$fixture/native-steps.json"
+bash "$ROOT/scripts/ci/extract-workflow-step.sh" "$fixture/native-steps.json" native-tool-reuse > "$fixture/native-reuse.sh"
+for scenario in success missing dangling nonexecutable different check-failure invalid-catalog; do
+    attempt="$fixture/reuse-$scenario"
+    mkdir "$attempt"
+    cp -p "$reuse/different/bin/$selected_tool" "$reuse/native-store/rust/bin/$selected_tool"
+    cp -p "$ROOT/ci/tool-versions.env" "$reuse/ci/tool-versions.env"
+    if [[ "$scenario" == invalid-catalog ]]; then printf 'not a catalog\n' > "$reuse/ci/tool-versions.env"; fi
+    status=0
+    (cd "$reuse" && NATIVE_REUSE_CASE="$scenario" NATIVE_REUSE_STORE="$reuse/native-store" \
+        NATIVE_REUSE_TOOL="$selected_tool" RUNNER_TEMP="$attempt" GITHUB_WORKSPACE="$reuse" \
+        "$BASH" --noprofile --norc -e -o pipefail "$fixture/native-reuse.sh") \
+        > "$fixture/reuse-$scenario.log" 2>&1 || status=$?
+    case "$scenario" in
+        success) [[ "$status" == 0 ]] || exit 1 ;;
+        check-failure) [[ "$status" == 37 ]] || exit 1 ;;
+        *) [[ "$status" != 0 ]] || exit 1 ;;
+    esac
+    # A failed symlink observation is retained; restore only this fixture's input.
+    rm -f "$reuse/native-store/rust/bin/$selected_tool"
+done
 fixture_complete=true
-printf 'Common tool preparation ordering, status, logs and PATH checks passed\n'
+printf 'Common preparation ordering, status, logs, PATH and native reuse checks passed\n'
