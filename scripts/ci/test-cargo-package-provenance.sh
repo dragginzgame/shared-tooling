@@ -16,7 +16,7 @@ REAL_PROVENANCE_GIT="$(command -v git)"
 REAL_PROVENANCE_TAR="$(command -v tar)"
 REAL_PROVENANCE_JQ="$(command -v jq)"
 # Real disposable Git history and archives; no external fetch or Cargo operation.
-git -C "$fixture/remote" init -q
+git -C "$fixture/remote" init -q --object-format=sha1
 printf 'source\n' > "$fixture/remote/source"
 git -C "$fixture/remote" add source
 git -C "$fixture/remote" -c user.name=Fixture -c user.email=fixture@example.invalid \
@@ -67,6 +67,26 @@ refuse() {
 run success
 [[ "$(cat "$fixture/evidence/success/source-verified")" == "$source_id" ]] || exit 1
 [[ "$(git -C "$fixture/evidence/success/source.git" rev-parse 'FETCH_HEAD^{commit}')" == "$source_id" ]] || exit 1
+# The admitted source identity selects the fresh store, not ambient Git defaults.
+GIT_DEFAULT_HASH=sha256 run sha1-cross-default
+[[ "$(git -C "$fixture/evidence/sha1-cross-default/source.git" rev-parse --show-object-format)" == sha1 ]] || exit 1
+git init -q --object-format=sha256 "$fixture/remote-sha256"
+printf 'source\n' > "$fixture/remote-sha256/source"
+git -C "$fixture/remote-sha256" add source
+git -C "$fixture/remote-sha256" -c user.name=Fixture -c user.email=fixture@example.invalid \
+    -c commit.gpgsign=false -c core.hooksPath=/dev/null commit -qm source
+sha1_source="$source_id"
+source_id="$(git -C "$fixture/remote-sha256" rev-parse HEAD)"
+archive library 1.2.3 ''
+archive cli 2.0.0 'apps/a b'
+GIT_DEFAULT_HASH=sha1 bash "$runner" "$fixture/evidence/sha256-cross-default" \
+    "$fixture/archives with spaces" "$fixture/remote-sha256" "$source_id" \
+    --package library@1.2.3 . --package cli@2.0.0 'apps/a b'
+[[ "$(cat "$fixture/evidence/sha256-cross-default/source-verified")" == "$source_id" ]] || exit 1
+[[ "$(git -C "$fixture/evidence/sha256-cross-default/source.git" rev-parse --show-object-format)" == sha256 ]] || exit 1
+source_id="$sha1_source"
+archive library 1.2.3 ''
+archive cli 2.0.0 'apps/a b'
 cp "$fixture/evidence/success/source-verified" "$fixture/saved"
 : > "$fixture/git-calls"
 refuse run success

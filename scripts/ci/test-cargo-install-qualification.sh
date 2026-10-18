@@ -31,7 +31,7 @@ if [[ -n "${QUALIFICATION_PROFILE:-}" && ! -e "$QUALIFICATION_CALLS.installed" ]
         case "$1" in
             --root) install_root="$2"; shift 2 ;;
             --version) version="${2#=}"; shift 2 ;;
-            --bin|--example) target="$2"; shift 2 ;;
+            --bin) target="$2"; shift 2 ;;
             *) shift ;;
         esac
     done

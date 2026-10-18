@@ -74,6 +74,37 @@ class EvidenceTests(unittest.TestCase):
             saved = files[name]; files[name] = replacement
             with self.assertRaises(ValueError): verify_compact_tools({}, read, tool_pins, "Linux/X64")
             files[name] = saved
+        # Each requested bundle must provide its own complete receipt set.
+        all_files = files
+        for kinds in (("host",), ("ic",), ("host", "ic")):
+            selected = {kind: tool_pins[kind] for kind in kinds}
+            files = {name: value for name, value in all_files.items()
+                     if name.split("/")[1] in kinds}
+            with self.subTest(selection=kinds):
+                verify_compact_tools({}, read, selected, "Linux/X64")
+                for name in list(files):
+                    saved = files.pop(name)
+                    with self.subTest(missing=name), self.assertRaises(ValueError):
+                        verify_compact_tools({}, read, selected, "Linux/X64")
+                    files[name] = saved
+                for kind in kinds:
+                    for member in (f".tools/{kind}-set.ABC123",
+                                   f".tools/{kind}-set.ABC123/bin/tool"):
+                        with self.assertRaises(ValueError):
+                            verify_compact_tools({member: None}, read, selected, "Linux/X64")
+                if kinds == ("host",):
+                    # IC diagnostics neither qualify nor invalidate host-only proof.
+                    files["tool-evidence/ic/caller-pins"] = b"stale diagnostics"
+                    verify_compact_tools({".tools/ic-set.ABC123/bin/tool": None},
+                                         read, selected, "Other/Host")
+                if "ic" in kinds:
+                    for host in ("Other/Host", "macOS/X64", "macOS/ARM64"):
+                        with self.assertRaises(ValueError):
+                            verify_compact_tools({}, read, selected, host)
+        files = all_files
+        for selected in ({}, {"unknown": b"pins"}, dict(tool_pins, unknown=b"pins")):
+            with self.subTest(selection=selected), self.assertRaises(ValueError):
+                verify_compact_tools({}, read, selected, "Linux/X64")
         # Receipt comments/order do not change its admitted selection.
         saved = files["tool-evidence/ic/pins.tsv"]
         files["tool-evidence/ic/pins.tsv"] = b"# installation receipt\n" + b"\n".join(reversed(pins.splitlines())) + b"\n"

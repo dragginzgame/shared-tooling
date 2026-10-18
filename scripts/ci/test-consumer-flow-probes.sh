@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/make-adapter-probes.sh scripts/ci/fixture-retention-probes.sh scripts/ci/collect-native-diagnostics.sh scripts/ci/check-pipe-jobserver.pl make/execution.mk
+# Shared companions: scripts/ci/make-adapter-probes.sh scripts/ci/fixture-retention-probes.sh scripts/ci/collect-native-diagnostics.sh scripts/ci/verify-file-checksum.sh scripts/ci/check-pipe-jobserver.pl make/execution.mk
 set -euo pipefail
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 ROOT="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
@@ -118,7 +118,8 @@ printf 'excluded\n' > "$fixture/evidence/scratch/private"
 printf 'formatter stderr\n' > "$fixture/formats/formatting.log"
 bash "$ROOT/scripts/ci/collect-native-diagnostics.sh" "$fixture/checkout" "$fixture/evidence" \
     "$fixture/diagnostics.tar.gz" "$fixture/formats" success "$ROOT/ci/tool-versions.env" "$ROOT/ci/ic-tools.tsv" source.txt missing.txt
-shasum -a 256 -c "$fixture/diagnostics.tar.gz.sha256" > "$fixture/checksum.log"
+bash "$ROOT/scripts/ci/verify-file-checksum.sh" sha256 "$(cat "$fixture/diagnostics.tar.gz.sha256")" \
+    "$fixture/diagnostics.tar.gz" > "$fixture/checksum.log"
 tar -tzf "$fixture/diagnostics.tar.gz" > "$fixture/members"
 printf './source.txt\n' > "$fixture/expected"
 cmp "$fixture/expected" "$fixture/members"

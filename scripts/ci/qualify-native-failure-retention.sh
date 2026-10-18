@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/dev/tool-store.sh scripts/ci/prepare-cargo-failure-fixture.sh
+# Shared companions: scripts/dev/tool-store.sh scripts/ci/prepare-cargo-failure-fixture.sh scripts/ci/tool-catalog-records.pl
 set -euo pipefail
 
 # Online CI-only negative qualification. Use the real installer, checksum guard
@@ -51,7 +51,7 @@ bash "$ROOT/scripts/ci/verify-file-checksum.sh" sha256 "$digest" "$archive"
 # shellcheck source=scripts/dev/tool-store.sh
 source "$ROOT/scripts/dev/tool-store.sh"
 consumer="$fixture/consumer"
-records="$(awk -v records=1 -f "$ROOT/scripts/ci/ic-tool-pins.awk" "$original" | LC_ALL=C sort)"
+records="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" ic "$original")"
 tool_store_init ic "$host
 $records"
 tool_store_acquire
@@ -95,7 +95,7 @@ grep -F 'missing or invalid shared Cargo tool' "$fixture/temp/rust-tools-check.l
     printf 'rust_install_status=2\nrust_check_status=2\nrust_cargo=substituted\n'
     # Bind local dirty-source runs as well as hosted committed-source runs.
     for path in scripts/ci/qualify-native-failure-retention.sh scripts/dev/install-ic-tools.sh scripts/dev/install-rust-tools.sh \
-        scripts/dev/tool-store.sh scripts/dev/cargo-tool-build.sh scripts/ci/prepare-cargo-failure-fixture.sh scripts/ci/ic-tool-pins.awk scripts/ci/verify-file-checksum.sh \
+        scripts/dev/tool-store.sh scripts/dev/cargo-tool-build.sh scripts/dev/host-platform.sh scripts/ci/prepare-cargo-failure-fixture.sh scripts/ci/tool-catalog-records.pl scripts/ci/ic-tool-pins.awk scripts/ci/StableVersion.pm scripts/ci/verify-file-checksum.sh \
         scripts/ci/verify-evidence-checksums.sh scripts/ci/archive-evidence.sh scripts/ci/select-tool-evidence.sh make/tools.mk ci/ic-tools.tsv \
         ci/tool-versions.env .github/actions/retain-failure-evidence/action.yml; do
         printf '%s  %s\n' "$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$ROOT/$path")" "$path"

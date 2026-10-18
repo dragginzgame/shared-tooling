@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.23.1]
+## [0.24.1]
 
 ### Added
 
@@ -10,10 +10,53 @@
 - Check prepared Cargo archives against explicit package paths and a source commit,
   then retrieve that commit into a fresh Git store. Retain provenance evidence
   without packaging, uploading or selecting consumer eligibility and recovery.
+  The fresh store matches the admitted SHA-1/SHA-256 identity rather than ambient
+  Git defaults.
+
+## [0.24.0]
+
+### Breaking
+
+- **Common Rust tools:** setup selects cargo-sort and cargo-sort-derives only.
+  Candid extraction consumers must explicitly prepare/check their selected
+  extractor and publish its admitted PATH. Integrate
+  [Canic PR #597 — Own explicit Candid extractor setup](https://github.com/dragginzgame/canic/pull/597)
+  before Canic adopts this snapshot. Existing retained installations remain intact.
+- **IC catalog output:** direct AWK admission emits complete validated records.
+  Replace version-only and validation-only calls with `tool-catalog-records.pl ic
+  CATALOG [TOOL]`; discard output explicitly when only admission is required.
+- **Diagnostic checksums:** native archive sidecars contain a bare digest.
+  Verify against the explicitly selected archive with the shared checksum helper;
+  replace calls that pass the sidecar directly to `shasum -c`.
+- **Release adoption checks:** fixture preparation follows selected inputs'
+  declared companion closure. Refresh partial snapshots with the shared fixture
+  preparer and required companions; release execution remains substituted.
+
+### Changed
+
+- Support grouped Cargo manifest ordering in current and committed-source release
+  checks. Adoption guidance pairs formatter/release policies and distinguishes
+  production dependencies from tests/tooling without implying publication or
+  automated deployment enforcement.
+- Verify compact evidence for the caller-selected host/IC bundles, requiring all
+  selected receipts and preserving IC-specific admission when IC is selected
+  ([#282 — Verify compact evidence for caller-selected tool bundles](https://github.com/dragginzgame/shared-tooling/issues/282)).
+- Release preflight and increment calculation share canonical version/date
+  admission and exact u64 arithmetic, rejecting overflow without rounding.
+  The public increment command retains its invocation and invalid-input status.
+- IC installation and retained-bundle checks consume canonical catalog records,
+  preserving archive authentication and checking versions only after the complete
+  set is authenticated. Tool catalogs share stable-version grammar while retaining
+  CLOC's two-component versions and separate release numeric bounds.
+- CI reuses the common preparation action while publishing its selected IC PATH
+  explicitly. Cargo binary qualification removes unused example handling after
+  Blob's extraction; current setup guidance identifies the capability owners.
 
 ### Fixed
 
-- Align the hook fixture with Prettier's maintained `--ignore-unknown` invocation,
+- Native CI reuse checks derive the common Rust selection from its catalog and
+  reject missing or non-executable tools before comparing physical paths.
+- Align the hook fixture's Prettier substitute with the maintained invocation,
   preserving selected-file and failure-isolation checks
   ([PR #281 — Fix hook fixture Prettier argument admission](https://github.com/dragginzgame/shared-tooling/pull/281)).
 
