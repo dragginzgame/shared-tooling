@@ -87,6 +87,19 @@ status=0
     > "$fixture/hardlinked.log" 2>&1 || status=$?
 [[ "$status" == 2 && ! -e "$hardlinked/scripts" ]] || exit 1
 cmp "$fixture/leaf.before" "$source_root/scripts/leaf.sh"
+# Existing outputs may alias each other without aliasing the source. Copying
+# both would silently leave the earlier root with the later companion's bytes.
+aliased_outputs="$fixture/aliased-outputs"
+mkdir -p "$aliased_outputs/scripts"
+cp "$fixture/keep.before" "$aliased_outputs/keep"
+ln "$aliased_outputs/keep" "$aliased_outputs/scripts/leaf.sh"
+status=0
+"$BASH" "$ROOT/scripts/ci/prepare-script-fixture.sh" "$source_root" "$aliased_outputs" keep scripts/root.sh \
+    > "$fixture/aliased-outputs.log" 2>&1 || status=$?
+[[ "$status" == 2 && ! -e "$aliased_outputs/scripts/root.sh" && ! -e "$aliased_outputs/docs" ]] || exit 1
+cmp "$fixture/keep.before" "$aliased_outputs/keep"
+cmp "$fixture/keep.before" "$aliased_outputs/scripts/leaf.sh"
+cmp "$fixture/leaf.before" "$source_root/scripts/leaf.sh"
 # Static permission failures must refuse before an earlier valid overwrite.
 mkdir -p "$source_root/locked/child" "$destination/locked"
 printf 'leaf\n' > "$source_root/locked/child/leaf"

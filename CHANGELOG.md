@@ -6,7 +6,8 @@
 
 - Permit script fixtures beneath their source checkout, preserving consumer
   evidence destinations. Refuse source/output collisions across the complete
-  companion closure before copying any input, including hard-linked aliases.
+  companion closure before copying any input, including hard-linked aliases
+  between outputs or to selected source files.
 - Replay retained baseline and hook logs when formatting adoption fails,
   preserving the original status and scratch inputs. Consumers can delegate
   diagnostics without wrapping the checker in a second fixture lifecycle.

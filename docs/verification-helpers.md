@@ -1063,7 +1063,9 @@ The complete closure and destination parents are admitted before any copying;
 unsafe paths, symlink traversal and missing inputs refuse. The fixture must not
 contain the source root. Scratch beneath the source is permitted, but the entire
 copy plan refuses before effects if an output would overwrite any selected input,
-including a hard-linked input reached through a different output path.
+including a hard-linked input reached through a different output path. Distinct
+planned outputs must not share a hard link: copying either would change the
+other's bytes. Both cases refuse before any selected file is copied.
 Existing regular fixture files may be replaced. Callers own an idle disposable
 destination and stable reviewed source; copying does not protect against
 concurrent mutation. The helper neither creates a snapshot nor proves supplier
