@@ -41,12 +41,42 @@ sub run_records {
 my ($record_status, $record_bytes) = run_records('rust', 'ci/host.env', 'CARGO_SORT');
 is($record_status, 0, 'select one admitted Rust pin');
 like($record_bytes, qr/\ACARGO_SORT\t[0-9.]+\tall\t-\n\z/, 'selection retains the typed record');
+for my $version ('0.0.0', '18446744073709551616.2.3') {
+    my $catalog = read_file("$fixture/ci/host.env");
+    $catalog =~ s/(SHARED_TOOLING_CARGO_SORT_VERSION=)[^\n]+/$1$version/;
+    write_file('ci/versions.env', $catalog);
+    ($record_status, $record_bytes) = run_records('rust', 'ci/versions.env', 'CARGO_SORT');
+    is($record_status, 0, 'catalog stable versions retain grammar-only admission without release bounds');
+    like($record_bytes, qr/\ACARGO_SORT\t\Q$version\E\t/, 'catalog version bytes are preserved');
+}
+for my $version ('01.2.3', '1.02.3', '1.2.03', '1.2', '1.2.3-rc.1', '1.2.3+build') {
+    my $catalog = read_file("$fixture/ci/host.env");
+    $catalog =~ s/(SHARED_TOOLING_CARGO_SORT_VERSION=)[^\n]+/$1$version/;
+    write_file('ci/versions.env', $catalog);
+    ($record_status, $record_bytes) = run_records('rust', 'ci/versions.env');
+    isnt($record_status, 0, 'catalog refuses a noncanonical stable version');
+    is($record_bytes, '', 'invalid stable version publishes no partial catalog');
+}
 ($record_status, $record_bytes) = run_records('host', 'ci/host.env', 'JQ');
 is($record_status, 0, 'select host tool across its qualified hosts');
 is(scalar(split /\n/, $record_bytes), 4, 'host selection preserves all four host identities');
 ($record_status, $record_bytes) = run_records('ic', 'ci/default.tsv', 'quill');
 is($record_status, 0, 'select IC tool through the canonical pin parser');
 like($record_bytes, qr/\Aquill\t/, 'IC selection retains canonical lowercase tool identity');
+open my $matrix, '-|', 'awk', '-f', "$root/scripts/ci/ic-tool-pins.awk", 'ci/default.tsv' or die $!;
+my @matrix_records = <$matrix>;
+close $matrix or die "IC matrix admission failed\n";
+is(join('', sort @matrix_records),
+    join('', sort map { "$_\n" } grep { length && !/^#/ } split /\n/, $ic),
+    'direct IC admission emits the complete unchanged matrix');
+my ($last_record) = $ic =~ /([^\n]+)\n?\z/;
+for my $invalid_ic ($ic . "$last_record\n", $ic =~ s/\Q$last_record\E\n?\z//r,
+    $ic =~ s/\Q$last_record\E\n?\z/invalid\n/r) {
+    write_file('ci/invalid-selection.tsv', $invalid_ic);
+    ($record_status, $record_bytes) = run_records('ic', 'ci/invalid-selection.tsv', 'quill');
+    isnt($record_status, 0, 'IC selection cannot hide incomplete or corrupt matrix records');
+    is($record_bytes, '', 'failed IC matrix admission publishes no partial selection');
+}
 ($record_status, $record_bytes) = run_records('ci', 'ci/host.env');
 is($record_status, 0, 'admit the common CI pins');
 is(scalar(split /\n/, $record_bytes), 3, 'one record per reviewed CI tool');
@@ -162,7 +192,7 @@ for my $prefix ('', 'vendor/') {
     write_file("${prefix}.shared-tooling.snapshot", $manifest . "file\t" . ('0' x 64) . "\t-\tunselected.txt\n");
     is((run_check())[0], 0, 'unselected payload integrity remains a separate check');
     make_path("$fixture/reader-failure/scripts/ci");
-    for my $script (qw(check-tool-catalogs.pl tool-catalog-records.pl ic-tool-pins.awk)) {
+    for my $script (qw(check-tool-catalogs.pl tool-catalog-records.pl ic-tool-pins.awk StableVersion.pm)) {
         copy("$root/scripts/ci/$script", "$fixture/reader-failure/scripts/ci/$script") or die $!;
     }
     write_file('reader-failure/scripts/ci/verify-shared-tooling-snapshot.sh', "#!/usr/bin/env bash\ncat <<'RECORDS'\n${manifest}RECORDS\nexit 91\n");

@@ -9,7 +9,7 @@ trap 'fixture_finish "$?" "$fixture" "Failed tool report fixture retained"' EXIT
 snapshot="$fixture/snapshot with spaces"
 consumer="$fixture/consumer with spaces"
 mkdir -p "$snapshot/scripts/ci" "$snapshot/scripts/dev" "$snapshot/ci" "$consumer"
-for file in report-tool-versions.sh tool-catalog-records.pl ic-tool-pins.awk verify-file-checksum.sh; do
+for file in report-tool-versions.sh tool-catalog-records.pl ic-tool-pins.awk verify-file-checksum.sh StableVersion.pm; do
     cp "$root/scripts/ci/$file" "$snapshot/scripts/ci/"
 done
 cp "$root/ci/tool-versions.env" "$root/ci/ic-tools.tsv" "$snapshot/ci/"
@@ -58,7 +58,7 @@ printf '#!/bin/sh\nexit 99\n' > "$fixture/impostor/jq"
 chmod +x "$fixture/impostor/jq"
 PATH="$fixture/impostor:$PATH" bash "$snapshot/scripts/ci/report-tool-versions.sh" "$consumer" > "$fixture/report" 2> "$fixture/errors"
 [[ "$(grep -c '^admit ' "$REPORT_EVENTS")" == 2 ]]
-[[ "$(grep -c '^probe ' "$REPORT_EVENTS")" == 7 ]]
+[[ "$(grep -c '^probe ' "$REPORT_EVENTS")" == 6 ]]
 if grep -q '^admit ic$' "$REPORT_EVENTS"; then exit 1; fi
 # A host/Rust-only report neither reads an IC catalog nor admits its executables.
 mv "$snapshot/ci/ic-tools.tsv" "$snapshot/ci/ic-tools.saved"
@@ -71,8 +71,8 @@ mv "$snapshot/ci/ic-tools.saved" "$snapshot/ci/ic-tools.tsv"
 PATH="$fixture/impostor:$PATH" bash "$snapshot/scripts/ci/report-tool-versions.sh" "$consumer" \
     "$snapshot/ci/tool-versions.env" "$snapshot/ci/ic-tools.tsv" > "$fixture/report" 2> "$fixture/errors"
 [[ "$(grep -c '^admit ' "$REPORT_EVENTS")" == 3 ]]
-[[ "$(grep -c '^probe ' "$REPORT_EVENTS")" == 12 ]]
-for tool in jq yq rg cloc cargo-sort cargo-sort-derives candid-extractor icp didc ic-wasm quill wasm-opt; do
+[[ "$(grep -c '^probe ' "$REPORT_EVENTS")" == 11 ]]
+for tool in jq yq rg cloc cargo-sort cargo-sort-derives icp didc ic-wasm quill wasm-opt; do
     [[ "$(grep -c "^probe $tool$" "$REPORT_EVENTS")" == 1 ]]
 done
 digest="$(bash "$snapshot/scripts/ci/verify-file-checksum.sh" --print sha256 "$consumer/host bin/jq")"

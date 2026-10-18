@@ -1,5 +1,66 @@
 # Changelog
 
+## [0.24.1]
+
+### Changed
+
+- Permit script fixtures beneath their source checkout, preserving consumer
+  evidence destinations. Refuse source/output collisions across the complete
+  companion closure before copying any input.
+- Replay retained baseline and hook logs when formatting adoption fails,
+  preserving the original status and scratch inputs. Consumers can delegate
+  diagnostics without wrapping the checker in a second fixture lifecycle.
+- Share ordered shell fixture execution, per-step logs and exported outcomes.
+  Preserve the first failure status and skip subsequent steps; callers retain
+  workflow policy, action substitutes, assertions and evidence custody.
+
+## [0.24.0]
+
+### Breaking
+
+- **Common Rust tools:** setup selects cargo-sort and cargo-sort-derives only.
+  Candid extraction consumers must explicitly prepare/check their selected
+  extractor and publish its admitted PATH. Integrate
+  [Canic PR #597 — Own explicit Candid extractor setup](https://github.com/dragginzgame/canic/pull/597)
+  before Canic adopts this snapshot. Existing retained installations remain intact.
+- **IC catalog output:** direct AWK admission emits complete validated records.
+  Replace version-only and validation-only calls with `tool-catalog-records.pl ic
+  CATALOG [TOOL]`; discard output explicitly when only admission is required.
+- **Diagnostic checksums:** native archive sidecars contain a bare digest.
+  Verify against the explicitly selected archive with the shared checksum helper;
+  replace calls that pass the sidecar directly to `shasum -c`.
+- **Release adoption checks:** fixture preparation follows selected inputs'
+  declared companion closure. Refresh partial snapshots with the shared fixture
+  preparer and required companions; release execution remains substituted.
+
+### Changed
+
+- Support grouped Cargo manifest ordering in current and committed-source release
+  checks. Adoption guidance pairs formatter/release policies and distinguishes
+  production dependencies from tests/tooling without implying publication or
+  automated deployment enforcement.
+- Verify compact evidence for the caller-selected host/IC bundles, requiring all
+  selected receipts and preserving IC-specific admission when IC is selected
+  ([#282 — Verify compact evidence for caller-selected tool bundles](https://github.com/dragginzgame/shared-tooling/issues/282)).
+- Release preflight and increment calculation share canonical version/date
+  admission and exact u64 arithmetic, rejecting overflow without rounding.
+  The public increment command retains its invocation and invalid-input status.
+- IC installation and retained-bundle checks consume canonical catalog records,
+  preserving archive authentication and checking versions only after the complete
+  set is authenticated. Tool catalogs share stable-version grammar while retaining
+  CLOC's two-component versions and separate release numeric bounds.
+- CI reuses the common preparation action while publishing its selected IC PATH
+  explicitly. Cargo binary qualification removes unused example handling after
+  Blob's extraction; current setup guidance identifies the capability owners.
+
+### Fixed
+
+- Native CI reuse checks derive the common Rust selection from its catalog and
+  reject missing or non-executable tools before comparing physical paths.
+- Align the hook fixture's Prettier substitute with the maintained invocation,
+  preserving selected-file and failure-isolation checks
+  ([PR #281 — Fix hook fixture Prettier argument admission](https://github.com/dragginzgame/shared-tooling/pull/281)).
+
 ## [0.23.0]
 
 ### Breaking
@@ -25,12 +86,6 @@
 
 ### Changed
 
-- Permit script fixtures beneath their source checkout, preserving consumer
-  evidence destinations. Refuse source/output collisions across the complete
-  companion closure before copying any input.
-- Replay retained baseline and hook logs when formatting adoption fails,
-  preserving the original status and scratch inputs. Consumers can delegate
-  diagnostics without wrapping the checker in a second fixture lifecycle.
 - Normalize installer OS/architecture aliases through one read-only observer,
   retaining each toolset's asset matrix and rejecting failed host observations
   before installation or download.
@@ -81,9 +136,6 @@
 
 ### Added
 
-- Share ordered shell fixture execution, per-step logs and exported outcomes.
-  Preserve the first failure status and skip subsequent steps; callers retain
-  workflow policy, action substitutes, assertions and evidence custody.
 - Compare repeated snapshot exports on Linux and both native macOS hosts through
   an opt-in workflow. Both exporters use one frozen payload, retain alternating
   timing samples and verify matching receipts and files. Routine CI stays focused

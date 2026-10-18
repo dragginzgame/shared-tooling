@@ -683,6 +683,7 @@ if [[ "$1" == --version ]]; then echo 99.1.0; exit "${PRETTIER_VERSION_STATUS:-0
 [[ -z "${PRETTIER_CALL_MARKER:-}" ]] || touch "$PRETTIER_CALL_MARKER"
 [[ "${PRETTIER_FIXTURE_FAIL:-}" != yes ]] || exit 9
 mode="$1"
+[[ "$mode" == --write || "$mode" == --check ]] || exit 1
 [[ "$2" == --ignore-unknown && "$3" == -- ]] || exit 1
 shift 3
 for path in "$@"; do
