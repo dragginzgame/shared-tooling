@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.24.4]
+
+### Added
+
+- Share selected Cargo graph checks for canonical package identities, optional
+  identity caps and forbidden dependency-feature edges. Consumers keep their
+  roots, targets, feature selections and policy; failed or malformed Cargo
+  observations cannot pass admission.
+- Retain child user/system CPU observations alongside paired snapshot export
+  timings, preserving the elapsed-time format and payload checks. This supports
+  native investigation of
+  [#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219).
+
+### Changed
+
+- Require Clap for Rust CLI argument handling, using its existing parsing,
+  validation and help capabilities before adding custom CLI mechanics.
+
+### Fixed
+
+- Prepare governance snapshot fixtures from their complete companion closure,
+  so exported guides retain newly linked documentation without extra roots.
+
 ## [0.24.3]
 
 ### Changed

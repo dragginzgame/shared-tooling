@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/ci/test-snapshot-verifier.sh
+# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/ci/test-snapshot-verifier.sh scripts/ci/prepare-script-fixture.sh
 set -euo pipefail
 
 ROOT="$0"
@@ -903,14 +903,17 @@ mkdir "$governance_consumer"
 git init -q "$governance_consumer"
 governance_args=()
 governance_docs=()
+governance_paths=()
 while IFS= read -r path; do
     [[ -n "$path" ]] || exit 1
-    mkdir -p "$source_root/$(dirname "$path")" "$revision_root/$(dirname "$path")"
-    cp -p "$ROOT/$path" "$source_root/$path"
-    cp -p "$ROOT/$path" "$revision_root/$path"
+    governance_paths+=("$path")
     governance_args+=(--entrypoint "$path")
     case "$path" in *.md) governance_docs+=("$path") ;; esac
 done < "$ROOT/scripts/distribution/governance-files.txt"
+# Seed the frozen supplier with each root's full declared closure. The catalog
+# chooses roots; linked guides can be required companions rather than roots.
+bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$source_root" "${governance_paths[@]}"
+bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$revision_root" "${governance_paths[@]}"
 # Keep the task's existing direct documentation roots but omit the newly linked
 # guide. The committed Markdown declaration must supply it, not the full catalog.
 task_consumer="$FIXTURE/task-consumer"

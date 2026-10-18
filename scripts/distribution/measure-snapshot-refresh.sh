@@ -45,6 +45,7 @@ after_blob="$(git -C "$ROOT" rev-parse "$after:$runner_path")"
     printf 'checkout_commit\t%s\n' "$harness_commit"
     printf 'harness_blob\t%s\n' "$harness_blob"
     printf 'harness_worktree\t%s\n' "${harness_state:-clean}"
+    printf 'cpu_measurement\tPerl times: waited child user/system seconds\n'
     printf 'before_commit\t%s\nafter_commit\t%s\npayload_commit\t%s\n' "$before" "$after" "$payload"
     printf 'before_blob\t%s\n' "$before_blob"
     printf 'after_blob\t%s\n' "$after_blob"
@@ -84,8 +85,9 @@ for helper in "${helpers[@]}"; do
     done
 done
 printf 'phase\tpair\tside\tseconds\n' > "$selected/samples.tsv"
+printf 'phase\tpair\tside\tuser_seconds\tsystem_seconds\n' > "$selected/cpu.tsv"
 sample() {
-    local phase="$1" pair="$2" side="$3" label consumer elapsed
+    local phase="$1" pair="$2" side="$3" label consumer elapsed user_cpu system_cpu
     label="$phase-$pair-$side"
     consumer="$selected/consumer-$label"
     mkdir "$consumer"
@@ -94,17 +96,27 @@ sample() {
     # consumer initialization, verification and the comparison harness startup.
     perl -MTime::HiRes=clock_gettime,CLOCK_MONOTONIC -MPOSIX=WIFEXITED,WEXITSTATUS -e '
         my $output = shift @ARGV;
+        my $cpu_output = shift @ARGV;
         open my $seconds, ">", $output or die "open timing: $!\n";
+        my @before_cpu = times;
         my $start = clock_gettime(CLOCK_MONOTONIC);
         system @ARGV;
         my $status = $?;
         my $elapsed = clock_gettime(CLOCK_MONOTONIC) - $start;
+        my @after_cpu = times;
         die "exporter did not exit normally (wait=$status)\n" if $status == -1 || !WIFEXITED($status);
         exit WEXITSTATUS($status) if WEXITSTATUS($status);
         die "invalid elapsed time\n" unless $elapsed > 0;
         printf {$seconds} "%.9f\n", $elapsed or die "write timing: $!\n";
         close $seconds or die "close timing: $!\n";
-    ' "$selected/$label.seconds" "$BASH" "$selected/$side/$runner_path" \
+        # CPU of reaped children includes their waited-for descendants.
+        # Both observations stay outside the unchanged wall-clock interval.
+        my ($user, $system) = map { $after_cpu[$_] - $before_cpu[$_] } (2, 3);
+        die "invalid child CPU time\n" if $user < 0 || $system < 0;
+        open my $cpu, ">", $cpu_output or die "open CPU observation: $!\n";
+        printf {$cpu} "%.9f\t%.9f\n", $user, $system or die "write CPU observation: $!\n";
+        close $cpu or die "close CPU observation: $!\n";
+    ' "$selected/$label.seconds" "$selected/$label.cpu" "$BASH" "$selected/$side/$runner_path" \
         --source "$selected/source" --consumer "$consumer" \
         --entrypoint "$runner_path" --entrypoint scripts/dev/install-rust-tools.sh \
         --entrypoint scripts/ci/run-release.sh > "$selected/$label.log" 2>&1
@@ -112,7 +124,10 @@ sample() {
         --consumer "$consumer" > "$selected/$label.verify.log" 2>&1
     elapsed="$(cat "$selected/$label.seconds")"
     [[ "$elapsed" =~ ^[0-9]+\.[0-9]+$ ]] || exit 1
+    IFS=$'\t' read -r user_cpu system_cpu < "$selected/$label.cpu"
+    [[ "$user_cpu" =~ ^[0-9]+\.[0-9]+$ && "$system_cpu" =~ ^[0-9]+\.[0-9]+$ ]] || exit 1
     printf '%s\t%s\t%s\t%s\n' "$phase" "$pair" "$side" "$elapsed" >> "$selected/samples.tsv"
+    printf '%s\t%s\t%s\t%s\t%s\n' "$phase" "$pair" "$side" "$user_cpu" "$system_cpu" >> "$selected/cpu.tsv"
 }
 for pair in 0 1 2 3 4 5 6; do
     phase=measurement

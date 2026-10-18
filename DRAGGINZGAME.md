@@ -117,6 +117,21 @@ Consumer choices described in those guides remain subject to this baseline.
 - Dependencies own their established contracts; do not reproduce them downstream.
   Libraries must not silently claim consumer endpoints or lifecycle ownership.
 
+## CLI applications
+
+- **Use Clap for Rust CLI applications**, including developer tools and maintained
+  utility binaries. Use its derive or builder API rather than handwritten
+  `std::env::args` loops, custom flag/subcommand dispatch or a parallel parser.
+- Let Clap own argument/value parsing, typed values, defaults, required arguments,
+  allowed values, argument groups/conflicts/dependencies, help, version, usage and
+  parse-error diagnostics. Before adding custom CLI logic, check whether Clap
+  already provides the behavior and use that capability.
+- Prefer Clap's extension points when application-specific parsing is needed.
+  Keep custom validation limited to domain constraints Clap cannot express;
+  document that gap and keep domain semantics with their existing owner. Do not
+  reimplement generic CLI mechanics behind wrappers or duplicate manual checks
+  that Clap already enforces.
+
 ## Complete, reviewable changes
 
 - Ordinary continuation resumes the accepted coherent in-repository batch through

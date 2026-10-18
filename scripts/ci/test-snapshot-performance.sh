@@ -52,11 +52,13 @@ exit 47
 RUNNER
             exit 0 ;;
         signal) printf '#!/usr/bin/env bash\nkill -TERM "$$"\n'; exit 0 ;;
-        verify-failure|mismatch)
+        verify-failure|mismatch|cpu-write-failure)
             "$MEASUREMENT_REAL_GIT" "$@"
             cat <<'APPEND'
 if [[ "$MEASUREMENT_MODE" == verify-failure ]]; then
     printf corrupt >> "$CONSUMER_ROOT/scripts/ci/verify-shared-tooling-snapshot.sh"
+elif [[ "$MEASUREMENT_MODE" == cpu-write-failure ]]; then
+    mkdir "${CONSUMER_ROOT%/*}/warmup-0-before.cpu"
 elif [[ "${BASH_SOURCE[0]}" == */after/* ]]; then
     printf unexpected > "$CONSUMER_ROOT/unexpected"
 fi
@@ -84,7 +86,7 @@ status=0
     "$fixture/bad-revision" > "$fixture/refusal.log" 2>&1 || status=$?
 [[ "$status" == 2 && ! -e "$fixture/bad-revision" ]] || exit 1
 
-for mode in read-failure reader-present reader-read-failure exit-failure signal verify-failure mismatch; do
+for mode in read-failure reader-present reader-read-failure exit-failure signal verify-failure mismatch cpu-write-failure; do
     status=0
     PATH="$fixture/bin:$PATH" MEASUREMENT_MODE="$mode" "$BASH" \
         "$ROOT/scripts/distribution/measure-snapshot-refresh.sh" "$revision" "$revision" "$revision" \
@@ -99,7 +101,9 @@ for mode in read-failure reader-present reader-read-failure exit-failure signal 
             done
             grep -F "$MEASUREMENT_READER_BLOB" "$fixture/$mode/identities.txt" > /dev/null ;;
         reader-read-failure) [[ "$status" == 74 && ! -e "$fixture/$mode/samples.tsv" ]] || exit 1 ;;
-        exit-failure) [[ "$status" == 47 && ! -s "$fixture/$mode/warmup-0-before.seconds" ]] || exit 1 ;;
+        exit-failure)
+            [[ "$status" == 47 && ! -s "$fixture/$mode/warmup-0-before.seconds" &&
+               ! -e "$fixture/$mode/warmup-0-before.cpu" ]] || exit 1 ;;
         signal)
             [[ ! -s "$fixture/$mode/warmup-0-before.seconds" ]] || exit 1
             grep -F 'did not exit normally' "$fixture/$mode/warmup-0-before.log" > /dev/null ;;
@@ -108,6 +112,12 @@ for mode in read-failure reader-present reader-read-failure exit-failure signal 
         mismatch)
             grep -F 'snapshot verified' "$fixture/$mode/warmup-0-after.verify.log" > /dev/null
             grep -F unexpected "$fixture/$mode/warmup-0.compare.log" > /dev/null ;;
+        cpu-write-failure)
+            [[ -s "$fixture/$mode/warmup-0-before.seconds" &&
+               -d "$fixture/$mode/warmup-0-before.cpu" ]] || exit 1
+            grep -F 'open CPU observation:' "$fixture/$mode/warmup-0-before.log" > /dev/null
+            [[ "$(wc -l < "$fixture/$mode/samples.tsv" | tr -d ' ')" == 1 &&
+               "$(wc -l < "$fixture/$mode/cpu.tsv" | tr -d ' ')" == 1 ]] || exit 1 ;;
     esac
 done
 echo 'Snapshot measurement refusal, failed reads/exports, signals, verification and pair mismatch passed (substituted runners)'
@@ -128,6 +138,7 @@ for scenario in complete partial archive-failure; do
     printf 'Git store must be excluded\n' > "$evidence/consumer-measurement-1-after/.git/config"
     printf 'source clone must be excluded\n' > "$evidence/source/bulk"
     printf 'phase\tpair\tside\tseconds\n' > "$evidence/samples.tsv"
+    printf 'phase\tpair\tside\tuser_seconds\tsystem_seconds\nmeasurement\t1\tafter\t0.1\t0.2\n' > "$evidence/cpu.tsv"
     printf 'retained command output\n' > "$native/snapshot-comparison.log"
     [[ "$scenario" != complete ]] || printf 'verified\n' > "$evidence/complete.txt"
     status=0
@@ -151,6 +162,7 @@ for scenario in complete partial archive-failure; do
     cmp "$evidence/consumer-measurement-1-after/.shared-tooling.snapshot" \
         "$replay/consumer-measurement-1-after/.shared-tooling.snapshot"
     cmp "$evidence/samples.tsv" "$replay/samples.tsv"
+    cmp "$evidence/cpu.tsv" "$replay/cpu.tsv"
     [[ ! -e "$replay/source" && ! -e "$replay/consumer-measurement-1-after/.git" ]] || exit 1
     if [[ "$scenario" == complete ]]; then cmp "$evidence/complete.txt" "$replay/complete.txt";
     else [[ ! -e "$replay/complete.txt" ]] || exit 1; fi
