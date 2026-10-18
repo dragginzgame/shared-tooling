@@ -7,7 +7,8 @@
 - Share release metadata preparation with complete original/candidate admission,
   selected-file installation and byte/mode restoration on caught failure. Keep
   failed evidence and previous receipt archives while consumers retain rendering,
-  source-bound verification and release policy. Extends
+  source-bound verification and release policy. Initially empty inventories use
+  guarded expansion for Bash 3.2 strict mode. Extends
   [#278 — Share release validation and prepared receipt mechanics](https://github.com/dragginzgame/shared-tooling/issues/278).
 
 - Share atomic validation/prepared release receipts and exact identity/payload
@@ -17,9 +18,8 @@
 
 ### Fixed
 
-- Qualify setup failure retention through the current common-tool composite
-  action, replacing stale lookups for the retired inline workflow command.
-- Guard initially empty release-helper inventories under Bash 3.2 strict mode.
+- Follow the common-tool setup action when qualifying CI cache ordering and
+  retained installer failure evidence, replacing stale inline-step assumptions.
 - Prepare checker-retention fixtures with their complete companion closure so
   release checks reach the intended child/assertion failures and retain evidence
   ([#274 — Prepare script fixtures from their declared companion closure](https://github.com/dragginzgame/shared-tooling/issues/274)).
