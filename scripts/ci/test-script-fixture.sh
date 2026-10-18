@@ -76,6 +76,17 @@ status=0
     > "$fixture/overlap.log" 2>&1 || status=$?
 [[ "$status" == 2 && ! -e "$nested/scripts/collision.sh" && ! -e "$nested/target" ]]
 cmp "$fixture/keep.before" "$nested/keep"
+# Different output names can still alias a selected input through a hard link.
+# Refuse the complete plan before copying the earlier root over a companion.
+hardlinked="$fixture/hardlinked"
+mkdir "$hardlinked"
+cp "$source_root/scripts/leaf.sh" "$fixture/leaf.before"
+ln "$source_root/scripts/leaf.sh" "$hardlinked/keep"
+status=0
+"$BASH" "$ROOT/scripts/ci/prepare-script-fixture.sh" "$source_root" "$hardlinked" keep scripts/root.sh \
+    > "$fixture/hardlinked.log" 2>&1 || status=$?
+[[ "$status" == 2 && ! -e "$hardlinked/scripts" ]] || exit 1
+cmp "$fixture/leaf.before" "$source_root/scripts/leaf.sh"
 # Static permission failures must refuse before an earlier valid overwrite.
 mkdir -p "$source_root/locked/child" "$destination/locked"
 printf 'leaf\n' > "$source_root/locked/child/leaf"

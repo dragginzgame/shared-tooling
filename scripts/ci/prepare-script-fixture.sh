@@ -78,7 +78,7 @@ done
 # before creating directories or copying an earlier admitted root.
 for path in "${payloads[@]}"; do
     for input in "${payloads[@]}"; do
-        [[ "$fixture_root/$path" != "$source_root/$input" ]] || fixture_fail "output overlaps selected input: $path"
+        [[ ! "$fixture_root/$path" -ef "$source_root/$input" ]] || fixture_fail "output overlaps selected input: $path"
     done
 done
 for path in "${payloads[@]}"; do
