@@ -13,6 +13,9 @@ RECEIPT_REAL_CP="$(command -v cp)"
 cat > "$fixture/bin/cp" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
+if [[ "$MODE" == restore && "$*" == *'/original/Cargo.toml ./Cargo.toml' ]]; then
+    exit 37
+fi
 "$RECEIPT_REAL_CP" "$@"
 case "$*" in
     *'/candidate/nested/selected file'*)
@@ -42,13 +45,13 @@ render() {
 check() {
     printf 'checked\n' > checked || return
     case "$MODE" in
-        check) return 31 ;;
+        check|restore) return 31 ;;
         mutate) printf 'changed after validation\n' > Cargo.toml || return ;;
     esac
 }
 release_metadata_prepare "$PWD/evidence.XXXXXX" render check Cargo.toml 'nested/selected file'
 DRIVER
-for mode in success render omitted candidate-link copy signal check mutate source-link parent-link; do
+for mode in success render omitted candidate-link copy signal check restore mutate source-link parent-link; do
     selected="$fixture/$mode"
     mkdir -p "$selected/nested"
     printf 'old manifest\n' > "$selected/Cargo.toml"
@@ -80,7 +83,15 @@ for mode in success render omitted candidate-link copy signal check mutate sourc
             signal) [[ "$status" == 143 ]] || exit 1 ;;
             check) [[ "$status" == 31 ]] || exit 1 ;;
         esac
-        cmp "$selected/original-manifest" "$selected/Cargo.toml"
+        if [[ "$mode" == restore ]]; then
+            [[ "$status" == 1 && "$(cat "$selected/Cargo.toml")" == 'new manifest' ]] || exit 1
+            grep -F 'Metadata restoration failed: Cargo.toml' "$selected/result.log" > /dev/null
+            retained=("$selected"/evidence.*/original/Cargo.toml)
+            [[ "${#retained[@]}" == 1 ]] || exit 1
+            cmp "$selected/original-manifest" "${retained[0]}"
+        else
+            cmp "$selected/original-manifest" "$selected/Cargo.toml"
+        fi
         cmp "$selected/original-notes" "$selected/nested/selected file"
         case "$mode" in
             source-link|parent-link)
