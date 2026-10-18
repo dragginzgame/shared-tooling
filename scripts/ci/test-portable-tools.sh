@@ -124,6 +124,7 @@ run_fixture test-release-commands.sh bash "$ROOT/scripts/ci/test-release-command
 run_fixture test-release-delivery.sh bash "$ROOT/scripts/ci/test-release-delivery.sh"
 run_fixture test-checker-retention.sh bash "$ROOT/scripts/ci/test-checker-retention.sh"
 run_fixture test-cargo-dependency-boundaries.sh bash "$ROOT/scripts/ci/test-cargo-dependency-boundaries.sh"
+run_fixture test-cargo-graph.sh bash "$ROOT/scripts/ci/test-cargo-graph.sh"
 run_fixture test-dependency-pins.sh bash "$ROOT/scripts/ci/test-dependency-pins.sh"
 run_fixture test-npm-pins.sh bash "$ROOT/scripts/ci/test-npm-pins.sh"
 run_fixture test-cargo-metadata.sh bash "$ROOT/scripts/ci/test-cargo-metadata.sh"

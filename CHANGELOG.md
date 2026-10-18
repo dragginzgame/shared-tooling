@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.24.4]
+
+### Added
+
+- Share selected Cargo graph checks for canonical package identities, optional
+  identity caps and forbidden dependency-feature edges. Consumers keep their
+  roots, targets, feature selections and policy; failed or malformed Cargo
+  observations cannot pass admission.
+
+### Fixed
+
+- Prepare governance snapshot fixtures from their complete companion closure,
+  so exported guides retain newly linked documentation without extra roots.
+
 ## [0.24.3]
 
 ### Changed

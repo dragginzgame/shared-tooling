@@ -1,4 +1,5 @@
 # Focused verification helpers
+<!-- Shared companions: docs/cargo-graph-checks.md -->
 
 These optional helpers share mechanical checks. Consumers retain document
 selection, release validation gates, publication authority and registry polling
@@ -1122,3 +1123,9 @@ destination and stable reviewed source; copying does not protect against
 concurrent mutation. The helper neither creates a snapshot nor proves supplier
 custody. Consumers retain product adapters, substitutions and assertions.
 Focused coverage is `bash scripts/ci/test-script-fixture.sh`.
+
+## Resolved dependency graphs
+
+Use [the graph checker](cargo-graph-checks.md) to enforce consumer-selected
+transitive exclusions and rendered package identity counts. Direct ownership
+checks and product feature/lifecycle policies remain separate.
