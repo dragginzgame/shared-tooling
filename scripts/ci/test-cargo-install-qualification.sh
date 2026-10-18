@@ -25,17 +25,23 @@ printf 'cargo\n' >> "$QUALIFICATION_CALLS"
 if [[ "$1" == -V ]]; then echo 'cargo fixture'; exit 0; fi
 printf '%s\0' "$@" > "$QUALIFICATION_CALLS.arguments"
 if [[ -n "${QUALIFICATION_PROFILE:-}" && ! -e "$QUALIFICATION_CALLS.installed" ]]; then
+    package="$2" version='' target=''
+    shift 2
     while [[ $# -gt 0 ]]; do
-        if [[ "$1" == --root ]]; then install_root="$2"; break; fi
-        shift
+        case "$1" in
+            --root) install_root="$2"; shift 2 ;;
+            --version) version="${2#=}"; shift 2 ;;
+            --bin|--example) target="$2"; shift 2 ;;
+            *) shift ;;
+        esac
     done
     mkdir -p "$install_root/bin"
-    printf '#!/usr/bin/env bash\nexit 0\n' > "$install_root/bin/prepare_upload"
-    chmod +x "$install_root/bin/prepare_upload"
+    printf '#!/usr/bin/env bash\nexit 0\n' > "$install_root/bin/$target"
+    chmod +x "$install_root/bin/$target"
     printf '[v1]\n' > "$install_root/.crates.toml"
-    jq -n --arg profile "$QUALIFICATION_PROFILE" '{installs: {
-      "ic-blob-storage 0.15.1 (registry+https://github.com/rust-lang/crates.io-index)": {
-        version_req: "=0.15.1", bins: ["prepare_upload"], profile: $profile,
+    jq -n --arg profile "$QUALIFICATION_PROFILE" --arg package "$package" --arg version "$version" --arg target "$target" '{installs: {
+      ("\($package) \($version) (registry+https://github.com/rust-lang/crates.io-index)"): {
+        version_req: "=\($version)", bins: [$target], profile: $profile,
         target: "x86_64-unknown-linux-gnu", rustc: "rustc fixture"
       }
     }}' > "$install_root/.crates2.json"
@@ -56,10 +62,10 @@ for selected in relative 'with spaces' -leading "$fixture/absolute" "$fixture/ne
     # Bash 3.2 writes the EXIT retention message inside the failed function's
     # redirected log; newer Bash writes it to run.log. Either retains evidence.
     [[ "$status" == 97 && -s "$expected/rustc.txt" && -s "$expected/source.txt" &&
-       -d "$expected/prepare_upload" && -f "$expected/prepare_upload/install.log" ]] || exit 1
+       -d "$expected/cargo-sort" && -f "$expected/cargo-sort/install.log" ]] || exit 1
     found=false
     while IFS= read -r -d '' argument; do
-        [[ "$argument" != "$expected/prepare_upload/install" ]] || found=true
+        [[ "$argument" != "$expected/cargo-sort/install" ]] || found=true
     done < "$QUALIFICATION_CALLS.arguments"
     [[ "$found" == true ]] || exit 1
     # Retrying must refuse the owned evidence root before even probing tools.
@@ -79,10 +85,10 @@ for profile in dev debug release; do
     status=0
     QUALIFICATION_PROFILE="$profile" bash "$ROOT/scripts/ci/qualify-cargo-install.sh" "$fixture/$profile" > "$fixture/profile.log" 2>&1 || status=$?
     if [[ "$profile" == release ]]; then
-        [[ "$status" == 1 && ! -e "$fixture/$profile/prepare_upload/binary.before" ]] || exit 1
+        [[ "$status" == 1 && ! -e "$fixture/$profile/cargo-sort/binary.before" ]] || exit 1
         grep -F 'Cargo receipt does not match' "$fixture/profile.log" > /dev/null
     else
-        [[ "$status" == 97 && -s "$fixture/$profile/prepare_upload/observed.sha256" ]] || exit 1
+        [[ "$status" == 97 && -s "$fixture/$profile/cargo-sort/observed.sha256" ]] || exit 1
     fi
 done
 echo 'Cargo qualification paths, receipt profiles, retained failure roots and early refusal passed (substitute Cargo)'

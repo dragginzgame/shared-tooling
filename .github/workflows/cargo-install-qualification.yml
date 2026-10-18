@@ -32,7 +32,7 @@ jobs:
         run: |
           make --no-print-directory install-host-tools host-tools-check
           echo "$GITHUB_WORKSPACE/.tools/host/bin" >> "$GITHUB_PATH"
-      - name: Qualify real registry binary and example installation
+      - name: Qualify real registry binary installation
         run: |
           mkdir -p "$RUNNER_TEMP/portable-fixtures"
           bash scripts/ci/qualify-cargo-install.sh "$RUNNER_TEMP/portable-fixtures/cargo-install" \

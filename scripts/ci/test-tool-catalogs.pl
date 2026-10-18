@@ -6,6 +6,7 @@ use Cwd qw(abs_path);
 use Digest::SHA qw(sha256_hex);
 use File::Temp qw(tempdir);
 use File::Path qw(make_path remove_tree);
+use File::Copy qw(copy);
 use FindBin qw($RealBin);
 use JSON::PP;
 use Test::More;
@@ -66,8 +67,10 @@ sub binding_entry {
 }
 my $config = { workflows => [{ name => 'release', kind => 'ic', reference => 'setup', callers => [binding_entry('setup', 'ci/qualified.tsv'), binding_entry('collector', 'ci/qualified.tsv'), binding_entry('verifier', 'ci/qualified.tsv')] }] };
 sub run_check {
+    my ($checker) = @_;
+    $checker //= "$root/scripts/ci/check-tool-catalogs.pl";
     write_file('bindings.json', encode_json($config));
-    open my $output, '-|', $^X, "$root/scripts/ci/check-tool-catalogs.pl", '--consumer', $fixture, '--bindings', 'bindings.json', '--json' or die $!;
+    open my $output, '-|', $^X, $checker, '--consumer', $fixture, '--bindings', 'bindings.json', '--json' or die $!;
     my $bytes = do { local $/; <$output> }; close $output;
     my $status = $?;
     unless (WIFEXITED($status)) {
@@ -132,13 +135,40 @@ $config->{workflows}[0]{callers}[2] = binding_entry('verifier', 'ci/qualified.ts
 # Root and nested ownership are independent of the path of the binding file.
 for my $prefix ('', 'vendor/') {
     write_file("${prefix}ci/owned.tsv", $qualified);
-    write_file("${prefix}.shared-tooling.snapshot", "format\t1\nrevision\t" . ('1' x 40) . "\nfile\t" . sha256_hex($qualified) . "\t-\tci/owned.tsv\n");
+    my $manifest = "format\t1\nsource\thttps://github.com/dragginzgame/shared-tooling\nrevision\t" . ('1' x 40) . "\nfile\t" . sha256_hex($qualified) . "\t-\tci/owned.tsv\n";
+    write_file("${prefix}.shared-tooling.snapshot", $manifest);
     my $entry = binding_entry('verifier', "${prefix}ci/owned.tsv");
     delete $entry->{exception};
     $entry->{snapshot} = "${prefix}.shared-tooling.snapshot";
     $entry->{snapshot_root} = $prefix ? 'vendor' : '.';
     $config->{workflows}[0]{callers}[2] = $entry;
     is((run_check())[0], 0, "selected catalog owned by ${prefix}snapshot");
+    for my $invalid (
+        $manifest . "unknown\tignored\n",
+        $manifest . "format\t1\n",
+        $manifest =~ s/^source[^\n]*\n//mr,
+        $manifest =~ s/^file\t([^\n]*)$/file\t$1\textra/mr,
+        $manifest =~ s/ci\/owned.tsv/ci\/..\/ci\/owned.tsv/r,
+        $manifest . "file\t" . sha256_hex($qualified) . "\t-\tci/owned.tsv\n",
+        $manifest . "\0",
+    ) {
+        write_file("${prefix}.shared-tooling.snapshot", $invalid);
+        ($status, $result) = run_check();
+        is($status, 2, 'malformed owning manifest is unresolved');
+        like($result->{callers}[2]{reason}, qr/invalid owning snapshot manifest/, 'canonical reader failure reaches caller evidence');
+    }
+    # Syntax admission must not turn this selected-catalog check into whole-
+    # snapshot verification: unrelated payloads can be absent here.
+    write_file("${prefix}.shared-tooling.snapshot", $manifest . "file\t" . ('0' x 64) . "\t-\tunselected.txt\n");
+    is((run_check())[0], 0, 'unselected payload integrity remains a separate check');
+    make_path("$fixture/reader-failure/scripts/ci");
+    for my $script (qw(check-tool-catalogs.pl tool-catalog-records.pl ic-tool-pins.awk)) {
+        copy("$root/scripts/ci/$script", "$fixture/reader-failure/scripts/ci/$script") or die $!;
+    }
+    write_file('reader-failure/scripts/ci/verify-shared-tooling-snapshot.sh', "#!/usr/bin/env bash\ncat <<'RECORDS'\n${manifest}RECORDS\nexit 91\n");
+    is((run_check("$fixture/reader-failure/scripts/ci/check-tool-catalogs.pl"))[0], 2,
+        'failed reader cannot admit even complete valid output');
+    write_file("${prefix}.shared-tooling.snapshot", $manifest);
     write_file("${prefix}ci/owned.tsv", $changed);
     is((run_check())[0], 2, 'snapshot catalog mutation unresolved');
 }

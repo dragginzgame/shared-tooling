@@ -214,11 +214,6 @@ jobs:
         run: |
           test "$(npm --version)" = "$(jq -er '.engines.npm' ci/frontend/package.json)"
           npm ci --prefix ci/frontend
-      - name: Qualify native Wasm optimization and execution
-        if: needs.change-scope.outputs.scope != 'docs'
-        run: |
-          mkdir -p "$RUNNER_TEMP/portable-fixtures"
-          bash scripts/ci/qualify-wasm-opt.sh "$RUNNER_TEMP/portable-fixtures/wasm-opt"
       - name: Prepare the runtime scanner qualification compiler
         if: needs.change-scope.outputs.scope != 'docs'
         id: runtime-scanner-compiler
