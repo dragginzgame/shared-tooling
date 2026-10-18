@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared companions: scripts/ci/collect-native-diagnostics.sh scripts/ci/fixture-lifecycle.sh scripts/ci/verify-file-checksum.sh
 set -euo pipefail
 root="${BASH_SOURCE[0]}"
 [[ "$root" == /* ]] || root="$PWD/$root"
@@ -60,7 +61,12 @@ TAR
         failure unused-host-pins unused-ic-pins source.txt tools.log > result.log 2>&1 || status=$?
     [[ "$status" == "$expected" ]] || exit 1
     # Readable, explicitly selected diagnostics precede even fatal tool failures.
-    shasum -a 256 -c diagnostics.tar.gz.sha256 > checksum.log
+    digest="$(cat diagnostics.tar.gz.sha256)"
+    [[ "$digest" =~ ^[0-9a-f]{64}$ && "$(wc -c < diagnostics.tar.gz.sha256)" -eq 65 ]] || exit 1
+    bash "$root/scripts/ci/verify-file-checksum.sh" sha256 "$digest" diagnostics.tar.gz > checksum.log
+    cp diagnostics.tar.gz damaged.tar.gz
+    printf '\nchanged archive\n' >> damaged.tar.gz
+    if bash "$root/scripts/ci/verify-file-checksum.sh" sha256 "$digest" damaged.tar.gz > damaged.log 2>&1; then exit 1; fi
     mkdir diagnostics
     tar -xzf diagnostics.tar.gz -C diagnostics
     cmp evidence/source.txt diagnostics/source.txt
@@ -90,5 +96,38 @@ TAR
         cmp "$physical_store/$slot/set.fixture/payload" "candidates/$slot/set.fixture/payload"
     fi
 ); done
+# Bare digests bind to the caller's explicit archive, independent of pathname
+# escaping in checksum manifests. Unknown filename bytes stay ordinary data.
+mkdir -p "$fixture/sidecars/checkout" "$fixture/sidecars/evidence" "$fixture/sidecars/formats" "$fixture/sidecars/bin"
+(
+    cd "$fixture/sidecars"
+    printf 'selected diagnostics\n' > evidence/source.txt
+    for archive in 'with spaces.tar.gz' $'with\nnewline\\backslash.tar.gz'; do
+        bash "$root/scripts/ci/collect-native-diagnostics.sh" "$PWD/checkout" "$PWD/evidence" \
+            "$archive" "$PWD/formats" success unused unused source.txt > collection.log 2>&1
+        digest="$(cat "$archive.sha256")"
+        [[ "$digest" =~ ^[0-9a-f]{64}$ && "$(wc -c < "$archive.sha256")" -eq 65 ]] || exit 1
+        bash "$root/scripts/ci/verify-file-checksum.sh" sha256 "$digest" "$archive"
+    done
+    # A selected backend's plausible output cannot conceal its failed status or
+    # trigger fallback. Keep the archive and source diagnostics on hash failure.
+    cat > bin/sha256sum <<'BACKEND'
+#!/usr/bin/env bash
+printf '%064d  -\n' 0
+exit 79
+BACKEND
+    cat > bin/shasum <<'BACKEND'
+#!/usr/bin/env bash
+touch fallback-used
+exit 0
+BACKEND
+    chmod +x bin/sha256sum bin/shasum
+    status=0
+    PATH="$PWD/bin:$PATH" bash "$root/scripts/ci/collect-native-diagnostics.sh" "$PWD/checkout" "$PWD/evidence" \
+        failed-hash.tar.gz "$PWD/formats" success unused unused source.txt > failed-hash.log 2>&1 || status=$?
+    [[ "$status" == 2 && -s failed-hash.tar.gz && ! -s failed-hash.tar.gz.sha256 && ! -e fallback-used ]] || exit 1
+    [[ "$(cat evidence/source.txt)" == 'selected diagnostics' ]] || exit 1
+    grep -F 'sha256 backend failed' failed-hash.log > /dev/null
+)
 echo 'Native diagnostics preserve selected logs, referenced bundles and exact collection failures'
 fixture_complete=true

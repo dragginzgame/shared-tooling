@@ -44,6 +44,32 @@ for scenario in draft misplaced finalized conflicting headingless missing symlin
 done
 printf '# Changelog\n\n## [0.1.1]\n\n- Pending notes.\n' > "$fixture/notes"
 cp "$fixture/notes" "$fixture/original"
+for date in 0001-01-01 2000-02-29 2024-02-29 9999-12-31; do
+    bash "$checker" 0.1.1 0.1.0 "$date" "$fixture/notes" > "$fixture/scalars.out"
+    [[ ! -s "$fixture/scalars.out" ]] || exit 1
+done
+for date in 0000-01-01 1900-02-29 2026-02-29 2026-04-31 2026-13-01 $'2026-08-02\n'; do
+    status=0
+    bash "$checker" 0.1.1 0.1.0 "$date" "$fixture/notes" \
+        > "$fixture/scalars.out" 2> "$fixture/scalars.err" || status=$?
+    [[ "$status" == 2 && ! -s "$fixture/scalars.out" ]] || exit 1
+    cmp "$fixture/original" "$fixture/notes"
+done
+for invalid in 18446744073709551616.0.0 0.18446744073709551616.0 0.0.18446744073709551616; do
+    for field in version previous; do
+        version=0.1.1 previous=0.1.0
+        if [[ "$field" == version ]]; then version="$invalid"; else previous="$invalid"; fi
+        status=0
+        bash "$checker" "$version" "$previous" 2026-08-02 "$fixture/notes" \
+            > "$fixture/scalars.out" 2> "$fixture/scalars.err" || status=$?
+        [[ "$status" == 2 && ! -s "$fixture/scalars.out" ]] || exit 1
+        cmp "$fixture/original" "$fixture/notes"
+    done
+done
+printf '# Changelog\n\n## [18446744073709551615.0.1]\n\n- Exact upper bound.\n' > "$fixture/large-notes"
+bash "$checker" 18446744073709551615.0.1 18446744073709551615.0.0 \
+    2026-08-02 "$fixture/large-notes" > "$fixture/scalars.out"
+[[ ! -s "$fixture/scalars.out" ]] || exit 1
 mkdir "$fixture/bin"
 for producer in awk cat; do
     printf '%s\n' '#!/usr/bin/env bash' 'printf "## [0.1.1]\\n\\n- Partial notes.\\n"' 'exit 37' > "$fixture/bin/$producer"
