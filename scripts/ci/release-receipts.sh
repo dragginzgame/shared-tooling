@@ -61,7 +61,7 @@ release_receipt_archive() {
         [[ ! -L "$file" && ( ! -e "$file" || -f "$file" ) ]] || return 1
         name="${file##*/}"
         [[ -n "$name" ]] || return 1
-        for other in "${names[@]}"; do [[ "$other" != "$name" ]] || return 1; done
+        for other in ${names[@]+"${names[@]}"}; do [[ "$other" != "$name" ]] || return 1; done
         names+=("$name")
     done
     for file in "$@"; do

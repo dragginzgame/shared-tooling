@@ -31,7 +31,7 @@ release_metadata_prepare() (
     local selected=() installed=false complete=false
     for file in "$@"; do
         release_metadata_regular . "$file" || exit 1
-        for other in "${selected[@]}"; do
+        for other in ${selected[@]+"${selected[@]}"}; do
             [[ "$file" != "$other" ]] || exit 1
         done
         selected+=("$file")

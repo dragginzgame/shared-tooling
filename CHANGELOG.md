@@ -19,6 +19,7 @@
 
 - Qualify setup failure retention through the current common-tool composite
   action, replacing stale lookups for the retired inline workflow command.
+- Guard initially empty release-helper inventories under Bash 3.2 strict mode.
 - Prepare checker-retention fixtures with their complete companion closure so
   release checks reach the intended child/assertion failures and retain evidence
   ([#274 — Prepare script fixtures from their declared companion closure](https://github.com/dragginzgame/shared-tooling/issues/274)).
