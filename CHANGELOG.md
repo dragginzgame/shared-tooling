@@ -11,6 +11,8 @@
 
 ### Fixed
 
+- Point exported capability-map links at their Shared owner rather than a
+  consumer-owned README ([#284](https://github.com/dragginzgame/shared-tooling/issues/284)).
 - Follow the common-tool setup action when qualifying CI cache ordering and
   retained installer failure evidence, replacing stale inline-step assumptions.
 - Prepare checker-retention fixtures with their complete companion closure so
