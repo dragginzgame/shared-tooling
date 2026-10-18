@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared companions: scripts/ci/check-release-commands.sh scripts/ci/check-formatting-hooks.sh scripts/ci/prepare-script-fixture.sh scripts/ci/fixture-retention-probes.sh make/tools.mk make/release.mk make/rust-format.mk .githooks/pre-commit scripts/dev/install-git-hooks.sh ci/tool-versions.env
 set -euo pipefail
 root="${BASH_SOURCE[0]}"
 [[ "$root" == /* ]] || root="$PWD/$root"
@@ -26,10 +27,7 @@ inputs=(make/tools.mk make/release.mk make/rust-format.mk make/execution.mk \
     scripts/ci/run-formatting.sh scripts/ci/fixture-lifecycle.sh \
     scripts/ci/fixture-retention-probes.sh scripts/dev/install-git-hooks.sh \
     .githooks/pre-commit ci/tool-versions.env)
-for path in "${inputs[@]}"; do
-    mkdir -p "$consumer/${path%/*}"
-    cp "$root/$path" "$consumer/$path"
-done
+bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$consumer" "${inputs[@]}"
 cat > "$consumer/Makefile" <<'MAKE'
 .DEFAULT_GOAL := help
 override SHARED_TOOLING_ROOT := $(CURDIR)

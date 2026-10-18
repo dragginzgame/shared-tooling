@@ -4,6 +4,10 @@
 
 ### Fixed
 
+- Prepare checker-retention fixtures with their complete companion closure so
+  release checks reach the intended child/assertion failures and retain evidence
+  ([#274 — Prepare script fixtures from their declared companion closure](https://github.com/dragginzgame/shared-tooling/issues/274)).
+
 - Check current dependency declarations when tracked manifests or workflows have
   been deleted without staging. Preserve the consumer index and refusal of
   dangling symlinks
