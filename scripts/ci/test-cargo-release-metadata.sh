@@ -83,20 +83,19 @@ fi
 exec "$REAL_CP" "$@"
 CP
 chmod +x "$fixture/bin/cp"
-REAL_PERL="$(command -v perl)"
-export REAL_PERL
-cat > "$fixture/bin/perl" <<'PERL'
+REAL_EDITOR="${CARGO_RELEASE_METADATA_EDITOR:?select the actual compiled editor for qualification}"
+export REAL_EDITOR
+cat > "$fixture/bin/editor" <<'EDITOR'
 #!/usr/bin/env bash
 set -euo pipefail
-case "${1:-}" in
-    */render-cargo-workspace-version.pl)
-        if [[ "${CASE:-}" == renderer-failure ]]; then "$REAL_PERL" "$@"; exit 23; fi ;;
-    */rewrite-local-lock-versions.pl)
-        if [[ "${CASE:-}" == lock-renderer-failure ]]; then "$REAL_PERL" "$@"; exit 23; fi ;;
+case "${CASE:-}:${3:-}" in
+    renderer-failure:manifest|lock-renderer-failure:lock) "$REAL_EDITOR" "$@"; exit 23 ;;
 esac
-exec "$REAL_PERL" "$@"
-PERL
-chmod +x "$fixture/bin/perl"
+exec "$REAL_EDITOR" "$@"
+EDITOR
+chmod +x "$fixture/bin/editor"
+export CARGO_RELEASE_METADATA_EDITOR="$fixture/bin/editor"
+export CARGO_RELEASE_METADATA_MAX_BYTES=8388608
 export PATH="$fixture/bin:$PATH"
 export RELEASE_PREVIOUS=1.2.3 RELEASE_VERSION=1.2.4 RELEASE_DATE=2026-10-13
 helper="$ROOT/scripts/ci/cargo-release-metadata.sh"
@@ -128,6 +127,31 @@ TOML
 }
 mkdir "$fixture/success"
 make_workspace "$fixture/success"
+# Tool/allowance admission must refuse before a preparation transaction or write.
+cp "$fixture/success/Cargo.toml" "$fixture/unchanged.toml"
+cp "$fixture/success/Cargo.lock" "$fixture/unchanged.lock"
+cp "$fixture/success/CHANGELOG.md" "$fixture/unchanged.md"
+mkdir "$fixture/admission-temp"
+for admission in missing-editor relative-editor missing-file missing-limit zero-limit invalid-limit; do
+    if (
+        cd "$fixture/success"
+        case "$admission" in
+            missing-editor) unset CARGO_RELEASE_METADATA_EDITOR ;;
+            relative-editor) export CARGO_RELEASE_METADATA_EDITOR=editor ;;
+            missing-file) export CARGO_RELEASE_METADATA_EDITOR="$fixture/no-editor" ;;
+            missing-limit) unset CARGO_RELEASE_METADATA_MAX_BYTES ;;
+            zero-limit) export CARGO_RELEASE_METADATA_MAX_BYTES=0 ;;
+            invalid-limit) export CARGO_RELEASE_METADATA_MAX_BYTES=1.5 ;;
+        esac
+        TMPDIR="$fixture/admission-temp" bash "$helper" prepare primary
+    ) > "$fixture/admission-$admission.log" 2>&1; then
+        echo "invalid editor admission accepted: $admission" >&2; exit 1
+    fi
+    cmp "$fixture/unchanged.toml" "$fixture/success/Cargo.toml"
+    cmp "$fixture/unchanged.lock" "$fixture/success/Cargo.lock"
+    cmp "$fixture/unchanged.md" "$fixture/success/CHANGELOG.md"
+    [[ -z "$(ls -A "$fixture/admission-temp")" ]]
+done
 (cd "$fixture/success" && bash "$helper" prepare primary > "$fixture/success.log" 2>&1)
 (cd "$fixture/success" && bash "$helper" check primary)
 for ordering in --manifest-order --manifest-order-grouped; do

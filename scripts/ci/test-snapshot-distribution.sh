@@ -750,8 +750,6 @@ scripts/ci/validate-release-inputs.pl scripts/ci/StableVersion.pm
 scripts/ci/tool-catalog-records.pl scripts/ci/StableVersion.pm
 scripts/ci/check-release-commands.sh scripts/ci/prepare-script-fixture.sh
 scripts/ci/cargo-release-metadata.sh scripts/ci/release-metadata-transaction.sh
-scripts/ci/rewrite-local-lock-versions.pl scripts/ci/StableVersion.pm
-scripts/ci/render-cargo-workspace-version.pl scripts/ci/StableVersion.pm
 scripts/ci/check-type-docs.pl scripts/ci/RustSource.pm
 scripts/dev/check-cargo-tool-versions.pl scripts/ci/StableVersion.pm
 scripts/dev/delete-github-tags-up-to.pl scripts/ci/StableVersion.pm

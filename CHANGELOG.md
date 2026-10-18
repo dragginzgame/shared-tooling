@@ -1,6 +1,16 @@
 # Changelog
 
-## [0.24.4]
+## [0.25.0]
+
+### Breaking
+
+- Delegate Cargo manifest and lock candidate rendering to published IC Build.
+  Release callers must explicitly prepare its editor, pass its absolute path and
+  select a positive input byte allowance. The two standalone Perl editors are
+  removed (`render-cargo-workspace-version.pl` and `rewrite-local-lock-versions.pl`);
+  direct callers must adopt the owner command. See
+  [Cargo candidate rendering](docs/releases.md#cargo-release-candidate-rendering)
+  and [#273](https://github.com/dragginzgame/shared-tooling/issues/273).
 
 ### Added
 
