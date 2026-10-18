@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.24.1]
+
+- Add explicit locked target/feature graph checks for forbidden transitive
+  packages and rendered package identity counts. Keep consumer policies local
+  and reject failed, signalled or malformed Cargo observations.
+
 ## [0.24.0]
 
 ### Breaking
