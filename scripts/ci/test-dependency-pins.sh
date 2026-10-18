@@ -116,6 +116,33 @@ reject 'metadata must be a regular file'
 rm "$consumer/retired crate/Cargo.toml"
 check || { cat "$FIXTURE/output" >&2; exit 1; }
 
+# Failure to inspect an existing tracked declaration is not evidence of absence.
+blocked="$consumer/.github/workflows/blocked"
+mkdir "$blocked"
+printf 'jobs: {test: {steps: [{uses: "owner/action@main"}]}}\n' > "$blocked/check.yml"
+git -C "$consumer" add -- .github/workflows/blocked/check.yml
+cp "$consumer/.git/index" "$FIXTURE/blocked-index"
+chmod 000 "$blocked"
+if [[ -r "$blocked/check.yml" ]]; then
+    # Privileged runners may bypass directory permissions; ENOTDIR below still
+    # qualifies a failed observation without requiring a different test user.
+    chmod 700 "$blocked"
+    echo 'Unreadable-parent probe unavailable: runner bypasses directory permissions'
+else
+    status=0
+    check || status=$?
+    chmod 700 "$blocked"
+    [[ "$status" != 0 ]] || { echo 'pin fixture admitted unobservable metadata' >&2; exit 1; }
+fi
+cmp "$FIXTURE/blocked-index" "$consumer/.git/index"
+rm "$blocked/check.yml"
+rmdir "$blocked"
+printf 'not a directory\n' > "$blocked"
+if check; then echo 'pin fixture admitted a non-directory metadata parent' >&2; exit 1; fi
+cmp "$FIXTURE/blocked-index" "$consumer/.git/index"
+rm "$blocked"
+check || { cat "$FIXTURE/output" >&2; exit 1; }
+
 # Full Git revs work in inline and ordinary TOML tables; floating choices fail.
 cat >> "$consumer/Cargo.toml" <<'TOML'
 example = { git = "https://example.invalid/repository", rev = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }

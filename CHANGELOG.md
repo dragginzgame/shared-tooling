@@ -4,13 +4,16 @@
 
 ### Fixed
 
+- Follow the common-tool setup action when qualifying CI cache ordering and
+  retained installer failure evidence, replacing stale inline-step assumptions.
 - Prepare checker-retention fixtures with their complete companion closure so
   release checks reach the intended child/assertion failures and retain evidence
   ([#274 — Prepare script fixtures from their declared companion closure](https://github.com/dragginzgame/shared-tooling/issues/274)).
 
 - Check current dependency declarations when tracked manifests or workflows have
   been deleted without staging. Preserve the consumer index and refusal of
-  dangling symlinks
+  dangling symlinks and failed filesystem observations, including inaccessible
+  or non-directory metadata parents
   ([#271 — Dependency pin checker rejects tracked manifest and workflow deletions](https://github.com/dragginzgame/shared-tooling/issues/271)).
 
 ## [0.24.0]
