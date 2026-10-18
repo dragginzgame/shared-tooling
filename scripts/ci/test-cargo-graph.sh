@@ -14,7 +14,7 @@ export GRAPH_CALLS="$fixture/calls" GRAPH_INPUT="$fixture/graph" GRAPH_MODE=pass
 cat > "$fixture/bin/cargo" <<'CARGO'
 #!/usr/bin/env bash
 set -euo pipefail
-[[ "$*" == 'tree --locked --offline --color never --target wasm32-unknown-unknown --edges normal,build --prefix none --format {p} --package consumer'* ]]
+[[ "$*" == 'tree --locked --offline --color never --target wasm32-unknown-unknown --edges normal,build --prefix none --format {p} --package consumer'* || "$*" == 'tree --locked --offline --color never --target wasm32-unknown-unknown --edges normal,build,features --prefix none --format {p} --package consumer'* ]]
 [[ "$CARGO_NET_OFFLINE" == true && "$RUSTUP_AUTO_INSTALL" == 0 ]]
 printf '%s\n' "$*" >> "$GRAPH_CALLS"
 cat "$GRAPH_INPUT"
@@ -44,6 +44,11 @@ if "${checker[@]}" --forbid substrate > "$fixture/denied.log" 2>&1; then exit 1;
 grep -F 'forbidden substrate:' "$fixture/denied.log" > /dev/null
 printf 'consumer v0.1.0\nsubstrate-extra v2.0.0\n' > "$GRAPH_INPUT"
 "${checker[@]}" --forbid substrate --require missing=0 --features 'consumer/a,consumer/b' --no-default-features
+printf 'consumer v0.1.0\nsubstrate feature "danger"\nsubstrate v2.0.0\n' > "$GRAPH_INPUT"
+if "${checker[@]}" --forbid-feature substrate/danger > "$fixture/feature.log" 2>&1; then exit 1; fi
+grep -F 'forbidden dependency feature edge: substrate/danger' "$fixture/feature.log" > /dev/null
+"${checker[@]}" --forbid-feature substrate/other
+printf 'consumer v0.1.0\n' > "$GRAPH_INPUT"
 # Complete successful observations only, including child signals and root identity.
 for mode in failed signal; do
  if GRAPH_MODE="$mode" "${checker[@]}" --forbid absent > "$fixture/$mode.log" 2>&1; then exit 1; else status=$?; fi
@@ -93,7 +98,7 @@ cat >> "$actual/consumer/Cargo.toml" <<'TOML'
 default=[]
 runtime=["dep:renamed"]
 [dependencies]
-renamed={package="bridge",path="../bridge",optional=true}
+renamed={package="bridge",path="../bridge",optional=true,features=["danger"]}
 [build-dependencies]
 build-only={path="../build-only"}
 [dev-dependencies]
@@ -101,7 +106,7 @@ dev-only={path="../dev-only"}
 [target.'cfg(target_arch="wasm32")'.dependencies]
 wasm-only={path="../wasm-only"}
 TOML
-printf '[dependencies]\nhidden={package="substrate",path="../substrate"}\n' >> "$actual/bridge/Cargo.toml"
+printf '[features]\ndanger=[]\n[dependencies]\nhidden={package="substrate",path="../substrate"}\n' >> "$actual/bridge/Cargo.toml"
 (cd "$actual"; cargo generate-lockfile --offline)
 cp "$actual/Cargo.lock" "$fixture/lock.before"
 native="$(rustc -vV | sed -n 's/^host: //p')"
@@ -113,6 +118,9 @@ grep -F 'forbidden substrate:' "$fixture/actual-denied.log" > /dev/null
 "${checker[@]}" --target "$native" --features runtime --depth 1 --forbid substrate --require bridge=1
 "${checker[@]}" --target "$native" --max-count substrate=1
 if "${checker[@]}" --target "$native" --features runtime --forbid-pattern '^substrate($|-)' > "$fixture/actual-family.log" 2>&1; then exit 1; fi
+"${checker[@]}" --target "$native" --forbid-feature bridge/danger
+if "${checker[@]}" --target "$native" --features runtime --forbid-feature bridge/danger > "$fixture/actual-feature.log" 2>&1; then exit 1; fi
+grep -F 'forbidden dependency feature edge: bridge/danger' "$fixture/actual-feature.log" > /dev/null
 cmp "$fixture/lock.before" "$actual/Cargo.lock"
 fixture_complete=true
 echo 'Locked graph selection, identity counts, aliases, failed observations and offline Cargo checks passed'

@@ -22,7 +22,11 @@ exact count or exclusion for the same name. `--forbid-pattern REGEX` evaluates a
 caller-owned Perl regex against canonical package names, preserving family rules;
 invalid patterns fail before observation. Prefer literal names for exact policy.
 `--depth COUNT` selects Cargo's package-edge depth for direct-dependency checks;
-the default inspects the complete graph. Roots, target and features stay explicit. Invalid/conflicting
+the default inspects the complete graph. `--forbid-feature PACKAGE/FEATURE`
+adds Cargo's feature edges and refuses matching rendered dependency-feature edges.
+This preserves dependency feature-edge policies; it is not an exhaustive inventory
+of every enabled/root feature. Package identities still come only from package
+labels, and normal/build edges continue to exclude development dependencies. Roots, target and features stay explicit. Invalid/conflicting
 policy and CR/LF directories fail before Cargo, including resolved path aliases.
 
 The helper runs locked, offline Cargo tree with normal/build edges and flat
