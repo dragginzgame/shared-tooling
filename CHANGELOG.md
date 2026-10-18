@@ -2,6 +2,8 @@
 
 ## [0.24.1]
 
+- Preserve concrete consumer graph policies with optional-package identity caps,
+  canonical-name family patterns and direct-dependency observation depth.
 - Add explicit locked target/feature graph checks for forbidden transitive
   packages and rendered package identity counts. Keep consumer policies local
   and reject failed, signalled or malformed Cargo observations.

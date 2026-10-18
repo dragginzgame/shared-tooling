@@ -8,16 +8,17 @@ use Getopt::Long qw(GetOptions);
 # Observe one explicitly selected locked graph. Policy and build qualification
 # remain consumer-owned; this is not artifact/deployment admission.
 Getopt::Long::Configure(qw(no_auto_abbrev no_ignore_case));
-my ($consumer, $target, $features, $all_features, $no_defaults);
-my (@packages, @forbidden, @required);
+my ($consumer, $target, $features, $all_features, $no_defaults, $depth);
+my (@packages, @forbidden, @required, @patterns, @maximums);
 GetOptions(
     'consumer=s' => \$consumer, 'target=s' => \$target,
     'package=s@' => \@packages, 'features=s' => \$features,
     'all-features' => \$all_features, 'no-default-features' => \$no_defaults,
     'forbid=s@' => \@forbidden, 'require=s@' => \@required,
+    'forbid-pattern=s@' => \@patterns, 'max-count=s@' => \@maximums, 'depth=s' => \$depth,
 ) && !@ARGV && defined($consumer) && defined($target) && @packages
-    && (@forbidden || @required)
-    or die "usage: check-cargo-graph.pl --consumer ROOT --package NAME [--package NAME] --target TARGET [--features LIST|--all-features] [--no-default-features] [--forbid NAME] [--require NAME=COUNT]\n";
+    && (@forbidden || @required || @patterns || @maximums)
+    or die "usage: check-cargo-graph.pl --consumer ROOT --package NAME [--package NAME] --target TARGET [--features LIST|--all-features] [--no-default-features] [--depth COUNT] [--forbid NAME] [--forbid-pattern REGEX] [--require NAME=COUNT] [--max-count NAME=COUNT]\n";
 defined($features) && $all_features and die "select features or all-features, not both\n";
 $consumer !~ /[\r\n]/ or die "consumer directory contains CR/LF\n";
 my $root = abs_path($consumer);
@@ -29,12 +30,22 @@ $target =~ /\A[A-Za-z0-9_.-]+\z/ && $target !~ /^-/
     or die "expected an explicit target triple or all\n";
 !defined($features) || (length($features) && $features !~ /[\r\n]/)
     or die "invalid feature selection\n";
-my (%roots, %denied, %counts);
+!defined($depth) || $depth =~ /\A(?:0|[1-9][0-9]*)\z/
+    or die "invalid graph depth\n";
+my @compiled_patterns;
+for my $pattern (@patterns) {
+    length($pattern) && $pattern !~ /[\r\n]/ or die "invalid forbidden pattern\n";
+    my $compiled = eval { qr/$pattern/ };
+    defined($compiled) or die "invalid forbidden pattern: $@";
+    push @compiled_patterns, $compiled;
+}
+my (%roots, %denied, %counts, %caps);
 for my $name (@packages) {
     $name =~ /\A[A-Za-z0-9_-]+\z/ && !$roots{$name}++ or die "invalid or duplicate root package\n";
 }
 for my $name (@forbidden) {
-    $name =~ /\A[A-Za-z0-9_-]+\z/ && !$denied{$name}++ or die "invalid or duplicate forbidden package\n";
+    $name =~ /\A[A-Za-z0-9_-]+\z/ or die "invalid forbidden package\n";
+    $denied{$name} = 1;
 }
 for my $requirement (@required) {
     $requirement =~ /\A([A-Za-z0-9_-]+)=(0|[1-9][0-9]*)\z/
@@ -44,9 +55,18 @@ for my $requirement (@required) {
         or die "duplicate or conflicting identity count\n";
     $counts{$name} = $count;
 }
+for my $requirement (@maximums) {
+    $requirement =~ /\A([A-Za-z0-9_-]+)=(0|[1-9][0-9]*)\z/
+        or die "expected NAME=COUNT\n";
+    my ($name, $count) = ($1, $2);
+    !exists($caps{$name}) && !exists($counts{$name}) && !exists($denied{$name})
+        or die "duplicate or conflicting identity count\n";
+    $caps{$name} = $count;
+}
 my @command = ('cargo', 'tree', '--locked', '--offline', '--color', 'never',
     '--target', $target, '--edges', 'normal,build', '--prefix', 'none', '--format', '{p}');
 push @command, ('--package', $_) for @packages;
+push @command, ('--depth', $depth) if defined $depth;
 push @command, '--all-features' if $all_features;
 push @command, '--no-default-features' if $no_defaults;
 push @command, ('--features', $features) if defined $features;
@@ -75,6 +95,18 @@ my @violations;
 for my $name (sort keys %denied) {
     push @violations, "forbidden $name: " . join('; ', sort keys %{$identities{$name}})
         if exists $identities{$name};
+}
+for my $name (sort keys %identities) {
+    push @violations, "forbidden pattern matches $name"
+        if grep { $name =~ $_ } @compiled_patterns;
+}
+for my $name (sort keys %caps) {
+    my $observed = exists($identities{$name}) ? scalar(keys %{$identities{$name}}) : 0;
+    # Compare nonnegative decimal strings without machine-integer overflow.
+    my $maximum = $caps{$name};
+    push @violations, "$name: maximum $maximum rendered package identities, observed $observed"
+        if length("$observed") > length($maximum)
+            || (length("$observed") == length($maximum) && "$observed" gt $maximum);
 }
 for my $name (sort keys %counts) {
     my $observed = exists($identities{$name}) ? scalar(keys %{$identities{$name}}) : 0;

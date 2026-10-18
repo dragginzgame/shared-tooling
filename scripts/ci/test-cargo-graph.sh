@@ -24,7 +24,7 @@ chmod +x "$fixture/bin/cargo"
 export PATH="$fixture/bin:$PATH"
 checker=(perl "$root/scripts/ci/check-cargo-graph.pl" --consumer "$fixture/consumer" --package consumer --target wasm32-unknown-unknown)
 printf 'consumer v0.1.0\nsubstrate v2.0.0 (proc-macro)\nsubstrate v2.0.0 (proc-macro) (*)\n' > "$GRAPH_INPUT"
-"${checker[@]}" --require substrate=1 --forbid absent
+"${checker[@]}" --require substrate=1 --forbid absent --forbid absent
 # Source labels and versions remain separate; repeated markers are not identities.
 for other in 'substrate v2.0.1' 'substrate v2.0.0 (file:///different source#12345678)'; do
  printf '%s\n' "$other" >> "$GRAPH_INPUT"
@@ -32,6 +32,14 @@ for other in 'substrate v2.0.1' 'substrate v2.0.0 (file:///different source#1234
  grep -F 'observed 2' "$fixture/duplicates.log" > /dev/null
  printf 'consumer v0.1.0\nsubstrate v2.0.0 (proc-macro)\n' > "$GRAPH_INPUT"
 done
+"${checker[@]}" --max-count substrate=1 --max-count absent=1
+if "${checker[@]}" --max-count substrate=0 > "$fixture/cap.log" 2>&1; then exit 1; fi
+printf 'substrate v2.0.0 (file:///other#123)\n' >> "$GRAPH_INPUT"
+if "${checker[@]}" --max-count substrate=1 > "$fixture/cap.log" 2>&1; then exit 1; fi
+grep -F 'observed 2' "$fixture/cap.log" > /dev/null
+printf 'consumer v0.1.0\nsubstrate v2.0.0 (proc-macro)\n' > "$GRAPH_INPUT"
+if "${checker[@]}" --forbid-pattern '^substrate($|-)' > "$fixture/family.log" 2>&1; then exit 1; fi
+"${checker[@]}" --forbid-pattern '^substrate-extra$' --depth 1
 if "${checker[@]}" --forbid substrate > "$fixture/denied.log" 2>&1; then exit 1; fi
 grep -F 'forbidden substrate:' "$fixture/denied.log" > /dev/null
 printf 'consumer v0.1.0\nsubstrate-extra v2.0.0\n' > "$GRAPH_INPUT"
@@ -53,6 +61,11 @@ done
 if "${checker[@]}" --forbid substrate --require substrate=0 > "$fixture/policy.log" 2>&1; then exit 1; fi
 if "${checker[@]}" --require substrate=1 --require substrate=1 > "$fixture/policy.log" 2>&1; then exit 1; fi
 if "${checker[@]}" --forbid absent --features a --all-features > "$fixture/policy.log" 2>&1; then exit 1; fi
+if "${checker[@]}" --forbid-pattern '[' > "$fixture/pattern.log" 2>&1; then exit 1; fi
+if "${checker[@]}" --max-count substrate=1 --require substrate=1 > "$fixture/policy.log" 2>&1; then exit 1; fi
+if "${checker[@]}" --max-count substrate=1 --forbid substrate > "$fixture/policy.log" 2>&1; then exit 1; fi
+if "${checker[@]}" --max-count substrate=1 --max-count substrate=1 > "$fixture/policy.log" 2>&1; then exit 1; fi
+if "${checker[@]}" --forbid absent --depth -1 > "$fixture/depth.log" 2>&1; then exit 1; fi
 [[ ! -s "$GRAPH_CALLS" ]]
 for suffix in $'\n' $'\r'; do
  bad="$fixture/directory$suffix"
@@ -97,6 +110,9 @@ checker=(perl "$root/scripts/ci/check-cargo-graph.pl" --consumer "$actual" --pac
 "${checker[@]}" --target wasm32-unknown-unknown --all-features --require substrate=1 --require wasm-only=1 --require build-only=1 --forbid dev-only
 if "${checker[@]}" --target "$native" --features runtime --forbid substrate > "$fixture/actual-denied.log" 2>&1; then exit 1; fi
 grep -F 'forbidden substrate:' "$fixture/actual-denied.log" > /dev/null
+"${checker[@]}" --target "$native" --features runtime --depth 1 --forbid substrate --require bridge=1
+"${checker[@]}" --target "$native" --max-count substrate=1
+if "${checker[@]}" --target "$native" --features runtime --forbid-pattern '^substrate($|-)' > "$fixture/actual-family.log" 2>&1; then exit 1; fi
 cmp "$fixture/lock.before" "$actual/Cargo.lock"
 fixture_complete=true
 echo 'Locked graph selection, identity counts, aliases, failed observations and offline Cargo checks passed'

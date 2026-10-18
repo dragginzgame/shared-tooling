@@ -14,8 +14,15 @@ perl scripts/ci/check-cargo-graph.pl --consumer . --package production-package \
 Pass one or more explicit `--package NAME` selections and one `--target TRIPLE`
 (or `all` for a deliberate cross-target union). Match the actual build's default
 feature behavior: use `--no-default-features` and `--features LIST` when needed,
-or `--all-features`. At least one `--forbid NAME` or `--require NAME=COUNT` is
-required. Counts are per package name; zero requires absence. Invalid/conflicting
+or `--all-features`. Select at least one exclusion, exact count or maximum count.
+Repeated literal exclusions compose idempotently across consumer policy lists. Counts are per package name; zero requires absence.
+`--max-count NAME=COUNT` admits an absent optional package while limiting observed
+identities (for example, at most one crypto generation). It conflicts with an
+exact count or exclusion for the same name. `--forbid-pattern REGEX` evaluates a
+caller-owned Perl regex against canonical package names, preserving family rules;
+invalid patterns fail before observation. Prefer literal names for exact policy.
+`--depth COUNT` selects Cargo's package-edge depth for direct-dependency checks;
+the default inspects the complete graph. Roots, target and features stay explicit. Invalid/conflicting
 policy and CR/LF directories fail before Cargo, including resolved path aliases.
 
 The helper runs locked, offline Cargo tree with normal/build edges and flat
