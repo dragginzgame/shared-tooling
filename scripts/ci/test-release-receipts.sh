@@ -46,5 +46,43 @@ refuse release_receipt_check prepared release_receipt_payload '' 'selected file'
 release_receipt_check prepared release_receipt_payload "$RELEASE_SOURCE" 'selected file'
 refuse release_receipt_write prepared release_receipt_payload '' 'missing file'
 release_receipt_check prepared release_receipt_payload "$RELEASE_SOURCE" 'selected file'
+mkdir attempts
+release_receipt_archive "$fixture/attempts/archive.XXXXXX" prepared original absent
+archive=("$fixture"/attempts/archive.*)
+cmp prepared "${archive[0]}/prepared"
+cmp original "${archive[0]}/original"
+refuse release_receipt_archive "$fixture/attempts/refused.XXXXXX" prepared validated
+[[ "$(find attempts -name 'refused.*' -print)" == '' ]] || exit 1
+mkdir nested
+cp original nested/original
+refuse release_receipt_archive "$fixture/attempts/collision.XXXXXX" original nested/original
+[[ "$(find attempts -name 'collision.*' -print)" == '' ]] || exit 1
+# No prior attempt means no archive directory or synthetic empty evidence.
+release_receipt_archive "$fixture/attempts/absent.XXXXXX" absent missing
+[[ "$(find attempts -name 'absent.*' -print)" == '' ]] || exit 1
+# A failed second copy must remain failed even after producing plausible bytes;
+# retain both the active receipts and the already copied archive evidence.
+mkdir bin
+export RECEIPT_REAL_CP
+RECEIPT_REAL_CP="$(command -v cp)"
+cat > bin/cp <<'STUB'
+#!/usr/bin/env bash
+set -euo pipefail
+"$RECEIPT_REAL_CP" "$@"
+for argument in "$@"; do
+    [[ "$argument" != original ]] || exit 41
+done
+STUB
+chmod +x bin/cp
+status=0
+PATH="$fixture/bin:$PATH" release_receipt_archive "$fixture/attempts/failed.XXXXXX" prepared original || status=$?
+[[ "$status" == 41 ]] || exit 1
+failed_archive=("$fixture"/attempts/failed.*)
+[[ "${#failed_archive[@]}" == 1 && -d "${failed_archive[0]}" ]] || exit 1
+cmp prepared "${failed_archive[0]}/prepared"
+cmp original "${failed_archive[0]}/original"
+cmp "${archive[0]}/prepared" prepared
+cmp "${archive[0]}/original" original
+release_receipt_check prepared release_receipt_payload "$RELEASE_SOURCE" 'selected file'
 fixture_complete=true
 printf 'Release receipt fixtures passed\n'

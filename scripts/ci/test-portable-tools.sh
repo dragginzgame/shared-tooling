@@ -155,6 +155,7 @@ run_fixture test-cargo-release-metadata.sh bash "$ROOT/scripts/ci/test-cargo-rel
 run_fixture test-hosted-failure.sh bash "$ROOT/scripts/ci/test-hosted-failure.sh"
 run_fixture test-release-source.sh bash "$ROOT/scripts/ci/test-release-source.sh"
 run_fixture test-release-receipts.sh bash "$ROOT/scripts/ci/test-release-receipts.sh"
+run_fixture test-release-metadata-transaction.sh bash "$ROOT/scripts/ci/test-release-metadata-transaction.sh"
 run_fixture test-release-changes.sh bash "$ROOT/scripts/ci/test-release-changes.sh"
 
 run_fixture test-sccache-launcher.sh bash "$ROOT/scripts/ci/test-sccache-launcher.sh"

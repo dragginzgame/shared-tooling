@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.24.2]
+
+### Added
+
+- Share selected-file release preparation and previous-attempt evidence archives.
+  Admit every candidate before installation, restore bytes and modes on caught
+  failure, and retain originals when preparation or restoration fails. Consumers
+  keep rendering, source qualification, receipt schemas and recovery policy
+  ([PR #283 — Share release metadata preparation and retained evidence custody](https://github.com/dragginzgame/shared-tooling/pull/283)).
+
 ## [0.24.1]
 
 ### Added

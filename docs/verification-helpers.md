@@ -388,6 +388,13 @@ exactly, including trailing newlines. Missing or symlinked receipts refuse;
 failed generation cannot replace the prior receipt. Both helpers report failure
 without choosing retries or authorizing release effects.
 
+`release_receipt_archive TEMPLATE FILE...` preserves previous attempts before
+replacement, admitting the whole set before copying. Absent entries are allowed;
+links, non-regular entries and duplicate basenames refuse. Failed copies retain
+the active evidence and any partial archive. See
+[metadata preparation and evidence custody](releases.md#reusing-metadata-preparation-and-evidence-custody)
+for selected-file preparation, restoration and the callback contract.
+
 The caller must hold exclusive custody of the selected source and trusted state
 directory throughout these operations. Atomic receipt replacement does not supply
 a lock, authenticate the state directory, make multiple files transactional or
