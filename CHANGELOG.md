@@ -8,6 +8,10 @@
   identity caps and forbidden dependency-feature edges. Consumers keep their
   roots, targets, feature selections and policy; failed or malformed Cargo
   observations cannot pass admission.
+- Retain child user/system CPU observations alongside paired snapshot export
+  timings, preserving the elapsed-time format and payload checks. This supports
+  native investigation of
+  [#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219).
 
 ### Fixed
 
