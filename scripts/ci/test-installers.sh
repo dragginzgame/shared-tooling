@@ -163,7 +163,7 @@ for tool in actionlint shellcheck gitleaks; do
     [[ -x "$FIXTURE/catalog-installed/$tool" ]] || exit 1
 done
 mkdir -p "$FIXTURE/snapshot/scripts/ci" "$FIXTURE/snapshot/scripts/dev" "$FIXTURE/snapshot/ci"
-cp "$ROOT/scripts/ci/"{install-ci-tool.sh,tool-catalog-records.pl,verify-file-checksum.sh} "$FIXTURE/snapshot/scripts/ci/"
+cp "$ROOT/scripts/ci/"{install-ci-tool.sh,tool-catalog-records.pl,verify-file-checksum.sh,StableVersion.pm} "$FIXTURE/snapshot/scripts/ci/"
 cp "$ROOT/scripts/dev/"{tool-store.sh,host-platform.sh} "$FIXTURE/snapshot/scripts/dev/"
 cp "$FIXTURE/ci.env" "$FIXTURE/snapshot/ci/tool-versions.env"
 PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \

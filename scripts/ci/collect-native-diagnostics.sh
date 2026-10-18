@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/archive-evidence.sh scripts/ci/collect-tool-evidence.sh scripts/ci/formatting-evidence.sh
+# Shared companions: scripts/ci/archive-evidence.sh scripts/ci/collect-tool-evidence.sh scripts/ci/formatting-evidence.sh scripts/ci/verify-file-checksum.sh
 set -euo pipefail
 # Caller supplies outcome/source records, explicit top-level selection and custody.
 [[ $# -ge 8 ]] || { echo 'usage: collect-native-diagnostics.sh CHECKOUT EVIDENCE OUTPUT FORMAT-ROOT TOOLS-OUTCOME HOST-PINS IC-PINS NAME...' >&2; exit 2; }
@@ -15,7 +15,7 @@ done
 [[ ${#selection[@]} != 0 ]] || exit 2
 # Publish readable diagnostics first, even when full tool collection later fails.
 bash "$helper_root/archive-evidence.sh" "$output" "${selection[@]}" || exit 2
-shasum -a 256 "$output" > "$output.sha256" || exit 2
+bash "$helper_root/verify-file-checksum.sh" --print sha256 "$output" > "$output.sha256" || exit 2
 collection_status=0
 if [[ "$tools_outcome" == failure ]]; then
     diagnostics="$(mktemp -d "$evidence/tool-evidence.XXXXXX")" || exit 2

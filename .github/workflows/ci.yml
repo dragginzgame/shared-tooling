@@ -150,16 +150,12 @@ jobs:
           key: cargo-tools-${{ runner.os }}-${{ runner.arch }}-${{ steps.tool-cache-key.outputs.key }}
       - name: Prepare and check the complete common toolset
         if: needs.change-scope.outputs.scope != 'docs'
-        shell: bash
-        run: |
-          make --no-print-directory install-tools 2>&1 | tee "$RUNNER_TEMP/tools-install.log"
-          make --no-print-directory tools-check 2>&1 | tee "$RUNNER_TEMP/tools-check.log"
-          {
-            echo "$GITHUB_WORKSPACE/.tools/host/bin"
-            echo "$GITHUB_WORKSPACE/.tools/ic/bin"
-            echo "$GITHUB_WORKSPACE/.tools/rust/common/bin"
-          } >> "$GITHUB_PATH"
+        uses: ./.github/actions/prepare-common-tools
+      - name: Publish the selected IC tools on PATH
+        if: needs.change-scope.outputs.scope != 'docs'
+        run: echo "$GITHUB_WORKSPACE/.tools/ic/bin" >> "$GITHUB_PATH"
       - name: Qualify native tool reuse across checkouts without downloads
+        id: native-tool-reuse
         if: needs.change-scope.outputs.scope != 'docs'
         shell: bash
         run: |
@@ -187,10 +183,18 @@ jobs:
           CARGO_NET_OFFLINE=true bash scripts/dev/install-rust-tools.sh \
             --consumer "$sharing/consumer" --versions "$GITHUB_WORKSPACE/ci/tool-versions.env" --check \
             > "$sharing/rust-check.log" 2>&1
-          for tool in cargo-sort cargo-sort-derives candid-extractor; do
-            test "$(perl -MCwd=abs_path -e 'print abs_path(shift)' ".tools/rust/common/bin/$tool")" = \
-                 "$(perl -MCwd=abs_path -e 'print abs_path(shift)' "$sharing/consumer/.tools/rust/common/bin/$tool")"
-          done
+          records="$(perl scripts/ci/tool-catalog-records.pl rust "$GITHUB_WORKSPACE/ci/tool-versions.env")"
+          while IFS=$'\t' read -r name _; do
+            tool="$(printf '%s' "$name" | tr '[:upper:]_' '[:lower:]-')"
+            original=".tools/rust/common/bin/$tool"
+            reused="$sharing/consumer/.tools/rust/common/bin/$tool"
+            test -f "$original"
+            test -x "$original"
+            test -f "$reused"
+            test -x "$reused"
+            test "$(perl -MCwd=abs_path -e 'my $p=abs_path(shift); defined $p or exit 1; print $p' "$original")" = \
+                 "$(perl -MCwd=abs_path -e 'my $p=abs_path(shift); defined $p or exit 1; print $p' "$reused")"
+          done <<< "$records"
       # Save immediately after real setup/reuse checks: a later cancelled test
       # run must not force the next push to rebuild identical tools. PRs only read.
       - name: Save verified Cargo tool builds

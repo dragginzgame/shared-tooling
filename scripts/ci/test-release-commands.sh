@@ -22,7 +22,7 @@ mkdir "$fixture/consumer" "$fixture/logs"
 export TMPDIR="$fixture/logs"
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 unset VALIDATION_REPOSITORY_ROOT VALIDATION_RUNNER_SNAPSHOT_PATH
-make_inputs=(make/consumer.mk make/tools.mk make/release.mk make/execution.mk scripts/ci/check-make-execution.sh)
+make_inputs=(make/consumer.mk)
 bash "$root/scripts/ci/check-release-commands.sh" "$root" "${make_inputs[@]}"
 # Both event paths and nested Make probes must survive the checker's cd.
 mkdir "$fixture/relative-temp"
@@ -163,9 +163,7 @@ done
 # ordinary consumer assignment to an external runner. The sentinel has no effects
 # beyond its marker; the actual release implementation is never installed here.
 mkdir -p "$fixture/external/scripts/ci" "$fixture/root-consumer/make"
-cp "$root/make/consumer.mk" "$root/make/tools.mk" "$root/make/release.mk" "$root/make/execution.mk" "$fixture/root-consumer/make/"
-mkdir -p "$fixture/root-consumer/scripts/ci"
-cp "$root/scripts/ci/check-make-execution.sh" "$fixture/root-consumer/scripts/ci/"
+bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$fixture/root-consumer" "${make_inputs[@]}"
 cat > "$fixture/external/scripts/ci/run-release.sh" <<'SENTINEL'
 #!/usr/bin/env bash
 echo escaped >> "$RELEASE_TEST_EVENTS"
@@ -183,7 +181,7 @@ cat > "$fixture/root-parent.mk" <<'MAKE'
 export SHARED_TOOLING_ROOT := $(EXTERNAL_ROOT)
 export EXTERNAL_ROOT
 test:
-	+@bash "$(CHECKER)" "$(CONSUMER)" make/tools.mk make/release.mk make/execution.mk scripts/ci/check-make-execution.sh
+	+@bash "$(CHECKER)" "$(CONSUMER)" make/tools.mk make/release.mk
 MAKE
 make -j2 --no-print-directory -f "$fixture/root-parent.mk" test \
     EXTERNAL_ROOT="$fixture/external" CHECKER="$root/scripts/ci/check-release-commands.sh" \
@@ -199,7 +197,11 @@ release-patch release-minor release-major:
 release-resume:
 	@bash scripts/ci/run-release.sh resume "$(VERSION)" "$(RELEASE_REMOTE)" "$(RELEASE_BRANCH)"
 MAKE
-printf 'FIXTURE_VERSION := 1\n' > "$fixture/consumer/tool-versions.env"
+# A selected input carries its parse-time companion without a second hand list.
+mkdir "$fixture/consumer/config"
+printf '# Consumer inputs\n# Shared companions: config/policy.mk\ninclude config/policy.mk\n' \
+    > "$fixture/consumer/tool-versions.env"
+printf 'FIXTURE_VERSION := 1\n' > "$fixture/consumer/config/policy.mk"
 # A recursive Make must not leak -n, selected command variables or logger identity.
 cat > "$fixture/parent.mk" <<'MAKE'
 .PHONY: test
