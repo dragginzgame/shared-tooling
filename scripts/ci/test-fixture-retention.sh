@@ -358,6 +358,7 @@ set -- "$fixture/portable"/shared-tooling-test.*
 # This checks local ordering/paths; GitHub's upload service is qualified by CI.
 yq -o json '.' "$ROOT/.github/workflows/ci.yml" > "$fixture/workflow.json"
 yq -o json '.' "$ROOT/.github/actions/retain-failure-evidence/action.yml" > "$fixture/collector.json"
+yq -o json '.' "$ROOT/.github/actions/prepare-common-tools/action.yml" > "$fixture/setup.json"
 # Cache transport is optional; native setup/admission and the complete gate are
 # mandatory unless the classifier admitted a reviewed documentation-only change.
 # A main-only save follows native reuse, and carries the exact restore selection.
@@ -367,7 +368,7 @@ jq -e --arg save_condition "\${{ needs.change-scope.outputs.scope != 'docs' && (
   .jobs["portable-regression"].steps | to_entries |
   map(select(.value.uses? | strings | startswith("actions/cache/restore@"))) as $restore |
   map(select(.value.uses? | strings | startswith("actions/cache/save@"))) as $save |
-  map(select(.value.run? | strings | contains("make --no-print-directory install-tools"))) as $setup |
+  map(select(.value.uses == "./.github/actions/prepare-common-tools")) as $setup |
   map(select(.value.run? | strings | contains("CARGO_NET_OFFLINE=true bash scripts/dev/install-rust-tools.sh"))) as $reuse |
   map(select(.value.run? | strings | contains("bash scripts/ci/test-portable-tools.sh"))) as $gate |
   ($restore | length) == 1 and ($save | length) == 1 and
@@ -392,7 +393,7 @@ jq -e '
 # shellcheck disable=SC2016 # GitHub expressions are literal workflow inputs.
 jq -e --arg failure_condition "\${{ needs.change-scope.outputs.scope != 'docs' && (failure()) }}" '
   .jobs["portable-regression"].steps | to_entries |
-  map(select(.value.run? | strings | contains("make --no-print-directory install-tools"))) as $native |
+  map(select(.value.uses == "./.github/actions/prepare-common-tools")) as $native |
   map(select(.value.uses == "./.github/actions/retain-failure-evidence" and .value.if == $failure_condition)) as $uploads |
   ($native | length) == 1 and ($uploads | length) == 1 and
   $uploads[0].key > $native[0].key and $uploads[0].key == length - 1 and
@@ -401,8 +402,7 @@ jq -e --arg failure_condition "\${{ needs.change-scope.outputs.scope != 'docs' &
 ' "$fixture/workflow.json" > /dev/null
 jq -e '.runs.steps | map(select(.uses? | strings | startswith("actions/upload-artifact@"))) |
   length == 1 and .[0].with["if-no-files-found"] == "error"' "$fixture/collector.json" > /dev/null
-jq -r '.jobs["portable-regression"].steps[] | select(.run? | strings |
-  contains("make --no-print-directory install-tools")) | .run' "$fixture/workflow.json" > "$fixture/native-step.sh"
+jq -er '.runs.steps[] | select(.id == "prepare-tools") | .run' "$fixture/setup.json" > "$fixture/native-step.sh"
 jq -er '.runs.steps[] | select(.id == "archive") | .run' "$fixture/collector.json" > "$fixture/collect.sh"
 for phase in install check; do
     native="$fixture/native-$phase"
