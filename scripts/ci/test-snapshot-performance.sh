@@ -52,11 +52,13 @@ exit 47
 RUNNER
             exit 0 ;;
         signal) printf '#!/usr/bin/env bash\nkill -TERM "$$"\n'; exit 0 ;;
-        verify-failure|mismatch)
+        verify-failure|mismatch|cpu-write-failure)
             "$MEASUREMENT_REAL_GIT" "$@"
             cat <<'APPEND'
 if [[ "$MEASUREMENT_MODE" == verify-failure ]]; then
     printf corrupt >> "$CONSUMER_ROOT/scripts/ci/verify-shared-tooling-snapshot.sh"
+elif [[ "$MEASUREMENT_MODE" == cpu-write-failure ]]; then
+    mkdir "${CONSUMER_ROOT%/*}/warmup-0-before.cpu"
 elif [[ "${BASH_SOURCE[0]}" == */after/* ]]; then
     printf unexpected > "$CONSUMER_ROOT/unexpected"
 fi
@@ -84,7 +86,7 @@ status=0
     "$fixture/bad-revision" > "$fixture/refusal.log" 2>&1 || status=$?
 [[ "$status" == 2 && ! -e "$fixture/bad-revision" ]] || exit 1
 
-for mode in read-failure reader-present reader-read-failure exit-failure signal verify-failure mismatch; do
+for mode in read-failure reader-present reader-read-failure exit-failure signal verify-failure mismatch cpu-write-failure; do
     status=0
     PATH="$fixture/bin:$PATH" MEASUREMENT_MODE="$mode" "$BASH" \
         "$ROOT/scripts/distribution/measure-snapshot-refresh.sh" "$revision" "$revision" "$revision" \
@@ -110,6 +112,12 @@ for mode in read-failure reader-present reader-read-failure exit-failure signal 
         mismatch)
             grep -F 'snapshot verified' "$fixture/$mode/warmup-0-after.verify.log" > /dev/null
             grep -F unexpected "$fixture/$mode/warmup-0.compare.log" > /dev/null ;;
+        cpu-write-failure)
+            [[ -s "$fixture/$mode/warmup-0-before.seconds" &&
+               -d "$fixture/$mode/warmup-0-before.cpu" ]] || exit 1
+            grep -F 'open CPU observation:' "$fixture/$mode/warmup-0-before.log" > /dev/null
+            [[ "$(wc -l < "$fixture/$mode/samples.tsv" | tr -d ' ')" == 1 &&
+               "$(wc -l < "$fixture/$mode/cpu.tsv" | tr -d ' ')" == 1 ]] || exit 1 ;;
     esac
 done
 echo 'Snapshot measurement refusal, failed reads/exports, signals, verification and pair mismatch passed (substituted runners)'
