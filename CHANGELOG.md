@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.24.3]
+
+### Changed
+
+- Require external IC-specific dependencies, including DFINITY packages, to go
+  through `ic-platform` in production, build, test and tooling code. Keep product
+  policy with its owning crate and track missing Platform capabilities and
+  existing direct dependencies under the
+  [dependency boundary](rules/cargo-dependencies.md#external-ic-dependency-boundary).
+
+### Fixed
+
+- Use the shared preparation transaction for coordinated Cargo releases. Finish
+  rendering every candidate before installation and preserve originals and
+  candidates when rendering, installation, validation or restoration fails.
+
 ## [0.24.2]
 
 ### Added

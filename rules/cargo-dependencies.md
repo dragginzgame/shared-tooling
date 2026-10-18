@@ -46,6 +46,35 @@ exact constraints, immutable Git revisions, lockfiles and external path inputs.
   automatic pre-commit formatting and independent CI/release checks; ordering
   must preserve the catalog and every inherited selection.
 
+## External IC dependency boundary
+
+All IC-specific dependencies maintained outside `dragginzgame`, including DFINITY
+packages, must be consumed through explicit `ic-platform` features and interfaces.
+The IC Platform repository is the sole direct dependency owner for these upstream
+packages. Other repositories must not declare or import them directly, including
+through renamed dependencies, generated code or proc-macro expansions.
+
+- This covers Candid and its parser/derives, CDK/runtime/system APIs, principals,
+  Agent/PocketIC clients, certification/signature and ledger/management types,
+  stable-structures and any other external package specific to the Internet
+  Computer, regardless of its publisher or package-name prefix.
+- Apply the boundary to normal, build, development, test and tooling dependencies,
+  optional features, target-specific tables and independently scoped workspaces.
+  A private probe, example, unpublished package or macro-generated upstream path
+  is not an automatic exception.
+- If Platform lacks a required capability, file or update its owning issue and
+  qualify an explicit Platform interface before adopting it. Do not bypass that
+  work with a new direct dependency, copied implementation or consumer facade.
+  Track existing direct uses as migration debt; retire them with their actual
+  callers and focused checks, preserving external bytes and recovery obligations.
+  Any temporary exception requires express maintainer approval with scope and
+  reason under the baseline's exception rules.
+- Product ownership stays with its Dragginzgame crate: for example, Memory/Storage
+  own memory and storage policy, Testkit owns simulator lifecycle, and Wire owns
+  controlled application protocols. Platform owns the external dependency boundary;
+  this rule does not move those product implementations into Platform. General
+  purpose dependencies such as Serde remain with their consuming crates.
+
 ## Dependency roles and deployment checks
 
 Organize the root `[workspace.dependencies]` catalog into two sections headed

@@ -432,6 +432,12 @@ Consumer choices described in those guides remain subject to this baseline.
   development toolchain. CI must explicitly check each advertised floor;
   documented package groups may have different floors. Do not upgrade a toolchain
   or raise MSRV without an established need and appropriate validation.
+- Consume every externally maintained IC-specific dependency through `ic-platform`,
+  including DFINITY packages. Apply the
+  [external IC dependency boundary](rules/cargo-dependencies.md#external-ic-dependency-boundary)
+  to production, build, test and tooling code, optional features and all targets.
+  Missing Platform support requires an upstream capability issue, not a new direct
+  dependency or a local replacement facade.
 - Follow the [Rust hygiene baseline](docs/principles/rust-code-hygiene.md): narrow
   visibility, documented APIs/invariants, ordinary module discovery, bounded
   fallible decoding, typed errors and `std` paths in code that requires `std`,
