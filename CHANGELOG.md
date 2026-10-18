@@ -9,6 +9,13 @@
   generation and symlinks cannot replace accepted evidence
   ([#278 — Share release validation and prepared receipt mechanics](https://github.com/dragginzgame/shared-tooling/issues/278)).
 
+### Fixed
+
+- Prepare checker-retention fixtures with their complete companion closure so
+  release checks reach the intended child/assertion failures and retain evidence
+  ([#274 — Prepare script fixtures from their declared companion closure](https://github.com/dragginzgame/shared-tooling/issues/274)).
+
+
 ## [0.24.0]
 
 ### Breaking
