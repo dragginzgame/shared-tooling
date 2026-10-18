@@ -1128,4 +1128,4 @@ Focused coverage is `bash scripts/ci/test-script-fixture.sh`.
 
 Use [the graph checker](cargo-graph-checks.md) to enforce consumer-selected
 transitive exclusions and rendered package identity counts. Direct ownership
-checks and product feature\/lifecycle policies remain separate.
+checks and product feature/lifecycle policies remain separate.
