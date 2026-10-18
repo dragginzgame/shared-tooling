@@ -83,4 +83,17 @@ chmod +x "$fixture/bin/git" "$fixture/bin/yq"
 PATH="$fixture/bin:$PATH" refuse 'crates/first member'
 mv "$fixture/bin/git" "$fixture/bin/disabled-git"
 YQ="$fixture/bin/yq" refuse 'crates/first member'
+# A successful parser must still produce exactly one package observation for
+# each selected source member, never expand the caller's roster through a stream.
+cat > "$fixture/bin/yq" <<'STUB'
+#!/usr/bin/env bash
+printf '%s\n' "$CONTEXT_OBSERVATION"
+STUB
+for observation in \
+    '{"package":{"name":"first"}} {"package":{"name":"extra"}}' \
+    'null {"package":{"name":"first"}}' \
+    '{"package":{"name":"first"}} []' \
+    '' '{"package":{"name":"first"}} malformed'; do
+    CONTEXT_OBSERVATION="$observation" YQ="$fixture/bin/yq" refuse 'crates/first member'
+done
 fixture_complete=true

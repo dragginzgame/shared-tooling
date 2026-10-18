@@ -234,9 +234,9 @@ The caller supplies admitted root-manifest JSON and explicit relative member
 directories. The helper reads package names from that exact local commit and
 returns the saved `source_root`, `manifest` and `members` context accepted by the
 Cargo metadata renderers. Current member files are never read. Missing members,
-invalid paths, duplicate package identities and failed Git/TOML readers refuse
-without a partial context. Git, jq and prepared Mike Farah yq are required; no
-Cargo invocation, fetch, installation, editing or Git mutation occurs.
+invalid paths, duplicate package identities, ambiguous parser streams and failed
+Git/TOML readers refuse without a partial context. Git, jq and prepared Mike Farah
+yq are required; no Cargo invocation, fetch, installation, editing or Git mutation occurs.
 
 Consumers retain root-manifest authentication, member/package eligibility,
 version policy and independent graph admission. This input preparation does not

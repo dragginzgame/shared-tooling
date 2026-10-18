@@ -6,7 +6,8 @@
 
 - Read caller-selected Cargo member identities from an exact local Git commit
   into saved-source renderer context, independently of mutable member checkouts.
-  Root admission, package/version selection and editing remain caller-owned.
+  Require one parser observation per selected member. Root admission,
+  package/version selection and editing remain caller-owned.
 - Check prepared Cargo archives against explicit package paths and a source commit,
   then retrieve that commit into a fresh Git store. Retain provenance evidence
   without packaging, uploading or selecting consumer eligibility and recovery.
@@ -16,7 +17,7 @@
 ### Fixed
 
 - Point exported capability-map links at their Shared owner rather than a
-  consumer-owned README ([#284](https://github.com/dragginzgame/shared-tooling/issues/284)).
+  consumer-owned README ([#284 — Keep exported capability-map links at Shared](https://github.com/dragginzgame/shared-tooling/issues/284)).
 - Follow the common-tool setup action when qualifying CI cache ordering and
   retained installer failure evidence, replacing stale inline-step assumptions.
 - Prepare checker-retention fixtures with their complete companion closure so
