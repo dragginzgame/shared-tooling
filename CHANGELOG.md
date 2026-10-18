@@ -1,13 +1,77 @@
 # Changelog
 
+## [0.24.4]
+
+### Added
+
+- Share selected Cargo graph checks for canonical package identities, optional
+  identity caps and forbidden dependency-feature edges. Consumers keep their
+  roots, targets, feature selections and policy; failed or malformed Cargo
+  observations cannot pass admission.
+
+## [0.24.3]
+
+### Changed
+
+- Require external IC-specific dependencies, including DFINITY packages, to go
+  through `ic-platform` in production, build, test and tooling code. Keep product
+  policy with its owning crate and track missing Platform capabilities and
+  existing direct dependencies under the
+  [dependency boundary](rules/cargo-dependencies.md#external-ic-dependency-boundary).
+
+### Fixed
+
+- Use the shared preparation transaction for coordinated Cargo releases. Finish
+  rendering every candidate before installation and preserve originals and
+  candidates when rendering, installation, validation or restoration fails.
+
+## [0.24.2]
+
+### Added
+
+- Share selected-file release preparation and previous-attempt evidence archives.
+  Admit every candidate before installation, restore bytes and modes on caught
+  failure, and retain originals when preparation or restoration fails. Consumers
+  keep rendering, source qualification, receipt schemas and recovery policy
+  ([PR #283 — Share release metadata preparation and retained evidence custody](https://github.com/dragginzgame/shared-tooling/pull/283)).
+
 ## [0.24.1]
 
-- Preserve concrete consumer graph policies with optional-package identity caps,
-  canonical-name family patterns, forbidden dependency-feature edges and
-  direct-dependency observation depth.
-- Add explicit locked target/feature graph checks for forbidden transitive
-  packages and rendered package identity counts. Keep consumer policies local
-  and reject failed, signalled or malformed Cargo observations.
+### Added
+
+- Share exact validation and prepared-file receipts with atomic replacement.
+  Consumers retain selected files, trusted state custody and release policy
+  ([#278 — Share release validation and prepared receipt mechanics](https://github.com/dragginzgame/shared-tooling/issues/278)).
+- Share prepared-package provenance checks and saved-source member context.
+  Require exact source identities and one parser observation per selected member;
+  retain failure evidence without taking over package eligibility or publication.
+
+### Changed
+
+- Replay retained formatting-adoption logs on failure without an outer consumer
+  fixture, preserving the original status and evidence custody.
+- Permit fixture scratch beneath its source only when the complete copy plan
+  preserves every selected input; reject source/output collisions, including
+  hard-linked aliases, before copying.
+- Preserve dependency sections in the default Cargo formatter and check command.
+  Consumers can remove paired overrides that only repeat grouped sorting and
+  rustfmt; adapters for additional formatting steps remain consumer-owned.
+
+### Fixed
+
+- Point exported capability-map links at their Shared owner rather than a
+  consumer-owned README ([#284 — Keep exported capability-map links at Shared](https://github.com/dragginzgame/shared-tooling/issues/284)).
+- Check current dependency declarations after unstaged tracked deletions without
+  changing the consumer index. Keep dangling symlinks and failed filesystem
+  observations as refusals, including inaccessible or non-directory parents
+  ([#271 — Dependency pin checker rejects tracked manifest and workflow deletions](https://github.com/dragginzgame/shared-tooling/issues/271)).
+- Follow the common-tool setup action when qualifying CI cache ordering and
+  retained installer failure evidence, replacing stale inline-step assumptions.
+- Reject fixture outputs that hard-link to selected inputs or each other before
+  copying. Prepare checker-retention fixtures with their complete companion
+  closure so intended
+  child/assertion failures run and retain their evidence
+  ([#274 — Prepare script fixtures from their declared companion closure](https://github.com/dragginzgame/shared-tooling/issues/274)).
 
 ## [0.24.0]
 

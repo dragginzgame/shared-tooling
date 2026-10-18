@@ -72,9 +72,13 @@ chmod +x "$fixture/bin/git"
 cat > "$fixture/bin/cp" <<'CP'
 #!/usr/bin/env bash
 set -euo pipefail
-if [[ "${CASE:-}" == restore-failure && "$1" == -p && "$2" == */cargo-release-backup.*/Cargo.lock ]]; then
+if [[ "${CASE:-}" == restore-failure && "$1" == -p && "$2" == -- && "$3" == */cargo-release-backup.*/original/Cargo.lock ]]; then
     echo 'controlled lockfile restoration failure' >&2
     exit 43
+fi
+if [[ "$1" == -- && "$2" == */candidate/* ]]; then
+    [[ -z "${INSTALL_EVENTS:-}" ]] || printf '%s\n' "$2" >> "$INSTALL_EVENTS"
+    if [[ "${CASE:-}" == install-failure && "$2" == */candidate/Cargo.lock ]]; then exit 29; fi
 fi
 exec "$REAL_CP" "$@"
 CP
@@ -87,6 +91,8 @@ set -euo pipefail
 case "${1:-}" in
     */render-cargo-workspace-version.pl)
         if [[ "${CASE:-}" == renderer-failure ]]; then "$REAL_PERL" "$@"; exit 23; fi ;;
+    */rewrite-local-lock-versions.pl)
+        if [[ "${CASE:-}" == lock-renderer-failure ]]; then "$REAL_PERL" "$@"; exit 23; fi ;;
 esac
 exec "$REAL_PERL" "$@"
 PERL
@@ -226,7 +232,7 @@ if (cd "$root" && RELEASE_VERSION=1.3.0 bash "$helper" prepare primary) > "$fixt
     echo 'restrictive local range admitted' >&2; exit 1
 fi
 for file in Cargo.toml Cargo.lock CHANGELOG.md; do cmp "$root/$file" "$root/originals/$file"; done
-for mode in renderer-failure check-failure interrupt literal-version unknown-local missing-member; do
+for mode in renderer-failure lock-renderer-failure install-failure check-failure interrupt literal-version unknown-local missing-member; do
     root="$fixture/$mode"
     make_workspace "$root"
     case "$mode" in
@@ -237,12 +243,17 @@ for mode in renderer-failure check-failure interrupt literal-version unknown-loc
     mkdir "$root/originals"
     for file in Cargo.toml Cargo.lock CHANGELOG.md; do cp -p "$root/$file" "$root/originals/$file"; done
     status=0
-    (cd "$root" && CASE="$mode" bash "$helper" prepare primary) > "$fixture/$mode.log" 2>&1 || status=$?
+    (cd "$root" && CASE="$mode" INSTALL_EVENTS="$root/install.events" bash "$helper" prepare primary) > "$fixture/$mode.log" 2>&1 || status=$?
     [[ "$status" != 0 ]] || { echo "metadata failure case accepted: $mode" >&2; exit 1; }
-    case "$mode" in renderer-failure) [[ "$status" == 23 ]] ;; interrupt) [[ "$status" == 143 ]] ;; check-failure) [[ "$status" == 25 ]] ;; esac
+    case "$mode" in
+        renderer-failure|lock-renderer-failure) [[ "$status" == 23 && ! -e "$root/install.events" ]] ;;
+        install-failure) [[ "$status" == 29 && -s "$root/install.events" ]] ;;
+        interrupt) [[ "$status" == 143 ]] ;;
+        check-failure) [[ "$status" == 25 ]] ;;
+    esac
     for file in Cargo.toml Cargo.lock CHANGELOG.md; do cmp "$root/$file" "$root/originals/$file"; done
     if [[ "$mode" != missing-member ]]; then
-        grep -F 'evidence retained:' "$fixture/$mode.log" > /dev/null
+        grep -F 'Failed preparation; originals retained:' "$fixture/$mode.log" > /dev/null
     fi
 done
 # Successful preparation preserves all unrelated bytes and metadata modes.
@@ -283,9 +294,9 @@ for mode in undated-history history-no-lf dated-notes conflicting-date conflicti
             if cmp -s "$root/originals/Cargo.lock" "$root/Cargo.lock"; then exit 1; fi
             set -- "$root/attempts/"cargo-release-backup.*
             [[ $# == 1 ]] || exit 1
-            cmp "$1/candidate.lock" "$root/Cargo.lock"
-            for file in Cargo.toml Cargo.lock CHANGELOG.md; do cmp "$root/originals/$file" "$1/$file"; done
-            grep -F 'metadata restoration incomplete; originals retained:' "$fixture/$mode.log" > /dev/null
+            cmp "$1/candidate/Cargo.lock" "$root/Cargo.lock"
+            for file in Cargo.toml Cargo.lock CHANGELOG.md; do cmp "$root/originals/$file" "$1/original/$file"; done
+            grep -F 'Metadata restoration failed: Cargo.lock' "$fixture/$mode.log" > /dev/null
             ;;
         *)
             [[ "$status" != 0 ]] || exit 1
