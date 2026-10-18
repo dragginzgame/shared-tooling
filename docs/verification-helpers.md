@@ -882,20 +882,6 @@ delivered Shared contribution; focused coverage is
 
 ## Workflow run extraction
 
-`fixture_run_steps BASH COMMAND_DIRECTORY LOG_DIRECTORY STEP OUTCOME_VARIABLE ...`
-is a sourced helper in `scripts/ci/fixture-workflow-steps.sh`. It executes explicit
-`STEP.sh` files in caller order with Bash's `-e -o pipefail`, capturing combined
-output in `LOG_DIRECTORY/STEP.log`. Directories must already exist. Step IDs use
-shell identifier characters; outcome variables use uppercase identifiers.
-Invalid argument shapes/names refuse with status 2 before execution or outcome
-changes. Outcomes are exported as `skipped`, then `success` or `failure`; the
-first failed child returns its exact status and later steps remain skipped.
-
-Callers own script extraction, action substitutes, selected order, environment,
-assertions, log destinations and retention. This is a shell fixture executor,
-not an evaluator of GitHub expressions or proof of hosted action behavior.
-Select the helper as its own snapshot entrypoint; it has no shared dependencies.
-
 `scripts/ci/extract-workflow-step.sh STEPS_JSON STEP_ID` emits the selected run
 body from one JSON array of workflow steps. It requires exactly one matching
 object with a nonblank string `run` and no `uses`. Missing/duplicate selections,

@@ -10,9 +10,6 @@
 - Replay retained baseline and hook logs when formatting adoption fails,
   preserving the original status and scratch inputs. Consumers can delegate
   diagnostics without wrapping the checker in a second fixture lifecycle.
-- Share ordered shell fixture execution, per-step logs and exported outcomes.
-  Preserve the first failure status and skip subsequent steps; callers retain
-  workflow policy, action substitutes, assertions and evidence custody.
 
 ### Fixed
 
