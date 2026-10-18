@@ -57,10 +57,10 @@ for target in fmt fmt-check; do
     : > "$FORMAT_TEST_EVENTS"
     PATH=/usr/bin:/bin make --no-print-directory -C "$consumer" "$target" > "$fixture/$target.log" 2>&1
     if [[ "$target" == fmt ]]; then
-        printf 'sort --workspace\nfmt --all\n' > "$fixture/expected"
+        printf 'sort --workspace --grouped\nfmt --all\n' > "$fixture/expected"
         printf 'Formatting... ok\n' > "$fixture/expected-output"
     else
-        printf 'sort --workspace --check\nfmt --all -- --check\n' > "$fixture/expected"
+        printf 'sort --workspace --grouped --check\nfmt --all -- --check\n' > "$fixture/expected"
         printf 'Checking formatting... ok\n' > "$fixture/expected-output"
     fi
     cmp "$fixture/expected" "$FORMAT_TEST_EVENTS"
@@ -83,8 +83,8 @@ for target in help fmt fmt-check; do
         fi
         case "$target" in
             help) : > "$fixture/expected" ;;
-            fmt) printf 'sort --workspace\nfmt --all\n' > "$fixture/expected" ;;
-            fmt-check) printf 'sort --workspace --check\nfmt --all -- --check\n' > "$fixture/expected" ;;
+            fmt) printf 'sort --workspace --grouped\nfmt --all\n' > "$fixture/expected" ;;
+            fmt-check) printf 'sort --workspace --grouped --check\nfmt --all -- --check\n' > "$fixture/expected" ;;
         esac
         cmp "$fixture/expected" "$FORMAT_TEST_EVENTS"
     done
@@ -95,11 +95,11 @@ for failure in wrong missing sort; do
     case "$failure" in
         wrong) export FORMAT_TEST_VERSION=0.0.0 ;;
         missing) mv "$consumer/.tools/rust/common/bin/format-fixture-cargo" "$fixture/cargo" ;;
-        sort) export FORMAT_TEST_FAIL='sort --workspace' ;;
+        sort) export FORMAT_TEST_FAIL='sort --workspace --grouped' ;;
     esac
     if PATH=/usr/bin:/bin make --no-print-directory -C "$consumer" fmt > "$fixture/$failure.log" 2>&1; then exit 1; fi
     if [[ "$failure" == sort ]]; then
-        printf 'sort --workspace\n' > "$fixture/expected"
+        printf 'sort --workspace --grouped\n' > "$fixture/expected"
         cmp "$fixture/expected" "$FORMAT_TEST_EVENTS"
         grep -Fx 'Formatting... FAILED (exit 1)' "$fixture/$failure.log"
         logs=("$fixture"/formatting.*)

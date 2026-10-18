@@ -1,5 +1,43 @@
 # Changelog
 
+## [0.24.1]
+
+### Added
+
+- Share exact validation and prepared-file receipts with atomic replacement.
+  Consumers retain selected files, trusted state custody and release policy
+  ([#278 — Share release validation and prepared receipt mechanics](https://github.com/dragginzgame/shared-tooling/issues/278)).
+- Share prepared-package provenance checks and saved-source member context.
+  Require exact source identities and one parser observation per selected member;
+  retain failure evidence without taking over package eligibility or publication.
+
+### Changed
+
+- Replay retained formatting-adoption logs on failure without an outer consumer
+  fixture, preserving the original status and evidence custody.
+- Permit fixture scratch beneath its source only when the complete copy plan
+  preserves every selected input; reject source/output collisions, including
+  hard-linked aliases, before copying.
+- Preserve dependency sections in the default Cargo formatter and check command.
+  Consumers can remove paired overrides that only repeat grouped sorting and
+  rustfmt; adapters for additional formatting steps remain consumer-owned.
+
+### Fixed
+
+- Point exported capability-map links at their Shared owner rather than a
+  consumer-owned README ([#284 — Keep exported capability-map links at Shared](https://github.com/dragginzgame/shared-tooling/issues/284)).
+- Check current dependency declarations after unstaged tracked deletions without
+  changing the consumer index. Keep dangling symlinks and failed filesystem
+  observations as refusals, including inaccessible or non-directory parents
+  ([#271 — Dependency pin checker rejects tracked manifest and workflow deletions](https://github.com/dragginzgame/shared-tooling/issues/271)).
+- Follow the common-tool setup action when qualifying CI cache ordering and
+  retained installer failure evidence, replacing stale inline-step assumptions.
+- Reject fixture outputs that hard-link to selected inputs or each other before
+  copying. Prepare checker-retention fixtures with their complete companion
+  closure so intended
+  child/assertion failures run and retain their evidence
+  ([#274 — Prepare script fixtures from their declared companion closure](https://github.com/dragginzgame/shared-tooling/issues/274)).
+
 ## [0.24.0]
 
 ### Breaking

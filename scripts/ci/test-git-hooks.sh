@@ -419,12 +419,24 @@ version = "0.0.0"
 edition = "2021"
 
 [workspace]
+
+[workspace.dependencies]
+# Production dependencies
+zeta = { package = "shared-format-fixture", path = "." }
+
+# Tests and tooling only
+alpha = { package = "shared-format-fixture", path = "." }
 CARGO
 mkdir -p src
 printf 'pub fn fixture( ){}\n' > src/lib.rs
 git add Makefile Cargo.toml src/lib.rs make/consumer.mk make/release.mk make/rust-format.mk make/execution.mk scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh
 bash .githooks/pre-commit > output
 [[ "$(git show :src/lib.rs)" == 'pub fn fixture() {}' ]] || exit 1
+awk '/^(alpha|zeta) =/ { print $1 }' Cargo.toml > observed-groups
+printf 'zeta\nalpha\n' > expected-groups
+cmp expected-groups observed-groups
+grep -Fx '# Production dependencies' Cargo.toml > /dev/null
+grep -Fx '# Tests and tooling only' Cargo.toml > /dev/null
 cp .git/index "$FIXTURE/newline-index"
 cp src/lib.rs "$FIXTURE/newline-source"
 CDPATH="$FIXTURE" bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$PWD" src/lib.rs Cargo.toml --no-dependency-tables \
@@ -577,7 +589,12 @@ CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0 bash .githooks/pre-commit > output
 # Exercise the adoption helper with this consumer's real Cargo targets, including
 # inherited Make/Git identities that must not redirect the disposable checkout.
 mkdir -p .tools/host/bin
-printf '#!/usr/bin/env bash\nexit 0\n' > .tools/host/bin/hook-fixture-prerequisite
+cat > .tools/host/bin/hook-fixture-prerequisite <<'PREREQUISITE'
+#!/usr/bin/env bash
+# Model an expected formatter rejection whose retained log belongs to adoption.
+bash scripts/ci/run-formatting.sh --check bash -c 'echo retained-formatter-log; exit 43' > /dev/null
+[[ $? == 43 ]]
+PREREQUISITE
 chmod +x .tools/host/bin/hook-fixture-prerequisite
 cat >> Makefile <<'MAKE'
 .PHONY: local-tools
@@ -604,6 +621,8 @@ GIT_INDEX_FILE="$FIXTURE/incorrect-index" MAKEFLAGS='--just-print' \
 # alpha has no dependency tables; qualify the same real formatter without
 # inventing dependencies or weakening manifest/index preservation checks.
 mkdir "$FIXTURE/adoption-temp"
+mkdir "$FIXTURE/adoption-runner-temp"
+printf 'parent evidence\n' > "$FIXTURE/adoption-runner-temp/sentinel"
 ln -s "$FIXTURE/adoption-temp" "$FIXTURE/adoption-temp-alias"
 temp_parent="$(cd -P "$FIXTURE/adoption-temp" && printf '%s/.' "$PWD")"
 temp_parent="${temp_parent%/.}"
@@ -616,26 +635,47 @@ for spelling in absolute relative alias; do
         relative) selected_tmp=adoption-temp ;;
         alias) selected_tmp=adoption-temp-alias ;;
     esac
-    (cd "$FIXTURE"; unset RUNNER_TEMP; TMPDIR="$selected_tmp" \
+    (cd "$FIXTURE"; RUNNER_TEMP="$FIXTURE/adoption-runner-temp" TMPDIR="$selected_tmp" \
         bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$consumer" alpha/src/lib.rs \
         alpha/Cargo.toml --no-dependency-tables "${overlays[@]}") \
         > "$FIXTURE/adoption-$spelling.log" 2>&1
     [[ -z "$(ls -A "$FIXTURE/adoption-temp")" ]] || exit 1
+    [[ "$(ls -A "$FIXTURE/adoption-runner-temp")" == sentinel ]] || exit 1
+    [[ "$(cat "$FIXTURE/adoption-runner-temp/sentinel")" == 'parent evidence' ]] || exit 1
 done
-# A genuine baseline failure still retains its checkout and diagnostic log under
-# that same physical parent, without modifying the consumer's source or index.
-printf '#!/usr/bin/env bash\necho fixture-prerequisite-failed >&2\nexit 23\n' > .tools/host/bin/hook-fixture-prerequisite
-if (cd "$FIXTURE"; unset RUNNER_TEMP; TMPDIR=adoption-temp-alias \
-    bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$consumer" alpha/src/lib.rs \
-    alpha/Cargo.toml --no-dependency-tables "${overlays[@]}") \
-    > "$FIXTURE/adoption-failure.log" 2>&1; then
-    echo 'formatting adoption accepted a failed prerequisite' >&2; exit 1
+# Baseline and hook failures replay their own logs, retain the same inputs and
+# preserve Make's status without modifying the consumer's source or index.
+for failure in base worktree; do
+    cat > .tools/host/bin/hook-fixture-prerequisite <<'PREREQUISITE'
+#!/usr/bin/env bash
+if [[ "${PWD##*/}" == "$ADOPTION_FAILURE_CASE" ]]; then
+    echo "fixture-$ADOPTION_FAILURE_CASE-stdout"
+    echo "fixture-$ADOPTION_FAILURE_CASE-stderr" >&2
+    printf 'fixture-formatter-detail\n' > "$(mktemp "$RUNNER_TEMP/formatting.XXXXXX")"
+    exit 23
 fi
-retained="$(sed -n 's/^Formatting adoption evidence retained: //p' "$FIXTURE/adoption-failure.log")"
-[[ "$retained" == "$temp_parent/"* && -s "$retained/baseline.log" ]] || exit 1
-grep -Fx fixture-prerequisite-failed "$retained/baseline.log" >/dev/null
-cmp .git/index "$FIXTURE/adoption-index"
-cmp alpha/src/lib.rs "$FIXTURE/adoption-source"
+PREREQUISITE
+    status=0
+    (cd "$FIXTURE"; unset RUNNER_TEMP; TMPDIR=adoption-temp-alias \
+        ADOPTION_FAILURE_CASE="$failure" \
+        bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$consumer" alpha/src/lib.rs \
+        alpha/Cargo.toml --no-dependency-tables "${overlays[@]}") \
+        > "$FIXTURE/adoption-failure.log" 2>&1 || status=$?
+    [[ "$status" == 2 ]] || { echo "unexpected adoption status: $status" >&2; exit 1; }
+    retained="$(sed -n 's/^Formatting adoption evidence retained: //p' "$FIXTURE/adoption-failure.log")"
+    [[ "$retained" == "$temp_parent/"* ]] || exit 1
+    case "$failure" in
+        base) diagnostic="$retained/baseline.log" ;;
+        worktree) diagnostic="$retained/refresh/.git/formatting.log" ;;
+    esac
+    for stream in stdout stderr; do
+        grep -Fx "fixture-$failure-$stream" "$diagnostic" >/dev/null
+        grep -Fx "fixture-$failure-$stream" "$FIXTURE/adoption-failure.log" >/dev/null
+    done
+    grep -Fx fixture-formatter-detail "$FIXTURE/adoption-failure.log" >/dev/null
+    cmp .git/index "$FIXTURE/adoption-index"
+    cmp alpha/src/lib.rs "$FIXTURE/adoption-source"
+done
 # Mixed frontend selection uses prepared tools but only snapshot file inputs.
 new_fixture frontend
 mkdir frontend

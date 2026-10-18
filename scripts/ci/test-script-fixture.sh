@@ -59,10 +59,47 @@ expect_refusal linked-dir/leaf
 mkdir "$destination/blocked"
 printf 'leaf\n' > "$source_root/blocked"
 expect_refusal blocked
-for overlap in "$source_root" "$source_root/docs"; do
+for overlap in "$source_root" "$fixture"; do
     if "$BASH" "$ROOT/scripts/ci/prepare-script-fixture.sh" "$source_root" "$overlap" keep > "$fixture/overlap.log" 2>&1; then exit 1; fi
 done
 cmp "$fixture/keep.before" "$destination/keep"
+# Consumer evidence directories may be beneath their source checkout. The
+# complete graph must still refuse source/output collisions before any copy.
+nested="$source_root/target/evidence"
+mkdir -p "$nested"
+"$BASH" "$ROOT/scripts/ci/prepare-script-fixture.sh" "$source_root" "$nested" scripts/root.sh
+for path in scripts/root.sh scripts/leaf.sh docs/graph.md; do cmp "$source_root/$path" "$nested/$path"; done
+cp "$fixture/keep.before" "$nested/keep"
+printf '#!/bin/sh\n# Shared companions: target/evidence/keep\n' > "$source_root/scripts/collision.sh"
+status=0
+"$BASH" "$ROOT/scripts/ci/prepare-script-fixture.sh" "$source_root" "$nested" keep scripts/collision.sh \
+    > "$fixture/overlap.log" 2>&1 || status=$?
+[[ "$status" == 2 && ! -e "$nested/scripts/collision.sh" && ! -e "$nested/target" ]]
+cmp "$fixture/keep.before" "$nested/keep"
+# Different output names can still alias a selected input through a hard link.
+# Refuse the complete plan before copying the earlier root over a companion.
+hardlinked="$fixture/hardlinked"
+mkdir "$hardlinked"
+cp "$source_root/scripts/leaf.sh" "$fixture/leaf.before"
+ln "$source_root/scripts/leaf.sh" "$hardlinked/keep"
+status=0
+"$BASH" "$ROOT/scripts/ci/prepare-script-fixture.sh" "$source_root" "$hardlinked" keep scripts/root.sh \
+    > "$fixture/hardlinked.log" 2>&1 || status=$?
+[[ "$status" == 2 && ! -e "$hardlinked/scripts" ]] || exit 1
+cmp "$fixture/leaf.before" "$source_root/scripts/leaf.sh"
+# Existing outputs may alias each other without aliasing the source. Copying
+# both would silently leave the earlier root with the later companion's bytes.
+aliased_outputs="$fixture/aliased-outputs"
+mkdir -p "$aliased_outputs/scripts"
+cp "$fixture/keep.before" "$aliased_outputs/keep"
+ln "$aliased_outputs/keep" "$aliased_outputs/scripts/leaf.sh"
+status=0
+"$BASH" "$ROOT/scripts/ci/prepare-script-fixture.sh" "$source_root" "$aliased_outputs" keep scripts/root.sh \
+    > "$fixture/aliased-outputs.log" 2>&1 || status=$?
+[[ "$status" == 2 && ! -e "$aliased_outputs/scripts/root.sh" && ! -e "$aliased_outputs/docs" ]] || exit 1
+cmp "$fixture/keep.before" "$aliased_outputs/keep"
+cmp "$fixture/keep.before" "$aliased_outputs/scripts/leaf.sh"
+cmp "$fixture/leaf.before" "$source_root/scripts/leaf.sh"
 # Static permission failures must refuse before an earlier valid overwrite.
 mkdir -p "$source_root/locked/child" "$destination/locked"
 printf 'leaf\n' > "$source_root/locked/child/leaf"

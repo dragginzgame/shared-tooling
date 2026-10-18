@@ -74,7 +74,7 @@ exit "${RECEIPT_RESULT:-0}"
 CHECK
 [[ "$(make -s -C "$consumer")" == 'consumer help' && ! -e "$MAKE_CONSUMER_EVENTS" ]]
 [[ "$(make -s -C "$consumer" fmt-check)" == 'Checking formatting... ok' ]]
-printf 'sort --workspace --check\nfmt --all -- --check\n' > "$fixture/expected"
+printf 'sort --workspace --grouped --check\nfmt --all -- --check\n' > "$fixture/expected"
 cmp "$fixture/expected" "$MAKE_CONSUMER_EVENTS"
 
 # Formatting follows the Rust catalog, including when the host catalog has no
