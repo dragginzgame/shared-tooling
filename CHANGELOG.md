@@ -11,6 +11,12 @@
   then retrieve that commit into a fresh Git store. Retain provenance evidence
   without packaging, uploading or selecting consumer eligibility and recovery.
 
+### Fixed
+
+- Align the hook fixture with Prettier's maintained `--ignore-unknown` invocation,
+  preserving selected-file and failure-isolation checks
+  ([PR #281 — Fix hook fixture Prettier argument admission](https://github.com/dragginzgame/shared-tooling/pull/281)).
+
 ## [0.23.0]
 
 ### Breaking
