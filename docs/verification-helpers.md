@@ -20,7 +20,7 @@ No files are removed or collected into a separate artifact.
 ## Cargo dependency-order fixtures
 
 ```bash
-perl scripts/ci/prepare-cargo-formatting-fixture.pl Cargo.toml workspace.dependencies candid ic-build > unsorted.toml
+perl scripts/ci/prepare-cargo-formatting-fixture.pl Cargo.toml workspace.dependencies ic-build ic-wire > unsorted.toml
 ```
 
 The helper accepts a caller-owned valid Cargo manifest and swaps exactly two

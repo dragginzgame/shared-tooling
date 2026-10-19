@@ -105,7 +105,8 @@ Apply inherited metadata to unpublished workspace members too. For every
 publishable package, inspect `cargo package --list --locked -p PACKAGE` and
 verify that the applicable license text and preserved notices are present.
 A root MIT declaration does not automatically include a root license outside
-the package directory; add an unchanged package-local copy where needed.
+the package directory; add an unchanged package-local regular file where needed,
+never a symlink to the root license. Preserve the complete terms and notices.
 Cargo can include the workspace-inherited `license-file` automatically, so
 check the actual file list before duplicating it. Repeat this focused check
 when changing package layout, include/exclude rules or licensing metadata.

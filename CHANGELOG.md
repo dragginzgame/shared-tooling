@@ -25,6 +25,12 @@
 
 ### Changed
 
+- Prohibit symlinks in maintained source and package assets, including licenses.
+  Keep narrowly admitted tool-store selection pointers and isolated rejection
+  fixtures; use regular package-local copies where needed.
+- Prefer IC Wire for supported controlled application messages. Require a concrete
+  reason for retained Candid use, and audit actual exports and codec consumers
+  across both protocols while preserving required interoperability.
 - Allow production and test/tooling package headers inside `workspace.members`,
   distinct from dependency-role headers in `workspace.dependencies`.
 - Require Clap for Rust CLI argument handling, using its existing parsing,

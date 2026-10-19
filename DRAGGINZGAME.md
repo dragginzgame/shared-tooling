@@ -117,6 +117,30 @@ Consumer choices described in those guides remain subject to this baseline.
 - Dependencies own their established contracts; do not reproduce them downstream.
   Libraries must not silently claim consumer endpoints or lifecycle ownership.
 
+## Repository files: no symlinks
+
+- **Do not create or commit symlinks for maintained repository files or
+  directories.** This includes source, manifests, documentation, scripts, shared
+  snapshots, license files and shipped package assets. Generated source and
+  package outputs follow the same rule; fix their generator when necessary.
+- Use explicit dependency/configuration paths or the canonical package interface.
+  When packaging needs a local file, use a regular copy and verify it against
+  its owner. In particular, package-local `LICENSE` files must be regular files
+  containing the applicable complete terms and notices, never symlinks.
+- The permitted repository-tooling uses are generated selection pointers owned
+  and admitted by Shared Tooling's verified executable store, and deliberately
+  created symlinks in isolated rejection/security fixtures. Keep these outside
+  maintained source and shipped package assets; they do not authorize general
+  file aliases, package-license links or links into sibling checkouts.
+- Operating-system/toolchain layouts and directory aliases outside the maintained
+  repository tree remain external inputs, subject to each tool's path admission.
+  This rule does not authorize deleting existing installations, evidence or link
+  targets. Replace an obsolete repository link without modifying its target.
+- Review tracked Git modes, working-tree paths and actual package file lists
+  when adopting the rule. A clean index alone does not prove generated or packaged
+  files comply. Any other repository-owned use needs a scoped maintainer-approved
+  exception under the baseline's local-authority rules.
+
 ## CLI applications
 
 - **Use Clap for Rust CLI applications**, including developer tools and maintained
@@ -131,6 +155,32 @@ Consumer choices described in those guides remain subject to this baseline.
   document that gap and keep domain semantics with their existing owner. Do not
   reimplement generic CLI mechanics behind wrappers or duplicate manual checks
   that Clap already enforces.
+
+## IC application encoding
+
+- **Prefer `ic-wire` over Candid for application messages we control**, including
+  owned canister RPC and frontend/client payloads, wherever its released codec
+  supports the required contract. Reuse its encoding, decoding and generated
+  TypeScript codecs rather than adding another application codec implementation.
+- Retain Candid only for a concrete interoperability requirement, such as an
+  external/standard interface or callers outside the coordinated migration, or a
+  documented capability gap in the qualified Wire release. Record that boundary
+  and reason; existing derives or a Candid-first example are not justification.
+  Required external Candid dependencies still follow the
+  [IC Platform boundary](rules/cargo-dependencies.md#external-ic-dependency-boundary).
+- Remove Candid derives, conversions and codec helpers from internal types when
+  no remaining Candid contract needs them. Do not wrap an unchanged Candid payload
+  in Wire merely to claim adoption. Storage layouts and canonical hash inputs
+  retain their owning contracts; a messaging preference does not replace them.
+- IC Wire owns codecs, resource admission and codec generation. Consumers retain
+  endpoint exports, transport, authentication, method identities, semantic
+  validation, rollback and retry policy. Qualify the selected released APIs and
+  both ends of the actual integration; codec conformance alone is not endpoint
+  qualification or evidence of instruction/size savings.
+- Changing existing message bytes requires an explicit consumer migration with
+  affected callers, generated bindings and retained retry bytes accounted for.
+  Follow the [pre-1.0 contract rules](#pre-10-contracts); do not silently change a
+  public interface or introduce parallel codecs/fallback readers for adoption.
 
 ## Complete, reviewable changes
 

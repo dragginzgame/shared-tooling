@@ -71,9 +71,15 @@ through renamed dependencies, generated code or proc-macro expansions.
   reason under the baseline's exception rules.
 - Product ownership stays with its Dragginzgame crate: for example, Memory/Storage
   own memory and storage policy, Testkit owns simulator lifecycle, and Wire owns
-  controlled application protocols. Platform owns the external dependency boundary;
+  application codecs and resource admission. Platform owns the external dependency boundary;
   this rule does not move those product implementations into Platform. General
   purpose dependencies such as Serde remain with their consuming crates.
+
+Apply the baseline's [IC application encoding policy](../DRAGGINZGAME.md#ic-application-encoding)
+before adding or retaining a Candid dependency or requesting another Platform
+Candid facade. Prefer `ic-wire` for supported controlled application messages;
+`ic-platform` is the dependency boundary for Candid that is still required,
+not a reason to retain otherwise unnecessary Candid use.
 
 ## Dependency roles and deployment checks
 
