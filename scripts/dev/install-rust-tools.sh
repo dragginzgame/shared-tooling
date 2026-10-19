@@ -3,6 +3,7 @@
 set -euo pipefail
 
 ROOT="$0"
+invocation_directory="$PWD"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
@@ -164,7 +165,10 @@ selected_receipt() {
           (if $profile == "debug" then (.profile == "dev" or .profile == "debug")
            else .profile == "release" end) and .target == $host and
           (.rustc | rtrimstr("\n")) == $compiler))
-    ' "$1/.crates2.json" > /dev/null
+    ' "$1/.crates2.json" > /dev/null || {
+        printf 'Cargo tool receipt does not match package/version, target, profile or compiler: %s\n' "$1/.crates2.json" >&2
+        return 1
+    }
 }
 
 selected_identity() {
@@ -177,16 +181,46 @@ selected_identity() {
 
 check_selected() {
     selected_paths "$destination" || return 1
-    [[ -x "$destination/bin/$target" ]] || return 1
-    jq -se --argjson expected "$inputs" 'length == 1 and .[0] == $expected' "$destination/inputs.json" > /dev/null || return 1
+    [[ -x "$destination/bin/$target" ]] || {
+        printf 'Cargo tool executable is missing or not executable: %s\n' "$destination/bin/$target" >&2
+        return 1
+    }
+    jq -se --argjson expected "$inputs" 'length == 1 and .[0] == $expected' "$destination/inputs.json" > /dev/null || {
+        printf 'Cargo tool build/source inputs differ or their receipt is invalid: %s\n' "$destination/inputs.json" >&2
+        return 1
+    }
     bash "$ROOT/scripts/ci/verify-file-checksum.sh" sha256 "$(jq -r .source_sha256 <<< "$inputs")" "$destination/source.crate" >&2 || return 1
     bash "$ROOT/scripts/ci/verify-file-checksum.sh" sha256 "$(jq -r .lock_sha256 <<< "$inputs")" "$destination/Cargo.lock" >&2 || return 1
     bash "$ROOT/scripts/ci/verify-file-checksum.sh" sha256 "$(jq -r .build.native <<< "$inputs")" "$destination/native-environment.txt" >&2 || return 1
     selected_receipt "$destination" || return 1
     local expected
     expected="$(selected_identity "$destination")" || return 1
-    jq -se --argjson expected "$expected" 'length == 1 and .[0] == $expected' "$destination/selection.json" > /dev/null || return 1
-    [[ "$selected" == true ]] || check_tool "$destination/bin/$target" "$target" "$selected_version"
+    jq -se --argjson expected "$expected" 'length == 1 and .[0] == $expected' "$destination/selection.json" > /dev/null || {
+        printf 'Cargo tool executable/receipt bytes differ or the selection receipt is invalid: %s\n' "$destination/selection.json" >&2
+        return 1
+    }
+    if [[ "$selected" != true ]]; then
+        check_tool "$destination/bin/$target" "$target" "$selected_version" || {
+            printf 'Cargo tool version probe failed or differs from %s: %s\n' "$selected_version" "$destination/bin/$target" >&2
+            return 1
+        }
+    fi
+}
+
+rust_setup_hint() {
+    local catalog="$versions_file"
+    [[ "$catalog" == /* ]] || catalog="$invocation_directory/$catalog"
+    {
+        printf 'Explicit setup: bash %q --consumer %q' "$ROOT/scripts/dev/install-rust-tools.sh" "$consumer"
+        if [[ "$selected" == true ]]; then
+            printf ' --package %q' "$package"
+            if [[ -n "$lockfile" ]]; then printf ' --lockfile %q' "$lockfile"
+            else printf ' --version %q' "$selected_version"; fi
+            printf ' --%s %q --profile %q\n' "$kind" "$target" "$profile"
+        else
+            printf ' --versions %q\n' "$catalog"
+        fi
+    } >&2
 }
 
 install_selected() (
@@ -212,7 +246,7 @@ install_selected() (
     trap finish_selected EXIT
     trap 'exit 130' INT
     trap 'exit 143' TERM
-    cargo_source || exit $?
+    cargo_source || { status=$?; rust_setup_hint; exit "$status"; }
     tool_store_init rust "$inputs" || exit $?
     tool_root="$install_root"
     active="$install_root/selected-$store_id"
@@ -230,8 +264,14 @@ install_selected() (
         fi
     elif [[ -e "$active" ]]; then
         echo "unmanaged Cargo tool selection: $active" >&2; exit 1
+    elif [[ "$check_only" == true ]]; then
+        printf 'No prepared Cargo tool selection for the current compiler/build inputs: %s\n' "$active" >&2
     fi
-    [[ "$check_only" == false ]] || { echo "missing or invalid shared Cargo tool: $package $selected_version ($kind:$target, $profile); run explicit setup" >&2; exit 1; }
+    [[ "$check_only" == false ]] || {
+        echo "missing or invalid shared Cargo tool: $package $selected_version ($kind:$target, $profile)" >&2
+        rust_setup_hint
+        exit 1
+    }
     mkdir -p "$install_root" || exit $?
     mkdir "$lock" || exit $?
     lock_owned=true

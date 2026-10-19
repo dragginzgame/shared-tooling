@@ -33,7 +33,9 @@ jobs:
           make --no-print-directory install-host-tools host-tools-check
           echo "$GITHUB_WORKSPACE/.tools/host/bin" >> "$GITHUB_PATH"
       - name: Qualify real registry binary installation
+        id: qualification
         run: |
+          bash scripts/dev/prepare-rust-toolchain.sh --toolchain-file rust-toolchain.toml
           mkdir -p "$RUNNER_TEMP/portable-fixtures"
           bash scripts/ci/qualify-cargo-install.sh "$RUNNER_TEMP/portable-fixtures/cargo-install" \
             2>&1 | tee "$RUNNER_TEMP/rust-tools-qualification.log"

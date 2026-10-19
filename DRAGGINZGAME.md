@@ -158,25 +158,30 @@ Consumer choices described in those guides remain subject to this baseline.
 
 ## IC application encoding
 
-- **Prefer `ic-wire` over Candid for application messages we control**, including
-  owned canister RPC and frontend/client payloads, wherever its released codec
-  supports the required contract. Reuse its encoding, decoding and generated
-  TypeScript codecs rather than adding another application codec implementation.
-- Retain Candid only for a concrete interoperability requirement, such as an
-  external/standard interface or callers outside the coordinated migration, or a
-  documented capability gap in the qualified Wire release. Record that boundary
-  and reason; existing derives or a Candid-first example are not justification.
-  Required external Candid dependencies still follow the
+- **Use `ic-wire` for all application endpoints we own**, including public
+  endpoints called by third parties, owned canister RPC and frontend/client
+  payloads. Caller location or endpoint visibility does not select the codec.
+  Reuse Wire's encoding, decoding and generated bindings.
+- Candid adapts independently defined interfaces that require it, such as
+  management/system canisters, NNS/SNS and ledger protocols. A third-party caller
+  of our application is not itself an external Candid protocol. Record the
+  required interface; existing derives or a Candid-first example are not reasons
+  to retain it. Required external Candid dependencies still follow the
   [IC Platform boundary](rules/cargo-dependencies.md#external-ic-dependency-boundary).
+- A missing released Wire capability requires an owning issue and qualification
+  before adoption, or an expressly approved scoped exception. Do not introduce
+  a local codec or a Candid fallback to bypass that work.
 - Remove Candid derives, conversions and codec helpers from internal types when
   no remaining Candid contract needs them. Do not wrap an unchanged Candid payload
   in Wire merely to claim adoption. Storage layouts and canonical hash inputs
-  retain their owning contracts; a messaging preference does not replace them.
+  retain their owning contracts. Existing persisted Candid checkpoint bytes are
+  a compatibility obligation, not permission for new Candid storage formats.
 - IC Wire owns codecs, resource admission and codec generation. Consumers retain
   endpoint exports, transport, authentication, method identities, semantic
   validation, rollback and retry policy. Qualify the selected released APIs and
-  both ends of the actual integration; codec conformance alone is not endpoint
-  qualification or evidence of instruction/size savings.
+  both ends of the actual integration, including zero-argument RPCs and lifecycle
+  argument decoding. Explicit codec hooks alone do not prove Wire framing or
+  binding conformance, endpoint behavior or instruction/size savings.
 - Changing existing message bytes requires an explicit consumer migration with
   affected callers, generated bindings and retained retry bytes accounted for.
   Follow the [pre-1.0 contract rules](#pre-10-contracts); do not silently change a
@@ -483,6 +488,10 @@ Consumer choices described in those guides remain subject to this baseline.
   verified tool downloads, and explicitly qualified sibling or moving inputs.
   Run the declaration checker in CI and release gates; consumers own the chosen
   versions, approved exceptions and runtime qualification evidence.
+- Follow the [upstream maintenance and recovery rules](rules/dependency-pinning.md#maintaining-upstream-code)
+  for imported runtime and cryptographic implementations. Preserve provenance,
+  review applicable fixes, and distinguish source availability from demonstrated
+  recovery. Product-specific pins, fixtures and recovery procedures stay local.
 - Use the [standard Rust workspace layout](rules/rust-workspaces.md): a virtual
   repository-root workspace, including single-package repositories. Maintained
   packages use `crates/<package-name>/` or application-owned `apps/<app-name>/`

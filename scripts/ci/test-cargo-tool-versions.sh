@@ -1,19 +1,14 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/dev/check-cargo-tool-versions.pl
+# Shared companions: scripts/dev/check-cargo-tool-versions.pl scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"; ROOT="${ROOT%/.}"
-fixture="$(mktemp -d "${TMPDIR:-/tmp}/cargo-version-test.XXXXXX")"
+# shellcheck source=scripts/ci/fixture-lifecycle.sh
+source "$ROOT/scripts/ci/fixture-lifecycle.sh"
+fixture="$(fixture_create "${TMPDIR:-/tmp}/cargo-version-test.XXXXXX")"
 fixture_complete=false
-finish() {
-    local status=$?
-    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
-    if [[ "$status" == 0 ]]; then rm -rf "$fixture"
-    else printf 'Cargo version fixture retained: %s\n' "$fixture" >&2; fi
-    exit "$status"
-}
-trap finish EXIT
+trap 'fixture_finish "$?" "$fixture" "Cargo version fixture retained"' EXIT
 export VERSION_FIXTURE="$fixture"
 mkdir -p "$fixture/bin" "$fixture/home" "$fixture/consumer/ci" "$fixture/consumer/.tools/rust/common/bin" "$fixture/bundle/bin" "$fixture/evidence"
 export TMPDIR="$fixture/evidence"

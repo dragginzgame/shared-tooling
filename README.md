@@ -631,12 +631,13 @@ Run the portable scripts' offline regression tests with the dependencies from
 the support matrix installed:
 
 ```bash
-bash scripts/ci/test-portable-tools.sh
+make test-portable
 ```
 
-The suite first checks its prepared tools and formatter prerequisites, reporting
-missing commands together before creating fixtures. Run only that offline check
-with `bash scripts/ci/check-portable-prerequisites.sh`; see
+Make supplies the admitted release editor and byte allowance. The suite first
+checks those inputs, prepared tools and formatter prerequisites, reporting
+missing commands together before creating fixtures. Direct callers of the suite
+or `scripts/ci/check-portable-prerequisites.sh` must supply the editor inputs; see
 [local setup](docs/local-setup.md) for explicit installation instructions.
 
 ### Snapshot distribution

@@ -31,6 +31,20 @@ release_tools() {
     fi
     "${RELEASE_MAKE:-make}" --no-print-directory tools-check
 }
+metadata_complete=false
+# shellcheck disable=SC2329 # Invoked by the EXIT traps after scratch allocation.
+finish_metadata() {
+    local status=$?
+    [[ "$metadata_complete" == true || "$status" != 0 ]] || status=1
+    if [[ "$status" == 0 ]]; then
+        rm -rf -- "$temporary" || status=$?
+        [[ ! -e "$temporary" && ! -L "$temporary" ]] || { [[ "$status" != 0 ]] || status=1; }
+    fi
+    if [[ "$status" != 0 ]]; then
+        printf 'Shared release metadata evidence retained: %s\n' "$temporary" >&2 || :
+    fi
+    exit "$status"
+}
 case "$operation" in
     version) version ;;
     preflight|prepare)
@@ -41,9 +55,14 @@ case "$operation" in
         # Git-owned scratch cannot become an unrelated untracked release input
         # if the process is killed before cleanup. VERSION is replaced last.
         temporary="$(mktemp -d "$(git rev-parse --git-dir)/release-metadata.XXXXXX")"
-        trap 'rm -rf "$temporary"' EXIT
-        cp -p CHANGELOG.md "$temporary/CHANGELOG.md"
-        finalize_notes CHANGELOG.md > "$temporary/CHANGELOG.md"
+        [[ "$temporary" == /* ]] || temporary="$PWD/$temporary"
+        trap finish_metadata EXIT
+        trap 'exit 130' INT
+        trap 'exit 143' TERM
+        mkdir "$temporary/original" "$temporary/candidate"
+        cp -p CHANGELOG.md VERSION "$temporary/original/"
+        cp -p "$temporary/original/CHANGELOG.md" "$temporary/candidate/CHANGELOG.md"
+        finalize_notes "$temporary/original/CHANGELOG.md" > "$temporary/candidate/CHANGELOG.md"
         if [[ "$operation" == preflight ]]; then
             # The runner saves intent before preparation and calls preflight
             # again when reconciling that phase. Never install during that check
@@ -54,7 +73,7 @@ case "$operation" in
             fi
             tool_phase=check
             if [[ ! -e "$state/$RELEASE_VERSION.plan" && ! -L "$state/$RELEASE_VERSION.plan" ]]; then
-                if cmp -s CHANGELOG.md "$temporary/CHANGELOG.md"; then :; else
+                if cmp -s CHANGELOG.md "$temporary/candidate/CHANGELOG.md"; then :; else
                     comparison_status=$?
                     [[ "$comparison_status" == 1 ]] || {
                         echo 'cannot compare release notes before tool preparation' >&2
@@ -66,19 +85,27 @@ case "$operation" in
             release_tools "$tool_phase"
         fi
         if [[ "$operation" == prepare ]]; then
-            cp -p VERSION "$temporary/VERSION"
-            printf '%s\n' "${RELEASE_VERSION:?}" > "$temporary/VERSION"
-            version "$temporary/VERSION" > /dev/null
+            cp -p "$temporary/original/VERSION" "$temporary/candidate/VERSION"
+            printf '%s\n' "${RELEASE_VERSION:?}" > "$temporary/candidate/VERSION"
+            version "$temporary/candidate/VERSION" > /dev/null
+            # Publish separate copies so even a failed second rename retains
+            # both complete candidates as well as the pre-attempt originals.
+            cp -p "$temporary/candidate/CHANGELOG.md" "$temporary/CHANGELOG.md"
+            cp -p "$temporary/candidate/VERSION" "$temporary/VERSION"
             mv "$temporary/CHANGELOG.md" CHANGELOG.md
             # If interrupted here, the saved attempt can safely repeat preparation:
             # finalization accepts only these exact already-prepared notes.
             mv "$temporary/VERSION" VERSION
         fi
+        metadata_complete=true
         ;;
     check|commit-check|merged-preflight)
         bash "$SCRIPT_ROOT/scripts/ci/check-release-source.sh" --allow CHANGELOG.md --allow VERSION
         temporary="$(mktemp -d "${TMPDIR:-/tmp}/shared-release-metadata.XXXXXX")"
-        trap 'rm -rf "$temporary"' EXIT
+        [[ "$temporary" == /* ]] || temporary="$PWD/$temporary"
+        trap finish_metadata EXIT
+        trap 'exit 130' INT
+        trap 'exit 143' TERM
         notes=CHANGELOG.md
         selected_version=VERSION
         if [[ -n "${RELEASE_COMMIT:-}" ]]; then
@@ -104,6 +131,7 @@ case "$operation" in
                 git cat-file -e ":$path"
             done
         fi
+        metadata_complete=true
         ;;
     *) echo 'usage: metadata.sh version|preflight|prepare|check|commit-check|merged-preflight' >&2; exit 2 ;;
 esac

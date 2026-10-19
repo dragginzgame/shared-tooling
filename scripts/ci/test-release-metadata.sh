@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/release/metadata.sh
 set -euo pipefail
 
 # This independent fixture owns its Make selections and logger checkout.
@@ -9,17 +10,11 @@ ROOT="$0"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
-FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/release-metadata-test.XXXXXX")"
+# shellcheck source=scripts/ci/fixture-lifecycle.sh
+source "$ROOT/scripts/ci/fixture-lifecycle.sh"
+FIXTURE="$(fixture_create "${TMPDIR:-/tmp}/release-metadata-test.XXXXXX")"
 fixture_complete=false
-finish() {
-    local status=$?
-    # Bash 3.2 may report zero after nounset before assertions finish.
-    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
-    if [[ "$status" == 0 ]]; then rm -rf "$FIXTURE";
-    else echo "Release metadata fixtures retained: $FIXTURE" >&2; fi
-    exit "$status"
-}
-trap finish EXIT
+trap 'fixture_finish "$?" "$FIXTURE" "Release metadata fixtures retained"' EXIT
 
 # Reuse existing history; exercise real indexes and trees without new commits.
 git clone --quiet --shared --no-checkout "$ROOT" "$FIXTURE/repository"
@@ -139,6 +134,75 @@ if RELEASE_VERSION=0.2.0 bash "$ROOT/scripts/release/metadata.sh" preflight \
 fi
 cmp CHANGELOG.md "$FIXTURE/pending-notes"
 [[ ! -e .git/release-state ]] || exit 1
+# Exercise the real adapter's publication boundaries without release commits,
+# tags or tool setup. Failed attempts retain both snapshots; retry keeps them.
+mkdir "$FIXTURE/failure-bin"
+export METADATA_REAL_CP METADATA_REAL_MV METADATA_REAL_RM
+METADATA_REAL_CP="$(command -v cp)"
+METADATA_REAL_MV="$(command -v mv)"
+METADATA_REAL_RM="$(command -v rm)"
+cat > "$FIXTURE/failure-bin/cp" <<'STUB'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$METADATA_FAILURE" == stage && "$*" == *'/candidate/VERSION '* ]]; then exit 37; fi
+exec "$METADATA_REAL_CP" "$@"
+STUB
+cat > "$FIXTURE/failure-bin/mv" <<'STUB'
+#!/usr/bin/env bash
+set -euo pipefail
+case "$METADATA_FAILURE:${!#}" in
+    notes:CHANGELOG.md|version:VERSION) exit 37 ;;
+    signal:VERSION) kill -TERM "$PPID"; exit 0 ;;
+esac
+exec "$METADATA_REAL_MV" "$@"
+STUB
+cat > "$FIXTURE/failure-bin/rm" <<'STUB'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$METADATA_FAILURE" == cleanup && "${!#}" == */release-metadata.* ]]; then exit 41; fi
+exec "$METADATA_REAL_RM" "$@"
+STUB
+chmod +x "$FIXTURE/failure-bin/"*
+for failure in stage notes version signal cleanup; do
+    printf '0.1.0\n' > VERSION
+    cp "$FIXTURE/pending-notes" CHANGELOG.md
+    chmod 640 VERSION CHANGELOG.md
+    status=0
+    PATH="$FIXTURE/failure-bin:$PATH" METADATA_FAILURE="$failure" \
+        bash "$ROOT/scripts/release/metadata.sh" prepare > "$FIXTURE/$failure.log" 2>&1 || status=$?
+    expected=37
+    case "$failure" in signal) expected=143 ;; cleanup) expected=41 ;; esac
+    [[ "$status" == "$expected" ]] || exit 1
+    retained="$(sed -n 's/^Shared release metadata evidence retained: //p' "$FIXTURE/$failure.log")"
+    [[ "$retained" == "$PWD/.git/release-metadata."* && -d "$retained" ]] || exit 1
+    cmp "$FIXTURE/pending-notes" "$retained/original/CHANGELOG.md"
+    [[ "$(cat "$retained/original/VERSION")" == 0.1.0 &&
+       "$(cat "$retained/candidate/VERSION")" == 0.1.1 ]] || exit 1
+    rg -Fx '## [0.1.1] - 2026-10-06' "$retained/candidate/CHANGELOG.md" > /dev/null
+    case "$failure" in
+        stage|notes) cmp "$FIXTURE/pending-notes" CHANGELOG.md ;;
+        *) cmp "$retained/candidate/CHANGELOG.md" CHANGELOG.md ;;
+    esac
+    live_version=0.1.0
+    [[ "$failure" != cleanup ]] || live_version=0.1.1
+    [[ "$(cat VERSION)" == "$live_version" ]] || exit 1
+    perl -e 'for (@ARGV) { ((stat $_)[2] & 0777) == 0640 or die "metadata mode changed: $_\n" }' \
+        VERSION CHANGELOG.md "$retained/original/VERSION" "$retained/original/CHANGELOG.md" \
+        "$retained/candidate/VERSION" "$retained/candidate/CHANGELOG.md"
+    cp -R "$retained" "$FIXTURE/saved-$failure"
+    find .git -maxdepth 1 -name 'release-metadata.*' | LC_ALL=C sort > "$FIXTURE/before-retry"
+    if [[ "$failure" != cleanup ]]; then
+        bash "$ROOT/scripts/release/metadata.sh" preflight
+        bash "$ROOT/scripts/release/metadata.sh" prepare
+    fi
+    bash "$ROOT/scripts/release/metadata.sh" check
+    find .git -maxdepth 1 -name 'release-metadata.*' | LC_ALL=C sort > "$FIXTURE/after-retry"
+    cmp "$FIXTURE/before-retry" "$FIXTURE/after-retry"
+    diff -r "$FIXTURE/saved-$failure" "$retained"
+    [[ "$(cat VERSION)" == 0.1.1 ]] || exit 1
+done
+printf '0.1.0\n' > VERSION
+cp "$FIXTURE/pending-notes" CHANGELOG.md
 bash "$ROOT/scripts/release/metadata.sh" preflight
 bash "$ROOT/scripts/release/metadata.sh" prepare
 [[ "$(bash "$ROOT/scripts/release/metadata.sh" version)" == 0.1.1 ]] || exit 1

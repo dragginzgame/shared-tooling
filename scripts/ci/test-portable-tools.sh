@@ -67,6 +67,7 @@ run_fixture test-release-editor-setup.sh bash "$ROOT/scripts/ci/test-release-edi
 run_fixture test-type-docs.pl perl "$ROOT/scripts/ci/test-type-docs.pl"
 run_fixture test-ci-change-selection.pl perl "$ROOT/scripts/ci/test-ci-change-selection.pl"
 run_fixture test-rust-toolchains.sh bash "$ROOT/scripts/ci/test-rust-toolchains.sh"
+run_fixture test-shared-toolchain.sh bash "$ROOT/scripts/ci/test-shared-toolchain.sh"
 run_fixture test-runtime-panic-qualification.sh bash "$ROOT/scripts/ci/test-runtime-panic-qualification.sh"
 run_fixture test-cargo-install-qualification.sh bash "$ROOT/scripts/ci/test-cargo-install-qualification.sh"
 run_fixture test-evidence-archive.sh bash "$ROOT/scripts/ci/test-evidence-archive.sh"

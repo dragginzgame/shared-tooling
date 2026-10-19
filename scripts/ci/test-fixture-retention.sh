@@ -28,7 +28,7 @@ done
 printf '#!/bin/sh\nexit 99\n' > "$fixture/exit-input/prefix-checker"
 chmod +x "$fixture/exit-input/prefix-checker"
 export RETENTION_EXIT_PATH="$fixture/exit-path"
-for name in format-tools tool-commands rust-tools release-runner host-tools ic-tools fixture-retention snapshot-verifier runtime-panics prepare-common-tools check-formatting-hooks installers evidence-download; do
+for name in format-tools tool-commands rust-tools release-runner host-tools ic-tools fixture-retention snapshot-verifier runtime-panics prepare-common-tools check-formatting-hooks installers evidence-download cargo-tool-versions release-metadata cargo-release-metadata; do
     source="$ROOT/scripts/ci/test-$name.sh"
     probe_args=()
     if [[ "$name" == check-formatting-hooks ]]; then
@@ -38,12 +38,17 @@ for name in format-tools tool-commands rust-tools release-runner host-tools ic-t
     FIXTURE_PROBE_DIRECTORY_VARIABLE=fixture
     [[ "$name" != release-runner ]] || FIXTURE_PROBE_DIRECTORY_VARIABLE=FIXTURE_ROOT
     [[ "$name" != installers ]] || FIXTURE_PROBE_DIRECTORY_VARIABLE=FIXTURE
+    [[ "$name" != release-metadata ]] || FIXTURE_PROBE_DIRECTORY_VARIABLE=FIXTURE
     if [[ "$name" == runtime-panics ]]; then
         FIXTURE_PROBE_DIRECTORY_VARIABLE=scratch
         probe_args=("$fixture/exit-input/prefix-checker")
     fi
     export FIXTURE_PROBE_DIRECTORY_VARIABLE
     fixture_probe_exits "$source" "$fixture" "$ROOT" "$name" ${probe_args[@]+"${probe_args[@]}"} || exit 1
+    case "$name" in
+        cargo-tool-versions|release-metadata|cargo-release-metadata)
+            grep -F "$fixture_probe_retained" "$fixture/$name-cleanup-failure.log" > /dev/null ;;
+    esac
     if [[ "$name" == ic-tools ]]; then
         grep -F 'IC fixture cleanup started:' "$fixture/$name-cleanup-failure.log" > /dev/null
         grep -E 'IC fixture cleanup finished: [0-9]+s, status 37' "$fixture/$name-cleanup-failure.log" > /dev/null
@@ -344,7 +349,10 @@ set -- "$fixture/cloc"/shared-tooling-cloc-test.*
 [[ $# == 1 && -f "$1/Cargo.toml" && -f "$1/crates/alpha/src/lib.rs" ]] || exit 1
 
 status=0
+printf '#!/bin/sh\nexit 99\n' > "$fixture/portable/editor"
+chmod +x "$fixture/portable/editor"
 TMPDIR="$fixture/portable" PATH="$fixture/bin:$PATH" \
+    CARGO_RELEASE_METADATA_EDITOR="$fixture/portable/editor" CARGO_RELEASE_METADATA_MAX_BYTES=1 \
     "$BASH" "$ROOT/scripts/ci/test-portable-tools.sh" > "$fixture/portable.log" 2>&1 || status=$?
 [[ "$status" == 24 ]] || exit 1
 set -- "$fixture/portable"/shared-tooling-test.*

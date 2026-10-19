@@ -2,6 +2,15 @@
 
 ## [0.25.1]
 
+### Changed
+
+- Require Wire for owned application endpoints, including public and third-party
+  callers. Reserve Candid for required independent protocols and existing
+  checkpoint compatibility; qualify actual frames and bindings during migration.
+- Clarify maintenance of imported runtime and cryptographic code: preserve
+  provenance, review applicable upstream fixes and qualify intentional source
+  changes. Require isolated recovery evidence before claiming build independence.
+
 ### Fixed
 
 - Prepare Shared's selected tools during admitted fresh release preflight and
@@ -9,6 +18,18 @@
   checks offline, with setup failures stopping before validation or version writes.
 - Retain Perl fixture inputs when setup crashes, execution ends early or cleanup
   fails, preserving the original failure status and diagnostic evidence.
+- Preserve Shared release-preparation originals and candidates on failure while
+  keeping VERSION-last replacement and retry behavior. Report retained evidence
+  when scratch cleanup fails.
+- Use shared lifecycle handling in Cargo freshness and release-metadata fixtures
+  so cleanup failures identify retained inputs and preserve their failure status.
+- Pin Shared's own development compiler and prepare it before CI computes Cargo
+  cache identity or builds tools, preserving the runtime scanner's separate floor.
+- Refuse missing or malformed release-editor inputs before portable fixtures
+  start. Use `make test-portable` to supply the admitted editor and byte allowance.
+- Explain Cargo-tool admission failures with the rejected source or receipt path
+  and an explicit setup command retaining the requested selection. Rerun setup
+  after adopting the updated build-helper policy; prior generations stay retained.
 
 ## [0.25.0]
 

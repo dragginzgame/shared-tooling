@@ -12,6 +12,10 @@ fixture="${fixture%/.}"
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Prerequisite fixtures retained"' EXIT
+# Own these inputs instead of borrowing an enclosing suite's admitted editor.
+printf '#!/bin/sh\necho editor-must-not-execute >&2\nexit 97\n' > "$fixture/editor"
+chmod +x "$fixture/editor"
+export CARGO_RELEASE_METADATA_EDITOR="$fixture/editor" CARGO_RELEASE_METADATA_MAX_BYTES=1
 mkdir "$fixture/missing" "$fixture/formatter"
 ln -s "$BASH" "$fixture/missing/bash"
 ln -s "$(command -v dirname)" "$fixture/missing/dirname"
@@ -55,5 +59,48 @@ status=0
 PATH="$fixture/module:$PATH" bash "$ROOT/scripts/ci/check-portable-prerequisites.sh" > "$fixture/module.log" 2>&1 || status=$?
 [[ "$status" == 1 ]] || exit 1
 grep -F 'Portable tests require Perl Archive::Tar' "$fixture/module.log"
+# Complete prerequisite admission before suite allocation, including missing or
+# malformed editor inputs. The selected executable must never be probed here.
+mkdir "$fixture/ready" "$fixture/ready-bin"
+cat > "$fixture/ready-bin/cargo" <<'SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+case "$*" in
+    'sort --version') printf 'cargo-sort %s\n' "$PREREQUISITE_SORT_VERSION" ;;
+    'fmt --version') printf 'rustfmt fixture\n' ;;
+    *) exit 91 ;;
+esac
+SCRIPT
+chmod +x "$fixture/ready-bin/cargo"
+cp "$fixture/missing/mktemp" "$fixture/ready-bin/mktemp"
+record="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" rust "$ROOT/ci/tool-versions.env" CARGO_SORT)"
+IFS=$'\t' read -r _ PREREQUISITE_SORT_VERSION _ _ <<< "$record"
+export PREREQUISITE_SORT_VERSION
+for mode in missing-editor relative missing-file directory non-executable newline carriage-return missing-limit zero invalid success; do (
+    case "$mode" in
+        missing-editor) unset CARGO_RELEASE_METADATA_EDITOR ;;
+        relative) CARGO_RELEASE_METADATA_EDITOR=editor ;;
+        missing-file) CARGO_RELEASE_METADATA_EDITOR="$fixture/absent" ;;
+        directory) CARGO_RELEASE_METADATA_EDITOR="$fixture/ready" ;;
+        non-executable) CARGO_RELEASE_METADATA_EDITOR="$fixture/module.log" ;;
+        newline) CARGO_RELEASE_METADATA_EDITOR="$fixture/editor"$'\n' ;;
+        carriage-return) CARGO_RELEASE_METADATA_EDITOR="$fixture/editor"$'\r' ;;
+        missing-limit) unset CARGO_RELEASE_METADATA_MAX_BYTES ;;
+        zero) CARGO_RELEASE_METADATA_MAX_BYTES=0 ;;
+        invalid) CARGO_RELEASE_METADATA_MAX_BYTES=1.5 ;;
+    esac
+    status=0
+    entrypoint=test-portable-tools.sh
+    [[ "$mode" != success ]] || entrypoint=check-portable-prerequisites.sh
+    PATH="$fixture/ready-bin:$PATH" bash "$ROOT/scripts/ci/$entrypoint" \
+        > "$fixture/$mode.log" 2>&1 || status=$?
+    if [[ "$mode" == success ]]; then [[ "$status" == 0 ]] || exit 1
+    else
+        [[ "$status" == 1 ]] || exit 1
+        grep -F 'run make test-portable' "$fixture/$mode.log" >/dev/null
+    fi
+    if grep -F editor-must-not-execute "$fixture/$mode.log"; then exit 1; fi
+    if grep -F 'fixture started' "$fixture/$mode.log"; then exit 1; fi
+); done
 echo 'Portable prerequisite early-refusal tests passed'
 fixture_complete=true

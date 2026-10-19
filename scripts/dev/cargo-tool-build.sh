@@ -129,8 +129,17 @@ cargo_source() {
             "$package@$selected_version" --registry crates-io ${offline_args[@]+"${offline_args[@]}"}) >&2 || return $?
         archives=("$cargo_cache"/registry/cache/index.crates.io-*/"$package-$selected_version.crate")
     fi
-    [[ ${#archives[@]} == 1 && -f "${archives[0]}" && ! -L "${archives[0]}" ]] || {
-        echo "missing or ambiguous Cargo tool source: $package $selected_version; run explicit setup" >&2; return 1;
+    if [[ ${#archives[@]} == 0 ]]; then
+        printf 'Cargo tool source is missing from %s: %s %s\n' "$cargo_cache/registry/cache" "$package" "$selected_version" >&2
+        return 1
+    elif [[ ${#archives[@]} != 1 ]]; then
+        printf 'Cargo tool source is ambiguous for %s %s; cached archives:\n' "$package" "$selected_version" >&2
+        printf '  %q\n' "${archives[@]}" >&2
+        return 1
+    fi
+    [[ -f "${archives[0]}" && ! -L "${archives[0]}" ]] || {
+        printf 'Cargo tool source must be a regular non-symlink archive: %s\n' "${archives[0]}" >&2
+        return 1
     }
     source_archive="${archives[0]}"
     local parent="${source_archive%/*}"

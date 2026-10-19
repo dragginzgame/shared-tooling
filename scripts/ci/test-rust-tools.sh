@@ -192,6 +192,8 @@ cd "$consumer"
 common --preflight
 [[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
 refuse common --check
+printf 'Explicit setup: bash %q --consumer %q --versions %q\n' "$installer" "$consumer" "$fixture/versions" > "$fixture/expected-hint"
+grep -Fx -f "$fixture/expected-hint" "$fixture/refused.log" >/dev/null
 [[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
 # Admit the complete default group before probing the compiler or touching tools.
 for value in '' '01.2.3' '1.2.3-beta.1'; do
@@ -503,6 +505,41 @@ extension_path="$(CARGO_NET_OFFLINE=true bash "$installer" --consumer "$fixture/
    "$(perl -MCwd=abs_path -e 'print abs_path(shift)' "$path")" ]] || exit 1
 rm "$fixture/no-info"
 physical="$(perl -MCwd=abs_path -e 'print abs_path(shift)' "$path")"; bundle="${physical%/bin/*}"
+# Refused offline admission has no stdout, probes, fetches or builds. Name the
+# missing/competing source paths instead of collapsing them into invalid tools.
+archive="$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-1.2.3.crate"
+(umask 077; mkdir "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-other")
+for source_failure in missing ambiguous; do
+    if [[ "$source_failure" == missing ]]; then mv "$archive" "$fixture/held-source"
+    else cp "$archive" "${archive/index.crates.io-fixture/index.crates.io-other}"; fi
+    status=0
+    bash "$installer" "${selected_args[@]}" --check > "$fixture/admission.out" 2> "$fixture/admission.err" || status=$?
+    [[ "$status" == 1 && ! -s "$fixture/admission.out" && ! -s "$fixture/probes" &&
+       "$(wc -l < "$fixture/builds")" == "$builds_before" ]] || exit 1
+    grep -F "Cargo tool source is $source_failure" "$fixture/admission.err" >/dev/null
+    if [[ "$source_failure" == missing ]]; then mv "$fixture/held-source" "$archive"
+    else
+        for registry in index.crates.io-fixture index.crates.io-other; do
+            printf '  %q\n' "${archive/index.crates.io-fixture/$registry}" > "$fixture/expected-source"
+            grep -Fx -f "$fixture/expected-source" "$fixture/admission.err" >/dev/null
+        done
+        rm "${archive/index.crates.io-fixture/index.crates.io-other}"
+    fi
+done
+rmdir "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-other"
+# Lock-selected repair advice retains the lock selection, including spaces,
+# rather than substituting a resolved version or emitting an unsafe command.
+mkdir "$fixture/hint checkout"
+printf 'version = 3\n[[package]]\nname = "sample"\nversion = "1.2.3"\nsource = "registry+https://github.com/rust-lang/crates.io-index"\n' > "$fixture/hint checkout/selection lock"
+refuse bash "$installer" --consumer "$fixture/hint checkout" --package sample --lockfile 'selection lock' --example prepare --profile debug --check
+printf 'Explicit setup: bash %q --consumer %q --package sample --lockfile %q --example prepare --profile debug\n' \
+    "$installer" "$fixture/hint checkout" "$fixture/hint checkout/selection lock" > "$fixture/expected-hint"
+grep -Fx -f "$fixture/expected-hint" "$fixture/refused.log" >/dev/null
+grep -F 'No prepared Cargo tool selection for the current compiler/build inputs:' "$fixture/refused.log" >/dev/null
+chmod -x "$physical"
+refuse bash "$installer" "${selected_args[@]}" --check
+grep -Fx "Cargo tool executable is missing or not executable: $physical" "$fixture/refused.log" >/dev/null
+chmod +x "$physical"
 # Missing source must preserve Cargo's status through both installer call shapes,
 # without a build, retry, activation or loss of previously retained evidence.
 sed 's/SHARED_TOOLING_CARGO_SORT_VERSION=.*/SHARED_TOOLING_CARGO_SORT_VERSION=99.9.9/' "$fixture/versions" > "$fixture/missing-source-versions"
@@ -539,6 +576,17 @@ for field in bin/prepare .crates2.json inputs.json selection.json source.crate C
     printf '\nchanged\n' >> "$bundle/$field"
     refuse bash "$installer" "${selected_args[@]}" --check
     [[ ! -s "$fixture/probes" ]] || exit 1
+    case "$field" in
+        bin/prepare|selection.json) reason='Cargo tool executable/receipt bytes differ or the selection receipt is invalid:'; receipt=selection.json ;;
+        .crates2.json) reason='Cargo tool receipt does not match package/version, target, profile or compiler:'; receipt="$field" ;;
+        inputs.json) reason='Cargo tool build/source inputs differ or their receipt is invalid:'; receipt="$field" ;;
+        *) reason='checksum mismatch for'; receipt="$field" ;;
+    esac
+    grep -F "$reason" "$fixture/refused.log" >/dev/null
+    grep -F "$bundle/$receipt" "$fixture/refused.log" >/dev/null
+    printf 'Explicit setup: bash %q --consumer %q --package sample --version 1.2.3 --example prepare --profile debug\n' \
+        "$installer" "$consumer" > "$fixture/expected-hint"
+    grep -Fx -f "$fixture/expected-hint" "$fixture/refused.log" >/dev/null
     cp "$fixture/saved" "$bundle/$field"
 done
 # A different kind/profile cannot reuse the example selection.
@@ -549,6 +597,7 @@ for field in version_req target profile rustc; do
     digest="$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$bundle/.crates2.json")"
     jq --arg digest "$digest" '.receipt_sha256=$digest' "$fixture/selection" > "$bundle/selection.json"
     refuse bash "$installer" "${selected_args[@]}" --check
+    grep -Fx "Cargo tool receipt does not match package/version, target, profile or compiler: $bundle/.crates2.json" "$fixture/refused.log" >/dev/null
 done
 cp "$fixture/receipt" "$bundle/.crates2.json"
 cp "$fixture/selection" "$bundle/selection.json"

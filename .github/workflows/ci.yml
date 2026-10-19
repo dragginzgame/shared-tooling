@@ -135,6 +135,7 @@ jobs:
           make --no-print-directory install-host-tools
           make --no-print-directory host-tools-check
           export PATH="$GITHUB_WORKSPACE/.tools/host/bin:$PATH"
+          bash scripts/dev/prepare-rust-toolchain.sh --toolchain-file rust-toolchain.toml
           bash scripts/ci/cargo-tool-cache-key.sh ci/tool-versions.env >> "$GITHUB_OUTPUT"
       - name: Restore Cargo tool builds
         if: needs.change-scope.outputs.scope != 'docs'

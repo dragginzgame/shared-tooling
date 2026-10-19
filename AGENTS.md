@@ -6,6 +6,11 @@ overlay. Consumers adopt the baseline and keep their own `AGENTS.md`.
 
 ## Validation in Shared Tooling
 
+Shared's own compiler is pinned in `rust-toolchain.toml`. Prepare it explicitly
+as described in [local setup](docs/local-setup.md#shared-toolings-own-compiler)
+before installing Cargo tools. Consumer compiler policy remains locally owned;
+the runtime scanner's separate minimum-compiler qualification is unchanged.
+
 The baseline's [validation and evidence policy](DRAGGINZGAME.md#validation-and-evidence)
 owns when to run checks. This overlay identifies the local checks only.
 

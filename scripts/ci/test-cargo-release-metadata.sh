@@ -1,20 +1,15 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/cargo-release-metadata.sh
+# Shared companions: scripts/ci/cargo-release-metadata.sh scripts/ci/fixture-lifecycle.sh
 set -Eeuo pipefail
 ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
-fixture="$(mktemp -d "${TMPDIR:-/tmp}/cargo-release-metadata-test.XXXXXX")"
-complete=false
-finish() {
-    local status=$?
-    [[ "$complete" == true || "$status" != 0 ]] || status=1
-    if [[ "$status" == 0 ]]; then rm -rf "$fixture"
-    else printf 'failed Cargo metadata fixture retained: %s\n' "$fixture" >&2; fi
-    exit "$status"
-}
-trap finish EXIT
+# shellcheck source=scripts/ci/fixture-lifecycle.sh
+source "$ROOT/scripts/ci/fixture-lifecycle.sh"
+fixture="$(fixture_create "${TMPDIR:-/tmp}/cargo-release-metadata-test.XXXXXX")"
+fixture_complete=false
+trap 'fixture_finish "$?" "$fixture" "failed Cargo metadata fixture retained"' EXIT
 REAL_CARGO="$(command -v cargo)"
 export REAL_CARGO
 REAL_CP="$(command -v cp)"
@@ -491,4 +486,4 @@ for mode in mixed-version resolved-primary-version stale-primary stale-secondary
     [[ ! -e "$root/CHANGELOG.md" ]] || exit 1
 done
 echo 'Cargo metadata preparation, restoration, workspace admission and selected-commit checks passed (selected IC Build editor; no manifest mutation tools).'
-complete=true
+fixture_complete=true
