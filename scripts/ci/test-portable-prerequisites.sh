@@ -42,5 +42,18 @@ PATH="$fixture/formatter:$PATH" bash "$ROOT/scripts/ci/check-portable-prerequisi
 [[ "$status" == 1 ]] || exit 1
 grep -F 'Formatting requires prepared cargo-sort' "$fixture/formatter.log"
 grep -F 'no tools were installed' "$fixture/formatter.log"
+mkdir "$fixture/module"
+PREREQUISITE_REAL_PERL="$(command -v perl)"
+export PREREQUISITE_REAL_PERL
+cat > "$fixture/module/perl" <<'SCRIPT'
+#!/usr/bin/env bash
+if [[ "${1:-}" == -MArchive::Tar ]]; then exit 37; fi
+exec "$PREREQUISITE_REAL_PERL" "$@"
+SCRIPT
+chmod +x "$fixture/module/perl"
+status=0
+PATH="$fixture/module:$PATH" bash "$ROOT/scripts/ci/check-portable-prerequisites.sh" > "$fixture/module.log" 2>&1 || status=$?
+[[ "$status" == 1 ]] || exit 1
+grep -F 'Portable tests require Perl Archive::Tar' "$fixture/module.log"
 echo 'Portable prerequisite early-refusal tests passed'
 fixture_complete=true

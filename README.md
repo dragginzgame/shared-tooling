@@ -137,6 +137,11 @@ independent checks and recovery; see
 
 ## Current tools
 
+Shared's own integration fixtures prepare the IC Build editor through
+`make install-tools` and admit it through `make tools-check`. `make test-portable`
+selects that verified executable before fixture dispatch; see the
+[Shared-local setup](docs/local-setup.md#shared-toolings-integration-editor).
+
 ### Local IC executables
 
 Use `make install-tools` for the common host and Cargo toolsets,

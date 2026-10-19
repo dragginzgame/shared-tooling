@@ -134,6 +134,34 @@ and whitespace. It rejects altered, missing or additional terms and undeclared
 appendices. It does not establish ownership, legal enforceability, completeness
 of copyright attribution, Cargo metadata consistency or deployment compliance.
 
+### Prepared package archives
+
+Check each explicitly selected prepared `.crate` before publication, using that
+package's admitted license file as the byte reference:
+
+```sh
+perl scripts/ci/check-license.pl --kind mit --file LICENSE \
+  --archive target/package/example-0.1.0.crate --member example-0.1.0/LICENSE
+```
+
+Both source and archive must be regular non-symlink files. `--archive` and
+`--member` are paired; the member is an exact canonical archive path, including
+the package/version directory. The complete source terms and optional prior-MIT
+appendix are checked as above, then exactly one regular license entry must match
+the source bytes, including notices, wrapping and final newlines. Select the
+package-local reference instead when its complete applicable notices differ.
+
+The read-only check validates gzip integrity and parses tar records through
+Perl's `Archive::Tar`, retaining only the selected license payload. It refuses
+missing/duplicate licenses, changed bytes, malformed archives, escaping paths
+and symlink/hardlink or special-file members. It never extracts or publishes,
+and leaves failed archives and inputs intact. `gzip` and `Archive::Tar` must be
+prepared explicitly; Shared's portable prerequisites check the Perl module.
+
+Consumers keep package selection and their publication gate. This does not
+establish archive source provenance, registry availability or that every required
+notice was selected; pair it with the existing source/package qualification.
+
 For offline consumer CI, adopt `scripts/ci/check-license.pl` as an entrypoint
 through the [reviewed snapshot workflow](consuming-snapshots.md). Its companion
 declaration includes MIT, both versioned Dragginz texts and the prior-material

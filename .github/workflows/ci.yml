@@ -75,6 +75,7 @@ jobs:
         run: |
           "$SHELLCHECK_BIN" scripts/ci/*.sh scripts/dev/*.sh scripts/distribution/*.sh scripts/release/*.sh .githooks/pre-commit
           "$ACTIONLINT_BIN" .github/workflows/*.yml
+          make check-no-symlinks
           make check-pins
           make check-doc-links
       - name: Qualify independent downloaded-evidence readers
@@ -147,7 +148,7 @@ jobs:
           path: |
             ${{ steps.tool-cache-key.outputs.root }}/cargo-cache
             ${{ steps.tool-cache-key.outputs.root }}/rust-*
-          key: cargo-tools-${{ runner.os }}-${{ runner.arch }}-${{ steps.tool-cache-key.outputs.key }}
+          key: cargo-tools-${{ runner.os }}-${{ runner.arch }}-${{ steps.tool-cache-key.outputs.key }}-${{ hashFiles('Makefile') }}
       - name: Prepare and check the complete common toolset
         if: needs.change-scope.outputs.scope != 'docs'
         uses: ./.github/actions/prepare-common-tools
@@ -206,7 +207,7 @@ jobs:
           path: |
             ${{ steps.tool-cache-key.outputs.root }}/cargo-cache
             ${{ steps.tool-cache-key.outputs.root }}/rust-*
-          key: cargo-tools-${{ runner.os }}-${{ runner.arch }}-${{ steps.tool-cache-key.outputs.key }}
+          key: cargo-tools-${{ runner.os }}-${{ runner.arch }}-${{ steps.tool-cache-key.outputs.key }}-${{ hashFiles('Makefile') }}
       - name: Select the frontend fixture runtime
         if: needs.change-scope.outputs.scope != 'docs'
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -226,18 +227,8 @@ jobs:
         if: needs.change-scope.outputs.scope != 'docs'
         id: runtime-scanner
         run: bash scripts/ci/qualify-runtime-panics.sh 1.88.0 "$RUNNER_TEMP/portable-fixtures/runtime-scanner"
-      - name: Prepare the published Cargo release editor for integration fixtures
-        if: needs.change-scope.outputs.scope != 'docs'
-        run: |
-          editor="$(bash scripts/dev/install-rust-tools.sh --package ic-build --version 0.18.0 \
-            --bin ic-build-release-metadata --profile debug)"
-          bash scripts/dev/install-rust-tools.sh --package ic-build --version 0.18.0 \
-            --bin ic-build-release-metadata --profile debug --check
-          {
-            echo "CARGO_RELEASE_METADATA_EDITOR=$editor"
-            echo "CARGO_RELEASE_METADATA_MAX_BYTES=8388608"
-          } >> "$GITHUB_ENV"
       - name: Run portable regression set with prepared tools
+        id: portable-tests
         if: needs.change-scope.outputs.scope != 'docs'
         shell: bash
         env:
@@ -245,7 +236,7 @@ jobs:
         run: |
           mkdir -p "$TMPDIR"
           bash --version | head -n 1
-          bash scripts/ci/test-portable-tools.sh 2>&1 | tee "$RUNNER_TEMP/portable-regression.log"
+          make test-portable 2>&1 | tee "$RUNNER_TEMP/portable-regression.log"
       - name: Qualify the real frontend formatter and Rust hook
         if: needs.change-scope.outputs.scope != 'docs'
         env:

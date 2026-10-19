@@ -4,9 +4,11 @@
 
 ### Breaking
 
+- License admission requires regular non-symlink source files. Replace license
+  aliases with complete regular copies before checking source or package archives.
 - Delegate Cargo manifest and lock candidate rendering to released IC Build.
-  Release callers must explicitly prepare its editor, pass its absolute path and
-  select a positive input byte allowance. The standalone Perl editors
+  Cargo adapters must supply the prepared editor's absolute path and a positive
+  input byte allowance to the renderer. The standalone Perl editors
   `render-cargo-workspace-version.pl` and `rewrite-local-lock-versions.pl` are
   removed; direct callers must adopt the owner command. See
   [Cargo candidate rendering](docs/releases.md#cargo-release-candidate-rendering)
@@ -14,6 +16,12 @@
 
 ### Added
 
+- Check indexed and tracked/nonignored working paths for repository symlinks,
+  including dangling links and redirected parent directories. Shared CI and
+  release validation run this check without following targets or changing Git state.
+- Verify licenses inside explicitly selected prepared Cargo archives against
+  canonical terms and the source's exact bytes. Refuse missing, duplicate, linked
+  or altered entries and corrupt archives without extraction or publication.
 - Share selected Cargo graph checks for canonical package identities, optional
   identity caps and forbidden dependency-feature edges. Consumers keep their
   roots, targets, feature selections and policy; failed or malformed Cargo
@@ -38,6 +46,12 @@
 
 ### Fixed
 
+- Require release adapters to select admitted tool paths themselves, preserving
+  the one-shot release commands without per-shell environment exports. Keep
+  fresh setup after source admission and recovery bound to saved selections.
+- Prepare Shared's required release editor through local setup and use the same
+  offline-admitted selection in Make and CI. Missing tools stop before fixture
+  dispatch; consumers retain their own release-tool choices.
 - Prepare governance snapshot fixtures from their complete companion closure,
   so exported guides retain newly linked documentation without extra roots.
 

@@ -7,8 +7,14 @@ CLOC_ROOT = $(CLOC_PARENT)
 CLOC_PARENT ?= $(CURDIR)/..
 SHARED_TOOLING_RUST := 0
 # Shared qualifies IC executable provisioning and retained-tool integrity.
-LOCAL_TOOL_INSTALL_TARGETS += install-ic-tools
-LOCAL_TOOL_CHECK_TARGETS += ic-tools-check
+LOCAL_TOOL_INSTALL_TARGETS += install-ic-tools install-release-editor
+LOCAL_TOOL_CHECK_TARGETS += ic-tools-check release-editor-check
+# Shared's own integration fixtures use this optional product tool. Consumers
+# retain their release-tool selections; it is not part of the common Cargo set.
+RELEASE_EDITOR_VERSION := 0.18.0
+RELEASE_EDITOR_MAX_BYTES := 8388608
+RELEASE_EDITOR_COMMAND = bash "$(CURDIR)/scripts/dev/install-rust-tools.sh" --consumer "$(CURDIR)" \
+    --package ic-build --version "$(RELEASE_EDITOR_VERSION)" --bin ic-build-release-metadata --profile debug
 export PATH := $(CURDIR)/.tools/ic/bin:$(PATH)
 include make/consumer.mk
 
@@ -16,17 +22,19 @@ include make/consumer.mk
         release-version release-preflight release-verify \
         release-prepare-version release-prepared-check release-files \
         release-commit-check release-committed-check release-tagged-check release-push-check \
-        release-merged-preflight check-cargo-tool-versions check-tool-catalogs test-licenses cloc-tooling
+        release-merged-preflight check-cargo-tool-versions check-tool-catalogs test-licenses cloc-tooling \
+        install-release-editor release-editor-check check-no-symlinks
 
 help:
 	@echo "Current local version: make version"
 	@echo "Repeatable maintenance catalog: make tasks"
 	@echo "Sibling Rust LOC summaries: make cloc [CLOC_PARENT=/path/to/projects]"
 	@echo "Sibling CI/tooling inventory: make cloc-tooling [CLOC_PARENT=/path/to/projects]"
-	@echo "Focused: affected script fixtures, check-pins, check-doc-links, check-release-commands"
+	@echo "Focused: affected script fixtures, check-no-symlinks, check-pins, check-doc-links, check-release-commands"
 	@echo "Local IC executables: install-ic-tools; offline verification: ic-tools-check"
 	@echo "Complete common host, IC and Rust toolset: install-tools; offline verification: tools-check"
 	@echo "Pinned Cargo tools: install-rust-tools; offline verification: rust-tools-check"
+	@echo "Shared integration editor: install-release-editor; offline verification: release-editor-check"
 	@echo "Cargo tool freshness (online, read-only): check-cargo-tool-versions"
 	@echo "Caller catalog agreement (offline, opt-in): check-tool-catalogs TOOL_CATALOG_BINDINGS=path"
 	@echo "Full release/explicit-check gates: ci, test-portable, check-shell"
@@ -43,6 +51,15 @@ cloc-tooling:
 test-licenses:
 	perl scripts/ci/test-license.pl
 
+install-release-editor:
+	+@$(RELEASE_EDITOR_COMMAND)
+
+release-editor-check:
+	+@$(RELEASE_EDITOR_COMMAND) --check
+
+check-no-symlinks:
+	@perl scripts/ci/check-no-symlinks.pl --consumer "$(CURDIR)"
+
 check-cargo-tool-versions:
 	@perl scripts/dev/check-cargo-tool-versions.pl --versions "$(RUST_TOOL_VERSIONS)"
 
@@ -55,7 +72,9 @@ check-shell:
 	$(SHELLCHECK) scripts/ci/*.sh scripts/dev/*.sh scripts/distribution/*.sh scripts/release/*.sh .githooks/pre-commit
 
 test-portable:
-	bash scripts/ci/test-portable-tools.sh
+	+@editor="$$($(RELEASE_EDITOR_COMMAND) --check)" || exit $$?; \
+		CARGO_RELEASE_METADATA_EDITOR="$$editor" CARGO_RELEASE_METADATA_MAX_BYTES="$(RELEASE_EDITOR_MAX_BYTES)" \
+		bash scripts/ci/test-portable-tools.sh
 
 check-pins:
 	bash scripts/ci/check-dependency-pins.sh --npm-root ci/frontend \
@@ -69,7 +88,7 @@ check-release-commands:
 	bash scripts/ci/check-release-commands.sh . make/consumer.mk
 
 ci:
-	+@bash scripts/ci/run-validation-targets.sh --fail-fast check-shell check-pins check-doc-links test-portable
+	+@bash scripts/ci/run-validation-targets.sh --fail-fast check-no-symlinks check-shell check-pins check-doc-links test-portable
 
 version release-version:
 	@bash scripts/release/metadata.sh version

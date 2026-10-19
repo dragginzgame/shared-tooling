@@ -370,7 +370,7 @@ jq -e --arg save_condition "\${{ needs.change-scope.outputs.scope != 'docs' && (
   map(select(.value.uses? | strings | startswith("actions/cache/save@"))) as $save |
   map(select(.value.uses == "./.github/actions/prepare-common-tools")) as $setup |
   map(select(.value.run? | strings | contains("CARGO_NET_OFFLINE=true bash scripts/dev/install-rust-tools.sh"))) as $reuse |
-  map(select(.value.run? | strings | contains("bash scripts/ci/test-portable-tools.sh"))) as $gate |
+  map(select(.value.id == "portable-tests")) as $gate |
   ($restore | length) == 1 and ($save | length) == 1 and
   ($setup | length) == 1 and ($reuse | length) == 1 and ($gate | length) == 1 and
   $restore[0].key < $setup[0].key and $setup[0].key < $reuse[0].key and
@@ -386,7 +386,7 @@ jq -e --arg save_condition "\${{ needs.change-scope.outputs.scope != 'docs' && (
 # A failed regression gate must still fail the job and reach failure collection.
 jq -e '
   .jobs["portable-regression"] as $job |
-  [$job.steps[] | select(.run? | strings | contains("bash scripts/ci/test-portable-tools.sh"))] as $gate |
+  [$job.steps[] | select(.id == "portable-tests")] as $gate |
   ($gate | length) == 1 and
   $gate[0]["continue-on-error"] != true
 ' "$fixture/workflow.json" > /dev/null

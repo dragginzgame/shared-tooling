@@ -19,6 +19,11 @@ if [[ "$missing" == 1 ]]; then
     echo 'See docs/local-setup.md: install bootstrap packages, prepare local host tools and select their bin directory on PATH.' >&2
     exit 1
 fi
+# Prepared archive-license qualification uses the maintained Perl tar parser.
+if ! perl -MArchive::Tar -e 'exit 0'; then
+    echo 'Portable tests require Perl Archive::Tar; install the documented system Perl modules.' >&2
+    exit 1
+fi
 # Reuse the exact formatter pin and offline toolchain admission owner.
 record="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" rust "$ROOT/ci/tool-versions.env" CARGO_SORT)"
 IFS=$'\t' read -r _ sort_version _ _ <<< "$record"
