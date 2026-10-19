@@ -26,6 +26,15 @@ git clone --quiet --shared --no-checkout "$ROOT" "$FIXTURE/repository"
 cd "$FIXTURE/repository"
 git read-tree HEAD
 git checkout-index --all
+# Metadata qualification does not install real tools. Setup/check routing through
+# the real Makefile and runner is covered by test-release-editor-setup.sh.
+cat > "$FIXTURE/tool-make" <<'MAKE'
+#!/usr/bin/env bash
+set -euo pipefail
+[[ "$*" == '--no-print-directory tools-check' ]] || exit 91
+MAKE
+chmod +x "$FIXTURE/tool-make"
+export RELEASE_MAKE="$FIXTURE/tool-make"
 export RELEASE_PREVIOUS=0.1.0 RELEASE_VERSION=0.1.1 RELEASE_DATE=2026-10-06
 export RELEASE_COMMIT=''
 printf '0.1.0\n' > VERSION

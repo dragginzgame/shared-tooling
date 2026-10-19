@@ -18,6 +18,10 @@ RELEASE_EDITOR_COMMAND = bash "$(CURDIR)/scripts/dev/install-rust-tools.sh" --co
 export PATH := $(CURDIR)/.tools/ic/bin:$(PATH)
 include make/consumer.mk
 
+# Only the standard release request authorizes tool preparation. Standalone
+# metadata/check commands remain offline; the adapter consumes this selection.
+release-patch release-minor release-major release-resume: export SHARED_RELEASE_PREPARE_TOOLS := 1
+
 .PHONY: help tasks version check-shell check-pins check-doc-links check-release-commands test-portable ci \
         release-version release-preflight release-verify \
         release-prepare-version release-prepared-check release-files \
@@ -94,10 +98,11 @@ version release-version:
 	@bash scripts/release/metadata.sh version
 
 release-preflight:
-	@bash scripts/release/metadata.sh preflight
+	+@bash scripts/release/metadata.sh preflight
 
 release-verify:
-	+VALIDATION_FAILURE_LOG_DIR="$$(git rev-parse --git-path release-state)/validation-failures" \
+	+@unset SHARED_RELEASE_PREPARE_TOOLS; \
+		VALIDATION_FAILURE_LOG_DIR="$$(git rev-parse --git-path release-state)/validation-failures" \
 		bash scripts/ci/run-validation-targets.sh ci
 
 release-prepare-version:
@@ -116,4 +121,4 @@ release-committed-check release-tagged-check release-push-check:
 	@bash scripts/release/metadata.sh check
 
 release-merged-preflight:
-	@bash scripts/release/metadata.sh check
+	+@bash scripts/release/metadata.sh merged-preflight

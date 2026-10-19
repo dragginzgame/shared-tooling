@@ -8,6 +8,9 @@ SCRIPT_ROOT="${SCRIPT_ROOT%/.}"
 
 operation="${1:-}"
 [[ $# -eq 1 ]] || exit 2
+prepare_tools="${SHARED_RELEASE_PREPARE_TOOLS:-0}"
+unset SHARED_RELEASE_PREPARE_TOOLS
+[[ "$prepare_tools" == 0 || "$prepare_tools" == 1 ]] || exit 2
 version() {
     local file="${1:-VERSION}" value
     [[ -f "$file" && ! -L "$file" ]] || { echo "missing regular version file: $file" >&2; return 1; }
@@ -22,6 +25,12 @@ finalize_notes() {
         -v date="${RELEASE_DATE:?}" -v allow_finalized=1 \
         -f "$SCRIPT_ROOT/scripts/ci/finalize-release-changelog.awk" "$1"
 }
+release_tools() {
+    if [[ "$1" == fresh && "$prepare_tools" == 1 ]]; then
+        "${RELEASE_MAKE:-make}" --no-print-directory install-tools || return "$?"
+    fi
+    "${RELEASE_MAKE:-make}" --no-print-directory tools-check
+}
 case "$operation" in
     version) version ;;
     preflight|prepare)
@@ -35,6 +44,27 @@ case "$operation" in
         trap 'rm -rf "$temporary"' EXIT
         cp -p CHANGELOG.md "$temporary/CHANGELOG.md"
         finalize_notes CHANGELOG.md > "$temporary/CHANGELOG.md"
+        if [[ "$operation" == preflight ]]; then
+            # The runner saves intent before preparation and calls preflight
+            # again when reconciling that phase. Never install during that check
+            # or after an interrupted notes replacement, even with an old VERSION.
+            state="$(git rev-parse --git-path release-state)"
+            if [[ "${RELEASE_DELIVERY:-direct}" == pr ]]; then
+                state="$(git rev-parse --git-common-dir)/release-state"
+            fi
+            tool_phase=check
+            if [[ ! -e "$state/$RELEASE_VERSION.plan" && ! -L "$state/$RELEASE_VERSION.plan" ]]; then
+                if cmp -s CHANGELOG.md "$temporary/CHANGELOG.md"; then :; else
+                    comparison_status=$?
+                    [[ "$comparison_status" == 1 ]] || {
+                        echo 'cannot compare release notes before tool preparation' >&2
+                        exit "$comparison_status"
+                    }
+                    tool_phase=fresh
+                fi
+            fi
+            release_tools "$tool_phase"
+        fi
         if [[ "$operation" == prepare ]]; then
             cp -p VERSION "$temporary/VERSION"
             printf '%s\n' "${RELEASE_VERSION:?}" > "$temporary/VERSION"
@@ -45,7 +75,7 @@ case "$operation" in
             mv "$temporary/VERSION" VERSION
         fi
         ;;
-    check|commit-check)
+    check|commit-check|merged-preflight)
         bash "$SCRIPT_ROOT/scripts/ci/check-release-source.sh" --allow CHANGELOG.md --allow VERSION
         temporary="$(mktemp -d "${TMPDIR:-/tmp}/shared-release-metadata.XXXXXX")"
         trap 'rm -rf "$temporary"' EXIT
@@ -62,6 +92,11 @@ case "$operation" in
         [[ "$observed_version" == "${RELEASE_VERSION:?}" ]] || exit 1
         finalize_notes "$notes" > "$temporary/finalized"
         cmp -s "$notes" "$temporary/finalized"
+        if [[ "$operation" == merged-preflight ]]; then
+            observed_commit="$(git rev-parse --verify HEAD)"
+            [[ "$observed_commit" == "${RELEASE_COMMIT:?}" ]] || exit 1
+            release_tools fresh
+        fi
         if [[ "$operation" == commit-check ]]; then
             # Both index entries must contain the exact prepared metadata.
             git diff --quiet -- CHANGELOG.md VERSION
@@ -70,5 +105,5 @@ case "$operation" in
             done
         fi
         ;;
-    *) echo 'usage: metadata.sh version|preflight|prepare|check|commit-check' >&2; exit 2 ;;
+    *) echo 'usage: metadata.sh version|preflight|prepare|check|commit-check|merged-preflight' >&2; exit 2 ;;
 esac

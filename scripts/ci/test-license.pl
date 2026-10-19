@@ -12,11 +12,23 @@ use IO::Compress::Gzip qw(gzip $GzipError);
 
 my $root = "$FindBin::Bin/../..";
 my $fixture = tempdir('license-check.XXXXXX', TMPDIR => 1, CLEANUP => 0);
+my $complete = 0;
 END {
+    my $status = $?;
     if (defined $fixture) {
-        if (Test::More->builder->is_passing) { remove_tree($fixture); }
-        else { warn "License fixtures retained: $fixture\n"; }
+        if ($complete && $status == 0 && Test::More->builder->is_passing) {
+            my $errors;
+            remove_tree($fixture, {error => \$errors});
+            if (@$errors || -e $fixture || -l $fixture) {
+                warn "License fixture cleanup incomplete: $fixture\n";
+                $status = 1;
+            }
+        } else {
+            warn "License fixtures retained: $fixture\n";
+            $status ||= 1;
+        }
     }
+    $? = $status;
 }
 my $read = sub {
     open my $fh, '<', $_[0] or die $!;
@@ -165,3 +177,4 @@ is($check->('--kind', 'dragginz', '--prior-mit'), 0, 'relocated snapshot resolve
 $write->($mit);
 is($check->('--kind', 'mit'), 0, 'recovery after rejected inputs');
 done_testing();
+$complete = Test::More->builder->is_passing;

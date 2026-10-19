@@ -162,6 +162,13 @@ This editor is a Shared-local requirement, not an addition to every consumer's
 common Cargo tools. Consumer release adapters retain the explicit selections in
 [Cargo candidate rendering](releases.md#cargo-release-candidate-rendering).
 
+Shared's standard release commands prepare and check these tools after fresh
+source/changelog admission, before validation. Reconciliation of saved preparation
+and standalone `release-preflight` only check prepared tools; neither installs
+against interrupted metadata. PR delivery prepares the exact merged checkout's
+tools before its fresh validation. Ordinary metadata preparation and late checks
+do not install tools.
+
 ## Shared executable storage
 
 Shared Tooling owns storage for the common executable sets. Host and IC setup

@@ -62,6 +62,7 @@ run_fixture test-fixture-completion.sh bash "$ROOT/scripts/ci/test-fixture-compl
 run_fixture test-fixture-log-replay.sh bash "$ROOT/scripts/ci/test-fixture-log-replay.sh"
 run_fixture test-script-paths.sh bash "$ROOT/scripts/ci/test-script-paths.sh"
 run_fixture test-no-symlinks.pl perl "$ROOT/scripts/ci/test-no-symlinks.pl"
+run_fixture test-perl-fixture-retention.pl perl "$ROOT/scripts/ci/test-perl-fixture-retention.pl"
 run_fixture test-release-editor-setup.sh bash "$ROOT/scripts/ci/test-release-editor-setup.sh"
 run_fixture test-type-docs.pl perl "$ROOT/scripts/ci/test-type-docs.pl"
 run_fixture test-ci-change-selection.pl perl "$ROOT/scripts/ci/test-ci-change-selection.pl"

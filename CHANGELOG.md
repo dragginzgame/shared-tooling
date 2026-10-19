@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.25.1]
+
+### Fixed
+
+- Prepare Shared's selected tools during admitted fresh release preflight and
+  merged-source qualification. Keep saved preparation and standalone preflight
+  checks offline, with setup failures stopping before validation or version writes.
+- Retain Perl fixture inputs when setup crashes, execution ends early or cleanup
+  fails, preserving the original failure status and diagnostic evidence.
+
 ## [0.25.0]
 
 ### Breaking
