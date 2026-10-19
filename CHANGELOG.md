@@ -4,13 +4,13 @@
 
 ### Breaking
 
-- Delegate Cargo manifest and lock candidate rendering to published IC Build.
+- Delegate Cargo manifest and lock candidate rendering to released IC Build.
   Release callers must explicitly prepare its editor, pass its absolute path and
-  select a positive input byte allowance. The two standalone Perl editors are
-  removed (`render-cargo-workspace-version.pl` and `rewrite-local-lock-versions.pl`);
-  direct callers must adopt the owner command. See
+  select a positive input byte allowance. The standalone Perl editors
+  `render-cargo-workspace-version.pl` and `rewrite-local-lock-versions.pl` are
+  removed; direct callers must adopt the owner command. See
   [Cargo candidate rendering](docs/releases.md#cargo-release-candidate-rendering)
-  and [#273](https://github.com/dragginzgame/shared-tooling/issues/273).
+  and [#273 — Adopt released IC Build Cargo editor and retire Perl renderers](https://github.com/dragginzgame/shared-tooling/issues/273).
 
 ### Added
 
@@ -22,6 +22,11 @@
   timings, preserving the elapsed-time format and payload checks. This supports
   native investigation of
   [#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/shared-tooling/issues/219).
+
+### Changed
+
+- Require Clap for Rust CLI argument handling, using its existing parsing,
+  validation and help capabilities before adding custom CLI mechanics.
 
 ### Fixed
 

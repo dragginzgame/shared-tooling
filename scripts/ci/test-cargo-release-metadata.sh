@@ -256,10 +256,12 @@ if (cd "$root" && RELEASE_VERSION=1.3.0 bash "$helper" prepare primary) > "$fixt
     echo 'restrictive local range admitted' >&2; exit 1
 fi
 for file in Cargo.toml Cargo.lock CHANGELOG.md; do cmp "$root/$file" "$root/originals/$file"; done
-for mode in renderer-failure lock-renderer-failure install-failure check-failure interrupt literal-version unknown-local missing-member; do
+for mode in renderer-failure lock-renderer-failure input-limit install-failure check-failure interrupt literal-version unknown-local missing-member; do
     root="$fixture/$mode"
     make_workspace "$root"
+    allowance=8388608
     case "$mode" in
+        input-limit) allowance=1 ;;
         literal-version) sed 's/version.workspace = true/version = "1.2.3"/' "$root/secondary/Cargo.toml" > "$fixture/literal"; cp "$fixture/literal" "$root/secondary/Cargo.toml" ;;
         unknown-local) printf '\n[[package]]\nname = "outside"\nversion = "1.2.3"\n' >> "$root/Cargo.lock" ;;
         missing-member) mv "$root/secondary/Cargo.toml" "$root/secondary/retained.toml" ;;
@@ -267,10 +269,15 @@ for mode in renderer-failure lock-renderer-failure install-failure check-failure
     mkdir "$root/originals"
     for file in Cargo.toml Cargo.lock CHANGELOG.md; do cp -p "$root/$file" "$root/originals/$file"; done
     status=0
-    (cd "$root" && CASE="$mode" INSTALL_EVENTS="$root/install.events" bash "$helper" prepare primary) > "$fixture/$mode.log" 2>&1 || status=$?
+    (
+        cd "$root"
+        CASE="$mode" INSTALL_EVENTS="$root/install.events" CARGO_RELEASE_METADATA_MAX_BYTES="$allowance" \
+            bash "$helper" prepare primary
+    ) > "$fixture/$mode.log" 2>&1 || status=$?
     [[ "$status" != 0 ]] || { echo "metadata failure case accepted: $mode" >&2; exit 1; }
     case "$mode" in
         renderer-failure|lock-renderer-failure) [[ "$status" == 23 && ! -e "$root/install.events" ]] ;;
+        input-limit) [[ ! -e "$root/install.events" ]] ;;
         install-failure) [[ "$status" == 29 && -s "$root/install.events" ]] ;;
         interrupt) [[ "$status" == 143 ]] ;;
         check-failure) [[ "$status" == 25 ]] ;;
@@ -483,5 +490,5 @@ for mode in mixed-version resolved-primary-version stale-primary stale-secondary
     for file in Cargo.toml Cargo.lock; do cmp "$root/$file" "$root/$file.before"; done
     [[ ! -e "$root/CHANGELOG.md" ]] || exit 1
 done
-echo 'Cargo metadata preparation, restoration, workspace admission and selected-commit checks passed (literal rendering; no manifest mutation tools).'
+echo 'Cargo metadata preparation, restoration, workspace admission and selected-commit checks passed (selected IC Build editor; no manifest mutation tools).'
 complete=true
