@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/report-tool-versions.sh scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/report-tool-versions.sh scripts/ci/fixture-lifecycle.sh scripts/ci/prepare-script-fixture.sh
 set -euo pipefail
 root="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/tool-version-report.XXXXXX")"
@@ -8,11 +8,8 @@ fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Failed tool report fixture retained"' EXIT
 snapshot="$fixture/snapshot with spaces"
 consumer="$fixture/consumer with spaces"
-mkdir -p "$snapshot/scripts/ci" "$snapshot/scripts/dev" "$snapshot/ci" "$consumer"
-for file in report-tool-versions.sh tool-catalog-records.pl ic-tool-pins.awk verify-file-checksum.sh StableVersion.pm; do
-    cp "$root/scripts/ci/$file" "$snapshot/scripts/ci/"
-done
-cp "$root/ci/tool-versions.env" "$root/ci/ic-tools.tsv" "$snapshot/ci/"
+mkdir -p "$snapshot" "$consumer"
+bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$snapshot" scripts/ci/report-tool-versions.sh
 export REPORT_CONSUMER="$consumer" REPORT_EVENTS="$fixture/events" REPORT_FAILURE=''
 for kind in host rust ic; do
     mkdir -p "$consumer/$kind bin"

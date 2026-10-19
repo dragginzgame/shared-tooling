@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/dev/install-rust-tools.sh scripts/dev/cargo-tool-build.sh scripts/dev/tool-store.sh scripts/ci/cargo-tool-cache-key.sh scripts/ci/select-tool-evidence.sh scripts/ci/archive-evidence.sh .githooks/pre-commit
+# Shared companions: scripts/dev/install-rust-tools.sh scripts/dev/cargo-tool-build.sh scripts/dev/tool-store.sh scripts/ci/cargo-tool-cache-key.sh scripts/ci/select-tool-evidence.sh scripts/ci/archive-evidence.sh .githooks/pre-commit scripts/ci/prepare-script-fixture.sh
 set -euo pipefail
 path_context=false
 if [[ "${1:-}" == --path-context && $# == 1 ]]; then path_context=true;
@@ -228,11 +228,8 @@ if [[ "$path_context" == true ]]; then
 fi
 # The CI cache key shares the installer identity and performs no setup. Exercise
 # changes in a private copy so no production source is modified by qualification.
-mkdir -p "$fixture/cache-source/scripts/dev" "$fixture/cache-source/scripts/ci" "$fixture/cache-source/ci"
-for file in scripts/ci/cargo-tool-cache-key.sh scripts/ci/tool-catalog-records.pl scripts/ci/StableVersion.pm scripts/ci/verify-file-checksum.sh \
-    scripts/dev/cargo-tool-build.sh scripts/dev/tool-store.sh scripts/dev/install-rust-tools.sh; do
-    cp "$ROOT/$file" "$fixture/cache-source/$file"
-done
+mkdir "$fixture/cache-source"
+bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$fixture/cache-source" scripts/ci/cargo-tool-cache-key.sh
 cache_owner="$fixture/cache-source/scripts/ci/cargo-tool-cache-key.sh"
 cache_pins="$fixture/cache-source/ci/tool-versions.env"
 cp "$fixture/versions" "$cache_pins"
@@ -355,15 +352,7 @@ common
 )
 # A real staged hook uses these receipts without installing into its export.
 # Cargo/compiler binaries above are substitutes; receipt admission and Git are real.
-mkdir -p "$consumer/scripts/ci" "$consumer/scripts/dev" "$consumer/.githooks"
-cp "$ROOT/.githooks/pre-commit" "$consumer/.githooks/"
-for file in check-make-execution verify-file-checksum; do
-    cp "$ROOT/scripts/ci/$file.sh" "$consumer/scripts/ci/"
-done
-cp "$ROOT/scripts/ci/"{tool-catalog-records.pl,StableVersion.pm} "$consumer/scripts/ci/"
-for file in install-rust-tools cargo-tool-build tool-store; do
-    cp "$ROOT/scripts/dev/$file.sh" "$consumer/scripts/dev/"
-done
+bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$consumer" .githooks/pre-commit scripts/dev/install-rust-tools.sh
 cp "$fixture/versions" "$consumer/pins"
 printf '.tools/\n' > "$consumer/.gitignore"
 printf 'formatted\n' > "$consumer/selected.rs"
@@ -684,9 +673,8 @@ ln -s "$SHARED_TOOLING_STORE" "$fixture/store-link"
 SHARED_TOOLING_STORE="$fixture/store-link" refuse common --check
 # Change each build identity input after the substitute Cargo writes its receipt.
 # Mutate only disposable sources; the real admission, retention and activation run.
-mkdir -p "$fixture/tool-source/scripts/dev" "$fixture/tool-source/scripts/ci"
-cp "$ROOT/scripts/dev/"{install-rust-tools,cargo-tool-build,tool-store}.sh "$fixture/tool-source/scripts/dev/"
-cp "$ROOT/scripts/ci/"{verify-file-checksum.sh,tool-catalog-records.pl,StableVersion.pm} "$fixture/tool-source/scripts/ci/"
+mkdir "$fixture/tool-source"
+bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$fixture/tool-source" scripts/dev/install-rust-tools.sh
 cp "$fixture/compiler-version" "$fixture/original-compiler"
 before="$(readlink "$consumer/.tools/rust/common")"
 source_package cargo-sort 99.1.2

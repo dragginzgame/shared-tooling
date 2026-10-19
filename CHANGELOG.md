@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.25.2]
+
+### Fixed
+
+- Use the shared fixture lifecycle for remaining plain cleanup handlers, keeping
+  failed inputs and cleanup diagnostics consistent across metadata, registry,
+  Make, release and snapshot checks.
+- Prepare installer and tool-report fixtures from their entrypoints' declared
+  companions, so helper changes propagate without separate copied file lists.
+  Keep fixture-specific catalogs and effect substitutes explicit.
+
 ## [0.25.1]
 
 ### Changed

@@ -1,18 +1,13 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/check-release-delivery.sh scripts/ci/prepare-script-fixture.sh make/release.mk
+# Shared companions: scripts/ci/check-release-delivery.sh scripts/ci/prepare-script-fixture.sh make/release.mk scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 # Qualify common admission independently of any release runner or Git effects.
 root="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
-fixture="$(mktemp -d "${TMPDIR:-/tmp}/release-delivery.XXXXXX")"
-complete=false
-finish() {
-    local status=$?
-    [[ "$complete" == true || "$status" != 0 ]] || status=1
-    if [[ "$status" == 0 ]]; then rm -rf "$fixture"
-    else printf 'Release delivery fixture retained: %s\n' "$fixture" >&2; fi
-    exit "$status"
-}
-trap finish EXIT
+# shellcheck source=scripts/ci/fixture-lifecycle.sh
+source "$root/scripts/ci/fixture-lifecycle.sh"
+fixture="$(fixture_create "${TMPDIR:-/tmp}/release-delivery.XXXXXX")"
+fixture_complete=false
+trap 'fixture_finish "$?" "$fixture" "Release delivery fixture retained"' EXIT
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES RELEASE_DELIVERY RELEASE_DELIVERY_POLICY
 helper="$root/scripts/ci/check-release-delivery.sh"
 for allowed in direct pr both; do
@@ -96,5 +91,5 @@ rm "$fixture/consumer/scripts/ci/check-release-delivery.sh"
 : > "$fixture/consumer/events"
 if make --no-print-directory -C "$fixture/consumer" release-preflight "SHARED_TOOLING_ROOT=$fixture/unselected" > "$fixture/make.log" 2>&1; then exit 1; fi
 [[ ! -s "$fixture/consumer/events" ]] || exit 1
-complete=true
+fixture_complete=true
 echo 'Release delivery data, standalone admission and actual Make hook refusal passed'

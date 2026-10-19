@@ -28,7 +28,12 @@ done
 printf '#!/bin/sh\nexit 99\n' > "$fixture/exit-input/prefix-checker"
 chmod +x "$fixture/exit-input/prefix-checker"
 export RETENTION_EXIT_PATH="$fixture/exit-path"
-for name in format-tools tool-commands rust-tools release-runner host-tools ic-tools fixture-retention snapshot-verifier runtime-panics prepare-common-tools check-formatting-hooks installers evidence-download cargo-tool-versions release-metadata cargo-release-metadata; do
+for name in format-tools tool-commands rust-tools release-runner host-tools ic-tools \
+    fixture-retention snapshot-verifier runtime-panics prepare-common-tools \
+    check-formatting-hooks installers evidence-download cargo-tool-versions \
+    release-metadata cargo-release-metadata cargo-metadata rustsec-db \
+    evidence-checksums crates-io-version release-commands release-delivery \
+    snapshot-retirement make-format make-consumer checker-retention; do
     source="$ROOT/scripts/ci/test-$name.sh"
     probe_args=()
     if [[ "$name" == check-formatting-hooks ]]; then
@@ -36,17 +41,27 @@ for name in format-tools tool-commands rust-tools release-runner host-tools ic-t
         probe_args=("$fixture/exit-input" src/lib.rs Cargo.toml --no-dependency-tables)
     fi
     FIXTURE_PROBE_DIRECTORY_VARIABLE=fixture
+    probe_root_variable=ROOT
     [[ "$name" != release-runner ]] || FIXTURE_PROBE_DIRECTORY_VARIABLE=FIXTURE_ROOT
     [[ "$name" != installers ]] || FIXTURE_PROBE_DIRECTORY_VARIABLE=FIXTURE
     [[ "$name" != release-metadata ]] || FIXTURE_PROBE_DIRECTORY_VARIABLE=FIXTURE
+    case "$name" in
+        rustsec-db|crates-io-version|release-commands|release-delivery|make-format|make-consumer|checker-retention)
+            probe_root_variable=root ;;
+        evidence-checksums) FIXTURE_PROBE_DIRECTORY_VARIABLE=TEMPORARY ;;
+        snapshot-retirement) FIXTURE_PROBE_DIRECTORY_VARIABLE=FIXTURE ;;
+    esac
     if [[ "$name" == runtime-panics ]]; then
         FIXTURE_PROBE_DIRECTORY_VARIABLE=scratch
         probe_args=("$fixture/exit-input/prefix-checker")
     fi
     export FIXTURE_PROBE_DIRECTORY_VARIABLE
-    fixture_probe_exits "$source" "$fixture" "$ROOT" "$name" ${probe_args[@]+"${probe_args[@]}"} || exit 1
+    FIXTURE_PROBE_ROOT_VARIABLE="$probe_root_variable" \
+        fixture_probe_exits "$source" "$fixture" "$ROOT" "$name" ${probe_args[@]+"${probe_args[@]}"} || exit 1
     case "$name" in
-        cargo-tool-versions|release-metadata|cargo-release-metadata)
+        cargo-tool-versions|release-metadata|cargo-release-metadata|cargo-metadata|\
+        rustsec-db|evidence-checksums|crates-io-version|release-commands|release-delivery|\
+        snapshot-retirement|make-format|make-consumer|checker-retention)
             grep -F "$fixture_probe_retained" "$fixture/$name-cleanup-failure.log" > /dev/null ;;
     esac
     if [[ "$name" == ic-tools ]]; then

@@ -1,18 +1,12 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/distribution/refresh-consumer.sh scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh
+# Shared companions: scripts/distribution/refresh-consumer.sh scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 ROOT="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
-FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/snapshot-retirement.XXXXXX")"
-FIXTURE="$(cd "$FIXTURE" && pwd -P)"
-complete=false
-finish() {
-    local status=$?
-    [[ "$complete" == true || "$status" != 0 ]] || status=1
-    if [[ "$status" == 0 ]]; then rm -rf "$FIXTURE"
-    else printf 'Failed retirement fixture retained: %s\n' "$FIXTURE" >&2; fi
-    exit "$status"
-}
-trap finish EXIT
+# shellcheck source=scripts/ci/fixture-lifecycle.sh
+source "$ROOT/scripts/ci/fixture-lifecycle.sh"
+FIXTURE="$(fixture_create "${TMPDIR:-/tmp}/snapshot-retirement.XXXXXX")"
+fixture_complete=false
+trap 'fixture_finish "$?" "$FIXTURE" "Failed retirement fixture retained"' EXIT
 source_root="$FIXTURE/source"
 seed="$FIXTURE/seed"
 mkdir -p "$source_root/scripts/ci" "$seed" "$FIXTURE/bin"
@@ -207,5 +201,5 @@ cp -Rp "$consumer" "$FIXTURE/unavailable-before"
 if bash "$ROOT/scripts/distribution/refresh-consumer.sh" --preview --source "$source_root" \
     --consumer "$consumer" --entrypoint root.sh > "$FIXTURE/missing-companion.log" 2>&1; then exit 1; fi
 diff -r "$FIXTURE/unavailable-before" "$consumer"
-complete=true
+fixture_complete=true
 echo 'Snapshot retirement checks passed'

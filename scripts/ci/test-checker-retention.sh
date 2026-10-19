@@ -9,11 +9,7 @@ root="${root%/.}"
 source "$root/scripts/ci/fixture-lifecycle.sh"
 fixture="$(fixture_create "${TMPDIR:-/tmp}/checker-retention.XXXXXX")"
 fixture_complete=false
-finish() {
-    local status=$?
-    fixture_finish "$status" "$fixture" 'Checker retention fixture retained'
-}
-trap finish EXIT
+trap 'fixture_finish "$?" "$fixture" "Checker retention fixture retained"' EXIT
 # shellcheck source=scripts/ci/fixture-retention-probes.sh
 source "$root/scripts/ci/fixture-retention-probes.sh"
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
