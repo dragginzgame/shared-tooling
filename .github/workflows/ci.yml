@@ -226,6 +226,17 @@ jobs:
         if: needs.change-scope.outputs.scope != 'docs'
         id: runtime-scanner
         run: bash scripts/ci/qualify-runtime-panics.sh 1.88.0 "$RUNNER_TEMP/portable-fixtures/runtime-scanner"
+      - name: Prepare the published Cargo release editor for integration fixtures
+        if: needs.change-scope.outputs.scope != 'docs'
+        run: |
+          editor="$(bash scripts/dev/install-rust-tools.sh --package ic-build --version 0.18.0 \
+            --bin ic-build-release-metadata --profile debug)"
+          bash scripts/dev/install-rust-tools.sh --package ic-build --version 0.18.0 \
+            --bin ic-build-release-metadata --profile debug --check
+          {
+            echo "CARGO_RELEASE_METADATA_EDITOR=$editor"
+            echo "CARGO_RELEASE_METADATA_MAX_BYTES=8388608"
+          } >> "$GITHUB_ENV"
       - name: Run portable regression set with prepared tools
         if: needs.change-scope.outputs.scope != 'docs'
         shell: bash

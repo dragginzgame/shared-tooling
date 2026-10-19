@@ -175,8 +175,8 @@ For separately authorized tag maintenance, use
 preview. See [explicit tag maintenance](docs/tag-maintenance.md) for remote
 selection, deletion authorization, retained evidence and interrupted retries.
 
-- `scripts/ci/rewrite-local-lock-versions.pl` emits exact local-package version
-  changes without resolving external dependencies. `scripts/ci/check-formatting-hooks.sh`
+- IC Build supplies the explicitly prepared Cargo release candidate editor; Shared
+  Tooling retains release checks and recovery. `scripts/ci/check-formatting-hooks.sh`
   exercises a consumer's actual formatter in disposable Git exports. See their
   explicit inputs and limits in the [helper contracts](docs/verification-helpers.md).
 - `scripts/ci/check-dependency-pins.sh --cargo-inheritance` also checks dependency

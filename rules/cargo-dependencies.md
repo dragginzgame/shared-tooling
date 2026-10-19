@@ -81,9 +81,12 @@ Organize the root `[workspace.dependencies]` catalog into two sections headed
 `# Production dependencies` and `# Tests and tooling only`. Put each header once
 above its section, with a blank line between sections and alphabetical order
 within each. Do not repeat role annotations after individual dependencies.
-These headers belong only inside `[workspace.dependencies]`; do not add them
-to `[workspace]`, its `members` array or other manifest tables. They describe use
-within this workspace, not whether a selected version is published to a registry.
+These dependency-role headers belong only inside `[workspace.dependencies]`.
+The `members` array may separately use `# Production packages` and
+`# Tests and tooling packages` under the
+[workspace member-role guidance](rust-workspaces.md#workspace-member-roles).
+Dependency roles describe use within this workspace, not whether a selected
+version is published to a registry.
 
 - A production dependency is needed by a production package through normal or
   build dependencies, including supported optional features and targets. Put an

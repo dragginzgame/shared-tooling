@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/read-cargo-source-context.sh scripts/ci/render-cargo-workspace-version.pl scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/read-cargo-source-context.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 
 root="${BASH_SOURCE[0]}"
@@ -42,7 +42,7 @@ jq -e '.source_root == "/release-source" and
     [.members[].name] == ["first", "second"] and
     .members[0].manifest_path == "/release-source/crates/first member/Cargo.toml"' \
     "$fixture/context.json" > /dev/null
-perl "$root/scripts/ci/render-cargo-workspace-version.pl" "$fixture/saved.toml" \
+"${CARGO_RELEASE_METADATA_EDITOR:?select the prepared IC Build editor}" --max-input-bytes "${CARGO_RELEASE_METADATA_MAX_BYTES:?select an input allowance}" manifest "$fixture/saved.toml" \
     0.1.0 0.2.0 "$fixture/context.json" > "$fixture/rendered.toml"
 "${YQ:-yq}" -p toml -o json '.' "$fixture/rendered.toml" |
     jq -e '.workspace.package.version == "0.2.0" and .workspace.dependencies.renamed.version == "0.2"' > /dev/null

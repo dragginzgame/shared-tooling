@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/read-cargo-workspace-version.sh scripts/ci/rewrite-local-lock-versions.pl scripts/ci/finalize-release-changelog.awk scripts/ci/cargo-workspace-members.jq scripts/ci/compare-stable-versions.pl scripts/ci/render-cargo-workspace-version.pl scripts/ci/release-metadata-transaction.sh
+# Shared companions: scripts/ci/read-cargo-workspace-version.sh scripts/ci/finalize-release-changelog.awk scripts/ci/cargo-workspace-members.jq scripts/ci/compare-stable-versions.pl scripts/ci/release-metadata-transaction.sh
 set -euo pipefail
 
 # Coordinated workspace versions only. Consumer adapters retain source admission,
@@ -82,13 +82,13 @@ render_cargo_metadata() {
         -f "$ROOT/scripts/ci/finalize-release-changelog.awk" "$original/CHANGELOG.md" > "$candidate/CHANGELOG.md" || return
     # Live path resolution distinguishes owned members from unrelated aliases.
     # The transaction compares every live input with its original before install.
-    perl "$ROOT/scripts/ci/render-cargo-workspace-version.pl" Cargo.toml \
+    "$editor" --max-input-bytes "$limit" manifest Cargo.toml \
         "$RELEASE_PREVIOUS" "$RELEASE_VERSION" "$cargo_preparation/workspace-input.json" > "$candidate/Cargo.toml" || return
     # Independently parse candidate bytes without resolving scratch members.
     "${YQ:-yq}" -p toml -o json '.' "$candidate/Cargo.toml" |
         jq -e --arg version "$RELEASE_VERSION" '.workspace.package.version == $version' > /dev/null || return
     while IFS= read -r package; do packages+=("$package"); done < "$cargo_preparation/local-packages"
-    perl "$ROOT/scripts/ci/rewrite-local-lock-versions.pl" "$original/Cargo.lock" \
+    "$editor" --max-input-bytes "$limit" lock "$original/Cargo.lock" \
         "$RELEASE_PREVIOUS" "$RELEASE_VERSION" "${packages[@]}" > "$candidate/Cargo.lock"
 }
 
@@ -104,6 +104,9 @@ check_prepared_cargo_metadata() {
 
 case "$operation" in
     prepare)
+        editor="${CARGO_RELEASE_METADATA_EDITOR:?select the prepared released IC Build editor}"
+        limit="${CARGO_RELEASE_METADATA_MAX_BYTES:?select a positive per-document byte allowance}"
+        [[ "$editor" == /* && -f "$editor" && -x "$editor" && "$limit" =~ ^[1-9][0-9]*$ ]] || exit 2
         regular_metadata . Cargo.toml Cargo.lock CHANGELOG.md
         observed_version="$(bash "$reader" Cargo.toml)"
         [[ "$observed_version" == "${RELEASE_PREVIOUS:?}" ]] || exit 1

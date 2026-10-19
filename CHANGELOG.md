@@ -1,6 +1,16 @@
 # Changelog
 
-## [0.24.4]
+## [0.25.0]
+
+### Breaking
+
+- Delegate Cargo manifest and lock candidate rendering to released IC Build.
+  Release callers must explicitly prepare its editor, pass its absolute path and
+  select a positive input byte allowance. The standalone Perl editors
+  `render-cargo-workspace-version.pl` and `rewrite-local-lock-versions.pl` are
+  removed; direct callers must adopt the owner command. See
+  [Cargo candidate rendering](docs/releases.md#cargo-release-candidate-rendering)
+  and [#273 — Adopt released IC Build Cargo editor and retire Perl renderers](https://github.com/dragginzgame/shared-tooling/issues/273).
 
 ### Added
 
@@ -15,6 +25,8 @@
 
 ### Changed
 
+- Allow production and test/tooling package headers inside `workspace.members`,
+  distinct from dependency-role headers in `workspace.dependencies`.
 - Require Clap for Rust CLI argument handling, using its existing parsing,
   validation and help capabilities before adding custom CLI mechanics.
 

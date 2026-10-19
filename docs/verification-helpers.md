@@ -629,28 +629,15 @@ must retain policy/order checks and prove audit cannot run after preparation fai
 
 ## Local Cargo.lock versions
 
-```sh
-perl scripts/ci/rewrite-local-lock-versions.pl Cargo.lock 0.1.0 0.1.1 my-crate helper-crate > candidate.lock
-```
+Use the explicitly prepared IC Build release editor for manifest and local lock
+versions. Its lock renderer changes only selected unsourced package versions and
+exact unqualified local references. Shared Tooling retains originals and runs
+locked/offline Cargo graph validation before completing preparation.
 
-The Perl/core-only transformer reads a regular Cargo-generated LF lockfile in
-format 3 or 4 and emits a complete candidate on stdout. Supply canonical stable
-versions and the exact local package roster selected by the consumer's Cargo
-metadata. Each selected package must appear exactly once without a `source`
-field and have the previous version. Missing, duplicate or mismatched identities
-fail without emitting a partial candidate. The input file is never written.
-
-Only selected local versions and their exact unqualified dependency references
-change. Registry/Git identities, source-qualified references, checksums, unrelated
-versions, whitespace and comments stay unchanged. This is a narrow transformation
-of Cargo's generated layout, not a general TOML parser or resolver. The caller
-must check exit status before replacing its lockfile, retain failed candidates,
-and run Cargo's locked offline validation against the prepared manifests.
-Selecting independent lockfiles, discovering packages, metadata writes and
-release recovery remain consumer responsibilities. Do not redirect output onto
-the input file, invoke dependency resolution online, or use this to repair an
-already inconsistent graph. The upstream fixture includes independent real-Cargo
-locked/offline validation with local-only dependencies.
+See [Cargo candidate rendering](releases.md#cargo-release-candidate-rendering) for
+the required executable and byte-allowance selections. Candidate bytes are never
+redirected onto their inputs. Tool preparation, package selection and release
+authorization remain consumer-owned.
 
 ## Formatter prerequisites
 
