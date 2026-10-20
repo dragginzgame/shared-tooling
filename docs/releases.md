@@ -718,8 +718,12 @@ Undated numbered sections at or below that version remain history. One pending
 numbered section must agree with the target; competing candidates or a target
 already dated differently are conflicts. The selected numbered candidate must
 be the first release heading; `Draft` and misplaced candidates are rejected.
-The pending spelling is `## [X.Y.Z]`, without ` - Unreleased`. Unsupported
-suffixes are refused with the source line and expected selected heading before
+Both `## [X.Y.Z]` and `## [X.Y.Z] - Unreleased` are accepted pending spellings.
+Release preparation writes `## [X.Y.Z] - YYYY-MM-DD` using the saved UTC release
+date before the release commit, tag and push; no manual heading edit is needed
+for the standard flow. If preparing a release manually, replace `Unreleased`
+with that date before committing/tagging/pushing the release. Unsupported
+suffixes are refused with the source line and accepted selected heading before
 any candidate output is emitted; conflicting dates and duplicate or misplaced
 candidates remain separate diagnostic causes.
 With no candidate, the first release heading must identify the saved previous

@@ -48,22 +48,19 @@ cp CHANGELOG.md "$FIXTURE/pending-notes"
 bash "$ROOT/scripts/release/metadata.sh" preflight
 cmp CHANGELOG.md "$FIXTURE/pending-notes"
 
-# Unsupported pending syntax must identify the correction before either
-# preflight or preparation changes metadata, including a heading with tabs.
+# Both pending spellings finalize automatically; preflight remains read-only.
 for heading in '## [0.1.1] - Unreleased' $'##\t[0.1.1]  -\tUnreleased'; do
     printf '# Changelog\n\n%s\n\n- Pending change.\n' "$heading" > CHANGELOG.md
-    cp CHANGELOG.md "$FIXTURE/unsupported-notes"
-    for operation in preflight prepare; do
-        if bash "$ROOT/scripts/release/metadata.sh" "$operation" \
-            > "$FIXTURE/unsupported-$operation.out" 2> "$FIXTURE/unsupported-$operation.err"; then
-            echo 'release metadata test failed: unsupported pending suffix accepted' >&2; exit 1
-        fi
-        [[ ! -s "$FIXTURE/unsupported-$operation.out" ]] || exit 1
-        rg -F "line 3: $heading" "$FIXTURE/unsupported-$operation.err" >/dev/null
-        rg -F 'expected pending heading: ## [0.1.1]' "$FIXTURE/unsupported-$operation.err" >/dev/null
-        cmp CHANGELOG.md "$FIXTURE/unsupported-notes"
-        [[ "$(cat VERSION)" == 0.1.0 ]] || exit 1
-    done
+    cp CHANGELOG.md "$FIXTURE/unreleased-notes"
+    bash "$ROOT/scripts/release/metadata.sh" preflight
+    cmp CHANGELOG.md "$FIXTURE/unreleased-notes"
+    [[ "$(cat VERSION)" == 0.1.0 ]] || exit 1
+    bash "$ROOT/scripts/release/metadata.sh" prepare
+    printf '# Changelog\n\n## [0.1.1] - 2026-10-06\n\n- Pending change.\n' > "$FIXTURE/dated-notes"
+    cmp CHANGELOG.md "$FIXTURE/dated-notes"
+    [[ "$(cat VERSION)" == 0.1.1 ]] || exit 1
+    bash "$ROOT/scripts/release/metadata.sh" check
+    printf '0.1.0\n' > VERSION
 done
 cp "$FIXTURE/pending-notes" CHANGELOG.md
 

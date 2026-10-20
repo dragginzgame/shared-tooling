@@ -341,10 +341,11 @@ grep -Fqx 'version = "1.2.3"' "$fixture/success/Cargo.toml"
 [[ "$(perl -e 'printf "%o", (stat($ARGV[0]))[2]&07777' "$fixture/success/Cargo.toml")" == 640 ]] || exit 1
 
 # Generic notes and failure restoration belong to the metadata producer.
-for mode in undated-history history-no-lf dated-notes conflicting-date conflicting-notes restore-failure missing-date missing-version; do
+for mode in unreleased undated-history history-no-lf dated-notes conflicting-date conflicting-notes restore-failure missing-date missing-version; do
     root="$fixture/$mode"
     make_workspace "$root"
     case "$mode" in
+        unreleased) perl -pi -e 's/^## \[1\.2\.4\]$/## [1.2.4] - Unreleased/' "$root/CHANGELOG.md" ;;
         undated-history) perl -pi -e 's/## \[1\.2\.3\] - 2026-10-12/## [1.2.3]/' "$root/CHANGELOG.md" ;;
         history-no-lf) perl -0pi -e 's/\n\z//' "$root/CHANGELOG.md" ;;
         dated-notes) perl -pi -e 's/## \[1\.2\.4\]/## [1.2.4] - 2026-10-13/' "$root/CHANGELOG.md" ;;
@@ -360,9 +361,9 @@ for mode in undated-history history-no-lf dated-notes conflicting-date conflicti
         *) (cd "$root" && CASE="$mode" TMPDIR="$root/attempts" bash "$helper" prepare primary) ;;
     esac > "$fixture/$mode.log" 2>&1 || status=$?
     case "$mode" in
-        undated-history|history-no-lf)
+        unreleased|undated-history|history-no-lf)
             [[ "$status" == 0 ]] || exit 1
-            perl -pe 's/## \[1\.2\.4\](?: - 2026-10-13)?/## [1.2.4] - 2026-10-13/' \
+            perl -pe 's/## \[1\.2\.4\](?: - (?:Unreleased|2026-10-13))?/## [1.2.4] - 2026-10-13/' \
                 "$root/originals/CHANGELOG.md" > "$root/expected-notes"
             cmp "$root/expected-notes" "$root/CHANGELOG.md"
             (cd "$root" && bash "$helper" check primary)

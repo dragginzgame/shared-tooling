@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.25.8]
+
+### Fixed
+
+- Accept numbered `- Unreleased` changelog headings during release preflight
+  and replace the marker with the saved UTC release date during preparation,
+  before the release commit, tag and push.
+
 ## [0.25.7]
 
 ### Changed
