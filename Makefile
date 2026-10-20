@@ -9,6 +9,7 @@ SHARED_TOOLING_RUST := 0
 # Shared qualifies IC executable provisioning and retained-tool integrity.
 LOCAL_TOOL_INSTALL_TARGETS += install-ic-tools install-release-editor
 LOCAL_TOOL_CHECK_TARGETS += ic-tools-check release-editor-check
+IC_TOOLS := didc ic-wasm icp quill wasm-opt
 # Shared's own integration fixtures use this optional product tool. Consumers
 # retain their release-tool selections; it is not part of the common Cargo set.
 RELEASE_EDITOR_VERSION := 0.18.0

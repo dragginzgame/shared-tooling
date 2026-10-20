@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.26.0]
+
+### Breaking
+
+- Require explicit IC executable selections: set `IC_TOOLS` for Make callers
+  or pass repeated `--tool NAME` arguments to the installer. Only requested tools
+  are downloaded and admitted; subset identities, offline checks and retained
+  receipts use the same selection. Prepare tools explicitly after adoption;
+  prior bundles and failed candidates remain retained.
+- Pass the IC tool selection to compact evidence collection. The failure action
+  accepts `ic-tools`; omitted or mismatched selections retain full IC payloads.
+  Direct compact-selector and compact-collector callers must supply the new list
+  argument; full-retention calls keep their existing interface.
+  IC version reports likewise require an explicit list and probe only selected tools.
+
 ## [0.25.9]
 
 ### Fixed

@@ -16,9 +16,14 @@ for kind in host rust ic; do
     cat > "$snapshot/scripts/dev/install-$kind-tools.sh" <<'INSTALL'
 #!/usr/bin/env bash
 set -eu
-[[ $# == 5 && "$1" == --consumer && "$2" == "$REPORT_CONSUMER" && "$5" == --check ]]
+[[ "$1" == --consumer && "$2" == "$REPORT_CONSUMER" && "${!#}" == --check ]]
 kind="${0##*/install-}"; kind="${kind%-tools.sh}"
 [[ "$3" == --versions || ( "$kind" == ic && "$3" == --pins ) ]]
+if [[ "$kind" == ic ]]; then
+    shift 4
+    [[ $# -ge 3 && $(( ($# - 1) % 2 )) == 0 ]]
+    while [[ $# -gt 1 ]]; do [[ "$1" == --tool ]]; shift 2; done
+else [[ $# == 5 ]]; fi
 printf 'admit %s\n' "$kind" >> "$REPORT_EVENTS"
 printf 'admission stderr %s\n' "$kind" >&2
 if [[ "$REPORT_FAILURE" == "admit-$kind" ]]; then echo partial-admission; exit 37; fi
@@ -66,18 +71,32 @@ if grep -q '^admit ic$' "$REPORT_EVENTS"; then exit 1; fi
 mv "$snapshot/ci/ic-tools.saved" "$snapshot/ci/ic-tools.tsv"
 : > "$REPORT_EVENTS"
 PATH="$fixture/impostor:$PATH" bash "$snapshot/scripts/ci/report-tool-versions.sh" "$consumer" \
-    "$snapshot/ci/tool-versions.env" "$snapshot/ci/ic-tools.tsv" > "$fixture/report" 2> "$fixture/errors"
+    "$snapshot/ci/tool-versions.env" "$snapshot/ci/ic-tools.tsv" 'didc ic-wasm icp quill wasm-opt' > "$fixture/report" 2> "$fixture/errors"
 [[ "$(grep -c '^admit ' "$REPORT_EVENTS")" == 3 ]]
 [[ "$(grep -c '^probe ' "$REPORT_EVENTS")" == 11 ]]
 for tool in jq yq rg cloc cargo-sort cargo-sort-derives icp didc ic-wasm quill wasm-opt; do
     [[ "$(grep -c "^probe $tool$" "$REPORT_EVENTS")" == 1 ]]
+done
+: > "$REPORT_EVENTS"
+bash "$snapshot/scripts/ci/report-tool-versions.sh" "$consumer" \
+    "$snapshot/ci/tool-versions.env" "$snapshot/ci/ic-tools.tsv" 'wasm-opt wasm-opt' > "$fixture/subset" 2> "$fixture/subset.err"
+[[ "$(grep -c '^probe ' "$REPORT_EVENTS")" == 7 && "$(grep -c '^probe wasm-opt$' "$REPORT_EVENTS")" == 1 ]]
+for tool in didc ic-wasm icp quill; do
+    if grep -q "^probe $tool$" "$REPORT_EVENTS"; then exit 1; fi
+done
+for invalid in '' unknown; do
+    : > "$REPORT_EVENTS"
+    status=0
+    bash "$snapshot/scripts/ci/report-tool-versions.sh" "$consumer" \
+        "$snapshot/ci/tool-versions.env" "$snapshot/ci/ic-tools.tsv" "$invalid" > "$fixture/invalid.out" 2>&1 || status=$?
+    [[ "$status" == 2 && ! -s "$REPORT_EVENTS" ]] || exit 1
 done
 digest="$(bash "$snapshot/scripts/ci/verify-file-checksum.sh" --print sha256 "$consumer/host bin/jq")"
 grep -F "sha256=$digest" "$fixture/report" > /dev/null
 for failure in admit-host admit-rust admit-ic jq cloc cargo-sort-derives wasm-opt; do
     : > "$REPORT_EVENTS"
     status=0
-    REPORT_FAILURE="$failure" bash "$snapshot/scripts/ci/report-tool-versions.sh" "$consumer" "$snapshot/ci/tool-versions.env" "$snapshot/ci/ic-tools.tsv" > "$fixture/$failure.out" 2> "$fixture/$failure.err" || status=$?
+    REPORT_FAILURE="$failure" bash "$snapshot/scripts/ci/report-tool-versions.sh" "$consumer" "$snapshot/ci/tool-versions.env" "$snapshot/ci/ic-tools.tsv" 'didc ic-wasm icp quill wasm-opt' > "$fixture/$failure.out" 2> "$fixture/$failure.err" || status=$?
     case "$failure" in
         admit-*) [[ "$status" == 37 ]]; grep -Fx partial-admission "$fixture/$failure.out" > /dev/null ;;
         *) [[ "$status" == 43 ]]; grep -Fx "observed $failure" "$fixture/$failure.out" > /dev/null; grep -Fx "probe stderr $failure" "$fixture/$failure.err" > /dev/null ;;

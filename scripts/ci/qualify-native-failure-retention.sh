@@ -25,7 +25,7 @@ bad_digest=0000000000000000000000000000000000000000000000000000000000000000
 awk -F '\t' -v OFS='\t' -v digest="$bad_digest" '$1 == "quill" { $4 = digest } { print }' "$original" > "$pins"
 status=0
 make --no-print-directory -C "$fixture/consumer" -f "$ROOT/make/tools.mk" \
-    SHARED_TOOLING_ROOT="$ROOT" IC_TOOL_PINS="$pins" install-ic-tools \
+    SHARED_TOOLING_ROOT="$ROOT" IC_TOOL_PINS="$pins" IC_TOOLS=quill install-ic-tools \
     2>&1 | tee "$fixture/temp/ic-tools-install.log" || status=$?
 [[ "$status" == 2 ]] || { echo 'Expected the install recipe to fail' >&2; exit 1; }
 [[ ! -e "$fixture/consumer/.tools/ic" && ! -L "$fixture/consumer/.tools/ic" ]] || exit 1
@@ -51,7 +51,7 @@ bash "$ROOT/scripts/ci/verify-file-checksum.sh" sha256 "$digest" "$archive"
 # shellcheck source=scripts/dev/tool-store.sh
 source "$ROOT/scripts/dev/tool-store.sh"
 consumer="$fixture/consumer"
-records="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" ic "$original")"
+records="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" ic "$original" quill)"
 tool_store_init ic "$host
 $records"
 tool_store_acquire
@@ -62,12 +62,13 @@ ln -s "$bundle" "$fixture/consumer/.tools/ic-set.check"
 cp "$archive" "$bundle/bin/quill"
 chmod +x "$bundle/bin/quill"
 cp "$original" "$bundle/pins.tsv"
+printf '%s\n' quill > "$bundle/tools"
 cp "$candidate/host" "$bundle/host"
 printf '%s  bin/quill\n' "$bad_digest" > "$bundle/files.sha256"
 ln -s ic-set.check "$fixture/consumer/.tools/ic"
 status=0
 make --no-print-directory -C "$fixture/consumer" -f "$ROOT/make/tools.mk" \
-    SHARED_TOOLING_ROOT="$ROOT" IC_TOOL_PINS="$original" ic-tools-check \
+    SHARED_TOOLING_ROOT="$ROOT" IC_TOOL_PINS="$original" IC_TOOLS=quill ic-tools-check \
     2>&1 | tee "$fixture/temp/ic-tools-check.log" || status=$?
 [[ "$status" == 2 && "$(readlink "$fixture/consumer/.tools/ic")" == ic-set.check ]] || exit 1
 bash "$ROOT/scripts/ci/verify-file-checksum.sh" sha256 "$digest" "$bundle/bin/quill"

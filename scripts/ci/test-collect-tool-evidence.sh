@@ -43,7 +43,7 @@ for mode in complete partial redirected; do
     status=0
     COLLECTOR_CASE="$mode" PATH="$fixture/bin:$PATH" "$BASH" \
         "$ROOT/scripts/ci/collect-tool-evidence.sh" "$fixture/$mode.tar.gz" \
-        "$fixture/repository" "$fixture/$mode" compact unused-host unused-ic \
+        "$fixture/repository" "$fixture/$mode" compact unused-host unused-ic 'wasm-opt' \
         "$fixture/logs" log > "$fixture/$mode/output" 2> "$fixture/$mode/error" || status=$?
     expected=1; [[ "$mode" != complete ]] || expected=0
     [[ "$status" == "$expected" ]] || exit 1

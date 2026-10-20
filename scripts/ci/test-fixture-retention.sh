@@ -551,7 +551,7 @@ for kind in host ic; do
     printf '%s\n' "$compact/.tools/$kind-set.verified" > "$compact/data/tool-evidence.fixture/$kind/selection.txt"
     printf 'verified fixture\n' > "$compact/data/tool-evidence.fixture/$kind/check.log"
 done
-for receipt in pins.tsv host files.sha256; do
+for receipt in pins.tsv tools host files.sha256; do
     printf 'receipt %s\n' "$receipt" > "$compact/.tools/ic/$receipt"
     cp "$compact/.tools/ic/$receipt" "$compact/data/tool-evidence.fixture/ic/$receipt"
 done

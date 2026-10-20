@@ -820,7 +820,7 @@ cmp "$ROOT/ci/ic-tools.tsv" "$minimal_consumer/ci/ic-tools.tsv"
 [[ ! -e "$minimal_consumer/scripts/dev/cloc-tooling.pl" ]]
 for target in host-tools-check ic-tools-check rust-tools-check cloc; do
     status=0
-    SHARED_TOOLING_STORE="$FIXTURE/minimal-store" make -s -C "$minimal_consumer" "$target" \
+    SHARED_TOOLING_STORE="$FIXTURE/minimal-store" make -s -C "$minimal_consumer" IC_TOOLS=wasm-opt "$target" \
         > "$FIXTURE/minimal-$target.log" 2>&1 || status=$?
     [[ "$status" == 2 ]]
     case "$target" in

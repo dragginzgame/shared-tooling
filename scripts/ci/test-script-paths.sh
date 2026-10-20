@@ -43,7 +43,7 @@ for consumer in "$checkout" "$fixture/physical"$'\r' "$fixture/alias"$'\n' \
         for mode in install check preflight; do
             [[ "$kind:$mode" != host:preflight ]] || continue
             args=(--consumer "$consumer")
-            if [[ "$kind" == ic ]]; then args+=(--pins "$ROOT/ci/ic-tools.tsv")
+            if [[ "$kind" == ic ]]; then args+=(--pins "$ROOT/ci/ic-tools.tsv" --tool wasm-opt)
             else args+=(--versions "$fixture/versions.env"); fi
             [[ "$mode" == install ]] || args+=("--$mode")
             if "$BASH" "$ROOT/scripts/dev/install-$kind-tools.sh" "${args[@]}" > "$fixture/path-refusal.log" 2>&1; then

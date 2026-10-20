@@ -170,7 +170,10 @@ jobs:
           chmod +x "$sharing/bin/curl"
           for kind in host ic; do
             pins=(--versions "$GITHUB_WORKSPACE/ci/tool-versions.env")
-            if [[ "$kind" == ic ]]; then pins=(--pins "$GITHUB_WORKSPACE/ci/ic-tools.tsv"); fi
+            if [[ "$kind" == ic ]]; then
+              pins=(--pins "$GITHUB_WORKSPACE/ci/ic-tools.tsv"
+                    --tool didc --tool ic-wasm --tool icp --tool quill --tool wasm-opt)
+            fi
             for mode in install check; do
               options=()
               if [[ "$mode" == check ]]; then options=(--check); fi
@@ -308,6 +311,7 @@ jobs:
           temp-root: ${{ runner.temp }}/portable-fixtures/native-retention/temp
           repository-root: ${{ github.workspace }}
           compact-successful-tools: 'true'
+          ic-tools: 'didc ic-wasm icp quill wasm-opt'
       - name: Download compact evidence by exact ID
         if: ${{ needs.change-scope.outputs.scope != 'docs' && (!cancelled() && steps.compact-upload.outputs.artifact-id != '') }}
         timeout-minutes: 3
@@ -337,7 +341,7 @@ jobs:
           done
           cmp ci/tool-versions.env "${diagnostics[0]}/host/caller-pins"
           cmp ci/ic-tools.tsv "${diagnostics[0]}/ic/caller-pins"
-          for receipt in pins.tsv host files.sha256; do
+          for receipt in pins.tsv tools host files.sha256; do
             cmp ".tools/ic/$receipt" "${diagnostics[0]}/ic/$receipt"
           done
           cmp ".tools/$EVIDENCE_CANDIDATE/bin/quill" "$payload/.tools/$EVIDENCE_CANDIDATE/bin/quill"
@@ -353,3 +357,4 @@ jobs:
           temp-root: ${{ runner.temp }}
           repository-root: ${{ github.workspace }}
           compact-successful-tools: 'true'
+          ic-tools: 'didc ic-wasm icp quill wasm-opt'

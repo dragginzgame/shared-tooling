@@ -105,10 +105,10 @@ for selection in common ic; do
     failures=(success install-rust-tools-preflight install-host-tools install-rust-tools
               host-tools-check rust-tools-check)
     if [[ "$selection" == ic ]]; then
-        export LOCAL_TOOL_INSTALL_TARGETS=install-ic-tools LOCAL_TOOL_CHECK_TARGETS=ic-tools-check
-        phases=(install-tools install-rust-tools-preflight install-host-tools install-rust-tools install-ic-tools
+        export IC_TOOLS=wasm-opt LOCAL_TOOL_INSTALL_TARGETS=install-ic-tools LOCAL_TOOL_CHECK_TARGETS=ic-tools-check
+        phases=(install-tools install-ic-tools-preflight install-rust-tools-preflight install-host-tools install-rust-tools install-ic-tools
                 tools-check host-tools-check rust-tools-check ic-tools-check)
-        failures+=(install-ic-tools ic-tools-check)
+        failures+=(install-ic-tools-preflight install-ic-tools ic-tools-check)
     fi
     for failure in "${failures[@]}"; do
         rm -f "$fixture/prepare runner/tools-install.log" "$fixture/prepare runner/tools-check.log"
@@ -201,6 +201,11 @@ consumer="$2"
 [[ "$1" == --consumer && "$consumer" == "$RUNNER_TEMP/portable-fixtures/shared-tools/consumer" ]] || exit 99
 if [[ "$kind" == rust ]]; then
     cmp "$GITHUB_WORKSPACE/rust-toolchain.toml" "$consumer/rust-toolchain.toml"
+fi
+if [[ "$kind" == ic ]]; then
+    requested="${*:5}"
+    requested="${requested% --check}"
+    [[ "$requested" == '--tool didc --tool ic-wasm --tool icp --tool quill --tool wasm-opt' ]] || exit 99
 fi
 if [[ "${!#}" == --check ]]; then
     if [[ "$kind" == rust ]]; then
