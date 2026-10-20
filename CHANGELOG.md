@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.25.4]
+
+### Fixed
+
+- Clarify failure-evidence collection: use the existing orchestrator, treat failed
+  selector output as diagnostics and retain redirected parent links without
+  traversing them. Keep product log selections and hosted transport checks local.
+
 ## [0.25.3]
 
 ### Added
