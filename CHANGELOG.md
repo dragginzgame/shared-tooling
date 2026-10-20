@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.25.5]
+## [0.25.6]
 
 ### Fixed
 
@@ -8,6 +8,22 @@
   candidate's Git delivery is confirmed. Preserve its plan and evidence when
   tags or destination history are missing, conflicting or unavailable
   ([#292 — Prevent committed release preparation from silently incrementing twice](https://github.com/dragginzgame/shared-tooling/issues/292)).
+- Give the cross-checkout native Cargo-tool reuse probe the same declared
+  compiler as the source checkout before comparing immutable build identities.
+
+## [0.25.5]
+
+### Changed
+
+- Qualify focused fixture exports from one entrypoint each, deriving helpers
+  through declared companions instead of selecting a second helper roster.
+  Independent exports prevent one fixture from masking another's missing dependency.
+- Derive installer, tooling-report and failure-retention fixture inputs from
+  declared companions rather than copied helper rosters. Failure-evidence checks
+  use the shared step reader to reject ambiguous or incomplete run selections,
+  reusing one parsed action for collection and policy assertions.
+- Prepare installer fixture checksums through the shared digest reader, removing
+  a separate backend-selection and checksum-output parser.
 
 ## [0.25.4]
 

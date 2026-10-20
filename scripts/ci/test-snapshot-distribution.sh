@@ -837,42 +837,25 @@ make -s -C "$minimal_consumer" shared-tooling-check > "$FIXTURE/minimal-integrit
 
 # Complete focused selections must remain independently runnable, without
 # owner-only integration fixtures or unrelated production tools.
-focused_consumer="$FIXTURE/focused-fixtures"
-git init -q "$focused_consumer"
-selection_args=(--entrypoint "$checksum_path" --entrypoint "$verifier_path")
-without_reporter=("${selection_args[@]}")
-for path in scripts/ci/test-format-tools.sh scripts/ci/check-format-tools.sh \
-    scripts/ci/test-rust-tools.sh scripts/dev/install-rust-tools.sh .githooks/pre-commit \
-    scripts/dev/cargo-tool-build.sh scripts/dev/tool-store.sh scripts/dev/install-host-tools.sh scripts/dev/install-ic-tools.sh \
-    scripts/ci/ic-tool-pins.awk scripts/ci/verify-evidence-checksums.sh scripts/ci/select-tool-evidence.sh scripts/ci/archive-evidence.sh \
-    scripts/ci/test-make-format.sh make/tools.mk make/rust-format.mk make/execution.mk scripts/ci/check-make-execution.sh scripts/ci/run-formatting.sh; do
-    mkdir -p "$source_root/${path%/*}" "$revision_root/${path%/*}"
-    cp -p "$ROOT/$path" "$source_root/$path"
-    cp -p "$ROOT/$path" "$revision_root/$path"
-    selection_args+=(--entrypoint "$path")
-    if [[ "$path" != scripts/ci/run-formatting.sh ]]; then without_reporter+=(--entrypoint "$path"); fi
-done
-missing_reporter="$FIXTURE/missing-format-reporter"
-git init -q "$missing_reporter"
-PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
-    --source "$source_root" --consumer "$missing_reporter" "${without_reporter[@]}" \
-    > "$FIXTURE/derived-format-reporter.log"
-[[ -f "$missing_reporter/scripts/ci/run-formatting.sh" ]] || exit 1
-PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
-    --source "$source_root" --consumer "$focused_consumer" "${selection_args[@]}" \
-    > "$FIXTURE/focused-fixtures-export.log"
 # After exporting into the empty consumer, supply read-only history for hook
 # qualification. Do not seed HEAD before refresh: missing tracked paths would
 # correctly be rejected as local deletions by the adoption guard.
 focused_objects="$(git -C "$ROOT" rev-parse --git-path objects)"
 case "$focused_objects" in /*) ;; *) focused_objects="$ROOT/$focused_objects" ;; esac
-printf '%s\n' "$focused_objects" > "$focused_consumer/.git/objects/info/alternates"
-git -C "$focused_consumer" update-ref HEAD "$(git -C "$ROOT" rev-parse HEAD)"
-printf '[toolchain]\nchannel = "fixture-unprepared"\n' > "$focused_consumer/rust-toolchain.toml"
 for entry in test-format-tools test-rust-tools test-make-format; do
+    # One root per export prevents another fixture from supplying an undeclared
+    # dependency. The existing exporter derives the complete companion closure.
+    focused_consumer="$FIXTURE/focused-$entry"
+    git init -q "$focused_consumer"
+    PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+        --source "$source_root" --consumer "$focused_consumer" \
+        --entrypoint "scripts/ci/$entry.sh" > "$FIXTURE/export-$entry.log"
+    printf '%s\n' "$focused_objects" > "$focused_consumer/.git/objects/info/alternates"
+    git -C "$focused_consumer" update-ref HEAD "$(git -C "$ROOT" rev-parse HEAD)"
+    printf '[toolchain]\nchannel = "fixture-unprepared"\n' > "$focused_consumer/rust-toolchain.toml"
     (cd "$focused_consumer" && bash "scripts/ci/$entry.sh") > "$FIXTURE/exported-$entry.log" 2>&1
+    bash "$ROOT/$verifier_path" --consumer "$focused_consumer" >/dev/null
 done
-bash "$ROOT/$verifier_path" --consumer "$focused_consumer" >/dev/null
 # CI installer fixtures use the same public entry point as production.
 installer_paths=(scripts/ci/test-installers.sh scripts/ci/install-ci-tool.sh)
 for path in "${installer_paths[@]}"; do
