@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.25.5]
+
+### Fixed
+
+- Refuse to increment committed release preparation again until the saved
+  candidate's Git delivery is confirmed. Preserve its plan and evidence when
+  tags or destination history are missing, conflicting or unavailable
+  ([#292 — Prevent committed release preparation from silently incrementing twice](https://github.com/dragginzgame/shared-tooling/issues/292)).
+
 ## [0.25.4]
 
 ### Fixed
