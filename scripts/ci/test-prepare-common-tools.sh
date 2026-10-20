@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: .github/actions/prepare-common-tools/action.yml .github/workflows/ci.yml scripts/ci/fixture-lifecycle.sh scripts/ci/extract-workflow-step.sh scripts/ci/prepare-script-fixture.sh scripts/ci/tool-catalog-records.pl ci/tool-versions.env make/tools.mk
+# Shared companions: .github/actions/prepare-common-tools/action.yml .github/workflows/ci.yml scripts/ci/fixture-lifecycle.sh scripts/ci/extract-workflow-step.sh scripts/ci/prepare-script-fixture.sh scripts/ci/tool-catalog-records.pl ci/tool-versions.env make/tools.mk rust-toolchain.toml
 set -euo pipefail
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 unset VALIDATION_REPOSITORY_ROOT VALIDATION_RUNNER_SNAPSHOT_PATH
@@ -179,7 +179,7 @@ reuse="$fixture/reuse checkout"
 mkdir -p "$reuse/scripts/dev" "$reuse/native-store/host" "$reuse/native-store/ic" \
     "$reuse/native-store/rust/bin" "$reuse/different/bin" "$reuse/.tools/rust/common"
 bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$reuse" \
-    scripts/ci/tool-catalog-records.pl ci/tool-versions.env
+    scripts/ci/tool-catalog-records.pl ci/tool-versions.env rust-toolchain.toml
 records="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" rust "$ROOT/ci/tool-versions.env")"
 selected_tool=''
 while IFS=$'\t' read -r name _; do
@@ -199,6 +199,9 @@ set -euo pipefail
 kind="${0##*/install-}"; kind="${kind%-tools.sh}"
 consumer="$2"
 [[ "$1" == --consumer && "$consumer" == "$RUNNER_TEMP/portable-fixtures/shared-tools/consumer" ]] || exit 99
+if [[ "$kind" == rust ]]; then
+    cmp "$GITHUB_WORKSPACE/rust-toolchain.toml" "$consumer/rust-toolchain.toml"
+fi
 if [[ "${!#}" == --check ]]; then
     if [[ "$kind" == rust ]]; then
         case "$NATIVE_REUSE_CASE" in
