@@ -69,6 +69,9 @@ Upstream acceptance and verified consumer adoption are separate outcomes. An
 accepted shared fix does not prove that a consumer refreshed its rules or tools,
 resolved conflicts or ran the relevant checks.
 
+Keep repository handoff files concise under the baseline's
+[handoff maintenance rules](DRAGGINZGAME.md#repository-handoff-files).
+
 ## Documentation contributions
 
 A shared principle should state:

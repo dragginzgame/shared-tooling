@@ -32,9 +32,10 @@ Consumer choices described in those guides remain subject to this baseline.
   with scope and reason; calling it stricter does not bypass that requirement.
 - Apply the shared baseline and the local overlay within its delegated scope.
   Local instructions do not silently override the common baseline.
-  Read the current handoff for accepted work and implementation status. Treat
-  historical documents as evidence, not current authority. Verify documentation
-  against implementation; distinguish supported behavior from unfinished plans.
+  Read the existing [current handoff](#repository-handoff-files) for accepted
+  work and implementation status. Treat historical documents as evidence, not
+  current authority. Verify documentation against implementation; distinguish
+  supported behavior from unfinished plans.
 - Every repository must have a concise, accurate GitHub description of its
   current purpose and scope, consistent with its README and implementation.
   Review it during baseline adoption and whenever the repository's purpose,
@@ -616,3 +617,28 @@ Consumer choices described in those guides remain subject to this baseline.
 - Report the outcome, changed files, relevant verification, skipped checks,
   remaining risks and open consumer actions. State compatibility and host impact
   when relevant. Do not claim a release proves publication, adoption or deployment.
+
+### Repository handoff files
+
+- A current handoff, such as `docs/status/current.md`, is a replacement summary
+  of the state needed to resume work, not an append-only session journal. Update
+  or replace existing sections; remove completed or superseded narratives rather
+  than prepending another session report. This rule does not require creating a
+  handoff file where none is needed.
+- Aim for **50–100 physical lines**. Above **150 lines**, review and trim the
+  handoff during its next update. These are maintenance targets, not tool limits
+  or CI/release gates; preserve essential unresolved recovery and safety facts.
+- Keep accepted scope, relevant source identity and pending local work, active
+  blockers and next actions, and the latest relevant validation with its limits.
+  Link canonical issues, migration guides and detailed evidence instead of
+  copying their contents or maintaining another issue-status ledger.
+- Move completed release/PR narratives, superseded qualification and long test
+  inventories out of the required startup read. Preserve still-needed historical
+  evidence at its existing owner or a durable Git revision before removing its
+  narrative; uncommitted content is not preserved by a Git-history link. Keep
+  unresolved uncertainty and the location of recovery evidence visible. Trimming
+  prose does not authorize deleting build artifacts or the only retained evidence.
+- Do not paste final agent reports, symbol inventories, routine metric blocks or
+  command logs into the repository handoff. Keep detailed evidence with its owner;
+  link it only when relevant to resuming current work. Reuse existing evidence
+  locations and Git history rather than creating a parallel archive framework.
