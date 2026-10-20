@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.25.9]
+
+### Fixed
+
+- Use the source checkout's declared compiler in native cross-checkout tool
+  reuse qualification, so the probe compares the same prepared build identities.
+- Refuse a second release increment after committing failed preparation until
+  the saved candidate's Git delivery is confirmed. Retain the plan and evidence
+  when delivery is missing or uncertain
+  ([#292 — Prevent committed release preparation from silently incrementing twice](https://github.com/dragginzgame/shared-tooling/issues/292)).
+
 ## [0.25.8]
 
 ### Fixed

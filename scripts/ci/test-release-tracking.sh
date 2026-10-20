@@ -271,6 +271,17 @@ MAKE
         current_source="$("$REAL_GIT" rev-parse HEAD)"
         next=0.6.4
         if [[ "$metadata" == bumped ]]; then
+            # Committing preparation alone is not a delivered release. A normal
+            # retry must preserve the exact plan and inputs instead of bumping again.
+            if bash "$ROOT/scripts/ci/run-release.sh" patch origin main > "$selected/unreleased.log" 2>&1; then exit 1; fi
+            grep -F 'prepared version 0.6.4 is committed but delivery is unconfirmed' "$selected/unreleased.log" >/dev/null
+            cmp "$selected/saved-plan" .git/release-state/0.6.4.plan
+            cmp "$selected/saved-validation" "$RELEASE_RESTART_EVENTS"
+            [[ "$(cat version)" == 0.6.4 && "$("$REAL_GIT" rev-parse HEAD)" == "$current_source" ]] || exit 1
+            [[ -z "$("$REAL_GIT" --git-dir="$selected/destination.git" tag --list)" ]] || exit 1
+            [[ -z "$("$REAL_GIT" status --porcelain)" && ! -e .git/release-state/0.6.5.plan ]] || exit 1
+            set -- .git/release-state/0.6.4.attempt.*
+            [[ ! -e "$1" ]] || exit 1
             next=0.6.5
             # A separately delivered earlier tag remains exactly as recorded.
             "$REAL_GIT" tag -a v0.6.4 -m 'Manually finalized 0.6.4'
