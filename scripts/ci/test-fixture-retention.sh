@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/prepare-cargo-failure-fixture.sh scripts/ci/fixture-lifecycle.sh scripts/ci/fixture-retention-probes.sh
+# Shared companions: scripts/ci/prepare-cargo-failure-fixture.sh scripts/ci/fixture-lifecycle.sh scripts/ci/fixture-retention-probes.sh scripts/ci/extract-workflow-step.sh scripts/ci/prepare-script-fixture.sh
 set -euo pipefail
 ROOT="$0"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
@@ -425,14 +425,14 @@ jq -e --arg failure_condition "\${{ needs.change-scope.outputs.scope != 'docs' &
 ' "$fixture/workflow.json" > /dev/null
 jq -e '.runs.steps | map(select(.uses? | strings | startswith("actions/upload-artifact@"))) |
   length == 1 and .[0].with["if-no-files-found"] == "error"' "$fixture/collector.json" > /dev/null
-jq -er '.runs.steps[] | select(.id == "prepare-tools") | .run' "$fixture/setup.json" > "$fixture/native-step.sh"
-jq -er '.runs.steps[] | select(.id == "archive") | .run' "$fixture/collector.json" > "$fixture/collect.sh"
+jq -e '.runs.steps' "$fixture/setup.json" > "$fixture/setup-steps.json"
+jq -e '.runs.steps' "$fixture/collector.json" > "$fixture/collector-steps.json"
+bash "$ROOT/scripts/ci/extract-workflow-step.sh" "$fixture/setup-steps.json" prepare-tools > "$fixture/native-step.sh"
+bash "$ROOT/scripts/ci/extract-workflow-step.sh" "$fixture/collector-steps.json" archive > "$fixture/collect.sh"
 for phase in install check; do
     native="$fixture/native-$phase"
-    mkdir -p "$native/scripts/dev" "$native/temp" "$native/make"
-    cp "$ROOT/make/tools.mk" "$ROOT/make/execution.mk" "$native/make/"
-    mkdir -p "$native/scripts/ci"
-    cp "$ROOT/scripts/ci/check-make-execution.sh" "$native/scripts/ci/"
+    mkdir -p "$native/scripts/dev" "$native/temp"
+    bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$native" make/tools.mk
     printf 'LOCAL_TOOL_INSTALL_TARGETS += install-ic-tools\nLOCAL_TOOL_CHECK_TARGETS += ic-tools-check\ninclude make/tools.mk\n' > "$native/Makefile"
     for tool in host rust; do
         printf '#!/usr/bin/env bash\nexit 0\n' > "$native/scripts/dev/install-$tool-tools.sh"
@@ -472,10 +472,8 @@ done
 # Exercise the real Rust installer through the complete common setup route.
 # Cargo alone is substituted, failing after it has produced build evidence.
 native="$fixture/native-rust"
-mkdir -p "$native/temp" "$native/bin" "$native/make"
-cp "$ROOT/make/tools.mk" "$ROOT/make/execution.mk" "$native/make/"
-mkdir -p "$native/scripts/ci"
-cp "$ROOT/scripts/ci/check-make-execution.sh" "$native/scripts/ci/"
+mkdir -p "$native/temp" "$native/bin"
+bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$native" make/tools.mk
 cat > "$native/Makefile" <<'MAKE'
 include make/tools.mk
 # Host/IC effects are substituted; the Rust installer and collector are real.

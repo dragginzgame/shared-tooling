@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/install-ci-tool.sh scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/install-ci-tool.sh scripts/ci/fixture-lifecycle.sh scripts/ci/prepare-script-fixture.sh scripts/ci/verify-file-checksum.sh
 set -euo pipefail
 
 ROOT="$0"
@@ -130,22 +130,10 @@ fi
 SCRIPT
 chmod +x "$FIXTURE/bin/curl"
 
-checksum_sha256() {
-    local file="$1"
-    local output
-
-    if command -v sha256sum >/dev/null 2>&1; then
-        output="$(sha256sum "$file")"
-    else
-        output="$(shasum -a 256 "$file")"
-    fi
-    printf '%s\n' "${output%% *}"
-}
-
-actionlint_checksum="$(checksum_sha256 "$archives/actionlint_1.7.12_linux_amd64.tar.gz")"
-gitleaks_checksum="$(checksum_sha256 "$archives/gitleaks_8.30.1_linux_x64.tar.gz")"
-shellcheck_checksum="$(checksum_sha256 "$archives/shellcheck-v0.11.0.linux.x86_64.tar.xz")"
-sccache_checksum="$(checksum_sha256 "$archives/$sccache_package.tar.gz")"
+actionlint_checksum="$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$archives/actionlint_1.7.12_linux_amd64.tar.gz")"
+gitleaks_checksum="$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$archives/gitleaks_8.30.1_linux_x64.tar.gz")"
+shellcheck_checksum="$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$archives/shellcheck-v0.11.0.linux.x86_64.tar.xz")"
+sccache_checksum="$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$archives/$sccache_package.tar.gz")"
 
 # Default and explicitly selected catalogs use the same authenticated installer.
 cat > "$FIXTURE/ci.env" <<CATALOG
@@ -162,9 +150,8 @@ for tool in actionlint shellcheck gitleaks; do
         --install-dir "$FIXTURE/catalog-installed" > "$FIXTURE/catalog-$tool.log"
     [[ -x "$FIXTURE/catalog-installed/$tool" ]] || exit 1
 done
-mkdir -p "$FIXTURE/snapshot/scripts/ci" "$FIXTURE/snapshot/scripts/dev" "$FIXTURE/snapshot/ci"
-cp "$ROOT/scripts/ci/"{install-ci-tool.sh,tool-catalog-records.pl,verify-file-checksum.sh,StableVersion.pm} "$FIXTURE/snapshot/scripts/ci/"
-cp "$ROOT/scripts/dev/"{tool-store.sh,host-platform.sh} "$FIXTURE/snapshot/scripts/dev/"
+mkdir "$FIXTURE/snapshot"
+bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$FIXTURE/snapshot" scripts/ci/install-ci-tool.sh
 cp "$FIXTURE/ci.env" "$FIXTURE/snapshot/ci/tool-versions.env"
 PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
     bash "$FIXTURE/snapshot/scripts/ci/install-ci-tool.sh" actionlint \
@@ -338,13 +325,13 @@ for tool in actionlint gitleaks shellcheck sccache; do
         mkdir -p "$payloads/shellcheck/shellcheck-v9.9.9"
         cp "$FIXTURE/original" "$payloads/shellcheck/shellcheck-v9.9.9/shellcheck"
         tar -cJf "$archives/$wrong_archive" -C "$payloads/shellcheck" shellcheck-v9.9.9
-        digest="$(checksum_sha256 "$archives/$wrong_archive")"
+        digest="$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$archives/$wrong_archive")"
     elif [[ "$tool" == sccache ]]; then
         wrong_package=sccache-v9.9.9-x86_64-unknown-linux-musl
         mkdir -p "$payloads/sccache/$wrong_package"
         cp "$FIXTURE/original" "$payloads/sccache/$wrong_package/sccache"
         tar -czf "$archives/$wrong_archive" -C "$payloads/sccache" "$wrong_package"
-        digest="$(checksum_sha256 "$archives/$wrong_archive")"
+        digest="$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$archives/$wrong_archive")"
     fi
     if PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
         bash "$ROOT/scripts/ci/install-ci-tool.sh" "$tool" --version 9.9.9 --sha256 "$digest" \

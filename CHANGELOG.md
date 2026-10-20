@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.25.5]
+
+### Changed
+
+- Qualify focused fixture exports from one entrypoint each, deriving helpers
+  through declared companions instead of selecting a second helper roster.
+  Independent exports prevent one fixture from masking another's missing dependency.
+- Derive installer, tooling-report and failure-retention fixture inputs from
+  declared companions rather than copied helper rosters. Failure-evidence checks
+  use the shared step reader to reject ambiguous or incomplete run selections,
+  reusing one parsed action for collection and policy assertions.
+- Prepare installer fixture checksums through the shared digest reader, removing
+  a separate backend-selection and checksum-output parser.
+
 ## [0.25.4]
 
 ### Fixed
