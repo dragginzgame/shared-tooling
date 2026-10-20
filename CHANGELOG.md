@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.25.3]
+
+### Added
+
+- Enable explicit Cargo features when preparing and checking selected tools,
+  including Host's `ic-host-file` CLI. Bind canonical feature sets to immutable
+  selections and Cargo receipts; offline checks never install or repair tools
+  ([#289 — Support explicit Cargo features in selected-tool installation and admission](https://github.com/dragginzgame/shared-tooling/issues/289)).
+  After adoption, rerun explicit tool setup for the updated build policy;
+  previous installations and failed attempts remain retained.
+
 ## [0.25.2]
 
 ### Fixed

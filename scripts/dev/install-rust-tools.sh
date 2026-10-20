@@ -12,9 +12,10 @@ versions_file="$ROOT/ci/tool-versions.env"
 check_only=false
 preflight=false
 package='' selected_version='' lockfile='' kind='' target='' profile=''
+features_csv='' features_json='[]'
 usage() {
     echo 'usage: install-rust-tools.sh [--consumer DIR] [--versions FILE] [--check | --preflight]' >&2
-    echo '   or: install-rust-tools.sh [--consumer DIR] --package NAME (--version X.Y.Z | --lockfile FILE) (--bin NAME | --example NAME) --profile (debug | release) [--check]' >&2
+    echo '   or: install-rust-tools.sh [--consumer DIR] --package NAME (--version X.Y.Z | --lockfile FILE) (--bin NAME | --example NAME) --profile (debug | release) [--features NAME[,NAME]...]... [--check]' >&2
 }
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -24,6 +25,19 @@ while [[ $# -gt 0 ]]; do
             shift 2 ;;
         --check) check_only=true; shift ;;
         --preflight) preflight=true; shift ;;
+        --features)
+            [[ $# -ge 2 && -n "$2" ]] || { usage; exit 2; }
+            [[ "$2" != *[[:space:]]* ]] || { usage; exit 2; }
+            case "$2" in ,*|*,|*,,*) usage; exit 2 ;; esac
+            requested_features=()
+            IFS=, read -r -a requested_features <<< "$2"
+            for feature in "${requested_features[@]}"; do
+                [[ "$feature" =~ ^[A-Za-z0-9_][A-Za-z0-9_.+-]*(/[A-Za-z0-9_][A-Za-z0-9_.+-]*)?$ ]] || {
+                    echo 'Cargo tool features require comma-separated ASCII feature names' >&2; exit 2;
+                }
+            done
+            features_csv="${features_csv:+$features_csv,}$2"
+            shift 2 ;;
         --package|--version|--lockfile|--bin|--example|--profile)
             [[ $# -ge 2 && -n "$2" ]] || { usage; exit 2; }
             case "$1" in
@@ -88,12 +102,16 @@ check_locked_selection() {
 }
 
 selected=false
-if [[ -n "$package$selected_version$lockfile$kind$target$profile" ]]; then
+if [[ -n "$package$selected_version$lockfile$kind$target$profile$features_csv" ]]; then
     [[ "$preflight" == false ]] || { usage; exit 2; }
     selected=true
     [[ "$package" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ &&
        "$target" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]*$ && -n "$kind" &&
        ( "$profile" == debug || "$profile" == release ) ]] || { usage; exit 2; }
+    if [[ -n "$features_csv" ]]; then
+        features_json="$(jq -cn --arg features "$features_csv" '$features | split(",") | unique')"
+        features_csv="$(jq -r 'join(",")' <<< "$features_json")"
+    fi
     if [[ -n "$lockfile" ]]; then
         [[ -z "$selected_version" ]] || { usage; exit 2; }
         [[ "$lockfile" == /* ]] || lockfile="$consumer/$lockfile"
@@ -159,14 +177,17 @@ selected_paths() {
 selected_receipt() {
     jq -se --arg identity "$package $selected_version (registry+https://github.com/rust-lang/crates.io-index)" \
         --arg version "=$selected_version" --arg target "$target" --arg profile "$profile" --arg host "$host" \
-        --arg compiler "$compiler_version" '
+        --arg compiler "$compiler_version" --argjson features "$features_json" '
         length == 1 and (.[0] | (.installs | keys) == [$identity] and
         (.installs[$identity] | .version_req == $version and .bins == [$target] and
           (if $profile == "debug" then (.profile == "dev" or .profile == "debug")
            else .profile == "release" end) and .target == $host and
+          ((if has("features") then .features else [] end) | type == "array" and sort == $features) and
+          ((has("no_default_features") | not) or .no_default_features == false) and
+          ((has("all_features") | not) or .all_features == false) and
           (.rustc | rtrimstr("\n")) == $compiler))
     ' "$1/.crates2.json" > /dev/null || {
-        printf 'Cargo tool receipt does not match package/version, target, profile or compiler: %s\n' "$1/.crates2.json" >&2
+        printf 'Cargo tool receipt does not match package/version, features, target, profile or compiler: %s\n' "$1/.crates2.json" >&2
         return 1
     }
 }
@@ -216,7 +237,9 @@ rust_setup_hint() {
             printf ' --package %q' "$package"
             if [[ -n "$lockfile" ]]; then printf ' --lockfile %q' "$lockfile"
             else printf ' --version %q' "$selected_version"; fi
-            printf ' --%s %q --profile %q\n' "$kind" "$target" "$profile"
+            printf ' --%s %q --profile %q' "$kind" "$target" "$profile"
+            [[ -z "$features_csv" ]] || printf ' --features %q' "$features_csv"
+            printf '\n'
         else
             printf ' --versions %q\n' "$catalog"
         fi

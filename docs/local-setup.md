@@ -460,6 +460,26 @@ a changed selection fails and retains any build attempt. Retry against the new
 lock selection; prior installations remain intact. Consumers still own the
 selected graph, package, target/profile and Testkit's separate server setup/check.
 
+For a target gated by Cargo features, pass `--features NAME[,NAME]...` on both
+setup and check. For example, Host's file CLI requires its `cli` feature:
+
+```bash
+bash scripts/dev/install-rust-tools.sh --consumer "$PWD" \
+  --package ic-host-fs --lockfile Cargo.lock --bin ic-host-file --profile debug \
+  --features cli
+# Repeat the same arguments with --check for offline admission.
+```
+
+Feature lists use comma-separated ASCII names, optionally `dependency/feature`;
+repeat `--features` to combine lists. Ordering and duplicates normalize to one
+requested set. Empty lists, whitespace and malformed names refuse before setup.
+Cargo validates whether the published package supports the requested features;
+its refusal retains the attempt without activating it. Package defaults stay
+enabled; this interface does not accept `--all-features` or `--no-default-features`.
+Feature sets select separate immutable installations and must match the Cargo
+receipt. Featureless requests keep their existing input shape. Ambient Cargo
+flags cannot supply features, and checks never repair a mismatching selection.
+
 Consumer extensions such as cargo-audit and cargo-machete use this same owner.
 Keep their exact pins in the consumer and register their existing setup/check
 targets in `LOCAL_TOOL_INSTALL_TARGETS` / `LOCAL_TOOL_CHECK_TARGETS`. For example,
@@ -535,6 +555,7 @@ version, target kind/name, profile and failing path. Source admission distinguis
 missing archives from ambiguous cached sources; receipt and byte checks identify
 the rejected file. Refusals include a shell-quoted explicit installer command
 retaining the consumer's catalog or package/lockfile selection, target and profile.
+For feature-selected tools, the repair command also retains the requested set.
 An ambiguous cache still requires inspecting the named archives; rerunning setup
 does not choose between them. Successful selection prints only the executable path.
 Dependency updates that change the selected CLI must prepare and check it before

@@ -114,7 +114,7 @@ if [[ "$1" == info ]]; then
 fi
 [[ "$1" == install ]] || exit 73
 package="$2"; shift 2
-version='' kind='' target='' destination='' profile=release locked=false registry='' jobs=''
+version='' kind='' target='' destination='' profile=release locked=false registry='' jobs='' features=''
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --version) version="${2#=}"; shift 2 ;;
@@ -123,6 +123,7 @@ while [[ $# -gt 0 ]]; do
         --bin|--example) kind="${1#--}"; target="$2"; shift 2 ;;
         --registry) registry="$2"; shift 2 ;;
         --jobs) jobs="$2"; shift 2 ;;
+        --features) features="$2"; shift 2 ;;
         --locked) locked=true; shift ;;
         --debug) profile=debug; shift ;;
         --offline) shift ;;
@@ -134,6 +135,7 @@ printf '%s %s %s %s %s\n' "$package" "$version" "$kind" "$target" "$profile" >> 
 mkdir -p "$destination/bin" "$build"
 printf 'retained compilation\n' > "$build/evidence"
 [[ ! -f "$fixture/fail-$package" ]] || exit 23
+[[ "$features" != unavailable ]] || exit 24
 if [[ -f "$fixture/locked-file" ]]; then
     printf '\n' >> "$(cat "$fixture/locked-file")"
     sed 's/2.0.0/2.0.1/' "$(cat "$fixture/locked-file")" > "$fixture/changed-lock"
@@ -149,8 +151,9 @@ esac
 chmod +x "$destination/bin/$target"
 compiler="$("$RUSTC" -vV)"
 "$jq_bin" -n --arg identity "$package $version (registry+https://github.com/rust-lang/crates.io-index)" \
-    --arg version "=$version" --arg target "$target" --arg profile "$profile" --arg compiler "$compiler" \
-    '{installs:{($identity):{version_req:$version,bins:[$target],profile:$profile,target:"fixture-host",rustc:$compiler}}}' > "$destination/.crates2.json"
+    --arg version "=$version" --arg target "$target" --arg profile "$profile" --arg compiler "$compiler" --arg features "$features" \
+    '{installs:{($identity):{version_req:$version,bins:[$target],profile:$profile,target:"fixture-host",rustc:$compiler,
+      features:($features | if . == "" then [] else split(",") end),no_default_features:false}}}' > "$destination/.crates2.json"
 printf 'Cargo receipt\n' > "$destination/.crates.toml"
 if [[ -f "$fixture/redirect-observation" ]]; then
     ln -s "$fixture/outside-observation" "$destination/$(cat "$fixture/redirect-observation")"
@@ -206,6 +209,16 @@ for value in '' '01.2.3' '1.2.3-beta.1'; do
     refuse bash "$installer" --consumer "$consumer" --package sample --version "$value" --bin sample --profile release
     [[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" && ! -e "$fixture/builds" ]] || exit 1
 done
+# Invalid feature requests must fail before source acquisition or installation.
+for value in '' ',cli' 'cli,' 'cli,,other' '-flag' 'cli other' $'cli\nother' 'dep:cli' 'dep//cli'; do
+    status=0
+    bash "$installer" --consumer "$consumer" --package sample --version 1.2.3 --bin prepare \
+        --profile debug --features "$value" > "$fixture/invalid-features.log" 2>&1 || status=$?
+    [[ "$status" == 2 && ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" && ! -e "$fixture/builds" ]] || exit 1
+done
+refuse common --features cli
+refuse common --features cli --preflight
+[[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
 if [[ "$path_context" == true ]]; then
     common
     common --check
@@ -567,7 +580,7 @@ for field in bin/prepare .crates2.json inputs.json selection.json source.crate C
     [[ ! -s "$fixture/probes" ]] || exit 1
     case "$field" in
         bin/prepare|selection.json) reason='Cargo tool executable/receipt bytes differ or the selection receipt is invalid:'; receipt=selection.json ;;
-        .crates2.json) reason='Cargo tool receipt does not match package/version, target, profile or compiler:'; receipt="$field" ;;
+        .crates2.json) reason='Cargo tool receipt does not match package/version, features, target, profile or compiler:'; receipt="$field" ;;
         inputs.json) reason='Cargo tool build/source inputs differ or their receipt is invalid:'; receipt="$field" ;;
         *) reason='checksum mismatch for'; receipt="$field" ;;
     esac
@@ -581,12 +594,12 @@ done
 # A different kind/profile cannot reuse the example selection.
 cp "$bundle/.crates2.json" "$fixture/receipt"
 cp "$bundle/selection.json" "$fixture/selection"
-for field in version_req target profile rustc; do
+for field in version_req target profile rustc features no_default_features all_features; do
     jq --arg field "$field" '.installs[][$field]="wrong"' "$fixture/receipt" > "$bundle/.crates2.json"
     digest="$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$bundle/.crates2.json")"
     jq --arg digest "$digest" '.receipt_sha256=$digest' "$fixture/selection" > "$bundle/selection.json"
     refuse bash "$installer" "${selected_args[@]}" --check
-    grep -Fx "Cargo tool receipt does not match package/version, target, profile or compiler: $bundle/.crates2.json" "$fixture/refused.log" >/dev/null
+    grep -Fx "Cargo tool receipt does not match package/version, features, target, profile or compiler: $bundle/.crates2.json" "$fixture/refused.log" >/dev/null
 done
 cp "$fixture/receipt" "$bundle/.crates2.json"
 cp "$fixture/selection" "$bundle/selection.json"
@@ -741,6 +754,67 @@ for leaf in build-identity.observed.json native-environment.observed.txt; do
     rm "$fixture/redirect-observation" "$fixture/change-build"
     cp "$fixture/original-compiler" "$fixture/compiler-version"
 done
+# Explicit features are one canonical requested set, separate from featureless
+# selections. Checks must not install, repair receipts or execute product tools.
+feature_args=(--consumer "$consumer" --package sample --version 1.2.3 --bin prepare --profile debug)
+plain_path="$(bash "$installer" "${feature_args[@]}")"
+plain_bundle="$(perl -MCwd=abs_path -e 'print abs_path(shift)' "${plain_path%/bin/*}")"
+jq -e 'has("features") | not' "$plain_bundle/inputs.json" >/dev/null
+builds_before="$(wc -l < "$fixture/builds")"
+: > "$fixture/probes"
+refuse bash "$installer" "${feature_args[@]}" --features cli --check
+grep -F -- '--profile debug --features cli' "$fixture/refused.log" >/dev/null
+[[ "$(wc -l < "$fixture/builds")" == "$builds_before" && ! -s "$fixture/probes" ]] || exit 1
+cli_path="$(bash "$installer" "${feature_args[@]}" --features cli)"
+[[ "$cli_path" != "$plain_path" ]] || exit 1
+cli_bundle="$(perl -MCwd=abs_path -e 'print abs_path(shift)' "${cli_path%/bin/*}")"
+jq -e '.features == ["cli"]' "$cli_bundle/inputs.json" >/dev/null
+combined="$(bash "$installer" "${feature_args[@]}" --features cli,alpha --features cli)"
+[[ "$combined" != "$cli_path" && "$combined" != "$plain_path" ]] || exit 1
+builds_before="$(wc -l < "$fixture/builds")"
+for mode in setup check; do
+    options=(); [[ "$mode" != check ]] || options=(--check)
+    observed="$(CARGO_NET_OFFLINE=true bash "$installer" "${feature_args[@]}" \
+        --features alpha --features cli ${options[@]+"${options[@]}"})"
+    [[ "$observed" == "$combined" && "$(wc -l < "$fixture/builds")" == "$builds_before" && ! -s "$fixture/probes" ]] || exit 1
+done
+# Re-sign byte receipts after changing valid Cargo feature fields: semantic
+# feature admission must still reject the otherwise matching installation.
+cp "$cli_bundle/.crates2.json" "$fixture/feature-receipt"
+cp "$cli_bundle/selection.json" "$fixture/feature-selection"
+for change in missing other duplicate null false no-default all; do
+    case "$change" in
+        missing) expression='.installs[].features = []' ;;
+        other) expression='.installs[].features = ["alpha"]' ;;
+        duplicate) expression='.installs[].features = ["cli", "cli"]' ;;
+        null) expression='.installs[].features = null' ;;
+        false) expression='.installs[].features = false' ;;
+        no-default) expression='.installs[].no_default_features = true' ;;
+        all) expression='.installs[].all_features = true' ;;
+    esac
+    jq "$expression" "$fixture/feature-receipt" > "$cli_bundle/.crates2.json"
+    digest="$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$cli_bundle/.crates2.json")"
+    jq --arg digest "$digest" '.receipt_sha256=$digest' "$fixture/feature-selection" > "$cli_bundle/selection.json"
+    refuse bash "$installer" "${feature_args[@]}" --features cli --check
+    [[ "$(wc -l < "$fixture/builds")" == "$builds_before" && ! -s "$fixture/probes" ]] || exit 1
+done
+cp "$fixture/feature-receipt" "$cli_bundle/.crates2.json"
+cp "$fixture/feature-selection" "$cli_bundle/selection.json"
+bash "$installer" "${feature_args[@]}" --features cli --check > "$fixture/feature-check"
+[[ "$(cat "$fixture/feature-check")" == "$cli_path" ]] || exit 1
+printf 'version = 3\n[[package]]\nname = "sample"\nversion = "1.2.3"\nsource = "registry+https://github.com/rust-lang/crates.io-index"\n' > "$fixture/feature.lock"
+observed="$(bash "$installer" --consumer "$consumer" --package sample --lockfile "$fixture/feature.lock" \
+    --bin prepare --profile debug --features cli --check)"
+[[ "$observed" == "$cli_path" && "$(wc -l < "$fixture/builds")" == "$builds_before" ]] || exit 1
+# Cargo owns unknown-feature diagnostics. Preserve its status/log and do not
+# activate the failed attempt or disturb any earlier feature selection.
+status=0
+bash "$installer" "${feature_args[@]}" --features unavailable > "$fixture/feature-failure.out" \
+    2> "$fixture/feature-failure.err" || status=$?
+[[ "$status" == 24 && ! -s "$fixture/feature-failure.out" ]] || exit 1
+attempt="$(sed -n 's/^Cargo tool attempt retained: //p' "$fixture/feature-failure.err")"
+[[ -f "$attempt/install.log" && -f "$attempt/build/evidence" && ! -e "${attempt%/*}/current" && ! -e "$attempt/selection.json" ]] || exit 1
+[[ "$(bash "$installer" "${feature_args[@]}" --features cli --check)" == "$cli_path" ]] || exit 1
 [[ "$(git -C "$fixture/a" rev-parse HEAD)" == "$source_commit" && ! -s "$fixture/forbidden-git" ]] || exit 1
 echo 'Shared Cargo installation, standard environment, identities, retention and offline checks passed'
 fixture_complete=true
