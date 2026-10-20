@@ -55,7 +55,11 @@ The default `RELEASE_DELIVERY=direct` workflow is:
    Never infer a deployment destination or credentials.
 2. **Validate.** Run the repository's documented complete release gate against
    the selected source and dependencies. Patch, minor and major use the same
-   gate. Stop before version mutation if validation fails; retain failure logs
+   gate. Rust consumers run their existing Clippy gate before expensive builds,
+   tests and packaging, with failure stopping later stages even under parallel
+   Make. The same ordering applies to Rust deployment entrypoints under the
+   [shared validation policy](../DRAGGINZGAME.md#validation-and-evidence).
+   Stop before version mutation if validation fails; retain failure logs
    and build artifacts. Coordinated Rust crates with unchanged versions may use
    [local archive qualification](../rules/cargo-dependencies.md#qualifying-coordinated-package-archives-before-a-version-bump)
    when registry verification selects an older published dependency. This does

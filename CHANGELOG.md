@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.25.7]
+
+### Changed
+
+- Require Rust release and deployment entrypoints to pass their existing Clippy
+  gate before expensive builds, tests, packaging or new external effects, with
+  failure stopping later stages even under parallel Make. Consumers retain the
+  selected lint scope and must apply the ordering in their own entrypoints.
+
 ## [0.25.6]
 
 ### Fixed
