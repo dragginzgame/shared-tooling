@@ -4,6 +4,8 @@
 
 ### Fixed
 
+- Give the cross-checkout native Cargo-tool reuse probe the same declared
+  compiler as the source checkout before comparing immutable build identities.
 - Clarify failure-evidence collection: use the existing orchestrator, treat failed
   selector output as diagnostics and retain redirected parent links without
   traversing them. Keep product log selections and hosted transport checks local.

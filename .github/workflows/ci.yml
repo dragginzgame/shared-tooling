@@ -163,6 +163,9 @@ jobs:
         run: |
           sharing="$RUNNER_TEMP/portable-fixtures/shared-tools"
           mkdir -p "$sharing/consumer" "$sharing/bin"
+          # The installer selects the consumer's compiler. Without this pin,
+          # the scratch checkout selects the runner default outside our tree.
+          cp rust-toolchain.toml "$sharing/consumer/rust-toolchain.toml"
           printf '#!/bin/sh\necho unexpected-download >&2\nexit 91\n' > "$sharing/bin/curl"
           chmod +x "$sharing/bin/curl"
           for kind in host ic; do
