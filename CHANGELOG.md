@@ -1,11 +1,30 @@
 # Changelog
 
-## [0.25.4]
+## [0.25.6]
 
 ### Fixed
 
 - Give the cross-checkout native Cargo-tool reuse probe the same declared
   compiler as the source checkout before comparing immutable build identities.
+
+## [0.25.5]
+
+### Changed
+
+- Qualify focused fixture exports from one entrypoint each, deriving helpers
+  through declared companions instead of selecting a second helper roster.
+  Independent exports prevent one fixture from masking another's missing dependency.
+- Derive installer, tooling-report and failure-retention fixture inputs from
+  declared companions rather than copied helper rosters. Failure-evidence checks
+  use the shared step reader to reject ambiguous or incomplete run selections,
+  reusing one parsed action for collection and policy assertions.
+- Prepare installer fixture checksums through the shared digest reader, removing
+  a separate backend-selection and checksum-output parser.
+
+## [0.25.4]
+
+### Fixed
+
 - Clarify failure-evidence collection: use the existing orchestrator, treat failed
   selector output as diagnostics and retain redirected parent links without
   traversing them. Keep product log selections and hosted transport checks local.

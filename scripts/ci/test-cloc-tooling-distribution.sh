@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/ci/prepare-script-fixture.sh
 set -euo pipefail
 # Upstream integration only: consumers vendor test-cloc-tooling.sh instead.
 ROOT="$0"
@@ -124,10 +124,8 @@ cp "$fixture/valid.snapshot" "$records/.shared-tooling.snapshot"
 # present in the worktree. In particular there is no distribution helper.
 adoption="$fixture/adoption"
 git clone -q --shared --no-checkout "$ROOT" "$adoption"
-mkdir -p "$adoption/scripts/ci" "$adoption/scripts/dev"
-cp "$ROOT/scripts/ci/test-cloc-tooling.sh" "$ROOT/scripts/ci/verify-file-checksum.sh" "$ROOT/scripts/ci/fixture-lifecycle.sh" \
-    "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" "$adoption/scripts/ci/"
-cp "$ROOT/scripts/dev/cloc-tooling.pl" "$adoption/scripts/dev/"
+bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$adoption" scripts/ci/test-cloc-tooling.sh
+[[ ! -e "$adoption/scripts/distribution" ]] || exit 1
 bash "$adoption/scripts/ci/test-cloc-tooling.sh" > "$fixture/adoption.log" 2>&1
 # Fleet Make routing belongs to this producer, with the actual reporter and
 # selected fixture parent. Consumers qualify only their local workspace route.
