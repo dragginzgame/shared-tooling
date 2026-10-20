@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.25.6]
+
+### Fixed
+
+- Retain Cargo metadata failure diagnostics, root inputs and separate command/
+  logger statuses, preserving the original failure without automatic retries
+  ([#291 — Retain failed Cargo metadata diagnostics and root inputs](https://github.com/dragginzgame/shared-tooling/issues/291)).
+
 ## [0.25.5]
 
 ### Changed
