@@ -27,7 +27,25 @@ trap finish EXIT
 mkdir -p "$fixture/bin" "$fixture/assets" "$fixture/payload"
 export IC_TOOLS_TEST_FIXTURE="$fixture"
 IC_TOOLS_TEST_REAL_CP="$(command -v cp)"
+IC_TOOLS_TEST_REAL_AWK="$(command -v awk)"
+export IC_TOOLS_TEST_REAL_AWK
 export IC_TOOLS_TEST_REAL_CP
+# macOS awk refuses literal LF bytes in -v assignments. Exercise that
+# boundary even when the native fixture host uses a permissive awk.
+cat > "$fixture/bin/awk" <<'SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+arguments=("$@")
+while [[ $# -gt 0 ]]; do
+    if [[ "$1" == -v ]]; then
+        [[ $# -ge 2 ]] || exit 2
+        case "$2" in *$'\n'*) echo 'awk fixture: newline in assignment' >&2; exit 2 ;; esac
+        shift
+    fi
+    shift
+done
+exec "$IC_TOOLS_TEST_REAL_AWK" "${arguments[@]}"
+SCRIPT
 cat > "$fixture/bin/cp" <<'SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail

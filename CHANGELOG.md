@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.26.1]
+
+### Added
+
+- Document focused dependency-adoption checks across independent consumer graphs,
+  reusing existing checks while keeping package, identity and artifact policy local
+  ([#295 — Provide a focused dependency-adoption check contract](https://github.com/dragginzgame/shared-tooling/issues/295)).
+
+### Fixed
+
+- Include selected IC-tool preflight in release-editor setup and recovery
+  fixture expectations
+  ([#296 — Update release-editor setup fixture for selected IC preflight](https://github.com/dragginzgame/shared-tooling/issues/296)).
+- Keep IC tool-selection arguments to awk on one line so macOS can prepare
+  multiple selected tools; preserve canonical selections and store identities
+  ([#294 — Make multi-tool IC selection portable to macOS awk](https://github.com/dragginzgame/shared-tooling/issues/294)).
+
 ## [0.26.0]
 
 ### Breaking

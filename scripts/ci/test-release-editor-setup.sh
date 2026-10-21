@@ -21,6 +21,9 @@ cat > "$fixture/installer" <<'INSTALLER'
 set -euo pipefail
 name="${0##*/}"
 printf '%s %s\n' "$name" "$*" >> "$EDITOR_SETUP_EVENTS"
+if [[ "$name" == install-ic-tools.sh && "${EDITOR_SETUP_FAILURE:-}" == ic-preflight && "$*" == *--preflight ]]; then
+    exit 39
+fi
 case "$*" in
     *--package\ ic-build*)
         [[ "$*" == *'--version '*' --bin ic-build-release-metadata --profile debug'* ]] || exit 91
@@ -43,12 +46,13 @@ exit "${EDITOR_FIXTURE_STATUS:-0}"
 PORTABLE
 : > "$EDITOR_SETUP_EVENTS"
 make --no-print-directory -C "$consumer" install-tools > "$fixture/install.log" 2>&1
-[[ "$(wc -l < "$EDITOR_SETUP_EVENTS")" -eq 5 ]] || exit 1
-[[ "$(sed -n '1p' "$EDITOR_SETUP_EVENTS")" == install-rust-tools.sh*--preflight ]] || exit 1
-[[ "$(sed -n '2p' "$EDITOR_SETUP_EVENTS")" == install-host-tools.sh* ]] || exit 1
-[[ "$(sed -n '3p' "$EDITOR_SETUP_EVENTS")" == install-rust-tools.sh*--versions* ]] || exit 1
-[[ "$(sed -n '4p' "$EDITOR_SETUP_EVENTS")" == install-ic-tools.sh* ]] || exit 1
-[[ "$(sed -n '5p' "$EDITOR_SETUP_EVENTS")" == install-rust-tools.sh*--package\ ic-build* ]] || exit 1
+[[ "$(wc -l < "$EDITOR_SETUP_EVENTS")" -eq 6 ]] || exit 1
+[[ "$(sed -n '1p' "$EDITOR_SETUP_EVENTS")" == install-ic-tools.sh*--preflight ]] || exit 1
+[[ "$(sed -n '2p' "$EDITOR_SETUP_EVENTS")" == install-rust-tools.sh*--preflight ]] || exit 1
+[[ "$(sed -n '3p' "$EDITOR_SETUP_EVENTS")" == install-host-tools.sh* ]] || exit 1
+[[ "$(sed -n '4p' "$EDITOR_SETUP_EVENTS")" == install-rust-tools.sh*--versions* ]] || exit 1
+[[ "$(sed -n '5p' "$EDITOR_SETUP_EVENTS")" == install-ic-tools.sh* ]] || exit 1
+[[ "$(sed -n '6p' "$EDITOR_SETUP_EVENTS")" == install-rust-tools.sh*--package\ ic-build* ]] || exit 1
 : > "$EDITOR_SETUP_EVENTS"
 make --no-print-directory -C "$consumer" tools-check > "$fixture/check.log" 2>&1
 [[ "$(wc -l < "$EDITOR_SETUP_EVENTS")" -eq 4 ]] || exit 1
@@ -132,19 +136,22 @@ status=0
 PATH="$fixture/compare-failure-bin:$PATH" make --no-print-directory -C "$consumer" release-patch \
     > "$fixture/compare-failure.log" 2>&1 || status=$?
 [[ "$status" != 0 && ! -s "$EDITOR_SETUP_EVENTS" ]] || exit 1
-for mode in install check success; do
+for mode in ic-preflight install check success; do
     : > "$EDITOR_SETUP_EVENTS"
     status=0
     failure="$mode"; [[ "$mode" != success ]] || failure=''
     EDITOR_SETUP_FAILURE="$failure" make --no-print-directory -j2 -C "$consumer" release-patch \
         > "$fixture/release-$mode.log" 2>&1 || status=$?
     [[ "$status" != 0 ]] || exit 1
-    [[ "$(sed -n '1p' "$EDITOR_SETUP_EVENTS")" == install-rust-tools.sh*--preflight ]] || exit 1
+    [[ "$(sed -n '1p' "$EDITOR_SETUP_EVENTS")" == install-ic-tools.sh*--preflight ]] || exit 1
     if [[ "$mode" == success ]]; then
         [[ "$(tail -n 1 "$EDITOR_SETUP_EVENTS")" == release-gate ]] || exit 1
-        [[ "$(wc -l < "$EDITOR_SETUP_EVENTS")" -eq 10 ]] || exit 1
+        [[ "$(wc -l < "$EDITOR_SETUP_EVENTS")" -eq 11 ]] || exit 1
     else
         if grep -F 'release-gate' "$EDITOR_SETUP_EVENTS" >/dev/null; then exit 1; fi
+        if [[ "$mode" == ic-preflight ]]; then
+            [[ "$(wc -l < "$EDITOR_SETUP_EVENTS")" -eq 1 ]] || exit 1
+        fi
     fi
     [[ "$(git -C "$consumer" rev-parse HEAD)" == "$source_commit" &&
        "$(cat "$consumer/VERSION")" == 0.1.0 && -z "$(git -C "$consumer" tag --list)" ]] || exit 1
@@ -163,7 +170,7 @@ EDITOR_RELEASE_GATE_STATUS=0 make --no-print-directory -C "$consumer" release-pa
     > "$fixture/prepare-stop.log" 2>&1 || status=$?
 [[ "$status" != 0 && -f "$consumer/.git/release-state/0.1.1.plan" ]] || exit 1
 [[ "$(tail -n 1 "$consumer/.git/release-state/0.1.1.plan")" == prepare ]] || exit 1
-[[ "$(wc -l < "$EDITOR_SETUP_EVENTS")" -eq 14 ]] || exit 1
+[[ "$(wc -l < "$EDITOR_SETUP_EVENTS")" -eq 15 ]] || exit 1
 : > "$EDITOR_SETUP_EVENTS"
 status=0
 make --no-print-directory -C "$consumer" release-resume VERSION=0.1.1 \
@@ -185,7 +192,7 @@ for authority in 0 1; do
     SHARED_RELEASE_PREPARE_TOOLS="$authority" make --no-print-directory -C "$consumer" release-merged-preflight \
         RELEASE_PREVIOUS=0.1.0 RELEASE_VERSION=0.1.1 RELEASE_DATE=2026-10-19 RELEASE_COMMIT="$merged_commit" \
         > "$fixture/merged-$authority.log" 2>&1
-    expected=4; [[ "$authority" != 1 ]] || expected=9
+    expected=4; [[ "$authority" != 1 ]] || expected=10
     [[ "$(wc -l < "$EDITOR_SETUP_EVENTS")" -eq "$expected" ]] || exit 1
 done
 : > "$EDITOR_SETUP_EVENTS"

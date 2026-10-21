@@ -57,8 +57,10 @@ selected_ic_records() {
     local records
     # Admit the complete catalog before selecting a caller's declared subset.
     records="$(perl "$catalog_reader" ic "$1")" || return $?
-    printf '%s\n' "$records" | awk -F '\t' -v tools="$requested_tools" '
-        BEGIN { n=split(tools, names, "\n"); for (i=1; i<=n; i++) selected[names[i]]=1 }
+    # Tool names are admitted ASCII words. Keep -v assignments on one line:
+    # macOS awk rejects literal newlines in assignment values.
+    printf '%s\n' "$records" | awk -F '\t' -v tools="${requested_tools//$'\n'/ }" '
+        BEGIN { n=split(tools, names, " "); for (i=1; i<=n; i++) selected[names[i]]=1 }
         $1 in selected { print }
     '
 }
