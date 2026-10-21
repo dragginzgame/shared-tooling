@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.26.2]
+
+### Fixed
+
+- Enable Testkit's required `cli` feature in lockfile-selected server setup and
+  offline-check examples; keep `cli` out of library-only dependencies
+  ([#297 — Add required cli feature to lockfile-selected Testkit setup example](https://github.com/dragginzgame/shared-tooling/issues/297)).
+- Accept padded BSD `wc` output in IC fixture download-count assertions and
+  exercise that padding on Linux as well.
+
 ## [0.26.1]
 
 ### Added
