@@ -92,6 +92,23 @@ for depth in SHARED_DEPTH_UNDEFINED 00 01 08 -1 +1 '1+1' '1/0' '1 ' $'1\n' \
     if rg -F 'VALIDATION PASSED:' "$FIXTURE/depth-invalid.log" >/dev/null; then exit 1; fi
 done
 
+# Relative retained-log roots belong to the caller, not inherited CDPATH.
+# Anchor a leading dash before mkdir too; neither case may touch a decoy root.
+log_caller="$FIXTURE/log-caller"
+log_decoy="$FIXTURE/log-decoy"
+mkdir -p "$log_caller" "$log_decoy/records" "$log_decoy/-records"
+for selection in records -records; do
+    (cd "$log_caller" && CDPATH="$log_decoy" VALIDATION_LOG_DIR="$selection" \
+        VALIDATION_REPOSITORY_ROOT="$FIXTURE" VALIDATION_RUNNER_DEPTH=0 \
+        bash "$FIXTURE/scripts/ci/run-validation-targets.sh" pass) \
+        > "$FIXTURE/log-path-$selection.log" 2>&1
+    runs=("$log_caller/$selection/"validation.*)
+    [[ "${#runs[@]}" == 1 && -f "${runs[0]}/timings.tsv" ]] || exit 1
+    grep -Fx 'pass-marker' "${runs[0]}/0.log" >/dev/null
+    announced="$(sed -n 's/^Validation logs and timings: //p' "$FIXTURE/log-path-$selection.log")"
+    [[ "$announced" == "${runs[0]}" && -z "$(ls -A "$log_decoy/$selection")" ]] || exit 1
+done
+
 # Fault-inject copies of the actual runner: premature exits must fail and retain
 # evidence in both the source wrapper and executing body, even after dispatch
 # has made temporary logs eligible for cleanup. No production test hook is used.

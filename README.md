@@ -465,6 +465,8 @@ successful run while preserving any existing target or reporting failure status.
 Set `VALIDATION_LOG_DIR` to retain successful, failed and interrupted raw output
 under a unique run directory announced before dispatch. Its `timings.tsv` has
 `target`, `result`, `seconds` and `log` columns, with one row per completed target.
+Relative `VALIDATION_LOG_DIR` paths resolve from the invocation directory,
+independently of inherited `CDPATH`; leading-dash directory names are supported.
 An interrupted target can have a partial raw log without a completed timing row.
 `VALIDATION_FAILURE_EVENT_PREFIX` adds a literal line prefix, such as
 `[CANIC-TEST:E`, to live highlighting and bounded failure details. Raw logs keep

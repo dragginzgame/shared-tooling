@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/ci/test-file-digests.sh
 set -euo pipefail
 ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
@@ -54,6 +54,17 @@ for consumer in "$checkout" "$fixture/physical"$'\r' "$fixture/alias"$'\n' \
             }
         done
     done
+done
+# The digest fixture changes cwd after allocation. Its tool selections and
+# cleanup must remain anchored for both relative and aliased scratch roots.
+mkdir -p "$fixture/digest-caller/scratch" "$fixture/decoy/scratch"
+ln -s "$fixture/digest-caller/scratch" "$fixture/digest-caller/alias"
+for selected_tmp in scratch alias/; do
+    (cd "$fixture/digest-caller" && CDPATH="$fixture/decoy" TMPDIR="$selected_tmp" \
+        "$BASH" "$ROOT/scripts/ci/test-file-digests.sh") > "$fixture/digest-path.log" 2>&1
+    grep -F 'Portable digest vectors, filenames, backend failures and verifier round trips passed' \
+        "$fixture/digest-path.log" >/dev/null
+    [[ -z "$(ls -A "$fixture/digest-caller/scratch")" && -z "$(ls -A "$fixture/decoy/scratch")" ]] || exit 1
 done
 echo 'Relative/absolute entry points, inherited CDPATH and newline checkout bootstrap passed'
 fixture_complete=true

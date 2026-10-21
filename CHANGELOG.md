@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.26.5]
+
+### Added
+
+- Share CI/release trust and artifact review guidance, and focused boundary-handoff
+  proof within flow audits. Keep product invariants and historical evidence local.
+
+### Fixed
+
+- Resolve retained validation logs from the caller's directory, independently of
+  inherited `CDPATH`, and support relative log directories with a leading dash.
+- Keep digest fixtures working with relative or aliased temporary directories,
+  reusing shared allocation and cleanup to preserve failure evidence paths.
+
 ## [0.26.4]
 
 ### Fixed

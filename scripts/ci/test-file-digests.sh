@@ -1,20 +1,18 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/verify-file-checksum.sh
+# Shared companions: scripts/ci/verify-file-checksum.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 root="$0"
 [[ "$root" == /* ]] || root="$PWD/$root"
 root="$(cd -P "${root%/*}/../.." && printf '%s/.' "$PWD")"
 root="${root%/.}"
-fixture="$(mktemp -d "${TMPDIR:-/tmp}/file-digests.XXXXXX")"
+# shellcheck source=scripts/ci/fixture-lifecycle.sh
+source "$root/scripts/ci/fixture-lifecycle.sh"
+fixture="$(fixture_create "${TMPDIR:-/tmp}/file-digests.XXXXXX")"
 fixture_complete=false
 finish() {
     local status=$?
-    # Bash 3.2 may report zero after nounset before assertions finish.
-    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
     chmod u+r "$fixture/unreadable" 2>/dev/null || true
-    if [[ "$status" == 0 ]]; then rm -rf "$fixture";
-    else echo "Digest fixtures retained: $fixture" >&2; fi
-    exit "$status"
+    fixture_finish "$status" "$fixture" 'Digest fixtures retained'
 }
 trap finish EXIT
 checker="$root/scripts/ci/verify-file-checksum.sh"
