@@ -48,12 +48,33 @@ printf 'consumer v0.1.0\nsubstrate feature "danger"\nsubstrate v2.0.0\n' > "$GRA
 if "${checker[@]}" --forbid-feature substrate/danger > "$fixture/feature.log" 2>&1; then exit 1; fi
 grep -F 'forbidden dependency feature edge: substrate/danger' "$fixture/feature.log" > /dev/null
 "${checker[@]}" --forbid-feature substrate/other
+# Overlapping selected roots carry a Cargo-owned command-line feature marker.
+# Feature labels, including repeated ones, must not become package identities.
+printf 'consumer v0.1.0\nsubstrate feature "default" (command-line)\nsubstrate v2.0.0\nsubstrate feature "default" (command-line) (*)\nsubstrate v2.0.0 (*)\n' > "$GRAPH_INPUT"
+"${checker[@]}" --package substrate --require consumer=1 --require substrate=1 --forbid-feature substrate/other
+if "${checker[@]}" --package substrate --forbid-feature substrate/default > "$fixture/annotated-feature.log" 2>&1; then exit 1; fi
+grep -F 'forbidden dependency feature edge: substrate/default' "$fixture/annotated-feature.log" > /dev/null
+for invalid in 'substrate feature "default" (unknown)' \
+ 'substrate feature "default" (command-line) trailing' \
+ 'substrate feature "default" (command-line) (command-line)' \
+ 'substrate feature "default (command-line)'; do
+ printf 'consumer v0.1.0\n%s\n' "$invalid" > "$GRAPH_INPUT"
+ if "${checker[@]}" --forbid-feature substrate/other > "$fixture/invalid-feature.log" 2>&1; then exit 1; fi
+done
 printf 'consumer v0.1.0\n' > "$GRAPH_INPUT"
 # Complete successful observations only, including child signals and root identity.
 for mode in failed signal; do
- if GRAPH_MODE="$mode" "${checker[@]}" --forbid absent > "$fixture/$mode.log" 2>&1; then exit 1; else status=$?; fi
- if [[ "$mode" == failed ]]; then [[ "$status" == 29 ]]; else [[ "$status" == 143 ]]; fi
- if grep -q 'graph passed' "$fixture/$mode.log"; then exit 1; fi
+ for edges in package feature; do
+  printf 'consumer v0.1.0\n' > "$GRAPH_INPUT"
+  policy=(--forbid absent)
+  if [[ "$edges" == feature ]]; then
+   policy+=(--forbid-feature substrate/other)
+   printf 'substrate feature "default" (command-line)\n' >> "$GRAPH_INPUT"
+  fi
+  if GRAPH_MODE="$mode" "${checker[@]}" "${policy[@]}" > "$fixture/$mode-$edges.log" 2>&1; then exit 1; else status=$?; fi
+  if [[ "$mode" == failed ]]; then [[ "$status" == 29 ]] || exit 1; else [[ "$status" == 143 ]] || exit 1; fi
+  if grep -q 'graph passed' "$fixture/$mode-$edges.log"; then exit 1; fi
+ done
 done
 for invalid in '' 'not a Cargo graph' 'other v0.1.0' 'consumer v0.1.0 invalid'; do
  printf '%s\n' "$invalid" > "$GRAPH_INPUT"
@@ -106,7 +127,7 @@ dev-only={path="../dev-only"}
 [target.'cfg(target_arch="wasm32")'.dependencies]
 wasm-only={path="../wasm-only"}
 TOML
-printf '[features]\ndanger=[]\n[dependencies]\nhidden={package="substrate",path="../substrate"}\n' >> "$actual/bridge/Cargo.toml"
+printf '[features]\ndefault=[]\ndanger=[]\n[dependencies]\nhidden={package="substrate",path="../substrate"}\n' >> "$actual/bridge/Cargo.toml"
 (cd "$actual"; cargo generate-lockfile --offline)
 cp "$actual/Cargo.lock" "$fixture/lock.before"
 native="$(rustc -vV | sed -n 's/^host: //p')"
@@ -121,6 +142,13 @@ if "${checker[@]}" --target "$native" --features runtime --forbid-pattern '^subs
 "${checker[@]}" --target "$native" --forbid-feature bridge/danger
 if "${checker[@]}" --target "$native" --features runtime --forbid-feature bridge/danger > "$fixture/actual-feature.log" 2>&1; then exit 1; fi
 grep -F 'forbidden dependency feature edge: bridge/danger' "$fixture/actual-feature.log" > /dev/null
+"${checker[@]}" --target "$native" --no-default-features --require bridge=0 --forbid-feature bridge/danger
+overlapping=("${checker[@]}" --package bridge --target "$native" --require consumer=1 --require bridge=1 --require substrate=1)
+"${overlapping[@]}" --features consumer/runtime --forbid-feature bridge/other
+"${overlapping[@]}" --all-features --forbid-feature bridge/other
+"${overlapping[@]}" --no-default-features --features consumer/runtime --forbid-feature bridge/other
+if "${overlapping[@]}" --features consumer/runtime --forbid-feature bridge/default > "$fixture/actual-annotated-feature.log" 2>&1; then exit 1; fi
+grep -F 'forbidden dependency feature edge: bridge/default' "$fixture/actual-annotated-feature.log" > /dev/null
 cmp "$fixture/lock.before" "$actual/Cargo.lock"
 fixture_complete=true
 echo 'Locked graph selection, identity counts, aliases, failed observations and offline Cargo checks passed'

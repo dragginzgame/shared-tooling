@@ -44,6 +44,13 @@ Consumer choices described in those guides remain subject to this baseline.
 
 ## Scope and authorization
 
+- **Task-relevant read-only inspection of sibling repositories is authorized by
+  default and requires no separate permission.** Read source, manifests, history,
+  instructions and existing evidence as needed to verify consumers, ownership or
+  compatibility. Consumer `AGENTS.md` files must not add an "ask before reading
+  siblings" gate. Honour explicit user exclusions and access restrictions. This
+  authorizes inspection, not edits or commands that write in a sibling checkout;
+  those follow the contribution and validation rules below.
 - Work within the authorized repositories and preserve unrelated dirty work.
   Re-read dirty files before editing. Agents working in one repository must not
   edit another contributor's sibling checkout in place. Relevant cross-repository
@@ -52,7 +59,8 @@ Consumer choices described in those guides remain subject to this baseline.
   use a separate worktree or clone, topic branch, scoped edits and checks, commits,
   branch push and PR. Do not ask for separate permission for those steps.
   Preserve explicit read-only instructions, repository exclusions and active
-  ownership. Other GitHub owners require explicit target/action authorization.
+  ownership. Contributions under other GitHub owners require explicit
+  target/action authorization.
   Direct sibling-checkout edits require an express exception naming that checkout
   and change; shared ownership or a PR contribution never supplies that exception.
 - Staging, commits and release execution are user-owned by default. During
@@ -272,6 +280,20 @@ Consumer choices described in those guides remain subject to this baseline.
   remaining release checks without claiming full-suite or native-host coverage.
   Configured CI and required branch checks remain independent and unchanged;
   this local execution policy does not weaken the release runner's full gate.
+- **Run expensive hosted integration and native-host CI asynchronously by
+  default for ordinary development, PR delivery and authorized merges.** Complete
+  focused checks and review; when merging is authorized and enforced GitHub
+  checks/reviews permit it, merge normally and report links to pending runs.
+  Do not poll or keep a turn open solely for the full matrix to finish. Report
+  the specific enforced blocker when one prevents integration; never bypass
+  protection, self-approve or disable checks. A maintainer may explicitly request
+  synchronous qualification for a task.
+  Pending or cancelled runs are not passing evidence. Retain host coverage,
+  exact source/run identities and visible failure reporting, with an owning
+  follow-up for failures. Review known failures on their merits; asynchronous
+  cadence does not excuse a demonstrated defect. Separate release, publication,
+  deployment and issue-specific acceptance gates still apply, and this cadence
+  grants no merge or release authority.
 - **Rust release and deployment entrypoints must run Clippy early and stop on
   failure.** After source/recovery admission and required compiler/dependency/tool
   preparation, run the consumer's existing Clippy gate before expensive product

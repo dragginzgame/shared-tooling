@@ -23,6 +23,15 @@ execution, cross-compilation and available download assets do not establish
 macOS filesystem, process or deployment behavior. Report unqualified workflows
 explicitly while retaining the macOS support requirement.
 
+Native support does not impose a synchronous wait on every ordinary PR or
+authorized merge. Follow the baseline's
+[asynchronous CI cadence](../DRAGGINZGAME.md#validation-and-evidence): keep the
+matrix running, complete focused checks and review, and integrate only when
+authorized and enforced checks/reviews permit it. Report pending runs with their
+source identity; do not call them native qualification. Preserve visible failure
+reporting and an owning follow-up. Explicit synchronous requests and separate
+release/publication/deployment acceptance gates remain in force.
+
 ## Host-specific setup and commands
 
 Rust workflows can adopt the shared [toolchain preparation action](rust-toolchains.md)

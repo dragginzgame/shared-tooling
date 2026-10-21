@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.26.3]
+
+### Fixed
+
+- Accept Cargo's command-line feature annotations when selected dependency roots
+  overlap, preserving package identity counts and forbidden-feature checks
+  ([#299 — Cargo graph feature checks reject command-line root annotations](https://github.com/dragginzgame/shared-tooling/issues/299)).
+
 ## [0.26.2]
 
 ### Fixed
