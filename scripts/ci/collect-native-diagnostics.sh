@@ -13,9 +13,15 @@ for name in "$@"; do
     if [[ -f "$evidence/$name" ]]; then selection+=("$evidence" "$name"); fi
 done
 [[ ${#selection[@]} != 0 ]] || exit 2
+# The archive and its checksum are both new evidence; never replace a prior
+# checksum entry or follow it into another file, even if it appears later.
+[[ ! -e "$output.sha256" && ! -L "$output.sha256" ]] || {
+    printf 'diagnostic checksum output already exists: %s.sha256\n' "$output" >&2
+    exit 2
+}
 # Publish readable diagnostics first, even when full tool collection later fails.
 bash "$helper_root/archive-evidence.sh" "$output" "${selection[@]}" || exit 2
-bash "$helper_root/verify-file-checksum.sh" --print sha256 "$output" > "$output.sha256" || exit 2
+(set -C; bash "$helper_root/verify-file-checksum.sh" --print sha256 "$output" > "$output.sha256") || exit 2
 collection_status=0
 if [[ "$tools_outcome" == failure ]]; then
     diagnostics="$(mktemp -d "$evidence/tool-evidence.XXXXXX")" || exit 2

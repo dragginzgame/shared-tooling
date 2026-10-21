@@ -324,9 +324,10 @@ and extracts the archive to check its payload against the original checksum
 manifest. Both full and compact readbacks use `scripts/ci/download-evidence.sh`
 with the upload output ID and SHA-256, scoped to the current repository and run.
 It requires GitHub CLI, jq, unzip and an explicit `GH_TOKEN` with `actions: read`.
-Only the portable job grants that permission. Direct artifact metadata must match
-the ID, run, expiry status and upload digest. The downloaded ZIP must match that
-digest and contain exactly `evidence.tar.gz`; payload checks remain independent.
+Only the portable job grants that permission. Direct artifact metadata must be one
+JSON document matching the ID, run, expiry status and upload digest. The ZIP must
+match that digest and contain exactly `evidence.tar.gz`; payload checks remain
+independent.
 
 Only reported HTTP 404 responses from metadata or the exact-ID download are
 retried: six attempts with 2, 4, 8, 16 and 30 seconds of backoff. Each hosted

@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.26.4]
+
+### Fixed
+
+- Preserve independent parent errors alongside nested validation diagnostics in
+  highlighted logs and GitHub summaries, without adding duplicate annotations.
+- Limit failure excerpts before capturing them in shell memory, preserving full
+  raw logs while avoiding excessive memory use for large diagnostic output.
+- Publish latest failure logs atomically without following symlinks or copying
+  into directories; report unique retained evidence when a latest update fails.
+- Preserve target failure statuses through GitHub summary and temporary-cleanup
+  errors; retain complete local summaries and evidence when publication fails.
+- Reject NUL-bearing checksum-tool output before shell capture can discard bytes,
+  preserving backend failure handling in digest generation and verification.
+- Preserve existing diagnostic checksum files and symlink targets, including
+  checksum destinations introduced while the archive is being created.
+- Require one artifact metadata document before downloading retained evidence;
+  reject concatenated responses without requesting the ZIP.
+
 ## [0.26.3]
 
 ### Fixed

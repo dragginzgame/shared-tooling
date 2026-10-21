@@ -45,13 +45,24 @@ SCRIPT
 chmod +x "$fixture/bin/"*
 export PATH="$fixture/bin:$PATH" GH_TOKEN=fixture-token
 export PROBE MODE ARCHIVE="$fixture/artifact.zip"
-for MODE in immediate delayed missing download-missing auth download-auth transport malformed wrong-run expired wrong-digest corrupt members; do
+for MODE in immediate delayed missing download-missing auth download-auth transport malformed empty \
+    multiple multiple-valid multiple-trailing wrong-run expired wrong-digest corrupt members; do
     PROBE="$fixture/$MODE"; mkdir "$PROBE"
     echo 0 > "$PROBE/count"; : > "$PROBE/calls"; : > "$PROBE/sleeps"
     selected_digest="$digest"
     printf '{"id":7,"workflow_run":{"id":42},"expired":false,"digest":"sha256:%s"}\n' "$digest" > "$PROBE/metadata"
     case "$MODE" in
         malformed) echo invalid > "$PROBE/metadata" ;;
+        empty) : > "$PROBE/metadata" ;;
+        multiple)
+            { printf '{}\n'; cat "$PROBE/metadata"; } > "$PROBE/new"
+            mv "$PROBE/new" "$PROBE/metadata" ;;
+        multiple-valid)
+            cat "$PROBE/metadata" "$PROBE/metadata" > "$PROBE/new"
+            mv "$PROBE/new" "$PROBE/metadata" ;;
+        multiple-trailing)
+            { cat "$PROBE/metadata"; printf '{}\n'; } > "$PROBE/new"
+            mv "$PROBE/new" "$PROBE/metadata" ;;
         wrong-run) sed 's/42/43/' "$PROBE/metadata" > "$PROBE/new"; mv "$PROBE/new" "$PROBE/metadata" ;;
         expired) sed 's/false/true/' "$PROBE/metadata" > "$PROBE/new"; mv "$PROBE/new" "$PROBE/metadata" ;;
         wrong-digest) selected_digest="$(printf '%064d' 0)" ;;
@@ -76,6 +87,11 @@ for MODE in immediate delayed missing download-missing auth download-auth transp
         *) [[ "$(cat "$PROBE/count")" == 1 && ! -s "$PROBE/sleeps" ]] || exit 1 ;;
     esac
     [[ "$MODE" != transport || "$status" == 23 ]] || exit 1
+    case "$MODE" in
+        malformed|empty|multiple|multiple-valid|multiple-trailing|wrong-run|expired|wrong-digest)
+            if grep -F '/zip' "$PROBE/calls" >/dev/null; then exit 1; fi
+            cmp "$PROBE/metadata" "$PROBE/result/attempt-0/metadata.json" ;;
+    esac
 done
 # Admission errors cannot contact GitHub or overwrite existing evidence.
 : > "$PROBE/calls"

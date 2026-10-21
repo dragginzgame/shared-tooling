@@ -450,6 +450,18 @@ the last failed target alone. Successful or interrupted batches leave the last
 completed combined view intact; interrupted raw logs remain available separately.
 Nested runs combine their own target streams without rediscovering child files.
 
+`latest.log`, `latest-errors.log` and `latest-combined.log` are atomically replaced
+convenience copies. A failed update preserves the previous copy and any failed
+candidate. Use the announced unique paths for evidence from a particular run;
+the raw and highlighted summary footers identify those files directly.
+
+If GitHub summary publication fails, the runner retains the complete local
+summary and raw logs, finishes failure-log collection and preserves a failed
+target's status. If all targets passed, the summary failure still fails the run.
+
+Temporary cleanup errors are reported with the affected directory. They fail a
+successful run while preserving any existing target or reporting failure status.
+
 Set `VALIDATION_LOG_DIR` to retain successful, failed and interrupted raw output
 under a unique run directory announced before dispatch. Its `timings.tsv` has
 `target`, `result`, `seconds` and `log` columns, with one row per completed target.

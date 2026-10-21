@@ -135,5 +135,52 @@ cmp "$fixture/original.tar.gz" "$fixture/diagnostics.tar.gz"
 if bash "$ROOT/scripts/ci/collect-native-diagnostics.sh" "$fixture/checkout" "$fixture/evidence" \
     "$fixture/traversal.tar.gz" "$fixture/formats" success unused unused ../source.txt; then exit 1; fi
 [[ ! -e "$fixture/traversal.tar.gz" ]] || exit 1
+
+# A new archive must not overwrite existing checksum evidence or follow links.
+mkdir "$fixture/no-formats"
+printf 'prior checksum evidence\n' > "$fixture/protected"
+cp "$fixture/protected" "$fixture/protected-before"
+for kind in file link dangling directory fifo; do
+    output="$fixture/checksum-$kind.tar.gz"
+    case "$kind" in
+        file) cp "$fixture/protected" "$output.sha256" ;;
+        link) ln -s "$fixture/protected" "$output.sha256" ;;
+        dangling) ln -s "$fixture/absent" "$output.sha256" ;;
+        directory) mkdir "$output.sha256" ;;
+        fifo) mkfifo "$output.sha256" ;;
+    esac
+    status=0
+    bash "$ROOT/scripts/ci/collect-native-diagnostics.sh" "$fixture/checkout" "$fixture/evidence" \
+        "$output" "$fixture/no-formats" success "$ROOT/ci/tool-versions.env" "$ROOT/ci/ic-tools.tsv" source.txt \
+        > "$fixture/checksum-$kind.log" 2>&1 || status=$?
+    [[ "$status" == 2 && ! -e "$output" && ! -e "$fixture/absent" ]] || exit 1
+    cmp "$fixture/protected-before" "$fixture/protected"
+    case "$kind" in
+        file) cmp "$fixture/protected-before" "$output.sha256" ;;
+        link|dangling) [[ -L "$output.sha256" ]] || exit 1 ;;
+        directory) [[ -d "$output.sha256" && -z "$(ls -A "$output.sha256")" ]] || exit 1 ;;
+        fifo) [[ -p "$output.sha256" ]] || exit 1 ;;
+    esac
+done
+
+# A checksum destination introduced after admission must still be preserved.
+mkdir "$fixture/late-checksum-bin"
+FLOW_REAL_TAR="$(command -v tar)"
+export FLOW_REAL_TAR
+cat > "$fixture/late-checksum-bin/tar" <<'SCRIPT'
+#!/usr/bin/env bash
+set -euo pipefail
+ln -s "$FLOW_SIDECAR_TARGET" "$FLOW_SIDECAR"
+exec "$FLOW_REAL_TAR" "$@"
+SCRIPT
+chmod +x "$fixture/late-checksum-bin/tar"
+output="$fixture/checksum-late.tar.gz"
+status=0
+PATH="$fixture/late-checksum-bin:$PATH" FLOW_SIDECAR="$output.sha256" FLOW_SIDECAR_TARGET="$fixture/protected" \
+    bash "$ROOT/scripts/ci/collect-native-diagnostics.sh" "$fixture/checkout" "$fixture/evidence" \
+    "$output" "$fixture/no-formats" success "$ROOT/ci/tool-versions.env" "$ROOT/ci/ic-tools.tsv" source.txt \
+    > "$fixture/checksum-late.log" 2>&1 || status=$?
+[[ "$status" == 2 && -s "$output" && -L "$output.sha256" ]] || exit 1
+cmp "$fixture/protected-before" "$fixture/protected"
 fixture_complete=true
 printf 'Consumer Make, effectful retention and native diagnostic probes passed\n'

@@ -68,8 +68,37 @@ for output in '' abc "$sha256 extra" "$sha256  - extra" "$sha512  -" "$sha256  -
     expect_failure env PATH="$fixture/fake" DIGEST_OUTPUT="$output" DIGEST_STATUS=0 \
         "$BASH" "$checker" --print sha256 'file with spaces'
 done
-expect_failure env PATH="$fixture/fake" DIGEST_OUTPUT="$sha256  -" DIGEST_STATUS=9 \
-    "$BASH" "$checker" --print sha256 'file with spaces'
+status=0
+env PATH="$fixture/fake" DIGEST_OUTPUT="$sha256  -" DIGEST_STATUS=9 \
+    "$BASH" "$checker" --print sha256 'file with spaces' > "$fixture/output" 2> "$fixture/error" || status=$?
+[[ "$status" == 9 && ! -s "$fixture/output" && -s "$fixture/error" ]] || exit 1
 [[ "$(cat "$fixture/error")" != *'unexpected fallback'* ]] || exit 1
+# NUL must not disappear from an otherwise valid digest/record. Exercise both
+# algorithms and the Perl selection without relying on a host's GNU binaries.
+for backend in sha256sum sha512sum shasum; do
+    mkdir "nul-$backend"
+    printf '#!%s\n' "$BASH" > "nul-$backend/$backend"
+    cat >> "nul-$backend/$backend" <<'SCRIPT'
+printf '%s\0%s' "$DIGEST_BEFORE" "$DIGEST_AFTER"
+SCRIPT
+    chmod +x "nul-$backend/$backend"
+    algorithm=sha256
+    [[ "$backend" != sha512sum ]] || algorithm=sha512
+    expected="${!algorithm}"
+    for position in leading digest marker trailing; do
+        case "$position" in
+            leading) before=''; after="$expected  -" ;;
+            digest) before="${expected:0:12}"; after="${expected:12}  -" ;;
+            marker) before="$expected "; after=' -' ;;
+            trailing) before="$expected  -"; after='' ;;
+        esac
+        for mode in print verify; do
+            arguments=("$algorithm" "$expected" 'file with spaces')
+            [[ "$mode" != print ]] || arguments=(--print "$algorithm" 'file with spaces')
+            expect_failure env PATH="$fixture/nul-$backend" DIGEST_BEFORE="$before" DIGEST_AFTER="$after" \
+                "$BASH" "$checker" "${arguments[@]}"
+        done
+    done
+done
 echo 'Portable digest vectors, filenames, backend failures and verifier round trips passed'
 fixture_complete=true

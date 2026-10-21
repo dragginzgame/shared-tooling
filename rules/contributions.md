@@ -93,6 +93,9 @@ narrows the authorized steps.
 
 ## Cross-repository pull requests
 
+DFINITY crates and repositories are excluded: follow the baseline's
+[own-the-solution rule](../DRAGGINZGAME.md#dfinity-dependencies-own-the-solution).
+
 Read-only sibling inspection follows the
 [baseline's scope authorization](../DRAGGINZGAME.md#scope-and-authorization);
 it is not a source contribution and needs no contribution branch or permission
