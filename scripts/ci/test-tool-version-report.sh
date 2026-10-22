@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 # Shared companions: scripts/ci/report-tool-versions.sh scripts/ci/fixture-lifecycle.sh scripts/ci/prepare-script-fixture.sh
 set -euo pipefail
-root="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
-fixture="$(mktemp -d "${TMPDIR:-/tmp}/tool-version-report.XXXXXX")"
+root="${BASH_SOURCE[0]}"
+[[ "$root" == /* ]] || root="$PWD/$root"
+root="$(CDPATH='' cd -P -- "${root%/*}/../.." && printf '%s/.' "$PWD")"
+root="${root%/.}"
+# shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$root/scripts/ci/fixture-lifecycle.sh"
+fixture="$(fixture_create "${TMPDIR:-/tmp}/tool-version-report.XXXXXX")"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Failed tool report fixture retained"' EXIT
 snapshot="$fixture/snapshot with spaces"

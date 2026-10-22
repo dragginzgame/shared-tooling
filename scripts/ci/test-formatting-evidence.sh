@@ -2,12 +2,14 @@
 # Shared companions: scripts/ci/formatting-evidence.sh scripts/ci/archive-evidence.sh scripts/ci/run-formatting.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 ROOT="${BASH_SOURCE[0]}"
-ROOT="$(cd -P "${ROOT%/*}/../.." && pwd)"
+[[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
+ROOT="$(CDPATH='' cd -P -- "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
+ROOT="${ROOT%/.}"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 # shellcheck source=scripts/ci/formatting-evidence.sh
 source "$ROOT/scripts/ci/formatting-evidence.sh"
-fixture="$(mktemp -d "${TMPDIR:-/tmp}/formatting-evidence.XXXXXX")"
+fixture="$(fixture_create "${TMPDIR:-/tmp}/formatting-evidence.XXXXXX")"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Formatting evidence retained"' EXIT
 mkdir "$fixture/log root" "$fixture/unpacked"

@@ -3,12 +3,11 @@
 set -euo pipefail
 ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
-ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
+ROOT="$(CDPATH='' cd -P -- "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
-fixture="$(mktemp -d "${TMPDIR:-/tmp}/native-host-test.XXXXXX")"
-fixture="$(cd -P "$fixture" && pwd)"
+fixture="$(fixture_create "${TMPDIR:-/tmp}/native-host-test.XXXXXX")"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Native host fixtures retained"' EXIT
 mkdir "$fixture/bin"

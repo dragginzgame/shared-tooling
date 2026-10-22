@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/ci/run-nonempty-cargo-test.sh scripts/ci/check-release-tag.sh
 set -euo pipefail
 
 ROOT="$0"

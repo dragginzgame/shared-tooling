@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/prepare-script-fixture.sh scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/prepare-script-fixture.sh scripts/ci/fixture-lifecycle.sh scripts/dev/install-host-tools.sh scripts/ci/check-formatting-hooks.sh scripts/ci/test-tag-maintenance.pl
 set -euo pipefail
 ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
@@ -114,9 +114,11 @@ chmod 600 "$destination/readonly"
 # Qualify real roots whose transitive dependencies have changed independently.
 mkdir "$fixture/real"
 CDPATH="$fixture" "$BASH" "$ROOT/scripts/ci/prepare-script-fixture.sh" \
-    "$ROOT" "$fixture/real" scripts/dev/install-host-tools.sh scripts/ci/check-formatting-hooks.sh
+    "$ROOT" "$fixture/real" scripts/dev/install-host-tools.sh scripts/ci/check-formatting-hooks.sh \
+    scripts/ci/test-tag-maintenance.pl
 for path in scripts/ci/tool-catalog-records.pl scripts/ci/ic-tool-pins.awk \
-    scripts/dev/tool-store.sh ci/tool-versions.env scripts/ci/fixture-lifecycle.sh; do
+    scripts/dev/tool-store.sh ci/tool-versions.env scripts/ci/fixture-lifecycle.sh \
+    scripts/dev/delete-github-tags-up-to.pl scripts/ci/StableVersion.pm; do
     cmp "$ROOT/$path" "$fixture/real/$path"
 done
 fixture_complete=true

@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.26.6]
+
+### Changed
+
+- Clarify asynchronous merge guidance when agent-runtime approval blocks an
+  otherwise authorized action. Keep GitHub requirements and runtime restrictions
+  distinct, with one canonical policy for reporting and handling the blocker
+  ([#300 — Clarify runtime approval boundaries](https://github.com/dragginzgame/shared-tooling/issues/300)).
+
+### Fixed
+
+- Reuse shared temporary-directory allocation in native-host, formatter-evidence
+  and tool-version fixtures, preserving evidence and cleanup with relative or
+  aliased scratch directories and inherited `CDPATH`.
+- Include the required tag-maintenance helper when copying fixture companions,
+  so isolated checks do not depend on files outside their selected bundle.
+- Derive validation-runner child bundles from declared script roots instead of
+  repeated helper lists, and include verification helpers in isolated fixtures.
+
 ## [0.26.5]
 
 ### Added
