@@ -337,6 +337,7 @@ refuse bash "$cache_owner" "$cache_pins"
     cargo_build_init
     [[ "${#offline_args[@]}" == 0 ]] || exit 1
     printf '[net]\noffline = "invalid"\n' > "$CARGO_HOME/config"
+    # shellcheck disable=SC2030 # Offline overrides are intentionally confined to this policy probe.
     for CARGO_NET_OFFLINE in true 1 false 0; do
         export CARGO_NET_OFFLINE
         cargo_build_init
@@ -345,6 +346,70 @@ refuse bash "$cache_owner" "$cache_pins"
         [[ "${offline_args[*]-}" == "$expected" ]] || exit 1
     done
 )
+# Cold source preparation is idempotent across packages and takes no installation
+# claim. Hold both creators before mkdir so this also exercises a shared cold root.
+bootstrap_source() (
+    # shellcheck source=scripts/dev/tool-store.sh
+    source "$ROOT/scripts/dev/tool-store.sh"
+    # shellcheck source=scripts/dev/cargo-tool-build.sh
+    source "$ROOT/scripts/dev/cargo-tool-build.sh"
+    check_only=false package="$1" selected_version="$2" kind=bin target=prepare profile=debug
+    cargo_build_init || exit $?
+    mkdir() {
+        if [[ "${!#}" == "$cargo_cache" ]]; then
+            [[ ! -f "$fixture/bootstrap-denied" ]] || return 13
+            touch "$fixture/bootstrap-$package"
+            for ((poll=0; poll<200; poll++)); do
+                [[ ! -f "$fixture/bootstrap-go" ]] || break
+                sleep 0.05
+            done
+            [[ -f "$fixture/bootstrap-go" ]] || return 76
+        fi
+        command mkdir "$@"
+    }
+    cargo_source
+)
+bootstrap_source cargo-sort 99.1.0 > "$fixture/bootstrap-sort.out" 2> "$fixture/bootstrap-sort.err" & owner_setup=$!
+bootstrap_source cargo-sort-derives 99.2.0 > "$fixture/bootstrap-derives.out" 2> "$fixture/bootstrap-derives.err" & waiter_setup=$!
+for ((poll=0; poll<200; poll++)); do
+    [[ ! -f "$fixture/bootstrap-cargo-sort" || ! -f "$fixture/bootstrap-cargo-sort-derives" ]] || break
+    sleep 0.05
+done
+[[ -f "$fixture/bootstrap-cargo-sort" && -f "$fixture/bootstrap-cargo-sort-derives" ]]
+touch "$fixture/bootstrap-go"
+wait "$owner_setup"; owner_setup=''
+wait "$waiter_setup"; waiter_setup=''
+[[ -f "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/cargo-sort-99.1.0.crate" &&
+   -f "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/cargo-sort-derives-99.2.0.crate" ]]
+[[ "$(find "$SHARED_TOOLING_STORE" -name 'rust-*' | wc -l)" -eq 0 && ! -e "$fixture/builds" ]]
+rm -rf "$SHARED_TOOLING_STORE"
+# Existing redirected, non-directory or writable routes and injected config
+# refuse before Cargo dispatch; initialization must not follow an outside route.
+mkdir "$fixture/bootstrap-outside"
+touch "$fixture/no-info"
+for route in root-link root-file cache-link cache-file cache-mode config; do
+    case "$route" in
+        root-link) ln -s "$fixture/bootstrap-outside" "$SHARED_TOOLING_STORE" ;;
+        root-file) touch "$SHARED_TOOLING_STORE" ;;
+        *)
+            (umask 077; mkdir "$SHARED_TOOLING_STORE")
+            case "$route" in
+                cache-link) ln -s "$fixture/bootstrap-outside" "$SHARED_TOOLING_STORE/cargo-cache" ;;
+                cache-file) touch "$SHARED_TOOLING_STORE/cargo-cache" ;;
+                cache-mode) mkdir -m 777 "$SHARED_TOOLING_STORE/cargo-cache" ;;
+                config) (umask 077; mkdir "$SHARED_TOOLING_STORE/cargo-cache"); touch "$SHARED_TOOLING_STORE/cargo-cache/config.toml" ;;
+            esac ;;
+    esac
+    refuse bootstrap_source cargo-sort 99.1.0
+    [[ ! -e "$fixture/info-refusals" && -z "$(find "$fixture/bootstrap-outside" -mindepth 1 -print)" ]]
+    rm -rf "$SHARED_TOOLING_STORE"
+done
+rm "$fixture/no-info"
+touch "$fixture/bootstrap-denied"
+status=0
+bootstrap_source cargo-sort 99.1.0 > "$fixture/bootstrap-denied.log" 2>&1 || status=$?
+[[ "$status" == 13 && ! -e "$SHARED_TOOLING_STORE" ]]
+rm "$fixture/bootstrap-denied"
 # Preserve previous physical installations; adopt new shared references explicitly.
 mkdir -p "$consumer/.tools/rust/previous/installed/build"
 printf 'old local evidence\n' > "$consumer/.tools/rust/previous/installed/build/payload"

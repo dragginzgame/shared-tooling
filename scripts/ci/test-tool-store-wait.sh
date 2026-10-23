@@ -42,14 +42,70 @@ cp "$lock/owner" "$fixture/owner.before"
 tool_store_acquire 5 > "$fixture/wait.log" 2>&1 & pending=$!
 await_waiter
 cmp "$lock/owner" "$fixture/owner.before"
-rm "$lock/owner"
-rmdir "$lock"
+# Exercise the real releaser's record-before-rmdir scheduling interval.
+(
+    rmdir() { sleep 2; command rmdir "$@"; }
+    store_lock="$lock"
+    tool_store_release
+)
 wait "$pending"; pending=''
 grep -F 'rechecking inputs' "$fixture/wait.log" >/dev/null
 [[ -f "$lock/owner" ]]
 # The acquisition ran in the child; release its known fixture lock explicitly.
 store_lock="$lock"
 tool_store_release
+# Force owner cleanup between observations, including its record-before-rmdir
+# window. A missing initial record or replacement directory still refuses.
+for withdrawal in directory record replacement; do
+    mkdir -m 700 "$lock"
+    cp "$fixture/owner.before" "$lock/owner"
+    rm -f "$fixture/observed-owner"
+    status=0
+    (
+        perl() {
+            if [[ "$withdrawal" == directory && "${!#}" == "$store_slot" ]]; then
+                rm "$lock/owner"
+                rmdir "$lock"
+            elif [[ "$withdrawal" != directory && "$2" == *'malformed tool installation owner record'* ]]; then
+                if [[ ! -f "$fixture/observed-owner" ]]; then touch "$fixture/observed-owner";
+                elif [[ "$withdrawal" == replacement ]]; then
+                    mv "$lock" "$fixture/retained-owner-lock"
+                    mkdir -m 700 "$lock"
+                elif [[ -f "$lock/owner" ]]; then
+                    rm "$lock/owner"
+                    touch "$fixture/observed-withdrawal"
+                else rmdir "$lock"; fi
+            fi
+            command perl "$@"
+        }
+        tool_store_wait_unlocked 5 || exit $?
+        [[ ! -e "$lock" ]] || exit 1
+        if [[ "$withdrawal" == record ]]; then
+            [[ "$tool_store_waited" == true && -f "$fixture/observed-withdrawal" ]]
+        fi
+    ) > "$fixture/$withdrawal-withdrawal.log" 2>&1 || status=$?
+    if [[ "$withdrawal" == replacement ]]; then
+        [[ "$status" != 0 && -d "$lock" && ! -e "$lock/owner" ]]
+        cmp "$fixture/owner.before" "$fixture/retained-owner-lock/owner"
+        rm "$fixture/retained-owner-lock/owner"
+        rmdir "$fixture/retained-owner-lock" "$lock"
+    elif [[ "$status" != 0 ]]; then
+        cat "$fixture/$withdrawal-withdrawal.log" >&2
+        exit 1
+    fi
+done
+# A failed release may leave its admitted directory without a record. Keep the
+# original deadline; absence of the record is not permission to acquire it.
+mkdir -m 700 "$lock"
+cp "$fixture/owner.before" "$lock/owner"
+tool_store_wait_unlocked 2 > "$fixture/wait.log" 2>&1 & pending=$!
+await_waiter
+rm "$lock/owner"
+status=0
+wait "$pending" || status=$?; pending=''
+[[ "$status" == 1 && -d "$lock" && ! -e "$lock/owner" ]]
+grep -F 'wait timed out' "$fixture/wait.log" >/dev/null
+rmdir "$lock"
 # Other slots have no reason to wait, even while this one is occupied.
 mkdir -m 700 "$lock"
 cp "$fixture/owner.before" "$lock/owner"
