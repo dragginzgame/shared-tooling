@@ -10,8 +10,13 @@ ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"; ROOT="${ROOT%/.}"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/rust-tools-test.XXXXXX")"
 fixture="$(cd "$fixture" && pwd -P)"
 fixture_complete=false
+owner_setup='' waiter_setup=''
 finish() {
     local status=$?
+    rm -f "$fixture/hold-install"
+    for child in "$owner_setup" "$waiter_setup"; do
+        [[ -z "$child" ]] || { kill "$child" 2>/dev/null || :; wait "$child" 2>/dev/null || :; }
+    done
     [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
     if [[ -s "$fixture/forbidden-git" ]]; then
         cat "$fixture/forbidden-git" >&2
@@ -132,6 +137,10 @@ while [[ $# -gt 0 ]]; do
 done
 [[ "$locked:$registry:$jobs" == true:crates-io:2 && "$build" == "$destination/build" && "$PWD" == "$destination/home" && "$HOME" == "$PWD" ]] || exit 75
 printf '%s %s %s %s %s\n' "$package" "$version" "$kind" "$target" "$profile" >> "$fixture/builds"
+if [[ -f "$fixture/hold-install" ]]; then
+    printf '%s\n' "$destination" > "$fixture/install-held"
+    while [[ -f "$fixture/hold-install" ]]; do sleep 0.05; done
+fi
 mkdir -p "$destination/bin" "$build"
 printf 'retained compilation\n' > "$build/evidence"
 [[ ! -f "$fixture/fail-$package" ]] || exit 23
@@ -461,6 +470,21 @@ cmp "$held_slot/install.lock/owner" "$fixture/foreign-owner"
 [[ "$(wc -l < "$fixture/builds")" -eq 2 ]] || exit 1
 find "$consumer/.tools/rust" "$held_slot" -print | sort > "$fixture/after-held"
 cmp "$fixture/before-held" "$fixture/after-held"
+# A recognized but unreleased claim has a bounded setup refusal, propagated
+# through the common aggregate without replacing its previous complete set.
+printf 'pid=%s\nconsumer=%s\n' "$$" "$fixture/a" > "$held_slot/install.lock/owner"
+cp "$held_slot/install.lock/owner" "$fixture/valid-owner"
+status=0
+SHARED_TOOLING_SETUP_WAIT_SECONDS=1 common > "$fixture/timeout.out" 2> "$fixture/timeout.err" || status=$?
+[[ "$status" == 1 && ! -s "$fixture/timeout.out" ]]
+grep -F 'wait timed out' "$fixture/timeout.err" >/dev/null
+cmp "$held_slot/install.lock/owner" "$fixture/valid-owner"
+[[ "$(readlink "$consumer/.tools/rust/common")" == "$old_common" && "$(readlink "$held_slot/current")" == "$old_current" ]]
+[[ "$(wc -l < "$fixture/builds")" -eq 2 ]]
+status=0
+SHARED_TOOLING_SETUP_WAIT_SECONDS=0 common > "$fixture/no-wait.out" 2> "$fixture/no-wait.err" || status=$?
+[[ "$status" != 0 && ! -s "$fixture/no-wait.out" ]]
+if grep -F 'Waiting for' "$fixture/no-wait.err"; then exit 1; fi
 rm "$held_slot/install.lock/owner"
 rmdir "$held_slot/install.lock"
 # A CI cache restores physical shared generations, never checkout selections.
@@ -816,5 +840,78 @@ attempt="$(sed -n 's/^Cargo tool attempt retained: //p' "$fixture/feature-failur
 [[ -f "$attempt/install.log" && -f "$attempt/build/evidence" && ! -e "${attempt%/*}/current" && ! -e "$attempt/selection.json" ]] || exit 1
 [[ "$(bash "$installer" "${feature_args[@]}" --features cli --check)" == "$cli_path" ]] || exit 1
 [[ "$(git -C "$fixture/a" rev-parse HEAD)" == "$source_commit" && ! -s "$fixture/forbidden-git" ]] || exit 1
-echo 'Shared Cargo installation, standard environment, identities, retention and offline checks passed'
+# Two real installer processes share one exact payload, with Cargo effects
+# substituted. Synchronize on the held build and the wait diagnostic, not time.
+for scenario in reuse changed-compiler changed-source redirected-source; do
+    case "$scenario" in reuse) version=8.0.0 ;; changed-compiler) version=8.0.1 ;; changed-source) version=8.0.2 ;; redirected-source) version=8.0.3 ;; esac
+    source_package sample "$version"
+    mkdir "$fixture/$scenario-owner" "$fixture/$scenario-waiter"
+    contention_args=(--package sample --version "$version" --bin prepare --profile debug)
+    cp "$fixture/compiler-version" "$fixture/compiler-before-contention"
+    rm -f "$fixture/install-held"
+    touch "$fixture/hold-install"
+    bash "$installer" --consumer "$fixture/$scenario-owner" "${contention_args[@]}" \
+        > "$fixture/owner.out" 2> "$fixture/owner.err" & owner_setup=$!
+    for ((poll=0; poll<200; poll++)); do
+        [[ ! -s "$fixture/install-held" ]] || break
+        sleep 0.05
+    done
+    [[ -s "$fixture/install-held" ]] || { cat "$fixture/owner.err"; exit 1; }
+    SHARED_TOOLING_SETUP_WAIT_SECONDS=20 bash "$installer" --consumer "$fixture/$scenario-waiter" \
+        "${contention_args[@]}" > "$fixture/waiter.out" 2> "$fixture/waiter.err" & waiter_setup=$!
+    for ((poll=0; poll<200; poll++)); do
+        if grep -qF 'Waiting for tool installation slot:' "$fixture/waiter.err"; then break; fi
+        sleep 0.05
+    done
+    grep -F 'Waiting for tool installation slot:' "$fixture/waiter.err" >/dev/null
+    # An offline check never waits, even with the setup budget configured.
+    status=0
+    SHARED_TOOLING_SETUP_WAIT_SECONDS=300 bash "$installer" --consumer "$fixture/$scenario-owner" \
+        "${contention_args[@]}" --check > "$fixture/contended-check.out" 2> "$fixture/contended-check.err" || status=$?
+    [[ "$status" != 0 && ! -s "$fixture/contended-check.out" ]]
+    if grep -F 'Waiting for' "$fixture/contended-check.err"; then exit 1; fi
+    [[ "$scenario" != changed-compiler ]] || echo compiler > "$fixture/change-build"
+    if [[ "$scenario" == changed-source ]]; then
+        printf '\n' >> "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-$version.crate"
+    elif [[ "$scenario" == redirected-source ]]; then
+        rm "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-$version.crate"
+        ln -s "$fixture/assets/sample-$version.crate" "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-$version.crate"
+    fi
+    rm "$fixture/hold-install"
+    owner_status=0; waiter_status=0
+    wait "$owner_setup" || owner_status=$?; owner_setup=''
+    wait "$waiter_setup" || waiter_status=$?; waiter_setup=''
+    [[ "$(grep -c "^sample $version bin prepare debug$" "$fixture/builds")" == 1 ]]
+    if [[ "$scenario" == reuse ]]; then
+        [[ "$owner_status:$waiter_status" == 0:0 ]]
+        owner_path="$(cat "$fixture/owner.out")"; waiter_path="$(cat "$fixture/waiter.out")"
+        [[ "$(cd -P "${owner_path%/*}" && pwd)" == "$(cd -P "${waiter_path%/*}" && pwd)" ]]
+        bash "$installer" --consumer "$fixture/$scenario-waiter" "${contention_args[@]}" --check > "$fixture/reuse-check.out"
+        cmp "$fixture/waiter.out" "$fixture/reuse-check.out"
+    else
+        [[ "$owner_status:$waiter_status" == 1:1 && ! -s "$fixture/waiter.out" ]]
+        if [[ "$scenario" == changed-compiler ]]; then
+            grep -F 'Cargo tool build environment changed:' "$fixture/waiter.err" >/dev/null
+            rm "$fixture/change-build"
+            cp "$fixture/compiler-before-contention" "$fixture/compiler-version"
+        elif [[ "$scenario" == changed-source ]]; then
+            grep -F 'checksum mismatch' "$fixture/waiter.err" >/dev/null
+        else
+            grep -F 'source must be a regular non-symlink archive' "$fixture/waiter.err" >/dev/null
+        fi
+        [[ -z "$(find "$fixture/$scenario-waiter/.tools/rust" -name 'selected-*')" ]]
+    fi
+done
+SHARED_TOOLING_SETUP_WAIT_SECONDS=invalid bash "$installer" "${feature_args[@]}" --features cli --check \
+    > "$fixture/check-ignores-wait.out"
+[[ "$(cat "$fixture/check-ignores-wait.out")" == "$cli_path" ]]
+SHARED_TOOLING_SETUP_WAIT_SECONDS=invalid bash "$installer" --consumer "$consumer" --preflight
+for invalid in -1 01 301 1.5; do
+    status=0
+    SHARED_TOOLING_SETUP_WAIT_SECONDS="$invalid" bash "$installer" --consumer "$consumer" \
+        "${feature_args[@]:2}" > "$fixture/invalid-wait.out" 2> "$fixture/invalid-wait.err" || status=$?
+    [[ "$status" == 2 && ! -s "$fixture/invalid-wait.out" ]]
+    grep -F 'SHARED_TOOLING_SETUP_WAIT_SECONDS must be' "$fixture/invalid-wait.err" >/dev/null
+done
+echo 'Shared Cargo installation, standard environment, identities, retention, contention and offline checks passed'
 fixture_complete=true

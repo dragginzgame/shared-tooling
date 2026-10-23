@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.26.7]
+
+### Fixed
+
+- Let explicit Cargo-tool setup wait briefly for an admitted shared-slot owner,
+  then recheck inputs and reuse its verified result. Keep offline checks
+  immediate and never remove another owner's lock. Setup waits up to 60 seconds
+  per occupied slot; set `SHARED_TOOLING_SETUP_WAIT_SECONDS=0` for immediate refusal
+  ([#301 — Bound cross-checkout tool setup contention](https://github.com/dragginzgame/shared-tooling/issues/301)).
+
 ## [0.26.6]
 
 ### Changed
