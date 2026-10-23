@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.26.9]
+
+### Fixed
+
+- Keep Cargo graph and changelog fixtures working with inherited `CDPATH` and
+  relative entrypoints. Anchor Cargo failure-fixture preparation to its physical
+  destination, preserving spaces and refusing empty or CR/LF paths.
+
 ## [0.26.8] - Unreleased
 
 ### Fixed
