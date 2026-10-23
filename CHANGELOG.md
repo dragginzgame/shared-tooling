@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.26.8] - Unreleased
+
+### Fixed
+
+- Keep explicit Cargo setup waiting through an admitted owner's lock cleanup.
+  A disappearing directory is rechecked before atomic acquisition; a missing
+  record is tolerated only for the same previously admitted physical lock.
+  Invalid claims, timeouts and atomic acquisition failures still refuse.
+  This fixes the Intel macOS contention regression in 0.26.7 ([#301](https://github.com/dragginzgame/shared-tooling/issues/301)).
+
 ## [0.26.7]
 
 ### Fixed

@@ -404,9 +404,12 @@ the claim, not whether its PID is still live. No lock is removed or owner killed
 
 After waiting, setup rechecks compiler/build identity, lockfile selection and
 normal source/receipt/checksum admission before reuse or activation. An owner
-failure never makes its partial generation reusable. Malformed, redirected or
-unwritable lock routes fail rather than polling. Atomic `mkdir` still owns
-acquisition: if a new owner wins that race, or acquisition fails for another
+failure never makes its partial generation reusable. An admitted owner's record
+may disappear during cleanup only while the same physical lock directory remains;
+a directory that has disappeared goes back through atomic acquisition. A missing
+initial record or a replacement directory without an admitted owner still refuses.
+Malformed, redirected or unwritable lock routes fail rather than polling. Atomic
+`mkdir` still owns acquisition: if a new owner wins that race, or acquisition fails for another
 reason, its diagnostic/status is preserved without a retry. Timeouts are nonzero
 and retain previous selections and failed evidence. `--check`, `--preflight`,
 source-cache preparation locks, checkout locks and Host/IC setup keep their
