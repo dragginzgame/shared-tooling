@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.26.13]
+
+### Fixed
+
+- Allow a normal release to advance from clean, manually committed candidate
+  metadata despite missing earlier tags or incomplete Git delivery. Preserve the
+  earlier plan without claiming completion, validate the next version afresh,
+  and retain conflicting-source/ref refusals ([#305 — Make committed-preparation recovery actionable when the release tag is missing](https://github.com/dragginzgame/shared-tooling/issues/305)).
+
 ## [0.26.12]
 
 ### Fixed

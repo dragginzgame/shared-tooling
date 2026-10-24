@@ -229,7 +229,7 @@ MAKE
 done
 
 # Real Git admission of superseded local preparation; all effects stay in /tmp.
-for metadata in unchanged bumped; do
+for metadata in unchanged bumped bumped-undelivered; do
     (
         selected="$FIXTURE_ROOT/committed-preparation-$metadata"
         mkdir -p "$selected"
@@ -264,25 +264,23 @@ MAKE
         cp .git/release-state/0.6.4.plan "$selected/saved-plan"
         cp "$RELEASE_RESTART_EVENTS" "$selected/saved-validation"
         printf 'retained build artifact\n' > "$selected/build.evidence"
-        if [[ "$metadata" == bumped ]]; then printf '0.6.4\n' > version; fi
+        if [[ "$metadata" != unchanged ]]; then printf '0.6.4\n' > version; fi
         printf 'committed source fix\n' > fix
         "$REAL_GIT" add version fix
         "$REAL_GIT" commit --quiet -m 'Committed preparation disposition'
         current_source="$("$REAL_GIT" rev-parse HEAD)"
+        if [[ "$metadata" == bumped-undelivered ]]; then
+            # Publication may refer to this older candidate source while HEAD
+            # has later fixes. No registry is contacted or publication claimed.
+            published_source="$current_source"
+            printf 'later source fix\n' > later-fix
+            "$REAL_GIT" add later-fix
+            "$REAL_GIT" commit --quiet -m 'Later committed source fix'
+            current_source="$("$REAL_GIT" rev-parse HEAD)"
+        fi
         next=0.6.4
+        if [[ "$metadata" != unchanged ]]; then next=0.6.5; fi
         if [[ "$metadata" == bumped ]]; then
-            # Committing preparation alone is not a delivered release. A normal
-            # retry must preserve the exact plan and inputs instead of bumping again.
-            if bash "$ROOT/scripts/ci/run-release.sh" patch origin main > "$selected/unreleased.log" 2>&1; then exit 1; fi
-            grep -F 'prepared version 0.6.4 is committed but delivery is unconfirmed' "$selected/unreleased.log" >/dev/null
-            cmp "$selected/saved-plan" .git/release-state/0.6.4.plan
-            cmp "$selected/saved-validation" "$RELEASE_RESTART_EVENTS"
-            [[ "$(cat version)" == 0.6.4 && "$("$REAL_GIT" rev-parse HEAD)" == "$current_source" ]] || exit 1
-            [[ -z "$("$REAL_GIT" --git-dir="$selected/destination.git" tag --list)" ]] || exit 1
-            [[ -z "$("$REAL_GIT" status --porcelain)" && ! -e .git/release-state/0.6.5.plan ]] || exit 1
-            set -- .git/release-state/0.6.4.attempt.*
-            [[ ! -e "$1" ]] || exit 1
-            next=0.6.5
             # A separately delivered earlier tag remains exactly as recorded.
             "$REAL_GIT" tag -a v0.6.4 -m 'Manually finalized 0.6.4'
             "$REAL_GIT" push --quiet --atomic origin main refs/tags/v0.6.4
@@ -294,6 +292,12 @@ MAKE
         cmp "$selected/saved-plan" "$1"
         [[ ! -e .git/release-state/0.6.4.plan && ! -e ".git/release-state/$next.plan" ]] || exit 1
         [[ "$("$REAL_GIT" rev-parse HEAD)" == "$current_source" ]] || exit 1
+        if [[ "$metadata" == bumped-undelivered ]]; then
+            grep -F 'Retained preparation: version=0.6.4 delivery=unconfirmed' "$selected/failed-revalidation.log" >/dev/null
+            [[ "$(cat version)" == 0.6.4 && "$(tail -n 1 "$1")" == prepare ]] || exit 1
+            [[ "$("$REAL_GIT" --git-dir="$selected/destination.git" rev-parse refs/heads/main)" == "$old_source" ]] || exit 1
+            [[ -z "$("$REAL_GIT" tag --list v0.6.4)" && -z "$("$REAL_GIT" --git-dir="$selected/destination.git" tag --list v0.6.4)" ]] || exit 1
+        fi
         bash "$ROOT/scripts/ci/run-release.sh" patch origin main > "$selected/released.log" 2>&1
         printf '%s\n' "$old_source" "$current_source" "$current_source" > "$selected/expected-validation"
         cmp "$selected/expected-validation" "$RELEASE_RESTART_EVENTS"
@@ -304,6 +308,11 @@ MAKE
         if [[ "$metadata" == bumped ]]; then
             [[ "$("$REAL_GIT" rev-parse refs/tags/v0.6.4)" == "$old_tag" ]] || exit 1
             [[ "$("$REAL_GIT" --git-dir="$selected/destination.git" rev-parse refs/tags/v0.6.4)" == "$old_tag" ]] || exit 1
+        fi
+        if [[ "$metadata" == bumped-undelivered ]]; then
+            [[ -z "$("$REAL_GIT" tag --list v0.6.4)" && -z "$("$REAL_GIT" --git-dir="$selected/destination.git" tag --list v0.6.4)" ]] || exit 1
+            "$REAL_GIT" merge-base --is-ancestor "$published_source" HEAD
+            [[ "$(tail -n 1 "$1")" == prepare ]] || exit 1
         fi
         cmp "$selected/saved-plan" "$1"
         [[ "$(cat "$selected/build.evidence")" == 'retained build artifact' ]] || exit 1
