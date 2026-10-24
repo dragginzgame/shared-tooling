@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.26.14]
+
+### Fixed
+
+- Distinguish admitted Cargo-tool contention from missing installation with exit
+  status 75. Allow explicit bounded read-only admission waits during release
+  recovery, rechecking selection and inputs without installation or lock cleanup
+  ([#306 — Busy tool admission during release recovery](https://github.com/dragginzgame/shared-tooling/issues/306)).
+
 ## [0.26.13]
 
 ### Fixed

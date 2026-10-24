@@ -118,6 +118,16 @@ cmp "$lock/owner" "$fixture/owner.before"
 # Zero opts out without inspecting or sleeping on the occupied lock.
 tool_store_wait_unlocked 0
 [[ "$tool_store_waited" == false ]]
+# Read-only admission distinguishes an admitted busy claim from invalid/missing
+# preparation without acquiring it, even when the caller selects no waiting.
+status=0
+tool_store_wait_unlocked 0 75 > "$fixture/busy.log" 2>&1 || status=$?
+[[ "$status" == 75 && "$tool_store_waited" == false ]]
+cmp "$lock/owner" "$fixture/owner.before"
+status=0
+tool_store_wait_unlocked 1 75 > "$fixture/admission-timeout.log" 2>&1 || status=$?
+[[ "$status" == 75 ]]
+cmp "$lock/owner" "$fixture/owner.before"
 # Interrupt the waiter, preserving the foreign owner and exact signal status.
 (
     trap 'exit 143' TERM
@@ -154,8 +164,8 @@ for kind in file link malformed missing-owner linked-owner unreadable-owner unse
         continue
     fi
     status=0
-    tool_store_wait_unlocked 1 > "$fixture/$kind.log" 2>&1 || status=$?
-    [[ "$status" != 0 ]]
+    tool_store_wait_unlocked 1 75 > "$fixture/$kind.log" 2>&1 || status=$?
+    [[ "$status" == 1 ]]
     if grep -F 'Waiting for' "$fixture/$kind.log"; then exit 1; fi
     [[ "$kind" != unsearchable-lock ]] || chmod 700 "$lock"
     rm -rf "$lock"

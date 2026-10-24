@@ -733,8 +733,12 @@ other="$(bash "$installer" --consumer "$consumer" --package sample --version 1.2
 [[ "$other" != "$path" ]] || exit 1
 slot="${bundle%/*}"
 mkdir "$slot/install.lock"
-refuse bash "$installer" "${selected_args[@]}" --check
+printf 'pid=%s\nconsumer=%s\n' "$$" "$consumer" > "$slot/install.lock/owner"
+status=0
+bash "$installer" "${selected_args[@]}" --check > "$fixture/refused.log" 2>&1 || status=$?
+[[ "$status" == 75 ]]
 grep -F "tool store installation locked: $slot/install.lock" "$fixture/refused.log"
+rm "$slot/install.lock/owner"
 rmdir "$slot/install.lock"
 # A failed build keeps the previously selected common set and shared evidence.
 source_package cargo-sort 99.1.1
@@ -936,6 +940,154 @@ attempt="$(sed -n 's/^Cargo tool attempt retained: //p' "$fixture/feature-failur
 [[ -f "$attempt/install.log" && -f "$attempt/build/evidence" && ! -e "${attempt%/*}/current" && ! -e "$attempt/selection.json" ]] || exit 1
 [[ "$(bash "$installer" "${feature_args[@]}" --features cli --check)" == "$cli_path" ]] || exit 1
 [[ "$(git -C "$fixture/a" rev-parse HEAD)" == "$source_commit" && ! -s "$fixture/forbidden-git" ]] || exit 1
+# Admission waits use separate real owner/check processes against an already
+# valid selected CLI. Cargo effects above are substitutes; none may run here.
+mkdir "$fixture/admission-readonly"
+export ADMISSION_EFFECTS="$fixture/admission-effects"
+for command in mkdir rmdir rm cp mv ln curl; do
+    cat > "$fixture/admission-readonly/$command" <<'DENY'
+#!/usr/bin/env bash
+printf '%s\n' "$0 $*" >> "$ADMISSION_EFFECTS"
+echo 'unexpected mutation in read-only admission' >&2
+exit 99
+DENY
+    chmod +x "$fixture/admission-readonly/$command"
+done
+cat > "$fixture/admission-owner.sh" <<'OWNER'
+#!/usr/bin/env bash
+set -euo pipefail
+source "$1"
+consumer="$2"
+tool_store_init rust "$(cat "$3")"
+tool_store_acquire
+trap tool_store_release EXIT
+trap 'exit 143' TERM
+: > "$4"
+while [[ ! -f "$5" ]]; do sleep 0.05; done
+OWNER
+cp "$cli_bundle/bin/prepare" "$fixture/admission-binary"
+cp "$cli_bundle/.crates2.json" "$fixture/admission-receipt"
+cp "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-1.2.3.crate" "$fixture/admission-source"
+cp "$fixture/compiler-version" "$fixture/admission-compiler"
+cp "$fixture/feature.lock" "$fixture/admission-lock"
+: > "$fixture/admission-common-versions"
+for command in cargo-sort cargo-sort-derives; do
+    common_binary="$(perl -MCwd=abs_path -e 'print abs_path(shift)' "$consumer/.tools/rust/common/bin/$command")"
+    version="$(jq -r .version "${common_binary%/bin/*}/inputs.json")"
+    catalog_name="$(printf '%s' "$command" | tr '[:lower:]-' '[:upper:]_')"
+    printf 'SHARED_TOOLING_%s_VERSION=%s\n' "$catalog_name" "$version" >> "$fixture/admission-common-versions"
+done
+bash "$installer" --consumer "$consumer" --versions "$fixture/admission-common-versions" --check > "$fixture/admission-common-check"
+cp "$fixture/admission-common-versions" "$fixture/admission-common-before"
+admission_active="${cli_path%/bin/*}"
+admission_reference="$(readlink "$admission_active")"
+admission_slot="${cli_bundle%/set.*}"
+admission_builds="$(wc -l < "$fixture/builds")"
+admission_probes="$(wc -l < "$fixture/probes")"
+admission_args=(--consumer "$consumer" --package sample --lockfile "$fixture/feature.lock" --bin prepare --profile debug --features cli --check)
+for scenario in reuse timeout unknown-owner changed-compiler changed-source changed-lock changed-catalog changed-selection changed-features corrupt-binary; do
+    rm -f "$fixture/admission-ready" "$fixture/admission-release"
+    check_args=("${admission_args[@]}")
+    owner_bundle="$cli_bundle"
+    if [[ "$scenario" == changed-catalog ]]; then
+        common_binary="$(perl -MCwd=abs_path -e 'print abs_path(shift)' "$consumer/.tools/rust/common/bin/cargo-sort")"
+        owner_bundle="${common_binary%/bin/*}"
+        check_args=(--consumer "$consumer" --versions "$fixture/admission-common-versions" --check)
+    fi
+    admission_slot="${owner_bundle%/set.*}"
+    bash "$fixture/admission-owner.sh" "$ROOT/scripts/dev/tool-store.sh" "$fixture/b" \
+        "$owner_bundle/inputs.json" "$fixture/admission-ready" "$fixture/admission-release" \
+        > "$fixture/admission-owner.log" 2>&1 & owner_setup=$!
+    for ((poll=0; poll<200; poll++)); do
+        [[ ! -f "$fixture/admission-ready" ]] || break
+        sleep 0.05
+    done
+    [[ -f "$fixture/admission-ready" ]] || { cat "$fixture/admission-owner.log"; exit 1; }
+    cp "$admission_slot/install.lock/owner" "$fixture/admission-owner.before"
+    if [[ "$scenario" == reuse ]]; then
+        # The default check is immediate, with a typed busy result and no hint
+        # to install an already valid product. No selected binary is executed.
+        status=0
+        PATH="$fixture/admission-readonly:$PATH" bash "$installer" "${admission_args[@]}" > "$fixture/admission-busy.out" 2> "$fixture/admission-busy.err" || status=$?
+        [[ "$status" == 75 && ! -s "$fixture/admission-busy.out" ]]
+        if grep -E 'missing or invalid|Explicit setup:|Waiting for' "$fixture/admission-busy.err"; then exit 1; fi
+    elif [[ "$scenario" == unknown-owner ]]; then
+        printf 'unknown claim\n' > "$admission_slot/install.lock/owner"
+        status=0
+        PATH="$fixture/admission-readonly:$PATH" bash "$installer" "${admission_args[@]}" --wait-seconds 1 > "$fixture/admission-check.out" 2> "$fixture/admission-check.err" || status=$?
+        [[ "$status" == 1 && ! -s "$fixture/admission-check.out" ]]
+        if grep -F 'Waiting for' "$fixture/admission-check.err"; then exit 1; fi
+        cp "$fixture/admission-owner.before" "$admission_slot/install.lock/owner"
+    fi
+    if [[ "$scenario" != unknown-owner ]]; then
+        budget=15
+        [[ "$scenario" != timeout ]] || budget=1
+        # Clear the previous scenario before starting the asynchronous checker;
+        # otherwise polling could mistake an old wait line for this process.
+        : > "$fixture/admission-check.err"
+        : > "$fixture/admission-check.out"
+        PATH="$fixture/admission-readonly:$PATH" bash "$installer" "${check_args[@]}" --wait-seconds "$budget" \
+            > "$fixture/admission-check.out" 2> "$fixture/admission-check.err" & waiter_setup=$!
+        for ((poll=0; poll<200; poll++)); do
+            if grep -qF 'Waiting for tool installation slot:' "$fixture/admission-check.err"; then break; fi
+            sleep 0.05
+        done
+        grep -F 'Waiting for tool installation slot:' "$fixture/admission-check.err" >/dev/null
+        case "$scenario" in
+            changed-compiler) printf 'changed admission compiler\n' > "$fixture/compiler-version" ;;
+            changed-source) printf '\n' >> "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-1.2.3.crate" ;;
+            changed-lock) printf '\n# changed saved source lock\n' >> "$fixture/feature.lock" ;;
+            changed-catalog) printf '\n# changed catalog input\n' >> "$fixture/admission-common-versions" ;;
+            changed-selection)
+                ln -s "$cli_bundle" "${admission_active%/*}/rust-set.admission"
+                rm "$admission_active"
+                ln -s rust-set.admission "$admission_active" ;;
+            changed-features) jq '.installs[].features = []' "$fixture/admission-receipt" > "$cli_bundle/.crates2.json" ;;
+            corrupt-binary) printf '\n# changed executable bytes\n' >> "$cli_bundle/bin/prepare" ;;
+        esac
+        if [[ "$scenario" == timeout ]]; then
+            status=0
+            wait "$waiter_setup" || status=$?; waiter_setup=''
+            [[ "$status" == 75 && ! -s "$fixture/admission-check.out" ]]
+            grep -F 'wait timed out' "$fixture/admission-check.err" >/dev/null
+            cmp "$fixture/admission-owner.before" "$admission_slot/install.lock/owner"
+        fi
+    fi
+    : > "$fixture/admission-release"
+    wait "$owner_setup"; owner_setup=''
+    if [[ -n "$waiter_setup" ]]; then
+        status=0
+        wait "$waiter_setup" || status=$?; waiter_setup=''
+        if [[ "$scenario" == reuse ]]; then
+            [[ "$status" == 0 && "$(cat "$fixture/admission-check.out")" == "$cli_path" ]]
+        else
+            [[ "$status" == 1 && ! -s "$fixture/admission-check.out" ]]
+        fi
+    fi
+    [[ ! -e "$admission_slot/install.lock" ]]
+    [[ ! -e "$ADMISSION_EFFECTS" ]]
+    [[ "$(wc -l < "$fixture/builds")" == "$admission_builds" && "$(wc -l < "$fixture/probes")" == "$admission_probes" ]]
+    cp "$fixture/admission-binary" "$cli_bundle/bin/prepare"
+    cp "$fixture/admission-receipt" "$cli_bundle/.crates2.json"
+    cp "$fixture/admission-source" "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-1.2.3.crate"
+    cp "$fixture/admission-compiler" "$fixture/compiler-version"
+    cp "$fixture/admission-lock" "$fixture/feature.lock"
+    cp "$fixture/admission-common-before" "$fixture/admission-common-versions"
+    if [[ "$scenario" == changed-selection ]]; then
+        rm "$admission_active" "${admission_active%/*}/rust-set.admission"
+        ln -s "$admission_reference" "$admission_active"
+    fi
+    [[ "$(readlink "$admission_active")" == "$admission_reference" ]]
+    echo "Read-only admission: $scenario passed"
+done
+for invalid in -1 01 301 1.5; do
+    status=0
+    bash "$installer" "${admission_args[@]}" --wait-seconds "$invalid" > "$fixture/admission-invalid.log" 2>&1 || status=$?
+    [[ "$status" == 2 ]]
+done
+refuse bash "$installer" "${feature_args[@]}" --features cli --wait-seconds 1
+refuse bash "$installer" "${admission_args[@]}" --wait-seconds 1 --wait-seconds 1
+
 # Two real installer processes share one exact payload, with Cargo effects
 # substituted. Synchronize on the held build and the wait diagnostic, not time.
 for scenario in reuse changed-compiler changed-source redirected-source; do
