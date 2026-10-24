@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.26.12]
+
+### Fixed
+
+- Fetch complete history for the portable CI matrix so snapshot-impact
+  qualification can inspect the previous committed source on every host.
+- Align the recorded snapshot source version with the delivered 0.26.11
+  implementation ([#304 — Reconcile committed VERSION with the delivered 0.26.11 snapshot source](https://github.com/dragginzgame/shared-tooling/issues/304)).
+
 ## [0.26.11]
 
 ### Added
