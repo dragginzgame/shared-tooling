@@ -195,6 +195,9 @@ refuse() {
     if "$@" > "$fixture/refused.log" 2>&1; then echo 'unexpected Cargo tool admission' >&2; exit 1; fi
 }
 common() { bash "$installer" --consumer "$consumer" --versions "$fixture/versions" "$@"; }
+expect_setup_phase() {
+    grep -E '^Cargo tool setup: package=[A-Za-z0-9_-]+ version=[0-9]+[.][0-9]+[.][0-9]+ phase='"$2"' outcome='"$3"' elapsed=[0-9]+s status='"$4"'$' "$1" > /dev/null
+}
 hook() (cd "$consumer" && bash .githooks/pre-commit)
 consumer="$fixture/a"
 # Direct compiler identity checks must use the fixture's prepared context too.
@@ -550,6 +553,8 @@ status=0
 SHARED_TOOLING_SETUP_WAIT_SECONDS=1 common > "$fixture/timeout.out" 2> "$fixture/timeout.err" || status=$?
 [[ "$status" == 1 && ! -s "$fixture/timeout.out" ]]
 grep -F 'wait timed out' "$fixture/timeout.err" >/dev/null
+expect_setup_phase "$fixture/timeout.err" lock-wait failed 1
+grep -E 'phase=lock-wait outcome=failed elapsed=[1-9][0-9]*s status=1$' "$fixture/timeout.err" >/dev/null
 cmp "$held_slot/install.lock/owner" "$fixture/valid-owner"
 [[ "$(readlink "$consumer/.tools/rust/common")" == "$old_common" && "$(readlink "$held_slot/current")" == "$old_current" ]]
 [[ "$(wc -l < "$fixture/builds")" -eq 2 ]]
@@ -584,24 +589,42 @@ rm "$fixture/no-info"
 # Selected product executables are verified without executing them.
 selected_args=(--consumer "$consumer" --package sample --version 1.2.3 --example prepare --profile debug)
 : > "$fixture/probes"
-path="$(bash "$installer" "${selected_args[@]}")"
+path="$(bash "$installer" "${selected_args[@]}" 2> "$fixture/selected-setup.err")"
 [[ ! -s "$fixture/probes" && -x "$path" ]] || exit 1
-CARGO_NET_OFFLINE=true bash "$installer" "${selected_args[@]}" --check > "$fixture/selected-check"
-[[ "$(cat "$fixture/selected-check")" == "$path" && ! -s "$fixture/probes" ]] || exit 1
-# Explicit extension setup reuses the selection quietly, without info/install
+for phase in source-preparation lock-wait compilation receipt-admission build-admission; do
+    expect_setup_phase "$fixture/selected-setup.err" "$phase" passed 0
+done
+grep -F 'package=sample version=1.2.3 phase=compilation outcome=started elapsed=0s' "$fixture/selected-setup.err" >/dev/null
+CARGO_NET_OFFLINE=true bash "$installer" "${selected_args[@]}" --check > "$fixture/selected-check" 2> "$fixture/selected-check.err"
+[[ "$(cat "$fixture/selected-check")" == "$path" && ! -s "$fixture/probes" && ! -s "$fixture/selected-check.err" ]] || exit 1
+# Explicit extension setup reports reuse without info/install
 # dispatch or executable probes. Another checkout receives the same bytes.
 builds_before="$(wc -l < "$fixture/builds")"
 touch "$fixture/no-info"
 for retry in first second; do
     CARGO_NET_OFFLINE=true bash "$installer" "${selected_args[@]}" > "$fixture/reuse-$retry.out" 2> "$fixture/reuse-$retry.err"
-    [[ "$(cat "$fixture/reuse-$retry.out")" == "$path" && ! -s "$fixture/reuse-$retry.err" ]] || exit 1
+    [[ "$(cat "$fixture/reuse-$retry.out")" == "$path" ]] || exit 1
+    expect_setup_phase "$fixture/reuse-$retry.err" source-preparation passed 0
+    expect_setup_phase "$fixture/reuse-$retry.err" selection-reuse passed 0
+    if grep -F 'phase=compilation' "$fixture/reuse-$retry.err"; then exit 1; fi
 done
 extension_path="$(CARGO_NET_OFFLINE=true bash "$installer" --consumer "$fixture/a" \
     --package sample --version 1.2.3 --example prepare --profile debug 2> "$fixture/extension-reuse.err")"
-[[ "$(wc -l < "$fixture/builds")" == "$builds_before" && ! -s "$fixture/probes" && ! -s "$fixture/extension-reuse.err" ]] || exit 1
+[[ "$(wc -l < "$fixture/builds")" == "$builds_before" && ! -s "$fixture/probes" ]] || exit 1
+expect_setup_phase "$fixture/extension-reuse.err" cache-reuse passed 0
 [[ "$(perl -MCwd=abs_path -e 'print abs_path(shift)' "$extension_path")" == \
    "$(perl -MCwd=abs_path -e 'print abs_path(shift)' "$path")" ]] || exit 1
 rm "$fixture/no-info"
+# Diagnostic write failures cannot fail an otherwise admitted reuse. Substitute
+# only the diagnostic printf; all installer admission and effects remain real.
+cat > "$fixture/diagnostic-write-failure.sh" <<'SCRIPT'
+printf() {
+    case "${1:-}" in 'Cargo tool setup: '*) return 73 ;; esac
+    builtin printf "$@"
+}
+SCRIPT
+observed="$(BASH_ENV="$fixture/diagnostic-write-failure.sh" bash "$installer" "${selected_args[@]}")"
+[[ "$observed" == "$path" && "$(wc -l < "$fixture/builds")" == "$builds_before" ]] || exit 1
 physical="$(perl -MCwd=abs_path -e 'print abs_path(shift)' "$path")"; bundle="${physical%/bin/*}"
 # Refused offline admission has no stdout, probes, fetches or builds. Name the
 # missing/competing source paths instead of collapsing them into invalid tools.
@@ -908,6 +931,7 @@ status=0
 bash "$installer" "${feature_args[@]}" --features unavailable > "$fixture/feature-failure.out" \
     2> "$fixture/feature-failure.err" || status=$?
 [[ "$status" == 24 && ! -s "$fixture/feature-failure.out" ]] || exit 1
+expect_setup_phase "$fixture/feature-failure.err" compilation failed 24
 attempt="$(sed -n 's/^Cargo tool attempt retained: //p' "$fixture/feature-failure.err")"
 [[ -f "$attempt/install.log" && -f "$attempt/build/evidence" && ! -e "${attempt%/*}/current" && ! -e "$attempt/selection.json" ]] || exit 1
 [[ "$(bash "$installer" "${feature_args[@]}" --features cli --check)" == "$cli_path" ]] || exit 1
@@ -936,6 +960,7 @@ for scenario in reuse changed-compiler changed-source redirected-source; do
         sleep 0.05
     done
     grep -F 'Waiting for tool installation slot:' "$fixture/waiter.err" >/dev/null
+    grep -F "package=sample version=$version phase=lock-wait outcome=started elapsed=0s" "$fixture/waiter.err" >/dev/null
     # An offline check never waits, even with the setup budget configured.
     status=0
     SHARED_TOOLING_SETUP_WAIT_SECONDS=300 bash "$installer" --consumer "$fixture/$scenario-owner" \
@@ -956,6 +981,9 @@ for scenario in reuse changed-compiler changed-source redirected-source; do
     [[ "$(grep -c "^sample $version bin prepare debug$" "$fixture/builds")" == 1 ]]
     if [[ "$scenario" == reuse ]]; then
         [[ "$owner_status:$waiter_status" == 0:0 ]]
+        expect_setup_phase "$fixture/waiter.err" lock-wait passed 0
+        expect_setup_phase "$fixture/waiter.err" cache-reuse passed 0
+        if grep -F 'phase=compilation' "$fixture/waiter.err"; then exit 1; fi
         owner_path="$(cat "$fixture/owner.out")"; waiter_path="$(cat "$fixture/waiter.out")"
         [[ "$(cd -P "${owner_path%/*}" && pwd)" == "$(cd -P "${waiter_path%/*}" && pwd)" ]]
         bash "$installer" --consumer "$fixture/$scenario-waiter" "${contention_args[@]}" --check > "$fixture/reuse-check.out"

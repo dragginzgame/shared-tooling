@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.26.11]
+
+### Added
+
+- Report Cargo-tool setup phases, durations and outcomes on stderr while
+  preserving path-only stdout, offline checks, build identities and failure
+  evidence ([#303 — Report Cargo tool setup phases and durations](https://github.com/dragginzgame/shared-tooling/issues/303)).
+
 ## [0.26.10]
 
 ### Added
