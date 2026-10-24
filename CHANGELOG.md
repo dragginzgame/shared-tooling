@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.26.15]
+
+### Changed
+
+- Preserve established workspace groupings and coordinated versions. Prefer
+  batching related breaking changes over repeated downstream migrations, and
+  classify dependency upgrades by their actual impact on each consumer's public
+  contract.
+- Clarify dependency-adoption checks: verify the selected consumer graphs and
+  important type identities without treating temporary migration states or
+  whole-lockfile duplicates as defects.
+
 ## [0.26.14]
 
 ### Fixed

@@ -565,7 +565,11 @@ Consumer choices described in those guides remain subject to this baseline.
   The rule explicitly approves IcyDB's existing `crates/`, `canisters/`, `schema/`
   and `testing/` layout; adoption does not require relocating those packages.
   Repositories without Rust packages do not need a Cargo workspace.
-- Cargo workspace members inherit package versions from the root. Apply the
+- Cargo workspace members inherit package versions from the root. Preserve
+  established groupings and coordinated versions under the
+  [workspace versioning guidance](rules/rust-workspaces.md#coordinated-versions-and-workspace-boundaries);
+  prefer release batching and verified consumer adoption over another split.
+  Apply the
   [Cargo dependency rules](rules/cargo-dependencies.md): every direct dependency
   is declared in root `[workspace.dependencies]`, and every child manifest uses
   `workspace = true`, including development, build and target-specific tables.
