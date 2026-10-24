@@ -2,7 +2,10 @@
 # Shared companions: scripts/ci/make-adapter-probes.sh scripts/ci/fixture-retention-probes.sh scripts/ci/collect-native-diagnostics.sh scripts/ci/verify-file-checksum.sh scripts/ci/check-pipe-jobserver.pl make/execution.mk
 set -euo pipefail
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
-ROOT="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
+ROOT="${BASH_SOURCE[0]}"
+[[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
+ROOT="$(CDPATH='' cd -P -- "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
+ROOT="${ROOT%/.}"
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 source "$ROOT/scripts/ci/make-adapter-probes.sh"
 source "$ROOT/scripts/ci/fixture-retention-probes.sh"
@@ -62,6 +65,24 @@ run:
 	@printf 'called\n' >> "$(FLOW_EVENTS)"
 MAKE
 real_make="$(command -v make)"
+cat > "$fixture/lint.mk" <<'MAKE'
+run:
+	@printf 'prepare\nlint\n' >> "$(MAKE_PROBE_EVENTS)"; exit "$(MAKE_PROBE_LINT_STATUS)"
+	@printf 'build\n' >> "$(MAKE_PROBE_EVENTS)"
+MAKE
+printf 'prepare\nlint\n' > "$fixture/lint-failure"
+printf 'prepare\nlint\nbuild\n' > "$fixture/lint-success"
+make_probe_lint_order "$real_make" "$fixture/lint.mk" "$fixture" "$FLOW_EVENTS" run "$fixture/lint-failure" "$fixture/lint-success"
+# Missing lint, ignored lint failure and reversed ordering must not qualify.
+for defect in ignored missing reversed; do
+    # shellcheck disable=SC2016 # Make expands variables in the generated recipe.
+    case "$defect" in
+        ignored) sed 's/@printf '\''prepare/@-printf '\''prepare/' "$fixture/lint.mk" > "$fixture/bad-lint.mk" ;;
+        missing) printf 'run:\n\t@printf "build\\n" >> "$(MAKE_PROBE_EVENTS)"\n' > "$fixture/bad-lint.mk" ;;
+        reversed) printf 'run:\n\t@printf "build\\nprepare\\nlint\\n" >> "$(MAKE_PROBE_EVENTS)"; exit "$(MAKE_PROBE_LINT_STATUS)"\n' > "$fixture/bad-lint.mk" ;;
+    esac
+    if make_probe_lint_order "$real_make" "$fixture/bad-lint.mk" "$fixture" "$FLOW_EVENTS" run "$fixture/lint-failure" "$fixture/lint-success"; then exit 1; fi
+done
 make_probe_execution_modes "$real_make" "$fixture/Makefile" "$fixture" "$FLOW_EVENTS" run
 make_probe_target_admission "$real_make" "$fixture/Makefile" "$fixture" "$FLOW_EVENTS" run
 make_probe_parallel_dispatch "$real_make" "$fixture/Makefile" "$fixture" "$FLOW_EVENTS" run

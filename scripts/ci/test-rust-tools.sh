@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/dev/install-rust-tools.sh scripts/dev/cargo-tool-build.sh scripts/dev/tool-store.sh scripts/ci/cargo-tool-cache-key.sh scripts/ci/select-tool-evidence.sh scripts/ci/archive-evidence.sh .githooks/pre-commit scripts/ci/prepare-script-fixture.sh
+# Shared companions: scripts/dev/install-rust-tools.sh scripts/dev/cargo-tool-build.sh scripts/dev/tool-store.sh scripts/ci/cargo-tool-cache-key.sh scripts/ci/select-tool-evidence.sh scripts/ci/archive-evidence.sh .githooks/pre-commit scripts/ci/prepare-script-fixture.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 path_context=false
 if [[ "${1:-}" == --path-context && $# == 1 ]]; then path_context=true;
@@ -7,8 +7,10 @@ elif [[ $# != 0 ]]; then echo 'usage: fixture [--path-context]' >&2; exit 2; fi
 ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"; ROOT="${ROOT%/.}"
-fixture="$(mktemp -d "${TMPDIR:-/tmp}/rust-tools-test.XXXXXX")"
-fixture="$(cd "$fixture" && pwd -P)"
+# shellcheck source=scripts/ci/fixture-lifecycle.sh
+source "$ROOT/scripts/ci/fixture-lifecycle.sh"
+fixture="$(fixture_create "${TMPDIR:-/tmp}/rust-tools-test.XXXXXX")"
+export TMPDIR="${fixture%/*}"
 fixture_complete=false
 owner_setup='' waiter_setup=''
 finish() {
@@ -17,14 +19,11 @@ finish() {
     for child in "$owner_setup" "$waiter_setup"; do
         [[ -z "$child" ]] || { kill "$child" 2>/dev/null || :; wait "$child" 2>/dev/null || :; }
     done
-    [[ "$fixture_complete" == true || "$status" != 0 ]] || status=1
     if [[ -s "$fixture/forbidden-git" ]]; then
-        cat "$fixture/forbidden-git" >&2
+        cat "$fixture/forbidden-git" >&2 || :
         status=1
     fi
-    if [[ "$status" == 0 ]]; then rm -rf "$fixture"
-    else printf 'Failed Rust tool fixture retained: %s\n' "$fixture" >&2; fi
-    exit "$status"
+    fixture_finish "$status" "$fixture" 'Failed Rust tool fixture retained'
 }
 trap finish EXIT
 export SHARED_TOOLING_STORE="$fixture/store"
@@ -413,9 +412,17 @@ rm "$fixture/bootstrap-denied"
 # Preserve previous physical installations; adopt new shared references explicitly.
 mkdir -p "$consumer/.tools/rust/previous/installed/build"
 printf 'old local evidence\n' > "$consumer/.tools/rust/previous/installed/build/payload"
+# The retired checkout-local build route is no longer an installer input.
+# Neither setup nor offline admission may follow it or modify its old evidence.
+mkdir "$fixture/retired-build"
+printf 'retained build evidence\n' > "$fixture/retired-build/payload"
+ln -s "$fixture/retired-build" "$consumer/.tools/rust/build"
 RUSTFLAGS=invalid RUSTC_WRAPPER=/missing UNMODELLED_SECRET=must-not-propagate common
 [[ "$(wc -l < "$fixture/builds")" -eq 2 ]] || exit 1
 common --check
+[[ "$(readlink "$consumer/.tools/rust/build")" == "$fixture/retired-build" &&
+   "$(cat "$fixture/retired-build/payload")" == 'retained build evidence' &&
+   "$(ls -A "$fixture/retired-build")" == payload ]] || exit 1
 first_binary="$(perl -MCwd=abs_path -e 'print abs_path(shift)' "$consumer/.tools/rust/common/bin/cargo-sort")"
 # A previously broader bundle remains retained, but cannot keep selecting an
 # unrelated tool through the current common PATH. Rebuild only the link set.

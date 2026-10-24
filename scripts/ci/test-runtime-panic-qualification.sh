@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Shared companions: scripts/ci/qualify-runtime-panics.sh scripts/ci/fixture-lifecycle.sh scripts/ci/extract-workflow-step.sh .github/workflows/ci.yml
 set -euo pipefail
-ROOT="$(cd -P "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
+ROOT="${BASH_SOURCE[0]}"
+[[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
+ROOT="$(CDPATH='' cd -P -- "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
+ROOT="${ROOT%/.}"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture="$(fixture_create "${TMPDIR:-/tmp}/runtime-qualification.XXXXXX")"

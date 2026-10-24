@@ -30,10 +30,12 @@ done
 # Their scratch roots must remain absolute even when TMPDIR is relative and
 # CDPATH makes a plain cd print a directory name into command substitution.
 for context in physical alias; do
-    for script in test-native-host.sh test-formatting-evidence.sh test-tool-version-report.sh; do
+    for script in test-native-host.sh test-formatting-evidence.sh test-tool-version-report.sh test-rust-tools.sh; do
+        args=()
+        [[ "$script" != test-rust-tools.sh ]] || args=(--path-context)
         (
             cd "$fixture"
-            CDPATH="$fixture" TMPDIR="$context" "$BASH" "$ROOT/scripts/ci/$script"
+            CDPATH="$fixture" TMPDIR="$context" "$BASH" "$ROOT/scripts/ci/$script" ${args[@]+"${args[@]}"}
         ) > "$fixture/$script-$context.log" 2>&1
         [[ -z "$(ls -A "$fixture/physical")" ]] || { echo "context cleanup failed: $script" >&2; exit 1; }
     done

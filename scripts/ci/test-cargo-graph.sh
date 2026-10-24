@@ -79,6 +79,14 @@ for mode in failed signal; do
   if grep -q 'graph passed' "$fixture/$mode-$edges.log"; then exit 1; fi
  done
 done
+printf 'consumer v0.1.0\n' > "$GRAPH_INPUT"
+for mode in failed signal; do
+    if GRAPH_MODE="$mode" "${checker[@]}" --forbid absent --json > "$fixture/failed.json" 2> "$fixture/json-error.log"; then exit 1; fi
+    [[ ! -s "$fixture/failed.json" ]] || exit 1
+done
+printf 'not a Cargo observation\n' > "$GRAPH_INPUT"
+if "${checker[@]}" --forbid absent --json > "$fixture/invalid.json" 2> "$fixture/json-error.log"; then exit 1; fi
+[[ ! -s "$fixture/invalid.json" ]] || exit 1
 for invalid in '' 'not a Cargo graph' 'other v0.1.0' 'consumer v0.1.0 invalid'; do
  printf '%s\n' "$invalid" > "$GRAPH_INPUT"
  if "${checker[@]}" --forbid absent > "$fixture/invalid.log" 2>&1; then exit 1; fi
@@ -130,7 +138,7 @@ dev-only={path="../dev-only"}
 [target.'cfg(target_arch="wasm32")'.dependencies]
 wasm-only={path="../wasm-only"}
 TOML
-printf '[features]\ndefault=[]\ndanger=[]\n[dependencies]\nhidden={package="substrate",path="../substrate"}\n' >> "$actual/bridge/Cargo.toml"
+printf '[features]\ndefault=[]\ndanger=[]\n[dependencies]\nhidden={package="substrate",path="../substrate"}\n[build-dependencies]\nbuild-only={path="../build-only"}\n' >> "$actual/bridge/Cargo.toml"
 (cd "$actual"; cargo generate-lockfile --offline)
 cp "$actual/Cargo.lock" "$fixture/lock.before"
 native="$(rustc -vV | sed -n 's/^host: //p')"
@@ -152,6 +160,19 @@ overlapping=("${checker[@]}" --package bridge --target "$native" --require consu
 "${overlapping[@]}" --no-default-features --features consumer/runtime --forbid-feature bridge/other
 if "${overlapping[@]}" --features consumer/runtime --forbid-feature bridge/default > "$fixture/actual-annotated-feature.log" 2>&1; then exit 1; fi
 grep -F 'forbidden dependency feature edge: bridge/default' "$fixture/actual-annotated-feature.log" > /dev/null
+cmp "$fixture/lock.before" "$actual/Cargo.lock"
+status=0
+"${checker[@]}" --target "$native" --features runtime --forbid substrate --explain --json > "$fixture/explain.json" || status=$?
+[[ "$status" == 1 ]] || exit 1
+jq -e '.passed == false and .violations[0].package == "substrate" and
+    (.violations[0].path | (length >= 3) and (.[0] | startswith("consumer ")))' "$fixture/explain.json" > /dev/null
+jq -e '.violations[0].path[-1] | startswith("substrate ")' "$fixture/explain.json" > /dev/null
+status=0
+"${checker[@]}" --target "$native" --features runtime --forbid-feature bridge/danger --explain --json > "$fixture/feature-explain.json" || status=$?
+[[ "$status" == 1 ]] || exit 1
+jq -e '.violations[0].feature == "bridge/danger" and .violations[0].path[-1] == "bridge feature \"danger\""' "$fixture/feature-explain.json" > /dev/null
+"${checker[@]}" --target "$native" --forbid substrate --json > "$fixture/clean.json"
+jq -e '.passed == true and .violations == []' "$fixture/clean.json" > /dev/null
 cmp "$fixture/lock.before" "$actual/Cargo.lock"
 fixture_complete=true
 echo 'Locked graph selection, identity counts, aliases, failed observations and offline Cargo checks passed'

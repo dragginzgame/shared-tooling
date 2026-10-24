@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Shared companions: scripts/ci/fixture-lifecycle.sh scripts/ci/prepare-cargo-formatting-fixture.pl
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
+ROOT="${BASH_SOURCE[0]}"
+[[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
+ROOT="$(CDPATH='' cd -P -- "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
+ROOT="${ROOT%/.}"
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture="$(fixture_create "${TMPDIR:-/tmp}/cargo-formatting-fixture.XXXXXX")"
 fixture_complete=false

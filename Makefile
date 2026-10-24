@@ -38,6 +38,7 @@ help:
 	@echo "Focused: affected script fixtures, check-no-symlinks, check-pins, check-doc-links, check-release-commands"
 	@echo "Local IC executables: install-ic-tools; offline verification: ic-tools-check"
 	@echo "Complete common host, IC and Rust toolset: install-tools; offline verification: tools-check"
+	@echo "Aggregate offline tool diagnostics: tools-report (no installation)"
 	@echo "Pinned Cargo tools: install-rust-tools; offline verification: rust-tools-check"
 	@echo "Shared integration editor: install-release-editor; offline verification: release-editor-check"
 	@echo "Cargo tool freshness (online, read-only): check-cargo-tool-versions"

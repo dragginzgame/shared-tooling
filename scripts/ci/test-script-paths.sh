@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/ci/test-file-digests.sh scripts/ci/prepare-script-fixture.sh scripts/ci/test-cargo-graph.sh scripts/ci/test-release-changelog.sh scripts/ci/prepare-cargo-failure-fixture.sh
+# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/ci/test-file-digests.sh scripts/ci/prepare-script-fixture.sh scripts/ci/test-cargo-graph.sh scripts/ci/test-release-changelog.sh scripts/ci/prepare-cargo-failure-fixture.sh scripts/ci/test-cargo-release-preflight.sh scripts/ci/test-cargo-formatting-fixture.sh scripts/ci/test-snapshot-retirement.sh scripts/ci/test-fixture-completion.sh scripts/ci/test-fixture-timing.sh scripts/ci/test-fixture-allocation.sh scripts/ci/test-prepare-common-tools.sh scripts/ci/test-hosted-failure.sh scripts/ci/test-shared-toolchain.sh scripts/ci/test-runtime-panic-qualification.sh scripts/ci/test-consumer-flow-probes.sh scripts/ci/test-rust-formatting-sources.sh scripts/ci/test-fixture-log-replay.sh scripts/ci/test-workflow-step.sh scripts/ci/test-release-receipts.sh scripts/ci/test-pipe-jobserver.sh scripts/ci/test-cargo-dependency-boundaries.sh scripts/ci/test-rust-toolchains.sh scripts/ci/test-release-metadata-transaction.sh scripts/ci/test-snapshot-takeover.sh scripts/ci/test-release-delivery.sh scripts/ci/test-cargo-publication-attempt.sh
 set -euo pipefail
 ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
@@ -70,24 +70,71 @@ done
 # A private companion reports that bootstrap selected the actual fixture root.
 entry_checkout="$fixture/fixture checkout"
 mkdir "$entry_checkout"
-bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$entry_checkout" \
-    scripts/ci/test-cargo-graph.sh scripts/ci/test-release-changelog.sh
-printf 'printf "bootstrap admitted\\n"\nexit 41\n' > "$entry_checkout/scripts/ci/fixture-lifecycle.sh"
-for script in test-cargo-graph test-release-changelog; do
-    for entry in relative absolute; do
-        status=0
-        (
-            export CDPATH="$fixture/decoy:$entry_checkout"
-            if [[ "$entry" == relative ]]; then
-                cd "$entry_checkout"
-                "$BASH" "scripts/ci/$script.sh"
-            else
-                cd "$fixture"
-                "$BASH" "$entry_checkout/scripts/ci/$script.sh"
+entry_scripts=(
+    test-cargo-graph test-release-changelog test-cargo-release-preflight
+    test-cargo-formatting-fixture test-snapshot-retirement test-fixture-completion
+    test-fixture-timing test-fixture-allocation test-prepare-common-tools
+    test-hosted-failure test-shared-toolchain test-runtime-panic-qualification
+    test-consumer-flow-probes test-rust-formatting-sources test-fixture-log-replay
+    test-workflow-step test-release-receipts test-pipe-jobserver
+    test-cargo-dependency-boundaries test-rust-toolchains
+    test-release-metadata-transaction test-snapshot-takeover test-release-delivery
+)
+entry_roots=()
+for script in "${entry_scripts[@]}"; do entry_roots+=("scripts/ci/$script.sh"); done
+bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$entry_checkout" "${entry_roots[@]}"
+cat > "$entry_checkout/scripts/ci/fixture-lifecycle.sh" <<'BOOTSTRAP'
+[[ "${ROOT:-}" == "$BOOTSTRAP_EXPECTED_ROOT" || "${root:-}" == "$BOOTSTRAP_EXPECTED_ROOT" ]] || exit 42
+printf 'bootstrap admitted\n'
+exit 41
+BOOTSTRAP
+mkdir "$fixture/entry-scratch" "$fixture/entry-bin"
+# Some entrypoints discover Cargo before sourcing their lifecycle helper. A
+# substitute admits discovery without requiring or invoking an actual compiler.
+printf '#!/usr/bin/env bash\nexit 97\n' > "$fixture/entry-bin/cargo"
+chmod +x "$fixture/entry-bin/cargo"
+for shape in spaces newline; do
+    if [[ "$shape" == newline ]]; then
+        mv "$entry_checkout" "$entry_checkout"$'\n'
+        entry_checkout+=$'\n'
+    fi
+    for script in "${entry_scripts[@]}"; do
+        for entry in relative absolute; do
+            status=0
+            (
+                export CDPATH="$fixture/decoy:$entry_checkout"
+                export BOOTSTRAP_EXPECTED_ROOT="$entry_checkout" TMPDIR="$fixture/entry-scratch"
+                if [[ "$entry" == relative ]]; then
+                    cd "$entry_checkout"
+                    PATH="$fixture/entry-bin:$PATH" "$BASH" "scripts/ci/$script.sh"
+                else
+                    cd "$fixture"
+                    PATH="$fixture/entry-bin:$PATH" "$BASH" "$entry_checkout/scripts/ci/$script.sh"
+                fi
+            ) > "$fixture/entry.log" 2> "$fixture/entry.err" || status=$?
+            if [[ "$status" != 41 || -s "$fixture/entry.err" ]]; then
+                printf 'Fixture bootstrap failed: %s (%s, %s), status %s\n' "$script" "$shape" "$entry" "$status" >&2
+                cat "$fixture/entry.err" >&2
+                exit 1
             fi
-        ) > "$fixture/entry.log" 2> "$fixture/entry.err" || status=$?
-        [[ "$status" == 41 && ! -s "$fixture/entry.err" ]] || exit 1
-        grep -Fx 'bootstrap admitted' "$fixture/entry.log" > /dev/null
+            grep -Fx 'bootstrap admitted' "$fixture/entry.log" > /dev/null
+        done
+    done
+done
+# Exercise actual allocation/cleanup after bootstrap as well. Relative and
+# aliased TMPDIR values must not select a CDPATH decoy or leave successful runs.
+lifecycle_caller="$fixture/lifecycle caller"
+mkdir -p "$lifecycle_caller/physical" "$fixture/lifecycle-decoy/physical"
+ln -s "$lifecycle_caller/physical" "$lifecycle_caller/alias"
+for selected_tmp in physical alias/; do
+    for script in test-fixture-allocation test-pipe-jobserver test-cargo-dependency-boundaries test-release-receipts test-cargo-publication-attempt; do
+        if ! (cd "$lifecycle_caller" && CDPATH="$fixture/lifecycle-decoy:$lifecycle_caller" TMPDIR="$selected_tmp" \
+            "$BASH" "$ROOT/scripts/ci/$script.sh") > "$fixture/lifecycle-path.log" 2>&1; then
+            printf 'Fixture scratch path failed: %s (%s)\n' "$script" "$selected_tmp" >&2
+            cat "$fixture/lifecycle-path.log" >&2
+            exit 1
+        fi
+        [[ -z "$(ls -A "$lifecycle_caller/physical")" && -z "$(ls -A "$fixture/lifecycle-decoy/physical")" ]] || exit 1
     done
 done
 # Preparation anchors the selected destination before any later cwd changes.

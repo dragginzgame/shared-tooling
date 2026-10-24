@@ -2,7 +2,10 @@
 # Shared companions: scripts/ci/check-release-delivery.sh scripts/ci/prepare-script-fixture.sh make/release.mk scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 # Qualify common admission independently of any release runner or Git effects.
-root="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
+root="${BASH_SOURCE[0]}"
+[[ "$root" == /* ]] || root="$PWD/$root"
+root="$(CDPATH='' cd -P -- "${root%/*}/../.." && printf '%s/.' "$PWD")"
+root="${root%/.}"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$root/scripts/ci/fixture-lifecycle.sh"
 fixture="$(fixture_create "${TMPDIR:-/tmp}/release-delivery.XXXXXX")"

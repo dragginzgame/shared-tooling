@@ -611,6 +611,12 @@ diff -r "$FIXTURE/preview-before" "$preview_consumer"
 complete_preview=(--source "$source_root" --consumer "$preview_consumer" --manifest nested/selection
     --entrypoint first.sh)
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --impact "${complete_preview[@]}" > "$FIXTURE/impact.out"
+grep -F "$(printf 'AFFECTS\tfirst.sh\tsecond.sh')" "$FIXTURE/impact.out" >/dev/null
+grep -F "$(printf 'AFFECTS\tfirst.sh\tthird.sh')" "$FIXTURE/impact.out" >/dev/null
+grep -F 'first adoption; no recorded base' "$FIXTURE/impact.out" >/dev/null
+diff -r "$FIXTURE/preview-before" "$preview_consumer"
+PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --preview "${complete_preview[@]}" > "$FIXTURE/preview-complete.out"
 diff -r "$FIXTURE/preview-before" "$preview_consumer"
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \

@@ -3,7 +3,10 @@
 set -euo pipefail
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 unset VALIDATION_REPOSITORY_ROOT VALIDATION_RUNNER_SNAPSHOT_PATH
-ROOT="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
+ROOT="${BASH_SOURCE[0]}"
+[[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
+ROOT="$(CDPATH='' cd -P -- "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
+ROOT="${ROOT%/.}"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture="$(fixture_create "${TMPDIR:-/tmp}/prepare-common-tools.XXXXXX")"
@@ -11,11 +14,24 @@ fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Common tool preparation fixture retained"' EXIT
 yq -o json '.' "$ROOT/.github/actions/prepare-common-tools/action.yml" > "$fixture/prepare-action.json"
 jq -e '
-    .runs.using == "composite" and (.runs.steps | length) == 1 and
-    .runs.steps[0].shell == "/bin/bash --noprofile --norc -e -o pipefail {0}"
+    .runs.using == "composite" and
+    ([.runs.steps[] | select(.run != null) | .shell] | all(. == "/bin/bash --noprofile --norc -e -o pipefail {0}")) and
+    (.runs.steps | map(.id)) == ["cache-options", "tool-cache-key", "tool-cache", "prepare-tools", "save-tool-cache"] and
+    (.runs.steps[2].with.key == .runs.steps[4].with.key) and
+    (.runs.steps[2].with.path == .runs.steps[4].with.path) and
+    (.runs.steps[2].with | has("restore-keys") | not) and
+    (.runs.steps[4].if | contains("github.event_name == '\''push'\''") and contains("default_branch"))
 ' "$fixture/prepare-action.json" > /dev/null
 jq -e '.runs.steps' "$fixture/prepare-action.json" > "$fixture/prepare-steps.json"
 bash "$ROOT/scripts/ci/extract-workflow-step.sh" "$fixture/prepare-steps.json" prepare-tools > "$fixture/prepare-action.sh"
+bash "$ROOT/scripts/ci/extract-workflow-step.sh" "$fixture/prepare-steps.json" cache-options > "$fixture/cache-options.sh"
+for options in false:false true:false true:true; do
+    CACHE="${options%:*}" CACHE_SAVE="${options#*:}" CACHE_EXTRA=pin123 bash "$fixture/cache-options.sh"
+done
+for options in false:true other:false true:other; do
+    if CACHE="${options%:*}" CACHE_SAVE="${options#*:}" CACHE_EXTRA='' bash "$fixture/cache-options.sh"; then exit 1; fi
+done
+if CACHE=true CACHE_SAVE=false CACHE_EXTRA=$'a\nb' bash "$fixture/cache-options.sh"; then exit 1; fi
 mkdir -p "$fixture/prepare-bin" "$fixture/prepare runner" "$fixture/prepare checkout"
 cat > "$fixture/prepare-bin/make" <<'MAKE'
 #!/usr/bin/env bash
@@ -65,6 +81,46 @@ for failure in success install check; do
     fi
     cmp "$fixture/expected-calls" "$fixture/prepare-calls"
     cmp "$fixture/expected-path" "$fixture/prepare-path"
+done
+# Cache preparation must admit host tools before key computation. The helper
+# receives the actual snapshot default or explicit override, including spaces.
+bash "$ROOT/scripts/ci/extract-workflow-step.sh" "$fixture/prepare-steps.json" tool-cache-key > "$fixture/cache-key.sh"
+key_root="$fixture/cache checkout"
+mkdir -p "$key_root/.github/actions/prepare-common-tools" "$key_root/scripts/ci" "$fixture/key-bin"
+cat > "$fixture/key-bin/make" <<'MAKE'
+#!/usr/bin/env bash
+set -euo pipefail
+printf '%s\n' "$*" >> "$CACHE_TEST_EVENTS"
+[[ "$*" != '--no-print-directory host-tools-check' || "$CACHE_TEST_FAIL" != true ]] || exit 39
+MAKE
+cat > "$key_root/scripts/ci/cargo-tool-cache-key.sh" <<'KEY'
+#!/usr/bin/env bash
+set -euo pipefail
+[[ $# == 1 && "$1" == "$CACHE_TEST_CATALOG" ]] || exit 98
+printf 'key\n' >> "$CACHE_TEST_EVENTS"
+printf 'key=fixture-key\nroot=/fixture-store\n'
+KEY
+chmod +x "$fixture/key-bin/make"
+for catalog in '' "$fixture/override catalog.env"; do
+    expected_catalog="${catalog:-$key_root/.github/actions/prepare-common-tools/../../../ci/tool-versions.env}"
+    for fail_key in false true; do
+        : > "$fixture/key-events"
+        : > "$fixture/key-output"
+        status=0
+        PATH="$fixture/key-bin:$PATH" CACHE_TEST_EVENTS="$fixture/key-events" CACHE_TEST_FAIL="$fail_key" \
+            CACHE_TEST_CATALOG="$expected_catalog" ACTION_ROOT="$key_root/.github/actions/prepare-common-tools" \
+            RUST_CATALOG="$catalog" GITHUB_OUTPUT="$fixture/key-output" GITHUB_WORKSPACE="$key_root" \
+            "$BASH" --noprofile --norc -e -o pipefail "$fixture/cache-key.sh" > "$fixture/key.log" 2>&1 || status=$?
+        printf '%s\n' '--no-print-directory install-host-tools' '--no-print-directory host-tools-check' > "$fixture/key-expected"
+        if [[ "$fail_key" == false ]]; then
+            [[ "$status" == 0 ]] || exit 1
+            printf 'key\n' >> "$fixture/key-expected"
+            grep -Fx key=fixture-key "$fixture/key-output" >/dev/null
+        else
+            [[ "$status" == 39 && ! -s "$fixture/key-output" ]] || exit 1
+        fi
+        cmp "$fixture/key-events" "$fixture/key-expected"
+    done
 done
 # Exercise the real shared Make aggregate beneath the action. Only installer
 # leaves are substituted; no download, store mutation or Cargo build is selected.
@@ -149,6 +205,19 @@ for selection in common ic; do
     done
 done
 unset LOCAL_TOOL_INSTALL_TARGETS LOCAL_TOOL_CHECK_TARGETS
+# Diagnostics collect all category failures without running setup leaves.
+for failure in success host-tools-check; do
+    : > "$fixture/report-calls"
+    status=0
+    PREPARE_CALLS="$fixture/report-calls" PREPARE_FAILURE="$failure" \
+        IC_TOOLS=wasm-opt LOCAL_TOOL_CHECK_TARGETS=ic-tools-check \
+        VALIDATION_LOG_DIR="$fixture/report-logs" \
+        make --no-print-directory -C "$aggregate" tools-report > "$fixture/report-$failure.log" 2>&1 || status=$?
+    if [[ "$failure" == success ]]; then [[ "$status" == 0 ]] || exit 1
+    else [[ "$status" != 0 ]] || exit 1; fi
+    printf 'host-tools-check\nrust-tools-check\nic-tools-check\n' > "$fixture/report-expected"
+    cmp "$fixture/report-expected" "$fixture/report-calls"
+done
 # Reject forbidden raw and resolved directories before publishing any payload.
 mkdir "$fixture/clean-output"
 for suffix in $'\n' $'\r' $'\r\n'; do

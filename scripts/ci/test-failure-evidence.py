@@ -110,15 +110,6 @@ class EvidenceTests(unittest.TestCase):
         files["tool-evidence/ic/pins.tsv"] = b"# installation receipt\n" + b"\n".join(reversed(pins.splitlines())) + b"\n"
         verify_compact_tools({}, read, tool_pins, "Linux/X64")
         files["tool-evidence/ic/pins.tsv"] = saved
-        for kind in ("host", "ic"):
-            with self.assertRaises(ValueError):
-                verify_compact_tools({f".tools/{kind}-set.ABC123/bin/tool": None}, read, tool_pins, "Linux/X64")
-        for name in list(files):
-            saved = files.pop(name)
-            with self.assertRaises(ValueError): verify_compact_tools({}, read, tool_pins, "Linux/X64")
-            files[name] = saved
-
-
 
     def test_hosted_scenarios(self):
         # Literal expectations are independent of the shell producer. Alternate

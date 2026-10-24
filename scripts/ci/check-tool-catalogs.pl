@@ -66,7 +66,11 @@ my $exit = eval {
                 if (exists $caller->{observation}) {
                     !grep { exists $caller->{$_} } qw(catalog source source_sha256) or die "conflicting binding and observation\n";
                     $selection = decode_json(read_file(local_path($caller->{observation})));
-                    fields($selection, qw(catalog source source_sha256));
+                    fields($selection, qw(catalog source source_sha256 kind consumer records admission));
+                    !exists($selection->{kind}) || $selection->{kind} eq $group->{kind}
+                        or die "observation catalog kind differs\n";
+                    !exists($selection->{consumer}) || $selection->{consumer} eq $consumer
+                        or die "observation consumer differs\n";
                     $row->{evidence} = 'recorded CLI observation (not executed by checker)';
                 }
                 scalar_text($selection->{source_sha256}) && $selection->{source_sha256} =~ /\A[0-9a-f]{64}\z/

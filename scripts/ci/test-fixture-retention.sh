@@ -28,7 +28,7 @@ done
 printf '#!/bin/sh\nexit 99\n' > "$fixture/exit-input/prefix-checker"
 chmod +x "$fixture/exit-input/prefix-checker"
 export RETENTION_EXIT_PATH="$fixture/exit-path"
-for name in format-tools tool-commands rust-tools release-runner host-tools ic-tools \
+for name in format-tools tool-commands rust-tools release-runner host-tools ic-tools tool-downloads \
     fixture-retention snapshot-verifier runtime-panics prepare-common-tools \
     check-formatting-hooks installers evidence-download cargo-tool-versions \
     release-metadata cargo-release-metadata cargo-metadata rustsec-db \
@@ -536,9 +536,9 @@ done
 # Execute the actual compact download verifier against a payload with the four
 # current producer logs. Installer/selector checks above own tool qualification;
 # this boundary owns byte comparisons after transport, including corrupt logs.
-jq -er '.jobs["portable-regression"].steps[] |
-  select(.name == "Verify compact native tool evidence and retained candidate") | .run' \
-    "$fixture/workflow.json" > "$fixture/verify-compact.sh"
+jq -e '.jobs["portable-regression"].steps' "$fixture/workflow.json" > "$fixture/portable-steps.json"
+bash "$ROOT/scripts/ci/extract-workflow-step.sh" "$fixture/portable-steps.json" verify-compact-tools \
+    > "$fixture/verify-compact.sh"
 compact="$fixture/compact"
 mkdir -p "$compact/ci" "$compact/.tools/ic" "$compact/.tools/ic-set.candidate/bin" \
     "$compact/temp/portable-fixtures/native-retention/temp" \

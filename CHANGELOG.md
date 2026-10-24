@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.26.10]
+
+### Added
+
+- Opt-in common external IC dependency guards, composed with stricter local
+  ownership rules; existing consumers select adoption explicitly.
+- Optional exact Cargo-tool caching in common CI setup, plus aggregate offline
+  tool diagnostics and read-only installer selection reports.
+- Snapshot upgrade impact previews and structured dependency-graph failures with
+  representative introducing paths, preserving consumer selection policy.
+- Reusable parallel-Make lint-order qualification for consumer release and
+  deployment pipelines, using substituted effects.
+
+### Fixed
+
+- Formatting now reads the same literal tool catalog as installation and caching,
+  refusing duplicate assignments and executable configuration.
+- Keep the remaining standalone CI fixture bootstraps independent of inherited
+  `CDPATH` and invocation style. Preserve physical checkout paths before loading
+  helpers, including spaces and trailing newlines in isolated path fixtures.
+- Reuse shared allocation in the allocation, jobserver, dependency-boundary,
+  publication-attempt, Rust-tool and release-receipt fixtures. Keep scratch paths and cleanup
+  anchored to the caller rather than a `CDPATH` lookup.
+- Direct current Build, Host and Testkit contributions to their consolidated
+  IC Tooling workspace while preserving historical qualification references.
+- Ignore the retired checkout-local build directory during Cargo-tool setup and
+  checks, preserving old evidence and all current shared-store path checks.
+
+### Changed
+
+- Reuse fixture lifecycle and companion-copy helpers, remove duplicate IC receipt
+  membership checks and evidence-test cases, and select the compact-evidence CI
+  step by its stable ID through the existing workflow extractor.
+
 ## [0.26.9]
 
 ### Fixed

@@ -323,6 +323,7 @@ jobs:
           EVIDENCE_DIGEST: ${{ steps.compact-upload.outputs.artifact-digest }}
         run: bash scripts/ci/download-evidence.sh "$EVIDENCE_REPOSITORY" "$EVIDENCE_RUN" "$EVIDENCE_ARTIFACT" "$EVIDENCE_DIGEST" "$RUNNER_TEMP/compact-tools-downloaded"
       - name: Verify compact native tool evidence and retained candidate
+        id: verify-compact-tools
         if: ${{ needs.change-scope.outputs.scope != 'docs' && (!cancelled() && steps.compact-upload.outputs.artifact-id != '') }}
         env:
           EVIDENCE_CANDIDATE: ${{ steps.compact-control.outputs.candidate }}

@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # Shared companions: scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
+ROOT="${BASH_SOURCE[0]}"
+[[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
+ROOT="$(CDPATH='' cd -P -- "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
+ROOT="${ROOT%/.}"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
-fixture="$(mktemp -d "${TMPDIR:-/tmp}/fixture-allocation.XXXXXX")"
-fixture="$(cd -P "$fixture" && pwd -P)"
+fixture="$(fixture_create "${TMPDIR:-/tmp}/fixture-allocation.XXXXXX")"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Allocation fixture retained"' EXIT
 mkdir "$fixture/physical root"

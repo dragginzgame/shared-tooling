@@ -122,9 +122,9 @@ Rust scanner is compiled by consumers with their locked dependencies;
 | Baseline, fleet inspection, setup, formatting, release mechanics and evidence transport | Shared Tooling: `rules/`, `scripts/`, `make/` and `.github/actions/`. Public commands are documented below; `make/consumer.mk` supplies the consumer Make interface and `scripts/distribution/` exports reviewed snapshots. |
 | External IC-specific dependencies, including DFINITY packages | [IC Platform](https://github.com/dragginzgame/ic-platform) is the sole direct dependency owner. Consumers use explicit Platform features/interfaces under the [dependency boundary](rules/cargo-dependencies.md#external-ic-dependency-boundary); product policy stays with its owning Dragginzgame crate. |
 | Controlled application message encoding and generated TypeScript codecs | [IC Wire](https://github.com/dragginzgame/ic-wire) owns codecs and resource admission under the [application encoding policy](DRAGGINZGAME.md#ic-application-encoding). Consumers own transport, endpoints, authentication and application semantics. |
-| Cargo/Wasm builds, artifact caches and Candid extractor execution | [IC Build](https://github.com/dragginzgame/ic-build), including `crates/ic-build/src/artifacts/candid/`. Consumers supply admitted tools, sources, execution policy and budgets. Shared installs selected executables; products own extractor pins and PATH selection. |
-| Host filesystem, artifact and process primitives; IC interpretation | [IC Host Tooling](https://github.com/dragginzgame/ic-host-tooling): `ic-host-fs`, `ic-host-artifacts`, `ic-host-process`, `ic-host-tools` and `ic-host-text`. Tools interprets Candid services/IC responses; Text owns normalization. |
-| PocketIC preparation, admission and lifecycle | [IC Testkit](https://github.com/dragginzgame/ic-testkit). Consumers use its selected CLI and own their canister scenarios. |
+| Cargo/Wasm builds, artifact caches and Candid extractor execution | [IC Tooling's `ic-build`](https://github.com/dragginzgame/ic-tooling/tree/main/crates/ic-build). Consumers supply admitted tools, sources, execution policy and budgets. Shared installs selected executables; products own extractor pins and PATH selection. |
+| Host filesystem, artifact and process primitives; IC interpretation | [IC Tooling](https://github.com/dragginzgame/ic-tooling): `ic-host-fs`, `ic-host-artifacts`, `ic-host-process`, `ic-host-tools` and `ic-host-text`. Tools interprets Candid services/IC responses; Text owns normalization. |
+| PocketIC preparation, admission and lifecycle | [IC Tooling's `ic-testkit`](https://github.com/dragginzgame/ic-tooling/tree/main/crates/ic-testkit). Consumers use its selected CLI and own their canister scenarios. |
 | Frozen published Blob example installation qualification | [IC Blob Storage](https://github.com/dragginzgame/ic-blob-storage), under `scripts/ci/`. Shared retains generic Cargo binary installation qualification. |
 | Full native Metrics recovery archives | [IC Metrics](https://github.com/dragginzgame/ic-metrics), under `scripts/ci/package-native-recovery-evidence.sh`. Shared retains common archive transport and sanitized diagnostics. |
 
@@ -134,6 +134,16 @@ lockfile candidate rendering through its explicitly prepared
 `ic-build-release-metadata` command. Shared Tooling retains source admission,
 independent checks and recovery; see
 [Cargo candidate rendering](docs/releases.md#cargo-release-candidate-rendering).
+
+Build, Host and Testkit retain their package identities within IC Tooling's single
+workspace. File new implementation and adoption issues with that current owner;
+old repository links in provenance and qualification records remain historical
+evidence. Shared Tooling keeps its independent release and snapshot lifecycle.
+
+For consumer adoption, use [snapshot impact previews](docs/consuming-snapshots.md#upgrade-impact),
+[tool diagnostics and selections](docs/local-setup.md#tool-selection-and-diagnostics),
+the [optional common CI cache](docs/supported-hosts.md#consumer-cargo-tool-cache),
+and the [shared external IC dependency inventory](rules/cargo-dependencies.md#shared-boundary-check).
 
 ## Current tools
 

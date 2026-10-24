@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: make/tools.mk make/rust-format.mk make/execution.mk scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh scripts/ci/check-make-execution.sh scripts/ci/check-pipe-jobserver.pl scripts/ci/fixture-lifecycle.sh
+# Shared companions: make/rust-format.mk scripts/ci/prepare-script-fixture.sh scripts/ci/check-pipe-jobserver.pl scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 root="${BASH_SOURCE[0]}"
@@ -13,9 +13,8 @@ fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Formatting Make fixture retained"' EXIT
 consumer="$fixture/consumer with spaces"
 mkdir -p "$consumer/vendor/make" "$consumer/vendor/scripts/ci" "$consumer/ci" "$consumer/vendor/ci" "$consumer/.tools/rust/common/bin"
-cp "$root/make/tools.mk" "$root/make/rust-format.mk" "$root/make/execution.mk" "$consumer/vendor/make/"
-cp "$root/scripts/ci/check-format-tools.sh" "$root/scripts/ci/run-formatting.sh" "$root/scripts/ci/check-make-execution.sh" "$consumer/vendor/scripts/ci/"
-printf 'export SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\n' > "$consumer/vendor/ci/tool-versions.env"
+bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$consumer/vendor" make/rust-format.mk
+printf 'export SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\nSHARED_TOOLING_CARGO_SORT_DERIVES_VERSION=0.1.3\n' > "$consumer/vendor/ci/tool-versions.env"
 cat > "$consumer/Makefile" <<'MAKE'
 SHARED_TOOLING_ROOT ?= $(CURDIR)/vendor
 FORMAT_CARGO := format-fixture-cargo
@@ -84,6 +83,20 @@ for target in help fmt fmt-check; do
     done
 done
 # A failed prerequisite or sorter must not run the later formatting operation.
+cp "$consumer/vendor/ci/tool-versions.env" "$fixture/catalog"
+for invalid in duplicate executable; do
+    cp "$fixture/catalog" "$consumer/vendor/ci/tool-versions.env"
+    if [[ "$invalid" == duplicate ]]; then
+        printf 'SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\n' >> "$consumer/vendor/ci/tool-versions.env"
+    else
+        # shellcheck disable=SC2016 # The forbidden catalog would expand this if sourced.
+        printf 'echo executed >> "$FORMAT_TEST_EVENTS"\n' >> "$consumer/vendor/ci/tool-versions.env"
+    fi
+    : > "$FORMAT_TEST_EVENTS"
+    if make --no-print-directory -C "$consumer" fmt > "$fixture/catalog-$invalid.log" 2>&1; then exit 1; fi
+    [[ ! -s "$FORMAT_TEST_EVENTS" ]] || exit 1
+done
+cp "$fixture/catalog" "$consumer/vendor/ci/tool-versions.env"
 for failure in wrong missing sort; do
     : > "$FORMAT_TEST_EVENTS"
     case "$failure" in

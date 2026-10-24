@@ -2,9 +2,12 @@
 # Shared companions: scripts/ci/check-pipe-jobserver.pl scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
-root="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
-fixture="$(mktemp -d "${TMPDIR:-/tmp}/pipe-jobserver.XXXXXX")"
+root="${BASH_SOURCE[0]}"
+[[ "$root" == /* ]] || root="$PWD/$root"
+root="$(CDPATH='' cd -P -- "${root%/*}/../.." && printf '%s/.' "$PWD")"
+root="${root%/.}"
 source "$root/scripts/ci/fixture-lifecycle.sh"
+fixture="$(fixture_create "${TMPDIR:-/tmp}/pipe-jobserver.XXXXXX")"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Failed jobserver fixture retained"' EXIT
 export JOBSERVER_PROBE="$root/scripts/ci/check-pipe-jobserver.pl"

@@ -17,17 +17,11 @@ mkdir -p "$snapshot/make" "$snapshot/scripts/ci" "$snapshot/scripts/dev" \
     "$consumer/ci" "$snapshot/ci" "$consumer/scripts/ci" "$consumer/.githooks" \
     "$consumer/.tools/rust/common/bin"
 bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$snapshot" make/consumer.mk
-for file in check-format-tools verify-shared-tooling-snapshot; do
-    cp "$root/scripts/ci/$file.sh" "$snapshot/scripts/ci/"
-done
-cp "$root/scripts/dev/install-git-hooks.sh" "$snapshot/scripts/dev/"
 # Hooks retain their root-layout contract even when other tooling is nested.
-cp "$root/.githooks/pre-commit" "$consumer/.githooks/"
-for file in check-make-execution verify-shared-tooling-snapshot verify-file-checksum; do
-    cp "$root/scripts/ci/$file.sh" "$consumer/scripts/ci/"
-done
+bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$consumer" \
+    .githooks/pre-commit scripts/ci/verify-shared-tooling-snapshot.sh scripts/ci/verify-file-checksum.sh
 printf '[workspace]\n' > "$consumer/Cargo.toml"
-printf 'SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\n' > "$snapshot/ci/tool-versions.env"
+printf 'SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\nSHARED_TOOLING_CARGO_SORT_DERIVES_VERSION=0.1.3\n' > "$snapshot/ci/tool-versions.env"
 printf 'exit 99 # obsolete consumer catalog must not execute\n' > "$consumer/ci/tool-versions.env"
 export MAKE_CONSUMER_EVENTS="$fixture/events" RUNNER_TEMP="$fixture"
 cat > "$consumer/Makefile" <<'MAKE'
@@ -74,7 +68,7 @@ cmp "$fixture/expected" "$MAKE_CONSUMER_EVENTS"
 
 # Formatting follows the Rust catalog, including when the host catalog has no
 # Cargo pins. Wrong Rust selections still refuse before invoking formatters.
-printf 'SHARED_TOOLING_CARGO_SORT_VERSION=2.1.5\n' > "$consumer/ci/rust pins.env"
+printf 'SHARED_TOOLING_CARGO_SORT_VERSION=2.1.5\nSHARED_TOOLING_CARGO_SORT_DERIVES_VERSION=0.1.3\n' > "$consumer/ci/rust pins.env"
 printf '# Host-only catalog\n' > "$consumer/ci/host pins.env"
 for host_catalog in tool-versions.env 'host pins.env'; do
     : > "$MAKE_CONSUMER_EVENTS"

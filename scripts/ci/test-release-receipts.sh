@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Shared companions: scripts/ci/release-receipts.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
-root="$(cd -P "$(dirname "$0")/../.." && pwd)"
+root="${BASH_SOURCE[0]}"
+[[ "$root" == /* ]] || root="$PWD/$root"
+root="$(CDPATH='' cd -P -- "${root%/*}/../.." && printf '%s/.' "$PWD")"
+root="${root%/.}"
 # shellcheck source=scripts/ci/release-receipts.sh
 source "$root/scripts/ci/release-receipts.sh"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$root/scripts/ci/fixture-lifecycle.sh"
-fixture="$(mktemp -d "${TMPDIR:-/tmp}/release-receipts.XXXXXX")"
+fixture="$(fixture_create "${TMPDIR:-/tmp}/release-receipts.XXXXXX")"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Release receipt fixtures retained"' EXIT
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_NAMESPACE
