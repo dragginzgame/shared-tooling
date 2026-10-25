@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.26.16]
+
+### Added
+
+- Require one product owner for generated RPC budgets, with a qualification
+  recipe for browser/server policy drift, intentional asymmetry and runtime
+  boundary behavior. Numeric defaults and consumer qualification remain local
+  ([#307 — Require one policy owner and boundary qualification for browser RPC budgets](https://github.com/dragginzgame/shared-tooling/issues/307)).
+
 ## [0.26.15]
 
 ### Changed
