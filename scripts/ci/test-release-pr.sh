@@ -169,7 +169,13 @@ ADAPTER
 run_release() {
     local expected="$1" status=0
     shift
-    bash "$ROOT/scripts/ci/run-release.sh" "${@:-patch}" origin main > "$PR_TEST_DATA/run.log" 2>&1 || status=$?
+    # These scenarios qualify exact recovery once intent exists. Fresh-command
+    # selection is exercised separately, including a stale candidate collision.
+    if [[ $# == 0 ]]; then
+        if [[ -f .git/release-state/0.1.1.plan ]]; then set -- resume 0.1.1
+        else set -- patch; fi
+    fi
+    bash "$ROOT/scripts/ci/run-release.sh" "$@" origin main > "$PR_TEST_DATA/run.log" 2>&1 || status=$?
     [[ "$status" == "$expected" ]] || { cat "$PR_TEST_DATA/run.log" >&2; echo "expected $expected, got $status" >&2; exit 1; }
 }
 
@@ -188,6 +194,16 @@ merge_pr() {
     jq --arg merged "$merged" '.merged=true | .state="closed" | .merge_commit_sha=$merged' "$PR_TEST_DATA/pr.json" > "$PR_TEST_DATA/merged.json"
     mv "$PR_TEST_DATA/merged.json" "$PR_TEST_DATA/pr.json"
 }
+
+new_fixture fresh-historical-state
+mkdir -p .git/release-state/broken.plan
+printf 'obsolete candidate intent\n' > .git/release-state/0.1.1.plan
+printf 'obsolete staged files\n' > .git/release-state/0.1.1.plan.files
+printf 'invalid historical PR receipt\n' > .git/release-state/0.1.1.plan.pr.json
+run_release 75 patch
+[[ "$(cat VERSION)" == 0.1.1 && -d .git/release-state/broken.plan ]] || exit 1
+[[ "$(awk '$0 == "create" { count++ } END { print count+0 }' "$PR_TEST_EVENTS")" == 1 ]] || exit 1
+grep -F 'make release-resume VERSION=0.1.1' "$PR_TEST_DATA/run.log" > /dev/null
 
 new_fixture repository-admission
 for response in newline double-newline wrong-type wrong-name array empty multiple malformed; do

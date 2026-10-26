@@ -229,9 +229,10 @@ MAKE
 done
 
 # Real Git admission of superseded local preparation; all effects stay in /tmp.
+for phase in prepare stage staged commit tag push complete; do
 for metadata in unchanged bumped bumped-undelivered; do
     (
-        selected="$FIXTURE_ROOT/committed-preparation-$metadata"
+        selected="$FIXTURE_ROOT/fresh-$phase-$metadata"
         mkdir -p "$selected"
         "$REAL_GIT" init --quiet --bare "$selected/destination.git"
         "$REAL_GIT" init --quiet -b main "$selected/work"
@@ -261,6 +262,19 @@ MAKE
         "$REAL_GIT" remote add origin "$selected/destination.git"
         "$REAL_GIT" push --quiet --set-upstream origin main
         if RESTART_FAIL_PREPARE=yes bash "$ROOT/scripts/ci/run-release.sh" patch origin main > "$selected/interrupted.log" 2>&1; then exit 1; fi
+        # Historical staging receipts are not the current index. Normal commands
+        # must ignore them along with every other old phase and malformed plan.
+        historical_phase="$phase"
+        [[ "$phase" != staged ]] || historical_phase=stage
+        awk -v phase="$historical_phase" -v staged="$phase" '
+            NR == 10 && staged == "staged" { print "dddddddddddddddddddddddddddddddddddddddd"; next }
+            NR == 11 { print phase; next }
+            { print }
+        ' .git/release-state/0.6.4.plan > "$selected/changed-plan"
+        mv "$selected/changed-plan" .git/release-state/0.6.4.plan
+        printf 'obsolete roster\n' > .git/release-state/0.6.4.plan.files
+        printf 'invalid historical plan\n' > .git/release-state/0.1.0.plan
+        mkdir .git/release-state/broken.plan
         cp .git/release-state/0.6.4.plan "$selected/saved-plan"
         cp "$RELEASE_RESTART_EVENTS" "$selected/saved-validation"
         printf 'retained build artifact\n' > "$selected/build.evidence"
@@ -287,14 +301,11 @@ MAKE
             old_tag="$("$REAL_GIT" rev-parse refs/tags/v0.6.4)"
         fi
         if RESTART_FAIL_VERIFY=yes bash "$ROOT/scripts/ci/run-release.sh" patch origin main > "$selected/failed-revalidation.log" 2>&1; then exit 1; fi
-        set -- .git/release-state/0.6.4.attempt.*/0.6.4.plan
-        [[ $# == 1 && -f "$1" ]] || exit 1
-        cmp "$selected/saved-plan" "$1"
-        [[ ! -e .git/release-state/0.6.4.plan && ! -e ".git/release-state/$next.plan" ]] || exit 1
+        [[ ! -e ".git/release-state/$next.plan" && ! -e ".git/release-state/$next.plan.files" ]] || exit 1
+        if [[ "$next" != 0.6.4 ]]; then cmp "$selected/saved-plan" .git/release-state/0.6.4.plan; fi
         [[ "$("$REAL_GIT" rev-parse HEAD)" == "$current_source" ]] || exit 1
         if [[ "$metadata" == bumped-undelivered ]]; then
-            grep -F 'Retained preparation: version=0.6.4 delivery=unconfirmed' "$selected/failed-revalidation.log" >/dev/null
-            [[ "$(cat version)" == 0.6.4 && "$(tail -n 1 "$1")" == prepare ]] || exit 1
+            [[ "$(cat version)" == 0.6.4 && "$(tail -n 1 .git/release-state/0.6.4.plan)" == "$historical_phase" ]] || exit 1
             [[ "$("$REAL_GIT" --git-dir="$selected/destination.git" rev-parse refs/heads/main)" == "$old_source" ]] || exit 1
             [[ -z "$("$REAL_GIT" tag --list v0.6.4)" && -z "$("$REAL_GIT" --git-dir="$selected/destination.git" tag --list v0.6.4)" ]] || exit 1
         fi
@@ -312,12 +323,14 @@ MAKE
         if [[ "$metadata" == bumped-undelivered ]]; then
             [[ -z "$("$REAL_GIT" tag --list v0.6.4)" && -z "$("$REAL_GIT" --git-dir="$selected/destination.git" tag --list v0.6.4)" ]] || exit 1
             "$REAL_GIT" merge-base --is-ancestor "$published_source" HEAD
-            [[ "$(tail -n 1 "$1")" == prepare ]] || exit 1
+            [[ "$(tail -n 1 .git/release-state/0.6.4.plan)" == "$historical_phase" ]] || exit 1
         fi
-        cmp "$selected/saved-plan" "$1"
+        if [[ "$next" != 0.6.4 ]]; then cmp "$selected/saved-plan" .git/release-state/0.6.4.plan; fi
+        [[ -d .git/release-state/broken.plan && "$(cat .git/release-state/0.1.0.plan)" == 'invalid historical plan' ]] || exit 1
         [[ "$(cat "$selected/build.evidence")" == 'retained build artifact' ]] || exit 1
-        echo "real Git committed preparation fixture passed: $metadata"
+        echo "real Git fresh release fixture passed: $phase/$metadata"
     )
+done
 done
 
 echo 'Native release tracking and recovery tests passed'

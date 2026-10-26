@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.26.18]
+
+### Fixed
+
+- Start normal release commands fresh from current committed metadata without
+  scanning historical plans or replaying old release effects. Use
+  `release-resume VERSION=X.Y.Z` for explicit recovery; current source, lock,
+  candidate-ref and destination checks still apply
+  ([#309 — Fresh normal releases without historical-plan blockers](https://github.com/dragginzgame/shared-tooling/issues/309)).
+
 ## [0.26.17]
 
 ### Fixed
