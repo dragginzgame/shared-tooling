@@ -31,20 +31,38 @@ fixture_probe_assertion "$fixture/owner.sh" "$fixture" "$root" owner \
     --selected "$fixture/owner.sh" '[[ "$status" ==' 'status=97' || exit 1
 [[ ! -e "$fixture/owner-body" ]] || exit 1
 # Missing layout markers must be refused before any child execution.
-for marker in anchor trap assertion; do
+for marker in anchor trap multiline assertion; do
     # Keep regex literals in the program: awk -v interprets backslashes again.
     awk -v marker="$marker" '
         marker == "anchor" && /^root="\$\{root%\/\.\}"$/ { next }
         marker == "trap" && /^trap / { next }
+        marker == "multiline" && /^trap / { sub(/fixture_finish/, "\nfixture_finish") }
         marker == "assertion" && /^\[\[ "\$status" == / { next }
         { print }
     ' "$fixture/owner.sh" > "$fixture/unsupported.sh"
+    printf 'stale generated probe\n' > "$fixture/assertion-source/$marker.sh"
     status=0
     # shellcheck disable=SC2016 # Literal owner assertion selected by the caller.
     fixture_probe_assertion "$fixture/unsupported.sh" "$fixture" "$root" "$marker" \
-        --selected "$fixture/unsupported.sh" '[[ "$status" ==' 'status=97' || status=$?
+        --selected "$fixture/unsupported.sh" '[[ "$status" ==' 'status=97' \
+        2> "$fixture/$marker-diagnostic" || status=$?
     [[ "$status" != 0 && ! -f "$fixture/$marker-assertion.path" ]] || exit 1
+    [[ ! -s "$fixture/assertion-source/$marker.sh" ]] || exit 1
+    grep -F "$fixture/unsupported.sh" "$fixture/$marker-diagnostic" > /dev/null
+    if [[ "$marker" == assertion ]]; then
+        grep -F 'exactly one line' "$fixture/$marker-diagnostic" > /dev/null
+    else
+        grep -F 'single-line trap ACTION EXIT' "$fixture/$marker-diagnostic" > /dev/null
+    fi
 done
+# Matching a non-assertion is a caller error, with a diagnostic and no child.
+printf 'status=97\n' > "$fixture/not-assertion"
+status=0
+fixture_probe_assertion "$fixture/owner.sh" "$fixture" "$root" not-assertion \
+    --selected "$fixture/not-assertion" 'status=' 'status=97' \
+    2> "$fixture/not-assertion-diagnostic" || status=$?
+[[ "$status" == 2 && ! -e "$fixture/not-assertion-assertion.path" ]] || exit 1
+grep -F 'must contain a [[ assertion' "$fixture/not-assertion-diagnostic" > /dev/null
 # An owner that ignores failed assertions must not be admitted conditionally.
 sed 's/|| exit 1/|| :/' "$fixture/owner.sh" > "$fixture/ignores.sh"
 status=0
@@ -78,10 +96,12 @@ for failure in missing duplicate ignored setup early; do
     status=0
     # shellcheck disable=SC2016 # Literal assertion selected by the owner.
     fixture_probe_assertion "$fixture/owner.sh" "$fixture" "$root" "selected-$failure" \
-        --selected "$fixture/selected-$failure" '[[ "$selected" ==' "$bindings" || status=$?
+        --selected "$fixture/selected-$failure" '[[ "$selected" ==' "$bindings" \
+        2> "$fixture/selected-$failure-diagnostic" || status=$?
     [[ "$status" != 0 ]] || exit 1
     if [[ "$failure" == missing || "$failure" == duplicate ]]; then
         [[ ! -f "$fixture/selected-$failure-assertion.path" ]] || exit 1
+        grep -F 'exactly one line' "$fixture/selected-$failure-diagnostic" > /dev/null
     fi
 done
 # Reject missing initialization anchors in selected mode before execution too.
@@ -90,8 +110,10 @@ sed '/^root="${root%\/.}"$/d' "$fixture/owner.sh" > "$fixture/unsupported.sh"
 status=0
 # shellcheck disable=SC2016
 fixture_probe_assertion "$fixture/unsupported.sh" "$fixture" "$root" selected-anchor \
-    --selected "$fixture/assertions" '[[ "$selected" ==' 'selected=wrong' || status=$?
+    --selected "$fixture/assertions" '[[ "$selected" ==' 'selected=wrong' \
+    2> "$fixture/selected-anchor-diagnostic" || status=$?
 [[ "$status" != 0 && ! -f "$fixture/selected-anchor-assertion.path" ]] || exit 1
+grep -F 'single-line trap ACTION EXIT' "$fixture/selected-anchor-diagnostic" > /dev/null
 # Missing selection arguments cannot start an owner or allocate its probe tree.
 for invalid in omitted incomplete unknown; do
     arguments=()

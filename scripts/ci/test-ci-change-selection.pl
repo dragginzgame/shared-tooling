@@ -1,11 +1,14 @@
 #!/usr/bin/env perl
-# Shared companions: scripts/ci/classify-ci-change.pl
+# Shared companions: scripts/ci/classify-ci-change.pl ci/docs-only-paths.txt
 use strict; use warnings;
 use Cwd qw(abs_path);
 use FindBin;
 use File::Temp qw(tempdir);
 use Test::More;
 my $script=abs_path("$FindBin::Bin/classify-ci-change.pl");
+open my $policy_file, '<', "$FindBin::Bin/../../ci/docs-only-paths.txt" or die $!;
+my $reviewed_policy = do { local $/; <$policy_file> };
+close $policy_file or die $!;
 my $fixture=tempdir('ci-change-selection.XXXXXX', TMPDIR=>1, CLEANUP=>0);
 chdir $fixture or die $!;
 local @ENV{qw(GIT_CONFIG_GLOBAL GIT_CONFIG_NOSYSTEM GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL GIT_COMMITTER_NAME GIT_COMMITTER_EMAIL)}=
@@ -57,6 +60,21 @@ run('git','commit','-qm','fixture gitlink update');
 my $submodule_head=capture('git','rev-parse','HEAD');
 run('git','config','diff.ignoreSubmodules','all');
 is(scope($submodule_base,$submodule_head),'full','Git settings cannot hide changed submodule identities');
+restore_base();
+write_file('policy.txt', $reviewed_policy);
+mkdir 'rules' or die $!;
+write_file('rules/rpc-budgets.md', "RPC policy\n");
+my $reviewed_base=commit();
+write_file('rules/rpc-budgets.md', "Clarified RPC policy\n");
+my $reviewed_docs=commit();
+is(scope($reviewed_base,$reviewed_docs),'docs','reviewed RPC guide uses prose qualification');
+write_file('VERSION', "0.0.1\n");
+is(scope($reviewed_base,commit()),'full','RPC guide plus release version keeps full qualification');
+run('git','reset','--hard','-q',$reviewed_docs);
+mkdir 'scripts' or die $!;
+mkdir 'scripts/distribution' or die $!;
+write_file('scripts/distribution/governance-files.txt', "rules/rpc-budgets.md\n");
+is(scope($reviewed_base,commit()),'full','RPC guide plus snapshot catalog keeps full qualification');
 done_testing();
 # Retain failures; remove only this fixture after a successful assertion set.
 if (Test::More->builder->is_passing) { chdir '/'; require File::Path; File::Path::remove_tree($fixture); }

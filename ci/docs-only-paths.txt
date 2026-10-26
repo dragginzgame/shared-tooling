@@ -9,4 +9,5 @@ rules/changelogs.md
 rules/contributions.md
 rules/dependency-pinning.md
 rules/git-hooks.md
+rules/rpc-budgets.md
 rules/rust-workspaces.md

@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.26.17]
+
+### Fixed
+
+- Explain rejected assertion selections and initialization layouts in retention
+  probes, clearing stale or partial generated scripts before refusing execution.
+- Diagnose unsupported fixture-retention EXIT trap layouts and leave no partial
+  generated probe when the required boundary is missing. Document the supported
+  one-line trap convention
+  ([#308 — Diagnose unsupported EXIT-trap shapes in fixture_probe_prefix](https://github.com/dragginzgame/shared-tooling/issues/308)).
+
+### Changed
+
+- Treat edits confined to the reviewed RPC-budget guide as documentation-only
+  CI changes. Snapshot catalogs, release versions and executable changes still
+  require full qualification.
+
 ## [0.26.16]
 
 ### Added

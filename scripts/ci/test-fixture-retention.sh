@@ -104,6 +104,35 @@ if fixture_probe_prefix "$fixture/consumer.sh" "$fixture/invalid.sh" ROOT 'bad;n
 FIXTURE_PROBE_DIRECTORY_VARIABLE=fixture
 export FIXTURE_PROBE_DIRECTORY_VARIABLE
 
+# Unsupported layouts must refuse before executing even the initialization, and
+# must not leave a partial (or previously successful) probe behind.
+for layout in multiline absent trailing-comment; do
+    cat > "$fixture/$layout.sh" <<'PROBE'
+#!/usr/bin/env bash
+printf forbidden > "$RETENTION_SHAPE_EFFECT"
+PROBE
+    case "$layout" in
+        multiline)
+            cat >> "$fixture/$layout.sh" <<'PROBE'
+trap 'status=$?
+exit "$status"' EXIT
+PROBE
+            ;;
+        trailing-comment) printf "trap 'exit 0' EXIT # cleanup\n" >> "$fixture/$layout.sh" ;;
+    esac
+    printf 'stale generated probe\n' > "$fixture/rejected-prefix.sh"
+    if fixture_probe_prefix "$fixture/$layout.sh" "$fixture/rejected-prefix.sh" \
+        ROOT fixture 'exit 23' 2> "$fixture/$layout-render.log"; then exit 1; fi
+    [[ ! -s "$fixture/rejected-prefix.sh" ]] || exit 1
+    grep -F "$fixture/$layout.sh" "$fixture/$layout-render.log" > /dev/null
+    grep -F 'single-line trap ACTION EXIT' "$fixture/$layout-render.log" > /dev/null
+    if RETENTION_SHAPE_EFFECT="$fixture/unsupported-child-ran" fixture_probe_exit \
+        "$fixture/$layout.sh" "$fixture" "$ROOT" "$layout" nonzero \
+        2> "$fixture/$layout-exit.log"; then exit 1; fi
+    [[ ! -e "$fixture/unsupported-child-ran" && ! -e "$fixture/$layout-nonzero.exit" ]] || exit 1
+    [[ ! -s "$fixture/exit-source/scripts/ci/probe.sh" ]] || exit 1
+done
+
 # Consumer collectors may use another completion marker and a RUNNER_TEMP root.
 # Exercise absolute, relative and aliased scratch paths without running bodies.
 mkdir "$fixture/selected scratch"
