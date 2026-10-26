@@ -1,14 +1,22 @@
 # Changelog
 
+## [0.26.21]
+
+### 🔧 Changed
+
+- Use IcyDB-style emoji sections for latest/current and future root release
+  notes. Include only relevant categories, with one `📝 Summary` section for
+  small entries; preserve older history, release identities and dates.
+
 ## [0.26.20]
 
-### Added
+### ➕ Added
 
 - Offer an opt-in npm SDK boundary check for direct SDK declarations, aliases
   and literal imports, supporting adoption of `@tokostudios/ic-platform` without
   requiring npm in Rust-only repositories.
 
-### Changed
+### 🔧 Changed
 
 - Reduce routine agent overhead with a compact baseline, task-specific detailed
   rules, batched focused validation and opt-in change accounting.
@@ -18,7 +26,7 @@
   JavaScript/TypeScript SDK boundary rules, with independent Rust/npm release
   identities and consumer-owned provider qualification.
 
-### Fixed
+### 🩹 Fixed
 
 - Reject optional and peer dependency drift between npm manifests and lock roots
   during Node prerequisite checks.
