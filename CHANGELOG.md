@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.26.20]
+
+### Added
+
+- Offer an opt-in npm SDK boundary check for direct SDK declarations, aliases
+  and literal imports, supporting adoption of `@tokostudios/ic-platform` without
+  requiring npm in Rust-only repositories.
+
+### Changed
+
+- Reduce routine agent overhead with a compact baseline, task-specific detailed
+  rules, batched focused validation and opt-in change accounting.
+- Use documentation-only CI for reviewed root documentation and developer guides;
+  unknown paths, executable inputs and policy changes retain full qualification.
+- Make the separate `@tokostudios/ic-platform` npm package explicit in the
+  JavaScript/TypeScript SDK boundary rules, with independent Rust/npm release
+  identities and consumer-owned provider qualification.
+
+### Fixed
+
+- Reject optional and peer dependency drift between npm manifests and lock roots
+  during Node prerequisite checks.
+
 ## [0.26.19]
 
 ### Fixed

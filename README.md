@@ -20,8 +20,8 @@ The top undated changelog entry describes the next proposed release. Standard
 release preparation updates both files; Git tags establish published release
 identity independently.
 
-Opt-in browser consumers can reuse the [Node/npm prerequisite checker](docs/node-tools.md)
-while retaining their package roots, pins and setup ownership.
+Opt-in browser consumers can reuse the [Node/npm prerequisite and SDK boundary checks](docs/node-tools.md)
+while retaining their package roots, pins, setup and runtime qualification.
 
 Shared Tooling is licensed under [MIT](LICENSE).
 

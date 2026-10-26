@@ -170,6 +170,7 @@ bash "$ROOT/scripts/dev/gh-ci.sh" --help >/dev/null 2>&1
 # Node belongs to opt-in browser consumers, not portable shell prerequisites.
 if command -v node >/dev/null 2>&1; then
     run_fixture test-node-tools.mjs node "$ROOT/scripts/ci/test-node-tools.mjs"
+    run_fixture test-ic-sdk-boundary.mjs node "$ROOT/scripts/ci/test-ic-sdk-boundary.mjs"
 else
     printf 'Node prerequisite tests skipped: Node is not selected on this host.\n'
 fi

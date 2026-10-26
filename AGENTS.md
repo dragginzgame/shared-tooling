@@ -14,8 +14,9 @@ the runtime scanner's separate minimum-compiler qualification is unchanged.
 The baseline's [validation and evidence policy](DRAGGINZGAME.md#validation-and-evidence)
 owns when to run checks. This overlay identifies the local checks only.
 
-- During development and before handing off a change, run focused fixtures and
-  ShellCheck for the affected scripts, following sourced helpers with
+- After a coherent edit batch, run selected fixtures and ShellCheck for affected
+  scripts once; run checks during development only to answer a specific question.
+  Reuse passing evidence for unchanged inputs, following sourced helpers with
   `shellcheck -x`. Select checks for the changed behavior and directly affected
   callers, including rejection and recovery paths where relevant.
 - Shared helper, installer, release-tooling, snapshot/export, hook and CI edits
