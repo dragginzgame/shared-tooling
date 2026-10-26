@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.19]
+
+### Fixed
+
+- Preserve archived Draft labels inside historical changelog sections without
+  blocking a new release. Current draft and candidate conflicts still refuse.
+
 ## [0.26.18]
 
 ### Fixed
