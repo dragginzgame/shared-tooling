@@ -458,10 +458,15 @@ printf 'zeta\nalpha\n' > expected-groups
 cmp expected-groups observed-groups
 grep -Fx '# Production dependencies' Cargo.toml > /dev/null
 grep -Fx '# Tests and tooling only' Cargo.toml > /dev/null
+# A companion that is absent from HEAD must be discovered from the selected
+# working root, rather than supplied again in the checker's overlay list.
+perl -pi -e 's/^(# Shared companions:.*)$/$1 make\/hook-extra.mk/' make/consumer.mk
+printf '\ninclude make/hook-extra.mk\n' >> make/consumer.mk
+printf '# Untracked consumer companion required by the formatter.\n' > make/hook-extra.mk
 cp .git/index "$FIXTURE/newline-index"
 cp src/lib.rs "$FIXTURE/newline-source"
 CDPATH="$FIXTURE" bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$PWD" src/lib.rs Cargo.toml --no-dependency-tables \
-    make/consumer.mk make/tools.mk make/release.mk make/rust-format.mk make/execution.mk ci/tool-versions.env scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh scripts/ci/run-rust-formatting.pl scripts/ci/RustSource.pm
+    make/consumer.mk ci/tool-versions.env
 cmp .git/index "$FIXTURE/newline-index"
 cmp src/lib.rs "$FIXTURE/newline-source"
 

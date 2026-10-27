@@ -28,6 +28,16 @@ perl -e 'my @a=stat $ARGV[0]; my @b=stat $ARGV[1]; ($a[2]&07777)==($b[2]&07777) 
 printf 'obsolete fixture bytes\n' > "$destination/scripts/root.sh"
 "$BASH" "$ROOT/scripts/ci/prepare-script-fixture.sh" "$source_root" "$destination" scripts/root.sh
 cmp "$source_root/scripts/root.sh" "$destination/scripts/root.sh"
+# Roots are quoted argv, unlike the line-oriented relative companion names.
+# Preserve newline-bearing consumer paths through the complete closure.
+newline_source="$fixture/"$'source\nroot'
+newline_destination="$fixture/"$'destination\nroot'
+mkdir -p "$newline_source" "$newline_destination"
+cp -Rp "$source_root/scripts" "$source_root/docs" "$newline_source/"
+"$BASH" "$ROOT/scripts/ci/prepare-script-fixture.sh" "$newline_source" "$newline_destination" scripts/root.sh
+for path in scripts/root.sh scripts/leaf.sh docs/graph.md; do cmp "$newline_source/$path" "$newline_destination/$path"; done
+perl -e 'my @a=stat $ARGV[0]; my @b=stat $ARGV[1]; ($a[2]&07777)==($b[2]&07777) or die "mode changed\n"' \
+    "$newline_source/scripts/root.sh" "$newline_destination/scripts/root.sh"
 # Admission must fail before replacing even an earlier valid root.
 expect_refusal() {
     local status=0
