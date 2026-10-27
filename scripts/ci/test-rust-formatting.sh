@@ -150,11 +150,11 @@ if run --write --extra-workspace ..; then exit 1; fi
 [[ ! -s "$FORMAT_EVENTS" ]]
 
 # Untrusted workspace labels remain visible without terminal control effects.
-control_workspace=$'control-\e-\u202e'
+control_workspace=$'control-\033-\342\200\256'
 mkdir "$control_workspace"
 run --check --no-cache --extra-workspace "$control_workspace"
 if LC_ALL=C grep -q $'\e' "$fixture/output"; then exit 1; fi
-if grep -q $'\u202e' "$fixture/output"; then exit 1; fi
+if grep -q $'\342\200\256' "$fixture/output"; then exit 1; fi
 grep -F '\x{202e}' "$fixture/output" > /dev/null
 
 fixture_complete=true
