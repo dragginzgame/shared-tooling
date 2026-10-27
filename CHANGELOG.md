@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.27.1]
+
+### 🥾 Governance
+
+- Require one remediation issue at the supplying owner for shared dependency
+  defects and advisories, including crypto/Agent findings at IC Platform.
+  Retain consumer evidence there; separate consumer issues need distinct
+  actionable work. Keep security gates and scoped risk decisions intact
+  ([#50 — Resolve RUSTSEC-2026-0387 at the IC Platform crypto/Agent boundary](https://github.com/dragginzgame/ic-platform/issues/50)).
+
 ## [0.27.0]
 
 ### ➕ Added
