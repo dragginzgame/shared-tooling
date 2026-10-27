@@ -86,15 +86,52 @@ FORMAT_METADATA_FAIL=1 run --check
 [[ "$(wc -l < "$FORMAT_EVENTS")" -eq 2 ]]
 grep -F 'running without shortcut' "$fixture/output"
 
-# Module redirection is outside the standard package-source inventory, whether
-# direct or conditional. Arbitrary rustfmt wrappers likewise have unknown inputs.
-for attribute in '#[path = "../../external.rs"]' '#[cfg_attr(test, path = "../../external.rs")]'; do
+# Ordinary cfg_attr metadata does not bind unrelated later words or literals.
+# The first argument is a cfg predicate, even when its key is named path.
+for source in \
+    $'#[cfg_attr(feature = "host", derive(Clone))]\nstruct Value;\n/// Local path supplying the catalog snapshot.\nfn catalog() {}' \
+    $'#[cfg_attr(\n any(feature = "host", test),\n cfg_attr(not(test), derive(Clone)),\n)]\nstruct Value;\n// path = "elsewhere"' \
+    '#[cfg_attr(path = "host", derive(Clone))] struct Value;' \
+    '#[cfg_attr(test, doc = r##"fake ] #[path = "elsewhere"]"##)] struct Value;' \
+    $'// #[path = "elsewhere"]\n/* outer /* #[cfg_attr(test, path = "elsewhere")] */ comment */\n#[r#cfg_attr(test, derive(Clone))] struct Value;'; do
+    printf '%s\n' "$source" > src/attributes.rs
+    : > "$FORMAT_EVENTS"
+    run --check
+    [[ "$(wc -l < "$FORMAT_EVENTS")" == 2 ]]
+    : > "$FORMAT_EVENTS"
+    run --write
+    [[ ! -s "$FORMAT_EVENTS" ]]
+    grep -E '^Checking formatting inputs\.\.\. unchanged ' "$fixture/output" > /dev/null
+done
+rm src/attributes.rs
+
+# Real module-path attributes, including nested/multiline/raw-identifier forms,
+# and ambiguous syntax cannot authorize reuse. Formatting still executes.
+for attribute in \
+    '#[path = "../../external.rs"]' \
+    '#[cfg_attr(test, path = "../../external.rs")]' \
+    $'#[cfg_attr(\n all(feature = "host", not(test)),\n cfg_attr(any(test, feature = "other"), path = r##"../../external.rs"##),\n)]' \
+    '#[ /* outer /* nested */ */ path /* comment */ = "../../external.rs"]' \
+    '#[r#cfg_attr(test, r#path = "../../external.rs")]' \
+    '#![cfg_attr(test, path = "../../external.rs")]' \
+    '#[cfg_attr(test, derive(Clone))' \
+    '#[cfg_attr(test, derive(Clone)]' \
+    '#[cfg_attr(test)]' \
+    '#[cfg_attr(test, doc = r##"unfinished'; do
     printf '%s\nmod external;\n' "$attribute" > src/redirect.rs
     : > "$FORMAT_EVENTS"
     run --check
     [[ "$(wc -l < "$FORMAT_EVENTS")" -eq 2 ]]
     grep -F 'running without shortcut' "$fixture/output" > /dev/null
 done
+attribute='derive(Clone)'
+for ((depth = 0; depth < 70; depth++)); do attribute="cfg_attr(test, $attribute)"; done
+printf '#[%s]\nstruct Deep;\n' "$attribute" > src/redirect.rs
+: > "$FORMAT_EVENTS"
+run --check
+[[ "$(wc -l < "$FORMAT_EVENTS")" == 2 ]]
+grep -F 'running without shortcut' "$fixture/output" > /dev/null
+if grep -F 'Deep recursion' "$fixture/output"; then exit 1; fi
 rm src/redirect.rs
 : > "$FORMAT_EVENTS"
 RUSTFMT=custom-rustfmt run --check
@@ -211,6 +248,19 @@ done
 : > "$FORMAT_EVENTS"
 if run --write --rustfmt-source 'standalone source.rs'; then exit 1; fi
 [[ ! -s "$FORMAT_EVENTS" ]]
+
+# Shared lexer edits are formatting-input changes too, even if the driver and
+# consumer files are unchanged. Keep this mutation inside a complete local copy.
+mkdir "$fixture/driver"
+cp "$driver" "$ROOT/scripts/ci/RustSource.pm" "$fixture/driver/"
+driver="$fixture/driver/run-rust-formatting.pl"
+run --check
+: > "$FORMAT_EVENTS"
+run --check
+[[ ! -s "$FORMAT_EVENTS" ]]
+printf '\n# changed lexer input\n' >> "$fixture/driver/RustSource.pm"
+run --check
+[[ "$(wc -l < "$FORMAT_EVENTS")" == 2 ]]
 
 fixture_complete=true
 echo 'Rust formatting reuse, invalidation, per-pass timing and failure evidence passed'

@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.26.26]
+
+### 🩹 Fixed
+
+- Keep formatting reuse enabled for ordinary conditional attributes followed by
+  unrelated path text. Inspect balanced Rust attributes through the shared lexer,
+  retaining uncached execution for actual module overrides or incomplete syntax
+  ([#315](https://github.com/dragginzgame/shared-tooling/issues/315)).
+
 ## [0.26.25]
 
 ### 🩹 Fixed

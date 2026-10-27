@@ -429,7 +429,7 @@ expect_failure bash scripts/dev/install-git-hooks.sh --consumer "$PWD"
 # including the adoption checker's partial-stage and preservation cases.
 new_fixture $'shared-format-include\n'
 cp "$ROOT/make/consumer.mk" "$ROOT/make/release.mk" "$ROOT/make/rust-format.mk" "$ROOT/make/execution.mk" make/
-cp "$ROOT/scripts/ci/check-format-tools.sh" "$ROOT/scripts/ci/run-formatting.sh" "$ROOT/scripts/ci/run-rust-formatting.pl" scripts/ci/
+cp "$ROOT/scripts/ci/check-format-tools.sh" "$ROOT/scripts/ci/run-formatting.sh" "$ROOT/scripts/ci/run-rust-formatting.pl" "$ROOT/scripts/ci/RustSource.pm" scripts/ci/
 cat > Makefile <<'MAKE'
 include make/consumer.mk
 MAKE
@@ -450,7 +450,7 @@ alpha = { package = "shared-format-fixture", path = "." }
 CARGO
 mkdir -p src
 printf 'pub fn fixture( ){}\n' > src/lib.rs
-git add Makefile Cargo.toml src/lib.rs make/consumer.mk make/release.mk make/rust-format.mk make/execution.mk scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh scripts/ci/run-rust-formatting.pl
+git add Makefile Cargo.toml src/lib.rs make/consumer.mk make/release.mk make/rust-format.mk make/execution.mk scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh scripts/ci/run-rust-formatting.pl scripts/ci/RustSource.pm
 bash .githooks/pre-commit > output
 [[ "$(git show :src/lib.rs)" == 'pub fn fixture() {}' ]] || exit 1
 awk '/^(alpha|zeta) =/ { print $1 }' Cargo.toml > observed-groups
@@ -461,7 +461,7 @@ grep -Fx '# Tests and tooling only' Cargo.toml > /dev/null
 cp .git/index "$FIXTURE/newline-index"
 cp src/lib.rs "$FIXTURE/newline-source"
 CDPATH="$FIXTURE" bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$PWD" src/lib.rs Cargo.toml --no-dependency-tables \
-    make/consumer.mk make/tools.mk make/release.mk make/rust-format.mk make/execution.mk ci/tool-versions.env scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh scripts/ci/run-rust-formatting.pl
+    make/consumer.mk make/tools.mk make/release.mk make/rust-format.mk make/execution.mk ci/tool-versions.env scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh scripts/ci/run-rust-formatting.pl scripts/ci/RustSource.pm
 cmp .git/index "$FIXTURE/newline-index"
 cmp src/lib.rs "$FIXTURE/newline-source"
 
