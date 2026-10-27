@@ -486,6 +486,22 @@ perl "$ROOT/scripts/ci/run-rust-formatting.pl" --check "${format_args[@]}" > "$F
 grep -E '^Checking formatting inputs\.\.\. unchanged \([0-9]+\.[0-9]+s\)$' "$FIXTURE/real-format-hit.log"
 [[ "$(wc -l < "$FIXTURE/real-format-hit.log")" -eq 1 ]]
 
+# Explicit standalone sources use the real Rustfmt after workspace passes. Its
+# module traversal stays covered on every call rather than reusing a receipt.
+mkdir -p 'standalone sources'
+printf 'mod child;\npub fn outside( ){}\n' > 'standalone sources/main.rs'
+printf 'pub fn child( ){}\n' > 'standalone sources/child.rs'
+cp 'standalone sources/main.rs' "$FIXTURE/standalone-before.rs"
+standalone_args=("${format_args[@]}" --rustfmt-source 'standalone sources/main.rs' --rustfmt-edition 2024)
+status=0
+perl "$ROOT/scripts/ci/run-rust-formatting.pl" --check "${standalone_args[@]}" > "$FIXTURE/standalone-refusal.log" 2>&1 || status=$?
+[[ "$status" == 1 ]]
+cmp 'standalone sources/main.rs' "$FIXTURE/standalone-before.rs"
+perl "$ROOT/scripts/ci/run-rust-formatting.pl" --write "${standalone_args[@]}" > "$FIXTURE/standalone-write.log"
+[[ "$(cat 'standalone sources/child.rs')" == 'pub fn child() {}' ]]
+perl "$ROOT/scripts/ci/run-rust-formatting.pl" --check "${standalone_args[@]}" > "$FIXTURE/standalone-check.log"
+grep -F 'Standalone Rust sources selected; running without shortcut' "$FIXTURE/standalone-check.log" > /dev/null
+
 # Exercise real Cargo/rustfmt on both a root and a standalone nested workspace.
 # No dependencies, builds, Git commits or network access are needed.
 for lockfiles in inherited absent present; do

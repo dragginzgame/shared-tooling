@@ -157,5 +157,60 @@ if LC_ALL=C grep -q $'\e' "$fixture/output"; then exit 1; fi
 if grep -q $'\342\200\256' "$fixture/output"; then exit 1; fi
 grep -F '\x{202e}' "$fixture/output" > /dev/null
 
+# Standalone files have an explicit edition/tool. Their module/configuration
+# closure is uncached, so no receipt can skip their actual formatter pass.
+printf 'fn standalone() {}\n' > 'standalone source.rs'
+cat > "$fixture/bin/rustfmt" <<'RUSTFMT'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$*" == --version ]]; then
+    [[ "${FORMAT_RUSTFMT_VERSION_FAIL:-0}" == 0 ]] || exit 29
+    echo 'fixture Rustfmt'; exit
+fi
+{ printf 'rustfmt'; printf ' <%s>' "$@"; printf '\n'; } >> "$FORMAT_EVENTS"
+[[ "${FORMAT_RUSTFMT_FAIL:-0}" == 0 ]] || exit 37
+RUSTFMT
+chmod +x "$fixture/bin/rustfmt"
+standalone_args=(--rustfmt-source 'standalone source.rs' --rustfmt-edition 2024)
+cp "$receipt" "$fixture/standalone-receipt"
+for mode in --check --write --check; do
+    : > "$FORMAT_EVENTS"
+    run "$mode" "${standalone_args[@]}"
+    [[ "$(wc -l < "$FORMAT_EVENTS")" == 3 ]]
+    grep -F 'Standalone Rust sources selected; running without shortcut' "$fixture/output" > /dev/null
+    grep -E '^Standalone Rust formatting.*ok \([0-9]+\.[0-9]+s\)$' "$fixture/output" > /dev/null
+    if [[ "$mode" == --check ]]; then
+        grep -F "rustfmt <--edition> <2024> <--check> <$consumer/standalone source.rs>" "$FORMAT_EVENTS" > /dev/null
+    else
+        grep -Fx "rustfmt <--edition> <2024> <$consumer/standalone source.rs>" "$FORMAT_EVENTS" > /dev/null
+    fi
+    cmp "$receipt" "$fixture/standalone-receipt"
+done
+: > "$FORMAT_EVENTS"
+status=0
+FORMAT_RUSTFMT_VERSION_FAIL=1 run --write "${standalone_args[@]}" || status=$?
+[[ "$status" == 29 && ! -s "$FORMAT_EVENTS" ]]
+status=0
+FORMAT_RUSTFMT_FAIL=1 run --check "${standalone_args[@]}" || status=$?
+[[ "$status" == 37 && "$(wc -l < "$FORMAT_EVENTS")" == 3 ]]
+grep -E '^Standalone Rust formatting.*FAILED \(exit 37,' "$fixture/output" > /dev/null
+cmp "$receipt" "$fixture/standalone-receipt"
+printf 'fn outside() {}\n' > "$fixture/outside.rs"
+for invalid in missing outside duplicate edition no-sources; do
+    : > "$FORMAT_EVENTS"
+    case "$invalid" in
+        missing) arguments=(--rustfmt-source absent.rs --rustfmt-edition 2024) ;;
+        outside) arguments=(--rustfmt-source "$fixture/outside.rs" --rustfmt-edition 2024) ;;
+        duplicate) arguments=("${standalone_args[@]}" --rustfmt-source 'standalone source.rs') ;;
+        edition) arguments=(--rustfmt-source 'standalone source.rs' --rustfmt-edition 2025) ;;
+        no-sources) arguments=(--rustfmt-edition 2024) ;;
+    esac
+    if run --write "${arguments[@]}"; then exit 1; fi
+    [[ ! -s "$FORMAT_EVENTS" ]]
+done
+: > "$FORMAT_EVENTS"
+if run --write --rustfmt-source 'standalone source.rs'; then exit 1; fi
+[[ ! -s "$FORMAT_EVENTS" ]]
+
 fixture_complete=true
 echo 'Rust formatting reuse, invalidation, per-pass timing and failure evidence passed'

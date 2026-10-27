@@ -74,7 +74,7 @@ run_fixture test-cargo-install-qualification.sh bash "$ROOT/scripts/ci/test-carg
 run_fixture test-evidence-archive.sh bash "$ROOT/scripts/ci/test-evidence-archive.sh"
 run_fixture test-native-diagnostics.sh bash "$ROOT/scripts/ci/test-native-diagnostics.sh"
 run_fixture test-evidence-download.sh bash "$ROOT/scripts/ci/test-evidence-download.sh"
-run_fixture test-gh-ci.sh bash "$ROOT/scripts/ci/test-gh-ci.sh"
+run_fixture test-gh-ci-output.sh bash "$ROOT/scripts/ci/test-gh-ci-output.sh"
 run_fixture test-github-siblings.sh bash "$ROOT/scripts/ci/test-github-siblings.sh"
 run_fixture test-maintenance-task.sh bash "$ROOT/scripts/ci/test-maintenance-task.sh"
 # A parent gate may retain its own logs and GitHub summary. The runner fixture

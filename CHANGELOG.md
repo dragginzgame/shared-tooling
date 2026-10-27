@@ -10,6 +10,20 @@
 - Include the Node prerequisite guide in governance exports and declare its
   documentation dependency without enabling Node setup
   ([#311](https://github.com/dragginzgame/shared-tooling/issues/311)).
+- Keep CI-inspection fixtures concise on success and replay their last observation
+  and command trace on failure, retaining exact status and fixture evidence
+  ([#313](https://github.com/dragginzgame/shared-tooling/issues/313)).
+
+### ➕ Added
+
+- Format explicitly selected standalone Rust files with a declared edition and
+  visible pass timing. Keep these selections uncached so module/configuration
+  inputs cannot be skipped by an incomplete proof
+  ([#314](https://github.com/dragginzgame/shared-tooling/issues/314)).
+- Use Clap for runtime-scanner help and argument handling while preserving
+  source diagnostics, non-UTF8 paths and exit-status contracts. Consumers compiling
+  the source must add Clap to their private compiler package
+  ([#310](https://github.com/dragginzgame/shared-tooling/issues/310)).
 
 ## [0.26.23]
 
