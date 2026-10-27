@@ -97,9 +97,12 @@ bash .githooks/pre-commit > output
 # A tracked submodule stays an opaque gitlink, including when its pin is staged.
 # Its initialized child files must never enter the formatter snapshot.
 new_fixture 'opaque submodule'
-mkdir -p upstream/ic
+git init --quiet upstream/ic
 printf 'unformatted child sentinel\n' > upstream/ic/child.rs
-git update-index --add --cacheinfo "160000,$source_commit,upstream/ic"
+git -C upstream/ic add child.rs
+git -C upstream/ic -c user.name='Hook fixture' -c user.email=fixture@example.invalid commit --quiet -m 'Child fixture'
+child_commit="$(git -C upstream/ic rev-parse HEAD)"
+git update-index --add --cacheinfo "160000,$child_commit,upstream/ic"
 cat >> scripts/fixture-fmt.sh <<'FORMAT'
 [[ ! -e upstream/ic/child.rs ]] || exit 1
 FORMAT
