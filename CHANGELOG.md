@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.26.23]
+
+### 🩹 Fixed
+
+- Allow formatting commits in repositories with tracked submodules. Keep each
+  child checkout opaque, preserve staged gitlink identities, and format only
+  selected regular files without reading or changing child contents.
+
 ## [0.26.22]
 
 ### 🥾 Governance
