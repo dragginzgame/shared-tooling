@@ -1,711 +1,177 @@
 # Shared Tooling
 
-The authoritative source of mandatory common engineering rules, development
-tools, and CI building blocks for all `dragginzgame` repositories.
+Common engineering rules, development tools and CI building blocks for
+`dragginzgame` repositories. Shared Tooling has no Cargo workspace or canister
+runtime dependency. Consumers retain their product architecture, compiler
+policy, deployment identity and validation gates.
 
-The repository keeps shared behavior in one place without making individual
-projects copy large scripts or encode repository-specific assumptions. Tools
-should be deterministic, explicit about their dependencies, and safe to run
-from any supported checkout. Each consumer keeps its product architecture,
-validation gates, release metadata and deployment identities in a local overlay.
-Every repository provides the same three release commands and workflow under
-the [release contract](docs/releases.md), which includes a Makefile example.
-Differences from the common baseline require maintainer-approved exceptions.
-Direct atomic branch/tag delivery remains the default. Explicit
-[PR delivery](docs/releases.md#pr-delivery) prepares a review branch, waits for
-merge, and validates the exact merged commit again before pushing its tag.
+## Start here
 
-`make version` reads the current local version from [`VERSION`](VERSION).
-The top undated changelog entry describes the next proposed release. Standard
-release preparation updates both files; Git tags establish published release
-identity independently.
+| Need | Guide |
+| --- | --- |
+| Adopt or update Shared Tooling | [Reviewed snapshots and upgrade previews](docs/consuming-snapshots.md) |
+| Prepare the compiler and tools | [Local setup](docs/local-setup.md) and [supported hosts](docs/supported-hosts.md) |
+| Configure a consumer's commands | [Make interface](docs/make-interface.md) |
+| Understand the common rules | [Engineering baseline](DRAGGINZGAME.md), then the consumer's `AGENTS.md` |
+| Release or recover a release | [Release commands and recovery](docs/releases.md) |
+| Inspect the repository fleet | [Fleet reports and CI inspection](docs/fleet-tools.md) |
 
-Opt-in browser consumers can reuse the [Node/npm prerequisite and SDK boundary checks](docs/node-tools.md)
-while retaining their package roots, pins, setup and runtime qualification.
+## Toko stack
 
-Shared Tooling is licensed under [MIT](LICENSE).
+Arrows point from consumer to dependency owner. This is a condensed view of
+first-party declarations, including optional dependencies, rather than the
+contents of a particular Wasm build. Dashed arrows identify native tooling;
+redundant solid arrows are omitted. The [detailed inventory](docs/stack.md)
+retains direct manifest evidence, build/test declarations and frontend packages.
+
+<!-- stack-graph:start -->
+```mermaid
+flowchart TD
+    r_canic["canic"]
+    r_ic_auth["ic-auth"]
+    r_ic_backup["ic-backup"]
+    r_ic_blob_storage["ic-blob-storage"]
+    r_ic_metrics["ic-metrics"]
+    r_ic_persistence["ic-persistence"]
+    r_ic_platform["ic-platform"]
+    r_ic_query["ic-query"]
+    r_ic_timers["ic-timers"]
+    r_ic_tooling["ic-tooling"]
+    r_ic_wire["ic-wire"]
+    r_icydb["icydb"]
+    r_toko["toko"]
+    r_toko_miner["toko-miner"]
+    r_canic --> r_ic_auth
+    r_canic --> r_ic_backup
+    r_canic --> r_ic_blob_storage
+    r_canic -.-> r_ic_query
+    r_canic --> r_ic_timers
+    r_canic -.-> r_ic_tooling
+    r_ic_auth --> r_ic_platform
+    r_ic_auth -.-> r_ic_tooling
+    r_ic_backup --> r_ic_platform
+    r_ic_backup -.-> r_ic_tooling
+    r_ic_blob_storage --> r_ic_persistence
+    r_ic_blob_storage -.-> r_ic_tooling
+    r_ic_persistence --> r_ic_metrics
+    r_ic_persistence --> r_ic_platform
+    r_ic_platform --> r_ic_wire
+    r_ic_query --> r_ic_metrics
+    r_ic_query --> r_ic_platform
+    r_ic_query -.-> r_ic_tooling
+    r_ic_timers --> r_ic_metrics
+    r_ic_timers --> r_ic_platform
+    r_ic_tooling -.-> r_ic_platform
+    r_ic_tooling -.-> r_ic_wire
+    r_icydb -.-> r_canic
+    r_icydb --> r_ic_persistence
+    r_icydb -.-> r_ic_tooling
+    r_toko --> r_canic
+    r_toko --> r_icydb
+    r_toko_miner --> r_canic
+    r_toko_miner --> r_icydb
+```
+<!-- stack-graph:end -->
+
+The [daily local refresh](docs/stack.md#automatic-local-refresh) keeps generated
+sections current once enabled, leaving changes for the next commit. It neither
+fetches upstream changes nor commits them. Manual refresh/check commands remain
+available in that guide.
 
 ## Repository fleet ownership
 
-The [canonical license templates and drift checker](docs/licenses.md) keep MIT
-and the Dragginz Verifiable ICP Burn terms consistent across adopting repositories.
+Shared Tooling owns common rules and helpers, adoption/pin drift inspection,
+repository inventories, CI/issue dashboards and repeatable maintenance audits.
+Central reports run here; consumers need only the helpers their workflows use,
+not extra CI gates that scan sibling checkouts. Product repositories retain
+behavior, acceptance evidence and issue resolution. Reporting does not grant
+edit or deployment authority.
 
-Shared Tooling owns consistency across the Dragginzgame repositories: shared
-rules and tools, adoption/pin drift checks, repository and sibling counts,
-CI/issue dashboards, LOC/tooling inventories, and repeatable maintenance audits.
-The central reports run here. Consumers keep the shared setup and validation
-helpers they need locally; they do not need a copy of every fleet dashboard or
-an extra CI gate that scans their siblings.
-
-IC Metrics owns reusable measurement arithmetic. Repository discovery, sibling
-counts, GitHub status collection and fleet-consistency policy belong here, outside
-the IC Metrics product and runtime dependency graph. Product repositories retain
-their own behavior, validation evidence and issue resolution; central reporting
-does not grant cross-repository edit or deployment authority.
-
-Keep the tooling and fleet checks in this repository while they share the same
-maintenance lifecycle. Reconsider a separate application repository if a hosted
-dashboard or service needs its own persistent data, authentication, permissions
-and deployment lifecycle. Such an application would consume reviewed Shared
-Tooling rules and checks; it would not create a second engineering baseline.
-
-## Repeatable maintenance
-
-Open the [task catalog](tasks/README.md) or run `make tasks`. Shared Tooling owns
-repeatable cargo-machete, MSRV, Rust/Cargo tool freshness, CI/issue, snapshot and dependency
-advisory checks, plus bounded code and tooling-duplication audits. Each definition
-explains its scope, procedure and evidence; consumers keep their local inputs.
-
-The [local agent schedule](tasks/local-schedule.md) runs a maintenance pass every
-three days once explicitly enabled, retaining reports and coordinating findings
-through owning GitHub issues. It does not automatically edit sibling source or
-upgrade dependencies. Task definitions remain readable and runnable on demand.
-
-Run `make check-cargo-tool-versions` for a read-only online comparison of common
-Cargo pins, this checkout's selected tools and user-level Cargo installations.
-The [Cargo tool freshness task](tasks/cargo-tool-versions.md) documents JSON output,
-alternative catalogs and retained evidence. Missing or outdated installations
-are distinct from a current pin; the command never installs or rewrites anything.
-
-## Shared principles
-
-The [`docs/principles/`](docs/principles/README.md) directory contains common
-decision guidance for simplicity, canonical authority, decision artifacts,
-reviewable changes, and Rust code hygiene. Every consumer must adopt a reviewed
-revision of the [engineering baseline](DRAGGINZGAME.md) and identify its local overlay.
-These guides explain the baseline; they do not grant consumers permission to
-override its common rules.
-
-`DRAGGINZGAME.md` is the reusable baseline. Each repository's `AGENTS.md` is its
-local entry point and overlay; Shared Tooling's own validation commands stay in
-its [local instructions](AGENTS.md).
-
-The baseline's focused mandatory policies live in `rules/`. The
-[contribution rules](rules/contributions.md) support human and agent PRs:
-an authorized PR includes its branch, commits and branch push, while merges,
-direct integration-branch pushes and releases retain separate authority. The
-[changelog rules](rules/changelogs.md) cover automatic next-version selection,
-concise release summaries, GitHub issue links, breaking changes and minor-line
-detail files. The [Rust workspace rules](rules/rust-workspaces.md) require a
-virtual root with packages under `crates/<package-name>/` or application-owned
-`apps/<app-name>/` trees. Both use the same workspace inheritance; independent
-workspaces and other layouts require explicit exceptions. The rule explicitly
-approves IcyDB's existing `crates/`, `canisters/`, `schema/` and `testing/` trees,
-with no required package moves. The
-[Cargo dependency rules](rules/cargo-dependencies.md) require one root dependency
-catalog inherited by every child manifest. The
-[dependency pinning rules](rules/dependency-pinning.md) define immutable source
-identities, compatible registry requirements, locked builds and scoped exceptions. The
-[Git hook rules](rules/git-hooks.md) standardize Rust pre-commit formatting and
-safe repository-local installation. The
-[agent maintenance rules](rules/agent-maintenance.md) define user-triggered CI
-inspection, issue review and scoped repair requests.
-
-The [shared audit methods](audits/README.md) cover code hygiene, flow convergence,
-complexity, module surface review and authorized cleanup. Consumers keep product
-invariants, commands and historical reports locally, and adopt the common methods
-through the same reviewed snapshot mechanism as the baseline.
-
-See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the inclusion boundary and
-[`docs/provenance.md`](docs/provenance.md) for the initial Canic and IcyDB
-contributions.
+Keep reporting here while it shares this maintenance lifecycle. A hosted
+application with its own data, authentication and deployment lifecycle would
+need a separate owner. The [contribution inclusion test](CONTRIBUTING.md#inclusion-test)
+explains what belongs in Shared Tooling.
 
 ## Capability ownership
 
-Shared Tooling distributes reviewed commands, source files and governance
-snapshots. It has no Cargo workspace or IC runtime dependency. Its standalone
-Rust scanner is compiled by consumers with their locked dependencies;
-`ci/frontend` is a private Prettier qualification fixture, not an application.
-
-| Capability | Canonical owner and integration boundary |
+| Capability | Canonical owner |
 | --- | --- |
-| Baseline, fleet inspection, setup, formatting, release mechanics and evidence transport | Shared Tooling: `rules/`, `scripts/`, `make/` and `.github/actions/`. Public commands are documented below; `make/consumer.mk` supplies the consumer Make interface and `scripts/distribution/` exports reviewed snapshots. |
-| External IC-specific dependencies, including DFINITY packages | [IC Platform](https://github.com/dragginzgame/ic-platform) is the sole direct dependency owner. Consumers use explicit Platform features/interfaces under the [dependency boundary](rules/cargo-dependencies.md#external-ic-dependency-boundary); product policy stays with its owning Dragginzgame crate. |
-| Controlled application message encoding and generated TypeScript codecs | [IC Wire](https://github.com/dragginzgame/ic-wire) owns codecs and resource admission under the [application encoding policy](DRAGGINZGAME.md#ic-application-encoding). Consumers own transport, endpoints, authentication and application semantics. |
-| Cargo/Wasm builds, artifact caches and Candid extractor execution | [IC Tooling's `ic-build`](https://github.com/dragginzgame/ic-tooling/tree/main/crates/ic-build). Consumers supply admitted tools, sources, execution policy and budgets. Shared installs selected executables; products own extractor pins and PATH selection. |
-| Host filesystem, artifact and process primitives; IC interpretation | [IC Tooling](https://github.com/dragginzgame/ic-tooling): `ic-host-fs`, `ic-host-artifacts`, `ic-host-process`, `ic-host-tools` and `ic-host-text`. Tools interprets Candid services/IC responses; Text owns normalization. |
-| PocketIC preparation, admission and lifecycle | [IC Tooling's `ic-testkit`](https://github.com/dragginzgame/ic-tooling/tree/main/crates/ic-testkit). Consumers use its selected CLI and own their canister scenarios. |
-| Frozen published Blob example installation qualification | [IC Blob Storage](https://github.com/dragginzgame/ic-blob-storage), under `scripts/ci/`. Shared retains generic Cargo binary installation qualification. |
-| Full native Metrics recovery archives | [IC Metrics](https://github.com/dragginzgame/ic-metrics), under `scripts/ci/package-native-recovery-evidence.sh`. Shared retains common archive transport and sanitized diagnostics. |
-
-Product repositories retain deployment identity, source custody, release metadata,
-publication policy and acceptance evidence. IC Build owns Cargo manifest and
-lockfile candidate rendering through its explicitly prepared
-`ic-build-release-metadata` command. Shared Tooling retains source admission,
-independent checks and recovery; see
-[Cargo candidate rendering](docs/releases.md#cargo-release-candidate-rendering).
-
-Build, Host and Testkit retain their package identities within IC Tooling's single
-workspace. File new implementation and adoption issues with that current owner;
-old repository links in provenance and qualification records remain historical
-evidence. Shared Tooling keeps its independent release and snapshot lifecycle.
-
-For consumer adoption, use [snapshot impact previews](docs/consuming-snapshots.md#upgrade-impact),
-[tool diagnostics and selections](docs/local-setup.md#tool-selection-and-diagnostics),
-the [optional common CI cache](docs/supported-hosts.md#consumer-cargo-tool-cache),
-and the [shared external IC dependency inventory](rules/cargo-dependencies.md#shared-boundary-check).
-
-## Current tools
-
-Shared's own integration fixtures prepare the IC Build editor through
-`make install-tools` and admit it through `make tools-check`. `make test-portable`
-selects that verified executable before fixture dispatch; see the
-[Shared-local setup](docs/local-setup.md#shared-toolings-integration-editor).
-
-### Local IC executables
-
-Use `make install-tools` for the common host and Cargo toolsets,
-and `make tools-check` for offline verification. The IC bundle is explicitly
-selected by product workflows through ordered local targets; setup runs host
-and Rust steps in order. Setup first checks platform support and the selected
-Rust/Cargo toolchain without downloads or installations. The [required tool inventory](docs/local-setup.md#required-tool-inventory)
-is the shared setup list for every repository. See [local setup](docs/local-setup.md)
-for Linux Mint/macOS bootstrap packages and shell PATH configuration. Make targets
-select the local binaries automatically; direct shell commands need the documented
-PATH export in each checkout. Consumers use the reviewed snapshot's
-[`make/consumer.mk`](make/consumer.mk) as the common entrypoint for setup,
-offline verification, formatting, hooks and releases. The
-[Make interface](docs/make-interface.md) explains local inputs and custom formatters;
-the [adoption guide](docs/consuming-snapshots.md#local-ic-tool-adoption) lists its
-companion files and replaces copied Make recipes.
-
-`make install-ic-tools` installs the reviewed Quill, ICP CLI, didc, ic-wasm,
-and Binaryen set beneath `.tools/ic/bin`. `make ic-tools-check` verifies
-it offline. Setup activates only a complete verified set and preserves prior
-sets and failed candidates. See [local IC tools](docs/ic-tools.md) for pins,
-PATH setup, native host coverage and consumer adoption.
-IC Testkit owns PocketIC setup, offline admission and server lifecycle; see the
-[ownership handoff](docs/ic-tools.md#pocketic-ownership-handoff).
-
-The aggregate includes `make install-rust-tools` and offline `make rust-tools-check`
-for pinned cargo-sort and cargo-sort-derives under `.tools/rust/common/bin`.
-Products that extract Candid select and prepare their extractor through the
-[selected Cargo-tool interface](docs/local-setup.md#consumer-selected-cargo-tools).
-Prepare a declared Rust toolchain even for non-Rust repositories. See
-[Rust setup](docs/local-setup.md#rust-development-tools) and the
-[0.3.0 adoption steps](docs/consuming-snapshots.md#complete-toolset-adoption-in-030)
-for the complete pins, removed optional host flags and ordered product extensions.
-
-### Focused verification helpers
-
-For separately authorized tag maintenance, use
-`perl scripts/dev/delete-github-tags-up-to.pl --cutoff X.Y.Z` for a read-only
-preview. See [explicit tag maintenance](docs/tag-maintenance.md) for remote
-selection, deletion authorization, retained evidence and interrupted retries.
-
-- IC Build supplies the explicitly prepared Cargo release candidate editor; Shared
-  Tooling retains release checks and recovery. `scripts/ci/check-formatting-hooks.sh`
-  exercises a consumer's actual formatter in disposable Git exports. See their
-  explicit inputs and limits in the [helper contracts](docs/verification-helpers.md).
-- `scripts/ci/check-dependency-pins.sh --cargo-inheritance` also checks dependency
-  catalogs and member version inheritance. `scripts/ci/read-cargo-workspace-version.sh`
-  reads one selected Cargo manifest structurally, with optional stable-only
-  admission. See the [Cargo helper contracts](docs/verification-helpers.md#cargo-inheritance-and-workspace-version).
-- `scripts/ci/verify-file-checksum.sh --print <sha256|sha512> <file>` generates
-  portable digests through the same backend as checksum verification, IC tool
-  receipts and snapshot manifests.
-- `scripts/ci/prepare-rustsec-db.sh <online|local> <source> <new-destination>`
-  isolates an advisory database, records its commit and retains preparation
-  diagnostics. Consumers own audit invocation and security policy. See the
-  [helper contracts](docs/verification-helpers.md).
-- `make check-doc-links` checks local Markdown targets in the selected shared
-  documents; `make check-release-commands` tests Make entry points using a
-  substitute runner. The read-only `scripts/ci/check-crates-io-version.sh` reports
-  present, absent or unavailable for one exact stable crates.io version. Its
-  optional metadata mode retains bounded response evidence and returns validated
-  checksum/yanked facts while leaving publication decisions with the caller. See
-  [verification helper contracts and adoption](docs/verification-helpers.md).
-- `scripts/ci/verify-evidence-checksums.sh <manifest> [...]` verifies nonempty
-  SHA-256 manifests using the shared portable checksum backend. Paths in each
-  manifest resolve from the caller's working directory; manifests use ordinary
-  unescaped sha256sum text/binary records, including filenames with spaces.
-- `scripts/ci/run-nonempty-cargo-test.sh <cargo-test-args...>` runs Cargo in the
-  caller's workspace, rejects zero passing tests and retains failed output.
-  It requires the normal libtest summary format and preserves Cargo arguments
-  and network policy. Cargo and logging failures remain failures.
-- [The structural Rust panic scanner](docs/rust-source-checks.md) checks selected
-  production source, including macro tokens and conservative test-only cfg
-  exclusion. Consumers compile the snapshot source with their own locked
-  dependencies and retain application inventory and policy selection.
-- `scripts/ci/run-formatting.sh --check|--write COMMAND [ARG ...]` reports one
-  success line or a short failure summary with the full retained log path.
-  `make/rust-format.mk` uses it for Rust formatting; custom workspace/frontend
-  adapters can use the same output contract without changing their policy.
-  See the [formatting rules](rules/git-hooks.md).
-- `scripts/ci/check-runner-disk-space.sh --path PATH --min-free-mib N` checks
-  capacity before a consumer-selected step. Optional diagnostic paths report
-  disk usage without cleanup; thresholds stay local. See the
-  [disk checker contract](docs/verification-helpers.md#runner-disk-capacity).
-- `scripts/ci/check-release-tag.sh <exact-commit> <version>` checks an annotated
-  `vX.Y.Z` tag against the selected full commit, without Git mutations. Consumer
-  publication adapters select the version/commit; the release runner keeps its
-  existing reconciliation checks.
-
-### Dependency pin checks
-
-`make check-pins` checks parsed Cargo and GitHub Actions declarations and tracked
-workspace lockfiles. `scripts/ci/check-dependency-pins.sh --consumer /path/to/repo`
-supports read-only consumer inspection. Prepare Mike Farah yq v4.47.2+, jq and Git
-first; Cargo is needed for Cargo workspaces. `YQ` can select an installed parser
-path. The shared installer requires an explicit reviewed version and checksum.
-Opt in to npm root declaration checks with `--npm-root`, `--node-version` and
-`--npm-version`, using that consumer's existing selections. The checker needs
-neither npm nor Node and leaves resolution to npm's own locked preparation.
-See the [pinning policy](rules/dependency-pinning.md) for exact constraints,
-external inputs, exception records and the checks still owned by consumer gates.
-
-### Cargo workspace LOC report
-
-`scripts/dev/cloc.sh` reports Rust lines in runtime-named and test-named files,
-test-attribute counts, inline-test counts, and workspace totals for every member
-of a Cargo workspace. Path classification follows `tests/` directories and
-files ending in `tests.rs`; inline test code remains part of runtime-file LOC.
-Classification uses paths relative to each package, and nested workspace
-members are excluded from their parent package's counts. Cargo's selected target
-directory is excluded from both LOC and test counts, including a configured build
-directory inside a package.
-
-Requirements:
-
-- Bash 3.2 or newer;
-- Cargo;
-- `cloc`;
-- `jq`; and
-- standard Unix tools including `awk`, `find`, `grep`, and `sort`.
-
-Run it from the repository being measured:
-
-```bash
-../shared-tooling/scripts/dev/cloc.sh
-```
-
-Or pass an explicit checkout path:
-
-```bash
-/path/to/shared-tooling/scripts/dev/cloc.sh /path/to/repository
-```
-
-Add `--json` for automation, including with `--manifest PATH`. On success it
-emits one document containing the selected `manifest`, a `crates` array and
-`totals`. Rows carry numeric `runtime_loc`, `test_loc`, `test_pct`, `test_fns` and
-`inline_fns`; crate rows also carry `crate`. Percentages use the same one-decimal
-rounding as the table. Failure returns nonzero without a partial JSON document.
-The sibling report consumes these counts and keeps its existing table format.
-Each admitted source path counts once, even when another file has identical
-contents. One per-file cloc projection supplies both runtime and test totals;
-duplicate-content suppression no longer changes the report's source inventory.
-
-The report discovers Cargo workspace members from `cargo metadata`; package
-names and directory layouts do not need to follow a shared prefix. Metadata
-inspection is locked and offline; it does not update the selected dependency
-graph or fetch missing inputs.
-
-For one line per sibling repository with the same Rust columns, run from Shared
-Tooling:
-
-```bash
-make install-host-tools  # Explicit setup, including pinned cloc and jq
-make cloc
-make cloc CLOC_PARENT=/path/to/projects
-```
-
-The report prefers this checkout's `.tools/host/bin` automatically, including
-when invoked directly. `cloc.sh --check-tools` checks prerequisites without
-counting or installing. The sibling report checks once before printing any
-rows when a Cargo workspace is present, reporting missing tools together with
-the setup command.
-
-Or invoke `scripts/dev/cloc-siblings.sh [parent-directory]` directly from any
-directory. By default it scans the parent of the checkout containing the script.
-It visits immediate Git checkouts, including linked worktrees and hidden
-directories, in name order; symlink aliases and non-repository directories are
-skipped. Each row reuses the root Cargo workspace's totals, including members
-under `apps/` and `crates/`. Separate excluded workspaces are outside this scope.
-Repositories without a root `Cargo.toml` show `N/A`. Failed counts show `ERROR`
-with diagnostics on stderr; other repositories are still reported and the command
-exits nonzero. No sibling Make targets, builds or setup commands are run.
-The final `TOTAL` row sums successful reports and calculates `test_%` from their
-combined LOC. `N/A` rows are excluded; failures label the total `TOTAL (partial)`.
-If no workspace was successfully counted, the total shows `N/A`.
-
-### CI and tooling inventory
-
-For one independent Cargo workspace, use
-`make cloc CLOC_MANIFEST=testing/Cargo.toml`, or
-`bash scripts/dev/cloc.sh --manifest testing/Cargo.toml "$PWD"`.
-The explicit manifest selects only that graph and its Cargo target directory;
-metadata runs from its directory with the selected lockfile, offline. Default
-root reporting and sibling totals do not automatically combine independent graphs.
-
-From Shared Tooling, use `make cloc-tooling [CLOC_PARENT=/path/to/projects]` to
-find where sibling repositories maintain the most CI and tooling code. For
-per-file evidence:
-
-```bash
-perl scripts/dev/cloc-tooling.pl --json /path/to/projects > tooling-inventory.json
-```
-
-The table separates CI (`.github/`, `scripts/ci/`, `ci/`) from other tooling,
-including other scripts, `bin/`, hooks, Make files, `.cargo/`, `tools/`, `xtask/` and
-Cargo package `build.rs` files. It reads tracked and nonignored untracked working
-files, captures their bytes in temporary files and counts all copies with cloc.
-Product source, documentation, caches, build output and symlinks are outside
-this inventory; product runtime functions named `build.rs` are not build scripts.
-This is a tooling inventory, not a whole-repository or semantic-duplication scan.
-
-`total_loc` is CI plus other tooling code, excluding blank lines and comments.
-`shared_loc` matches both the SHA-256 and executable mode in the repository's
-`.shared-tooling*.snapshot` manifests; the rest is `local_loc`. File records
-resolve from the consumer root, even when a manifest lives under `config/`.
-A default `.shared-tooling.snapshot` beside the canonical
-`scripts/ci/verify-shared-tooling-snapshot.sh` identifies a nested bundle root;
-other manifests default to the Git checkout root. For another explicit mapping,
-pass `--snapshot-root /path/to/manifest /path/to/consumer-root` to the Perl command
-(repeat for independent bundles). The selected root must stay inside that
-checkout, and the manifest must be tracked or nonignored. Selection never tries
-different roots until hashes match. HTTPS and SSH spellings of the same Shared
-Tooling GitHub repository are accepted. Modified snapshot files
-produce a warning and remain local in these counts. Supporting JSON, patches and
-CSV/TSV tables appear separately as physical `data_lines`, so frozen baselines
-and ablation patches do not inflate executable-tooling LOC.
-
-The table's `shared_snapshot` column shows the recorded version and abbreviated
-source commit, such as `0.2.8@b2646cde9abb`; multiple selections are comma-separated.
-A version absent from the manifest shows `unrecorded`, never a guess from another
-checkout. Refresh records it automatically from the selected committed `VERSION`.
-`integrity` is `OK` when every declared file matches its hash and executable mode,
-`DRIFT` for changed, missing or symlinked files, `NONE` without a recorded snapshot,
-or `ERROR` when the inventory cannot be read. This checks declared documents too,
-without including them in LOC. Drift does not prevent the remaining counts and
-is reported in stderr/JSON; malformed input produces a partial report and failure.
-These observations neither authenticate the manifest's provenance nor qualify
-consumer behavior. They run no consumer scripts and require no Cargo package.
-
-JSON output records source commits, dirty state, snapshot versions and full
-revisions, per-manifest integrity and drifted paths, per-file
-hashes, ownership, counts and any files cloc skipped. Repositories awaiting their
-first commit are counted with `head: null` and `unborn: true`; the text report
-announces their uncommitted bootstrap state on stderr. A broken existing HEAD
-remains an error. Shell `.env` files and jq source filters are counted too.
-Errors leave other repository rows visible,
-mark totals partial, exit nonzero and retain captured inputs. Healthy shared
-copies already have a common owner; high local LOC or matching hashes only
-identify candidates for a contract review, not promised removable lines.
-
-The [2026-10-07 inventory and findings](docs/reports/audits/2026/10/07/sibling-tooling/01/report.md)
-record the initial measurements and concrete consolidation candidates.
-
-### Validation target runner
-
-`scripts/ci/run-validation-targets.sh` runs one or more Make targets in order,
-records their durations, highlights live failures with an `[ERR:<target>]`
-prefix, retains complete and condensed failure logs, and writes a GitHub step
-summary when one is available. Pass `--fail-fast` to stop after the first
-failed target.
-
-Vendor `scripts/ci/check-make-execution.sh` and `scripts/ci/verify-file-checksum.sh`
-alongside the runner. The execution check rejects
-inherited Make ignore-errors, dry-run, question, touch and version-only modes before validation;
-normal Make variables and parallel-job settings remain available to targets.
-The complete argument list is checked before dispatch: arguments must be named
-goals, not Make options, variable assignments or names containing tabs/newlines.
-Pass variable selections through the caller's environment or owning Makefile.
-`VALIDATION_RUNNER_DEPTH` is inherited nesting metadata: unset or empty starts
-at zero; otherwise it must be a canonical non-negative decimal integer of at
-most 18 digits. Invalid depth refuses before logs or targets are created.
-
-```bash
-scripts/ci/run-validation-targets.sh fmt-check shellcheck test
-scripts/ci/run-validation-targets.sh --fail-fast preflight test
-```
-
-Opt into prepared-input checkpoints with repeated `--input` options before the
-targets, after explicit preparation has selected the files:
-
-```bash
-scripts/ci/run-validation-targets.sh --fail-fast \
-  --input Cargo.toml --input Cargo.lock --input testing/Cargo.lock \
-  fmt-check check test
-```
-
-Declare each relevant regular file relative to the selected repository root;
-symlinks, escaping paths and missing/unreadable files refuse. SHA-256 identities
-are checked before and after every target. A change or observation error stops
-later dispatch even without `--fail-fast`, reports the path and requires fresh
-preparation and a complete new gate. An already-failed target keeps its original
-status and output. Initial and observed identities stay in the announced unique
-log directory on failure, alongside failure diagnostics; preparation, dependency
-updates and retries are never automatic.
-
-Nested loggers in the same physical checkout inherit the original checkpoint.
-They may add explicitly declared inputs, but cannot refresh an inherited hash.
-A logger in another checkout starts independently. `VALIDATION_INPUT_ROOT` and
-`VALIDATION_INPUT_BASELINE` are internal inherited context, not consumer inputs.
-Consumers still own graph selection and stage order. Put the logger at the
-actual stage boundaries: wrapping a single target that runs a private Make loop
-only checks before/after that entire loop. Checkpoints detect persistent drift;
-they do not isolate running commands from concurrent edits or replace the release
-runner's source-identity checks.
-
-The script defaults to the repository containing its vendored copy. Set
-`VALIDATION_REPOSITORY_ROOT` and `VALIDATION_FAILURE_LOG_DIR` when invoking it
-from another location.
-If retaining a failed log in the selected directory fails, the runner keeps its
-temporary log directory and prints its location instead of deleting the evidence.
-
-Each completed failed batch also prints a unique combined log path and updates
-`latest-combined.log` in that failure directory. This is the byte concatenation
-of failed targets' raw logs in dispatch order. `latest.log` continues to hold
-the last failed target alone. Successful or interrupted batches leave the last
-completed combined view intact; interrupted raw logs remain available separately.
-Nested runs combine their own target streams without rediscovering child files.
-
-`latest.log`, `latest-errors.log` and `latest-combined.log` are atomically replaced
-convenience copies. A failed update preserves the previous copy and any failed
-candidate. Use the announced unique paths for evidence from a particular run;
-the raw and highlighted summary footers identify those files directly.
-
-If GitHub summary publication fails, the runner retains the complete local
-summary and raw logs, finishes failure-log collection and preserves a failed
-target's status. If all targets passed, the summary failure still fails the run.
-
-Temporary cleanup errors are reported with the affected directory. They fail a
-successful run while preserving any existing target or reporting failure status.
-
-Set `VALIDATION_LOG_DIR` to retain successful, failed and interrupted raw output
-under a unique run directory announced before dispatch. Its `timings.tsv` has
-`target`, `result`, `seconds` and `log` columns, with one row per completed target.
-Relative `VALIDATION_LOG_DIR` paths resolve from the invocation directory,
-independently of inherited `CDPATH`; leading-dash directory names are supported.
-An interrupted target can have a partial raw log without a completed timing row.
-`VALIDATION_FAILURE_EVENT_PREFIX` adds a literal line prefix, such as
-`[CANIC-TEST:E`, to live highlighting and bounded failure details. Raw logs keep
-their original bytes. Live output and retained summaries use the same diagnostic
-rules, including fatal, LLVM and missing-file errors before long ordinary log
-tails. Surrounding context and passing namespaced Rust tests remain neutral.
-Success returns zero; failure preserves the first failed
-Make invocation's status (normally 2, rather than the recipe's own status).
-A logging-only pipeline failure also returns nonzero. SIGINT/SIGTERM exit with
-130/143 when handled.
-Both the temporary-source wrapper and validation body require explicit
-completion before returning success. Premature exits, including Bash 3.2
-nounset errors that report zero, fail and retain their available source or logs.
-Nested invocations retain separate run directories and only the outermost writes
-the GitHub summary. Consumer callers still own targets and child color policy:
-set a product variable such as `CANIC_TEST_COLOR` before dispatch when the caller
-has a terminal, respecting an explicit selection and `NO_COLOR`. The runner
-passes that environment through without learning product-specific variable names.
-
-### Stable sccache launcher
-
-`scripts/ci/run-sccache.sh` prevents a long-lived sccache server from inheriting
-an invocation-owned temporary directory that will later be deleted. It defaults
-to `.tmp/sccache-runtime` in the consuming repository. Set `SCCACHE_BIN` to the
-absolute path of the selected executable; PATH discovery is not performed.
-Override runtime placement with `SCCACHE_REPOSITORY_ROOT` or `SCCACHE_RUNTIME_DIR`.
-Consumers retain cache-failure policy in an explicit adapter; see
-[launcher adoption](docs/verification-helpers.md#compiler-cache-launcher-adoption).
-
-### Rust pre-commit formatting
-
-The executable `.githooks/pre-commit` formats an isolated copy of the index with
-the consumer's `make fmt`, then refreshes only the selected files. It rejects
-partial staging and preserves unselected files and unrelated working edits.
-The installer requires `--consumer <repository>` and refuses to replace an
-existing hook setup. `make install-hooks` supplies the destination explicitly.
-Following IcyDB and Canic, `fmt` runs `cargo sort --workspace` to order Cargo.toml
-files before `cargo fmt --all`; `fmt-check` checks both without modifying files.
-The shared `scripts/ci/check-format-tools.sh` admits the consumer's pinned
-cargo-sort and prepared rustfmt before either target, without installing tools.
-
-Rust consumers vendor the hook, `scripts/dev/install-git-hooks.sh` and
-`scripts/ci/check-make-execution.sh`, expose
-`make install-hooks`, and include `fmt-check` in CI. See the
-[hook contract and adoption steps](rules/git-hooks.md). Shared Tooling has no
-Cargo workspace and does not activate the Rust hook in its own checkout.
-
-### Checksum-verified tool installers
-
-The actionlint, Gitleaks and ShellCheck installers select validated version and
-SHA-256 records from the executing snapshot's `ci/tool-versions.env`. These
-default CI assets are qualified for Linux x86-64. Select `--catalog FILE` for a
-reviewed catalog exception, or supply both `--version` and `--sha256` for an
-explicit tool/platform exception. Catalog and explicit-pin inputs are exclusive.
-The sccache installer always requires explicit version and SHA-256 pins.
-
-The sccache binary installer currently selects only the reviewed Linux x86-64
-asset. It retains failed candidates and uses the same shared installation
-command as actionlint, Gitleaks and ShellCheck. Select
-`scripts/ci/install-ci-tool.sh` in its snapshot. All reject failed
-version probes and directory destinations, retain failed candidates and replace
-the executable with a rename on the destination filesystem.
-
-YQ uses the common host bundle through `make install-host-tools` and
-`make host-tools-check`; the standalone CI installer no longer accepts `yq`.
-
-```bash
-scripts/ci/install-ci-tool.sh actionlint \
-  --install-dir /path/to/ci-bin
-```
-
-Since 0.16.0, `--install-dir` is required. Add the destination to each invocation
-before adopting this release; the environment variable `TOOL_INSTALL_DIR` and
-the former home-directory default no longer select a write target.
-
-### Sibling GitHub dashboard
-
-Run a live terminal dashboard for the connected sibling checkouts:
-
-```bash
-scripts/dev/github-siblings.sh
-scripts/dev/github-siblings.sh --interval 120
-scripts/dev/github-siblings.sh --once /path/to/projects
-```
-
-The dashboard scans immediate Git checkouts with `AGENTS.md` and a GitHub.com
-`origin`, including Shared Tooling itself. This excludes unconnected checkouts
-such as `ichelper`. It skips symlink aliases and counts duplicate GitHub
-repositories once. The default parent belongs to the script's checkout; restart
-to discover new siblings. Requires Git, jq, Perl core, system timezone data and
-an authenticated GitHub CLI; prepare authentication with `gh auth login`.
-
-Rows show `REPOSITORY` first, then centered `ISSUES`, `TODAY` and `PRS` group
-headings. Issues have `OPEN` and `FIXED`; TODAY has `FIXED` and `ADDED`; PRs
-have `OPEN`, `MERGED` and `CLOSED`.
-`FIXED` is centered over the closed / total value, such as
-`23 / 1,095`. Numeric padding starts at four characters and expands to fit
-the largest comma-separated repository count in that refresh. Totals grow
-independently, so a fleet total above 999 does not widen every repository's
-`FIXED` ratio: ` 400 /  486` keeps two spaces after the slash.
-Column headings and `ERROR` fit without shifting later columns. Counts remain
-right-aligned. Repositories sort by open issues descending, then name; failed
-observations come last. Entire repository rows use pale green–yellow–red text
-from zero open issues to the largest open backlog in that refresh, preserving
-the terminal background. Equal open counts get the same colour regardless of
-closed issue history; an all-zero backlog is green. Totals and errors stay
-uncoloured. `NO_COLOR` or
-`TERM=dumb` disables colour, and redirected
-reports remain plain text. Dashed separators distinguish the header and combined totals.
-Here **fixed means closed**, including duplicates and issues closed as not
-planned. Pull requests stay separate from issue counts. PR `OPEN` includes drafts. PR `CLOSED`
-counts only requests closed without merging, following GitHub's
-[pull-request states](https://docs.github.com/en/graphql/reference/pulls#pullrequeststate).
-`TODAY / FIXED` counts currently closed issues whose latest closure was at or
-after 06:00 Paris time (`Europe/Paris`). `TODAY / ADDED` counts issues created since that same
-cutoff, whether currently open or closed. Before 06:00 it uses the previous calendar day's cutoff,
-including daylight-saving changes. Each refresh recalculates the cutoff;
-reopened issues do not count as fixed, and editing an old issue does not count
-as adding or fixing it. An issue created and closed today counts in both columns.
-
-Counts use complete GitHub API totals. For `TODAY`, the dashboard paginates
-[recently updated issues](https://docs.github.com/en/graphql/reference/issues)
-and checks their creation and closure timestamps. In a terminal it refreshes every 60 seconds
-using a batched read-only GraphQL request plus any required recent-issue pages.
-Press `q` to quit, `r` to refresh early, or Ctrl-C to exit. `--once` prints one report; redirected input/output also selects a single report. Failed
-observations show `ERROR` and label the combined total `TOTAL (partial)`;
-single reports exit nonzero, while the live dashboard retries on the next cycle.
-A repository row requires valid issue, PR and TODAY counts; an unavailable category
-never becomes zero. Partial totals include only complete repository rows.
-
-### GitHub Actions inspection
-
-`scripts/dev/gh-ci.sh` lists or opens GitHub Actions runs through an already
-authenticated GitHub CLI session.
-
-```bash
-scripts/dev/gh-ci.sh --failed --logs
-scripts/dev/gh-ci.sh --commit HEAD --all-workflows --limit 100
-```
-
-`--commit` resolves a local revision to its full commit identity and avoids an
-implicit branch filter; add `--branch` explicitly to narrow it. `--all-workflows`
-lists runs without the default `CI` workflow filter. The list is bounded by
-`--limit`, includes pending and failed runs, and is not a complete CI verdict.
-Increase the limit when necessary and inspect listed runs with `--run ID --logs`.
-Run IDs must be positive integers. `--run` cannot be combined with list or search
-filters, and `--list --logs` is rejected rather than silently omitting the logs.
-`--failed` deliberately searches historical failures, which may have been
-superseded by later successes. Existing branch/workflow defaults remain unchanged.
-Select another repository through the GitHub CLI's `GH_REPO` environment variable;
-commit revisions still resolve in the current local checkout.
-
-`--logs` pins the repository, run and attempt before fetching evidence. If GitHub
-returns empty failed-step logs for a completed failed or timed-out attempt, it
-fetches full logs only for that attempt's failed or timed-out jobs. These are
-labelled by job; the original observation and recovered logs remain in the printed
-temporary directory. Empty logs for cancelled or unfinished attempts, unavailable
-job logs and API errors remain failures; partial output and fetch status are retained.
-Completed successful, neutral or skipped runs may legitimately have no failed-step
-logs. This inspection does not rerun CI or turn nonempty logs into a green-gate verdict.
-
-Agents also recognize `check CI`, `check issues` and `check for work` through the
-[maintenance rules](rules/agent-maintenance.md). To enable automatic checks during
-the current session, tell the agent:
-
-> After each task, check CI; when there's nothing else to do, check issues.
-
-The agent completes its current batch, checks the relevant source's latest CI
-runs, and recommends actionable issues. Use `fix CI` or `work on issue #N` to
-authorize a local repair. Consumers include the maintenance rule in their
-reviewed governance snapshot.
-
-### Focused self-test
-
-Run the portable scripts' offline regression tests with the dependencies from
-the support matrix installed:
-
-```bash
-make test-portable
-```
-
-Make supplies the admitted release editor and byte allowance. The suite first
-checks those inputs, prepared tools and formatter prerequisites, reporting
-missing commands together before creating fixtures. Direct callers of the suite
-or `scripts/ci/check-portable-prerequisites.sh` must supply the editor inputs; see
-[local setup](docs/local-setup.md) for explicit installation instructions.
-
-### Snapshot distribution
-
-`scripts/distribution/refresh-consumer.sh` copies a declared file set from a
-clean Shared Tooling checkout and records its exact revision, content digests,
-and executable modes. A vendored
-`scripts/ci/verify-shared-tooling-snapshot.sh` checks consumer drift offline.
-Its `--read-manifest FILE` mode supplies validated records to refresh and fleet
-reporting without executing inspected code. This reads metadata only; use the
-ordinary verification command to check payload integrity.
-Use `refresh-consumer.sh --preview` with the same selection arguments to review
-file changes and all required companion additions without changing the consumer.
-See [`docs/consuming-snapshots.md`](docs/consuming-snapshots.md).
+| Common rules, setup, formatting, release mechanics, snapshots and fleet reports | Shared Tooling: `rules/`, `scripts/`, `make/` and `.github/actions/` |
+| External IC-specific dependencies and browser SDK boundary | [IC Platform](https://github.com/dragginzgame/ic-platform), through explicit features and interfaces |
+| Owned application encoding and generated TypeScript codecs | [IC Wire](https://github.com/dragginzgame/ic-wire); consumers own transport and application semantics |
+| Cargo/Wasm builds, host primitives, artifact encoding and PocketIC lifecycle | [IC Tooling](https://github.com/dragginzgame/ic-tooling): Build, Host and Testkit in one workspace |
+| Measurement arithmetic | [IC Metrics](https://github.com/dragginzgame/ic-metrics); fleet discovery and dashboards remain here |
+| Product deployment, limits, release inputs and acceptance evidence | Each consuming repository |
+
+Shared distributes reviewed commands and source; consumers compile the standalone
+Rust scanner with locked dependencies. `ci/frontend` is a private formatting
+qualification fixture. Shared's release and snapshot lifecycle is independent
+of the product workspaces.
 
 ## Consuming repositories
 
-Interactive read-only tools can be run directly from a sibling checkout.
-CI and release tools must be copied into the consuming repository as reviewed
-snapshots so builds do not depend on a mutable external checkout or network
-availability. Keep Shared Tooling as the source of truth, record the source
-commit in the consumer, and review the normal repository diff after refreshing.
+Adopt an exact reviewed revision through the [snapshot exporter](docs/consuming-snapshots.md),
+including its declared companion files, and verify the recorded snapshot offline.
+Use `--preview` to review an upgrade before applying it. CI and releases use the
+reviewed files, rather than loading Shared Tooling from a mutable sibling
+checkout, moving download URL or symlink. Interactive read-only fleet reports
+may inspect siblings directly.
 
-Do not replace consumer copies with symlinks. The snapshot refresh and offline
-drift-verification flow is documented in
-[`docs/consuming-snapshots.md`](docs/consuming-snapshots.md).
+Consumers use `make/consumer.mk` for shared setup, checks, formatting and release
+mechanics, with explicit local inputs. Browser/npm checks are [opt-in](docs/node-tools.md).
+Review [migration impact](docs/consuming-snapshots.md#upgrade-impact) alongside
+[release notes](CHANGELOG.md); a refreshed snapshot alone does not qualify
+consumer behavior. Applicable workflows support macOS under the
+[host contract](docs/supported-hosts.md).
 
-Supported hosts and tool dependencies are defined in
-[`docs/supported-hosts.md`](docs/supported-hosts.md). Every `dragginzgame` package
-must support macOS, including its applicable dependency, build, test and
-deployment workflows. Consumers document host-specific setup and qualify their
-own macOS versions and architectures.
+## Current tools
 
-## Intended layout
+| Task | Entry point and reference |
+| --- | --- |
+| Install or verify prepared tools | `make install-tools`, `make tools-check`; [local setup](docs/local-setup.md) |
+| Inspect all existing tool checks | `make tools-report`; [diagnostics](docs/local-setup.md#tool-selection-and-diagnostics) |
+| Install selected IC executables | `make install-ic-tools`; [IC tools and ownership](docs/ic-tools.md) |
+| Format a Rust consumer or enable its commit hook | Consumer `make fmt`, `make fmt-check`, `make install-hooks`; [formatting contract](rules/git-hooks.md) |
+| Check dependency declarations | `make check-pins`; [pinning policy](rules/dependency-pinning.md) and [helper contracts](docs/verification-helpers.md) |
+| Report sibling Rust/tooling LOC | `make cloc`, `make cloc-tooling`; [fleet reports](docs/fleet-tools.md) |
+| Inspect issues, PRs or CI runs | `scripts/dev/github-siblings.sh`, `scripts/dev/gh-ci.sh`; [usage and limits](docs/fleet-tools.md) |
+| Run selected Make checks with retained evidence | [Validation target runner](docs/validation-runner.md) |
+| Reuse checksum, source, archive and publication checks | [Verification helper contracts](docs/verification-helpers.md) |
 
-- `scripts/dev/` — developer utilities and explicit repository-local setup;
-- `.githooks/` — reviewed hooks for consuming repositories;
-- `scripts/ci/` — reusable non-interactive validation building blocks;
-- `rules/` — focused mandatory policies linked from the engineering baseline;
-- `tasks/` — repeatable maintenance procedures, agent prompt and scheduling guidance;
-- `docs/` — shared principles and integration guidance;
-- `scripts/distribution/` — source-side snapshot refresh tools; and
-- `.github/workflows/` — workflows owned by this repository.
+Shared's own integration fixtures additionally require its prepared IC Build
+release editor; [local setup](docs/local-setup.md#shared-toolings-integration-editor)
+owns that selection. Shared does not activate Rust formatting hooks in this
+non-Cargo checkout. Installer pins, platform coverage and command options live
+in their guides rather than being repeated here.
 
-Project-specific policy remains in each consuming repository. Shared tooling
-must accept explicit inputs rather than silently inferring deployment identity,
-network authority, credentials, or release state.
+## Repeatable maintenance
+
+The [task catalog](tasks/README.md), also available through `make tasks`, covers
+CI health, snapshot drift, dependency advisories, compiler/tool freshness,
+README accuracy and bounded code/tooling audits. The optional
+[agent schedule](tasks/local-schedule.md) runs a read-only maintenance pass every
+three days and coordinates findings through owning issues. It is separate
+from the deterministic stack-diagram timer.
+
+## Shared principles
+
+Read the [baseline](DRAGGINZGAME.md) and local overlay first. [Engineering
+principles](docs/principles/README.md), focused policies in `rules/` and the
+[shared audit methods](audits/README.md) support that baseline; product-specific
+choices and historical reports remain with consumers. [Provenance](docs/provenance.md)
+records earlier extractions rather than defining today's ownership.
+
+## Contributing and validation
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) and this repository's [AGENTS.md](AGENTS.md).
+Prepare [Shared's pinned compiler](docs/local-setup.md#shared-toolings-own-compiler)
+before installing Cargo tools. For ordinary changes, select the affected
+fixtures and checks; documentation-only changes use `make check-doc-links` and
+`git diff --check`. `make ci`, `make test-portable` and `make check-shell` are
+aggregate gates for releases or explicit full-check requests.
+
+`make version` reads [VERSION](VERSION); the top undated [changelog](CHANGELOG.md)
+entry describes pending work and does not prove publication. Tags establish
+release identity. Releases and recovery follow the [release contract](docs/releases.md).
+
+Licensed under [MIT](LICENSE).

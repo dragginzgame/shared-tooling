@@ -138,6 +138,7 @@ run_fixture test-rust-formatting-sources.sh bash "$ROOT/scripts/ci/test-rust-for
 run_fixture test-cloc.sh bash "$ROOT/scripts/ci/test-cloc.sh"
 run_fixture test-cloc-siblings.sh bash "$ROOT/scripts/ci/test-cloc-siblings.sh"
 run_fixture test-cloc-tooling.sh bash "$ROOT/scripts/ci/test-cloc-tooling.sh"
+run_fixture test-stack-graph.sh bash "$ROOT/scripts/ci/test-stack-graph.sh"
 run_fixture test-cloc-tooling-distribution.sh bash "$ROOT/scripts/ci/test-cloc-tooling-distribution.sh"
 run_fixture test-cloc-fixture-contexts.sh bash "$ROOT/scripts/ci/test-cloc-fixture-contexts.sh"
 run_fixture test-tool-version-report.sh bash "$ROOT/scripts/ci/test-tool-version-report.sh"

@@ -5,6 +5,7 @@ SHELLCHECK ?= shellcheck
 CLOC_REPORT := $(CURDIR)/scripts/dev/cloc-siblings.sh
 CLOC_ROOT = $(CLOC_PARENT)
 CLOC_PARENT ?= $(CURDIR)/..
+STACK_PARENT ?= $(CURDIR)/..
 SHARED_TOOLING_RUST := 0
 # Shared qualifies IC executable provisioning and retained-tool integrity.
 LOCAL_TOOL_INSTALL_TARGETS += install-ic-tools install-release-editor
@@ -28,13 +29,14 @@ release-patch release-minor release-major release-resume: export SHARED_RELEASE_
         release-prepare-version release-prepared-check release-files \
         release-commit-check release-committed-check release-tagged-check release-push-check \
         release-merged-preflight check-cargo-tool-versions check-tool-catalogs test-licenses cloc-tooling \
-        install-release-editor release-editor-check check-no-symlinks
+        install-release-editor release-editor-check check-no-symlinks stack-graph check-stack-graph
 
 help:
 	@echo "Current local version: make version"
 	@echo "Repeatable maintenance catalog: make tasks"
 	@echo "Sibling Rust LOC summaries: make cloc [CLOC_PARENT=/path/to/projects]"
 	@echo "Sibling CI/tooling inventory: make cloc-tooling [CLOC_PARENT=/path/to/projects]"
+	@echo "Toko stack README diagram: stack-graph, check-stack-graph [STACK_PARENT=/path/to/projects]"
 	@echo "Focused: affected script fixtures, check-no-symlinks, check-pins, check-doc-links, check-release-commands"
 	@echo "Local IC executables: install-ic-tools; offline verification: ic-tools-check"
 	@echo "Complete common host, IC and Rust toolset: install-tools; offline verification: tools-check"
@@ -50,6 +52,12 @@ help:
 
 tasks:
 	@cat tasks/README.md
+
+stack-graph:
+	perl scripts/dev/stack-graph.pl --write --parent "$(STACK_PARENT)"
+
+check-stack-graph:
+	perl scripts/dev/stack-graph.pl --check --parent "$(STACK_PARENT)"
 
 cloc-tooling:
 	@perl scripts/dev/cloc-tooling.pl "$(CLOC_PARENT)"

@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.27.0]
+
+### ➕ Added
+
+- Maintain a Toko stack dependency diagram in the README, with an offline
+  regeneration/check command and linked workspace and manifest evidence.
+  Distinguish declared dependencies from resolved builds and runtime deployment.
+- Add an opt-in daily local refresh that keeps the generated diagram and
+  dependency evidence current, leaving changes for the next normal commit.
+  No automatic staging, commits, dependency downloads or GitHub credentials.
+
+### 📚 Documentation
+
+- Shorten the README to orientation, ownership and supported entry points.
+  Consolidate fleet-report and validation-runner references in dedicated guides,
+  correcting the dashboard description and linking canonical setup and formatting
+  instructions instead of repeating stale examples.
+
 ## [0.26.26]
 
 ### 🩹 Fixed

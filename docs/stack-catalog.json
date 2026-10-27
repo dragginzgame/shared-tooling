@@ -1,0 +1,22 @@
+{
+  "roots": ["toko", "toko-miner"],
+  "repositories": [
+    {"name": "toko", "branch": "development", "paths": ["backend", "fleets"], "native": ["backend/src/bin"], "npm": ["frontend/package.json"]},
+    {"name": "toko-miner", "paths": ["apps", "crates"], "npm": ["frontend/package.json"]},
+    {"name": "canic", "paths": ["crates", "integrations"], "native": ["crates/canic-cli", "crates/canic-host"], "exclude": ["crates/canic-tests", "crates/canic-testing-internal"]},
+    {"name": "icydb", "paths": ["crates"], "native": ["crates/icydb-cli"]},
+    {"name": "ic-auth", "paths": ["crates", "apps/tooling"], "native": ["apps/tooling"]},
+    {"name": "ic-backup", "paths": ["crates"]},
+    {"name": "ic-blob-storage", "paths": ["crates", "canisters/standalone"], "native": ["crates/ic-blob-storage-cli"]},
+    {"name": "ic-jobs", "paths": ["crates/ic-jobs"]},
+    {"name": "ic-metrics", "paths": ["crates"]},
+    {"name": "ic-persistence", "paths": ["crates"]},
+    {"name": "ic-platform", "paths": ["crates"], "npm": ["packages/browser/package.json"]},
+    {"name": "ic-profiler", "paths": ["profiler/system"]},
+    {"name": "ic-query", "paths": ["crates"], "native": ["crates/ic-query-cli"], "exclude": ["crates/ic-query-testkit"]},
+    {"name": "ic-relay", "paths": ["crates/ic-relay"]},
+    {"name": "ic-timers", "paths": ["crates/ic-timers"]},
+    {"name": "ic-tooling", "paths": ["crates", "apps"], "exclude": ["crates/ic-testkit-perf-probe"]},
+    {"name": "ic-wire", "paths": ["crates/ic-wire", "crates/ic-wire-derive"]}
+  ]
+}
