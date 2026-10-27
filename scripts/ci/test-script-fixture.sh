@@ -29,15 +29,26 @@ printf 'obsolete fixture bytes\n' > "$destination/scripts/root.sh"
 "$BASH" "$ROOT/scripts/ci/prepare-script-fixture.sh" "$source_root" "$destination" scripts/root.sh
 cmp "$source_root/scripts/root.sh" "$destination/scripts/root.sh"
 # Roots are quoted argv, unlike the line-oriented relative companion names.
-# Preserve newline-bearing consumer paths through the complete closure.
-newline_source="$fixture/"$'source\nroot'
-newline_destination="$fixture/"$'destination\nroot'
-mkdir -p "$newline_source" "$newline_destination"
-cp -Rp "$source_root/scripts" "$source_root/docs" "$newline_source/"
-"$BASH" "$ROOT/scripts/ci/prepare-script-fixture.sh" "$newline_source" "$newline_destination" scripts/root.sh
-for path in scripts/root.sh scripts/leaf.sh docs/graph.md; do cmp "$newline_source/$path" "$newline_destination/$path"; done
-perl -e 'my @a=stat $ARGV[0]; my @b=stat $ARGV[1]; ($a[2]&07777)==($b[2]&07777) or die "mode changed\n"' \
-    "$newline_source/scripts/root.sh" "$newline_destination/scripts/root.sh"
+# Qualify embedded/trailing control bytes and aliases that resolve to them.
+for suffix in $'\nroot' $'\n' $'\r' $'\r\n'; do
+    quoted_source="$fixture/source$suffix"
+    quoted_destination="$fixture/destination$suffix"
+    mkdir -p "$quoted_source" "$quoted_destination"
+    cp -Rp "$source_root/scripts" "$source_root/docs" "$quoted_source/"
+    ln -s "$quoted_source" "$fixture/source-alias"
+    ln -s "$quoted_destination" "$fixture/destination-alias"
+    for shape in literal alias; do
+        selected_source="$quoted_source" selected_destination="$quoted_destination"
+        if [[ "$shape" == alias ]]; then
+            selected_source="$fixture/source-alias" selected_destination="$fixture/destination-alias"
+        fi
+        "$BASH" "$ROOT/scripts/ci/prepare-script-fixture.sh" "$selected_source" "$selected_destination" scripts/root.sh
+        for path in scripts/root.sh scripts/leaf.sh docs/graph.md; do cmp "$quoted_source/$path" "$quoted_destination/$path"; done
+        perl -e 'my @a=stat $ARGV[0]; my @b=stat $ARGV[1]; ($a[2]&07777)==($b[2]&07777) or die "mode changed\n"' \
+            "$quoted_source/scripts/root.sh" "$quoted_destination/scripts/root.sh"
+    done
+    rm "$fixture/source-alias" "$fixture/destination-alias"
+done
 # Admission must fail before replacing even an earlier valid root.
 expect_refusal() {
     local status=0

@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.27.2] — Unreleased
+## [0.27.3]
 
 ### 🩹 Fixed
 
@@ -8,6 +8,16 @@
   companion closure, including new unstaged helpers, instead of requiring each
   consumer to repeat the transitive file list. Preserve opaque Git submodules
   and newline-bearing consumer paths while retaining relative-path admission.
+
+## [0.27.2]
+
+### 📚 Documentation
+
+- Clarify native/system bootstrap before Cargo-tool preparation, including the
+  release editor, and explicit re-preparation after build-environment changes.
+  Document complete release-prerequisite coverage and consumer ordering fixtures
+  without changing installer ownership or receipt admission
+  ([#317 — Document native bootstrap ordering before Cargo tool preparation](https://github.com/dragginzgame/shared-tooling/issues/317)).
 
 ## [0.27.1]
 
