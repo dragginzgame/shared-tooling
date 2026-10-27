@@ -233,7 +233,7 @@ for suffix in $'\n' $'\r' $'\r\n'; do
     # A complete source distinguishes path rejection from missing-input refusal.
     mkdir -p "$forbidden/scripts/ci"
     cp -Rp "$ROOT/make" "$forbidden/"
-    cp -p "$ROOT/scripts/ci/check-make-execution.sh" "$ROOT/scripts/ci/run-formatting.sh" "$forbidden/scripts/ci/"
+    cp -p "$ROOT/scripts/ci/check-make-execution.sh" "$ROOT/scripts/ci/run-formatting.sh" "$ROOT/scripts/ci/run-rust-formatting.pl" "$forbidden/scripts/ci/"
     for selected in "$forbidden" "$fixture/directory-alias"; do
         status=0
         bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$selected" "$fixture/clean-output" make/tools.mk \

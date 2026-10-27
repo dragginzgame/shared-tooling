@@ -1,5 +1,49 @@
 # Changelog
 
+## [0.26.23]
+
+### ➕ Added
+
+- Own Rust formatting orchestration for extra workspaces, optional derive sorting
+  and manifest order through declarative consumer inputs, replacing copied
+  workspace adapters while preserving custom formatter commands.
+
+### 🔧 Changed
+
+- Show progress and elapsed time for each Rust formatting pass. Reuse successful
+  results only for unchanged inputs, with prepared tools still checked; retain
+  failed logs and provide an explicit option to run every pass.
+
+### 📊 Audit
+
+- Trace unreadable Canic release output to expected-error assertions in Shared's
+  generic CI-inspection tests. **Pending cleanup:** give those tests concise
+  success summaries with detailed failure evidence
+  ([#313](https://github.com/dragginzgame/shared-tooling/issues/313)).
+- Track removal of unnecessary generic CI-inspection tests from routine
+  [Canic](https://github.com/dragginzgame/canic/issues/461) and
+  [IcyDB](https://github.com/dragginzgame/icydb/issues/474) gates separately,
+  retaining snapshot integrity and consumer integration checks.
+
+### 🥾 Governance
+
+- Make IC Tooling's bounded artifact encoder the gzip owner for production and
+  fixtures. Prefer fast compression for ordinary fixtures and production settings
+  for byte-contract tests. Keep compression policy with consumers, independent
+  interoperability controls explicit, and retained compressed-byte hashes qualified
+  across backend changes; no Platform migration is required.
+
+### 🧭 Migration Notes
+
+- Consumers with paired formatter overrides must explicitly migrate their local
+  inputs and caller fixtures; a snapshot refresh alone preserves the overrides.
+  Follow-through is tracked for
+  [Canic](https://github.com/dragginzgame/canic/issues/455) and
+  [IcyDB](https://github.com/dragginzgame/icydb/issues/473).
+- Preserve complete standalone-source adapters in Platform and Persistence;
+  shared support for those extra Rustfmt passes remains
+  [follow-up work](https://github.com/dragginzgame/shared-tooling/issues/314).
+
 ## [0.26.22]
 
 ### 🥾 Governance

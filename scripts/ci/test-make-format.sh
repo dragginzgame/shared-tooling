@@ -18,6 +18,7 @@ printf 'export SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\nSHARED_TOOLING_CARGO_SOR
 cat > "$consumer/Makefile" <<'MAKE'
 SHARED_TOOLING_ROOT ?= $(CURDIR)/vendor
 FORMAT_CARGO := format-fixture-cargo
+FORMAT_RUST_ARGS := --no-cache
 include vendor/make/tools.mk vendor/make/rust-format.mk
 format-tools-check fmt fmt-check: override SHARED_TOOLING_ROOT := $(CURDIR)/vendor
 .PHONY: help
@@ -51,13 +52,13 @@ for target in fmt fmt-check; do
     PATH=/usr/bin:/bin make --no-print-directory -C "$consumer" "$target" > "$fixture/$target.log" 2>&1
     if [[ "$target" == fmt ]]; then
         printf 'sort --workspace --grouped\nfmt --all\n' > "$fixture/expected"
-        printf 'Formatting... ok\n' > "$fixture/expected-output"
     else
         printf 'sort --workspace --grouped --check\nfmt --all -- --check\n' > "$fixture/expected"
-        printf 'Checking formatting... ok\n' > "$fixture/expected-output"
     fi
     cmp "$fixture/expected" "$FORMAT_TEST_EVENTS"
-    cmp "$fixture/expected-output" "$fixture/$target.log"
+    [[ "$(wc -l < "$fixture/$target.log")" -eq 2 ]]
+    grep -E '^Manifest sorting \[\.\]\.\.\. ok \([0-9]+\.[0-9]+s\)$' "$fixture/$target.log"
+    grep -E '^Rust formatting \[\.\]\.\.\. ok \([0-9]+\.[0-9]+s\)$' "$fixture/$target.log"
 done
 # Ambient roots cannot select the parse-time helper, including for harmless help.
 mkdir -p "$fixture/unselected/scripts/ci"
@@ -108,7 +109,7 @@ for failure in wrong missing sort; do
     if [[ "$failure" == sort ]]; then
         printf 'sort --workspace --grouped\n' > "$fixture/expected"
         cmp "$fixture/expected" "$FORMAT_TEST_EVENTS"
-        grep -Fx 'Formatting... FAILED (exit 1)' "$fixture/$failure.log"
+        grep -E '^Manifest sorting \[\.\]\.\.\. FAILED \(exit 1, [0-9]+\.[0-9]+s\)$' "$fixture/$failure.log"
         logs=("$fixture"/formatting.*)
         [[ ${#logs[@]} == 1 ]] || exit 1
         log="${logs[0]}"
