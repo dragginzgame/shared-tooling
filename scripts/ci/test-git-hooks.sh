@@ -429,7 +429,7 @@ expect_failure bash scripts/dev/install-git-hooks.sh --consumer "$PWD"
 # including the adoption checker's partial-stage and preservation cases.
 new_fixture $'shared-format-include\n'
 cp "$ROOT/make/consumer.mk" "$ROOT/make/release.mk" "$ROOT/make/rust-format.mk" "$ROOT/make/execution.mk" make/
-cp "$ROOT/scripts/ci/check-format-tools.sh" "$ROOT/scripts/ci/run-formatting.sh" scripts/ci/
+cp "$ROOT/scripts/ci/check-format-tools.sh" "$ROOT/scripts/ci/run-formatting.sh" "$ROOT/scripts/ci/run-rust-formatting.pl" scripts/ci/
 cat > Makefile <<'MAKE'
 include make/consumer.mk
 MAKE
@@ -450,7 +450,7 @@ alpha = { package = "shared-format-fixture", path = "." }
 CARGO
 mkdir -p src
 printf 'pub fn fixture( ){}\n' > src/lib.rs
-git add Makefile Cargo.toml src/lib.rs make/consumer.mk make/release.mk make/rust-format.mk make/execution.mk scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh
+git add Makefile Cargo.toml src/lib.rs make/consumer.mk make/release.mk make/rust-format.mk make/execution.mk scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh scripts/ci/run-rust-formatting.pl
 bash .githooks/pre-commit > output
 [[ "$(git show :src/lib.rs)" == 'pub fn fixture() {}' ]] || exit 1
 awk '/^(alpha|zeta) =/ { print $1 }' Cargo.toml > observed-groups
@@ -461,9 +461,30 @@ grep -Fx '# Tests and tooling only' Cargo.toml > /dev/null
 cp .git/index "$FIXTURE/newline-index"
 cp src/lib.rs "$FIXTURE/newline-source"
 CDPATH="$FIXTURE" bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$PWD" src/lib.rs Cargo.toml --no-dependency-tables \
-    make/consumer.mk make/tools.mk make/release.mk make/rust-format.mk make/execution.mk ci/tool-versions.env scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh
+    make/consumer.mk make/tools.mk make/release.mk make/rust-format.mk make/execution.mk ci/tool-versions.env scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh scripts/ci/run-rust-formatting.pl
 cmp .git/index "$FIXTURE/newline-index"
 cmp src/lib.rs "$FIXTURE/newline-source"
+
+# Real tools qualify the shared root/extra-workspace driver and the unchanged
+# shortcut. These independent packages need no dependencies or compilation.
+for workspace in 'first consumer' second; do
+    mkdir -p "$workspace/src"
+    cat > "$workspace/Cargo.toml" <<'CARGO'
+[package]
+name = "standalone-format-fixture"
+version = "0.0.0"
+edition = "2021"
+
+[workspace]
+CARGO
+    printf '#[derive(Debug, Clone)]\npub struct Example{pub value:u8}\n' > "$workspace/src/lib.rs"
+done
+format_args=(--sort-derives --extra-workspace 'first consumer' --extra-workspace second --extra-manifest-order 'workspace,package,lib,dependencies,dev-dependencies,build-dependencies,profile')
+perl "$ROOT/scripts/ci/run-rust-formatting.pl" --write "${format_args[@]}" > "$FIXTURE/real-format-write.log"
+perl "$ROOT/scripts/ci/run-rust-formatting.pl" --check "${format_args[@]}" > "$FIXTURE/real-format-check.log"
+perl "$ROOT/scripts/ci/run-rust-formatting.pl" --check "${format_args[@]}" > "$FIXTURE/real-format-hit.log"
+grep -E '^Checking formatting inputs\.\.\. unchanged \([0-9]+\.[0-9]+s\)$' "$FIXTURE/real-format-hit.log"
+[[ "$(wc -l < "$FIXTURE/real-format-hit.log")" -eq 1 ]]
 
 # Exercise real Cargo/rustfmt on both a root and a standalone nested workspace.
 # No dependencies, builds, Git commits or network access are needed.

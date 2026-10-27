@@ -27,6 +27,7 @@ export MAKE_CONSUMER_EVENTS="$fixture/events" RUNNER_TEMP="$fixture"
 cat > "$consumer/Makefile" <<'MAKE'
 override SHARED_TOOLING_ROOT := $(CURDIR)/vendor/shared
 FORMAT_CARGO := fixture-cargo
+FORMAT_RUST_ARGS := --no-cache
 RELEASE_RESUME_CHECK_COMMAND = bash "$(CURDIR)/resume-check.sh" "$(VERSION)"
 include vendor/shared/make/consumer.mk
 .PHONY: help local-admission
@@ -62,7 +63,9 @@ printf 'receipt %s\n' "$1" >> "$MAKE_CONSUMER_EVENTS"
 exit "${RECEIPT_RESULT:-0}"
 CHECK
 [[ "$(make -s -C "$consumer")" == 'consumer help' && ! -e "$MAKE_CONSUMER_EVENTS" ]]
-[[ "$(make -s -C "$consumer" fmt-check)" == 'Checking formatting... ok' ]]
+make -s -C "$consumer" fmt-check FORMAT_RUST_ARGS=--no-cache > "$fixture/format.log"
+grep -E '^Manifest sorting .*ok \([0-9]+\.[0-9]+s\)$' "$fixture/format.log"
+grep -E '^Rust formatting .*ok \([0-9]+\.[0-9]+s\)$' "$fixture/format.log"
 printf 'sort --workspace --grouped --check\nfmt --all -- --check\n' > "$fixture/expected"
 cmp "$fixture/expected" "$MAKE_CONSUMER_EVENTS"
 
