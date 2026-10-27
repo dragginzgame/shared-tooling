@@ -6,8 +6,9 @@ Exit status is zero for no violations, one for forbidden constructs and two for
 missing input or unreadable/malformed source. Consumers own inventory, roots,
 required nonempty directories and application diagnostics.
 `--help` prints usage successfully without reading source files. Put `--` before
-relative paths beginning with `-`; non-UTF8 paths remain supported. Unknown
-options are CLI errors with status two.
+relative paths beginning with `-`. Non-UTF8 path arguments reach the filesystem
+unchanged; hosts that cannot represent such filenames report a source-IO error
+with status two. Unknown options are CLI errors with status two.
 
 Compile this snapshot source as a binary target in a consumer-owned private
 package using the consumer's existing workspace and selected lockfile. It needs

@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.26.25]
+
+### 🩹 Fixed
+
+- Qualify non-UTF8 scanner arguments without requiring the host filesystem to
+  create invalid-UTF8 filenames. Preserve successful scans where those names are
+  supported and source-IO diagnostics where they are rejected, fixing native
+  macOS qualification ([#310](https://github.com/dragginzgame/shared-tooling/issues/310)).
+
 ## [0.26.24]
 
 ### 🩹 Fixed
