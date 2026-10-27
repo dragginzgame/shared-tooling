@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.27.2]
+
+### 📚 Documentation
+
+- Clarify native/system bootstrap before Cargo-tool preparation, including the
+  release editor, and explicit re-preparation after build-environment changes.
+  Document complete release-prerequisite coverage and consumer ordering fixtures
+  without changing installer ownership or receipt admission
+  ([#317 — Document native bootstrap ordering before Cargo tool preparation](https://github.com/dragginzgame/shared-tooling/issues/317)).
+
 ## [0.27.1]
 
 ### 🥾 Governance
