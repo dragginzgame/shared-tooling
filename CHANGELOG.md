@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.26.22]
+
+### 🥾 Governance
+
+- Make the owned-type `CandidType` prohibition explicit. Prefer IC Wire for
+  application payloads; isolate unavoidable Candid projections at named external
+  protocol or retained-data boundaries, including in tests and generators.
+- Require the existing `thiserror` dependency for mechanical native error
+  implementations while preserving messages, conversions, source identity and
+  meaningful recovery projections.
+- Strengthen coding rules and audit checkpoints for complete source inspections,
+  strict machine-output decoding, bounded subprocess capture and safe terminal
+  diagnostics. Require focused negative regression cases in the owning normal
+  test/CI path; adopting the rules alone does not install executable enforcement.
+
 ## [0.26.21]
 
 ### 🔧 Changed
