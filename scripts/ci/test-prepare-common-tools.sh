@@ -218,30 +218,8 @@ for failure in success host-tools-check; do
     printf 'host-tools-check\nrust-tools-check\nic-tools-check\n' > "$fixture/report-expected"
     cmp "$fixture/report-expected" "$fixture/report-calls"
 done
-# Reject forbidden raw and resolved directories before publishing any payload.
-mkdir "$fixture/clean-output"
-for suffix in $'\n' $'\r' $'\r\n'; do
-    forbidden="$fixture/forbidden$suffix"
-    mkdir "$forbidden"
-    ln -s "$forbidden" "$fixture/directory-alias"
-    for selected in "$forbidden" "$fixture/directory-alias"; do
-        status=0
-        bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$selected" make/tools.mk \
-            > "$fixture/rejected-output.log" 2>&1 || status=$?
-        [[ "$status" == 2 && ! -e "$forbidden/make" && ! -e "$forbidden/scripts" ]] || exit 1
-    done
-    # A complete source distinguishes path rejection from missing-input refusal.
-    mkdir -p "$forbidden/scripts/ci"
-    cp -Rp "$ROOT/make" "$forbidden/"
-    cp -p "$ROOT/scripts/ci/check-make-execution.sh" "$ROOT/scripts/ci/run-formatting.sh" "$ROOT/scripts/ci/run-rust-formatting.pl" "$ROOT/scripts/ci/RustSource.pm" "$forbidden/scripts/ci/"
-    for selected in "$forbidden" "$fixture/directory-alias"; do
-        status=0
-        bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$selected" "$fixture/clean-output" make/tools.mk \
-            > "$fixture/rejected-source.log" 2>&1 || status=$?
-        [[ "$status" == 2 && ! -e "$fixture/clean-output/make" ]] || exit 1
-    done
-    rm "$fixture/directory-alias"
-done
+# Quoted fixture roots and aliases are qualified by test-script-fixture.sh.
+# Installer/cache pathname admission remains with their own tool fixtures.
 # Execute the native CI reuse caller with substitute installers and real path
 # observations. Missing tools in both checkouts must not compare as equal.
 reuse="$fixture/reuse checkout"

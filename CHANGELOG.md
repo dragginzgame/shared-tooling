@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.27.3]
+
+### 🩹 Fixed
+
+- Build consumer formatting-hook fixtures from explicit roots and their declared
+  companion closure, including new unstaged helpers, instead of requiring each
+  consumer to repeat the transitive file list. Preserve opaque Git submodules
+  and newline-bearing consumer paths while retaining relative-path admission.
+
 ## [0.27.2]
 
 ### 📚 Documentation
