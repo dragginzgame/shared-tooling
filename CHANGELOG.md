@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.26.24]
+
+### 🩹 Fixed
+
+- Allow formatting commits in repositories with tracked submodules. Keep each
+  child checkout opaque, preserve staged gitlink identities, and format only
+  selected regular files without reading or changing child contents.
+- Include the Node prerequisite guide in governance exports and declare its
+  documentation dependency without enabling Node setup
+  ([#311](https://github.com/dragginzgame/shared-tooling/issues/311)).
+
 ## [0.26.23]
 
 ### ➕ Added

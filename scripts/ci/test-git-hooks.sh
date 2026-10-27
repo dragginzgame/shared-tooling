@@ -94,6 +94,27 @@ tree="$(git write-tree)"
 bash .githooks/pre-commit > output
 [[ "$(git write-tree)" == "$tree" && "$(cat Cargo.toml)" == unformatted ]] || exit 1
 
+# A tracked submodule stays an opaque gitlink, including when its pin is staged.
+# Its initialized child files must never enter the formatter snapshot.
+new_fixture 'opaque submodule'
+git init --quiet upstream/ic
+printf 'unformatted child sentinel\n' > upstream/ic/child.rs
+git -C upstream/ic add child.rs
+git -C upstream/ic -c user.name='Hook fixture' -c user.email=fixture@example.invalid commit --quiet -m 'Child fixture'
+child_commit="$(git -C upstream/ic rev-parse HEAD)"
+git update-index --add --cacheinfo "160000,$child_commit,upstream/ic"
+cat >> scripts/fixture-fmt.sh <<'FORMAT'
+[[ ! -e upstream/ic/child.rs ]] || exit 1
+FORMAT
+git add scripts/fixture-fmt.sh
+printf 'unformatted\n' > staged.rs
+git add staged.rs
+link_before="$(git ls-files --stage -- upstream/ic)"
+bash .githooks/pre-commit > output
+[[ "$(git ls-files --stage -- upstream/ic)" == "$link_before" ]]
+[[ "$(cat upstream/ic/child.rs)" == 'unformatted child sentinel' ]]
+[[ "$(git show :staged.rs)" == formatted ]]
+
 # Common checkout-local tools stay discoverable without a caller PATH export.
 # Product formatters explicitly select IC tools; common-only formatters must not
 # discover an unselected IC executable even when an old bundle is still present.
