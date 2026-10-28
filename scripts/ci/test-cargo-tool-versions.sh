@@ -124,4 +124,21 @@ jq '.versions += [
 run 1
 jq -e '(.tools[] | select(.tool=="cargo-sort")).latest=="18446744073709551617.0.0"' "$fixture/report.json" >/dev/null
 echo 'Cargo version freshness, separate selections and incomplete observation tests passed (substitute registry)'
+# Optional binary-installed sccache participates in freshness without becoming
+# a required common Cargo installation or assuming a Cargo receipt exists.
+printf '\nSHARED_TOOLING_SCCACHE_VERSION=0.19.0\nSHARED_TOOLING_SCCACHE_SHA256_LINUX_AMD64=%064d\n' 0 >> "$fixture/snapshot/ci/tool-versions.env"
+# The CI catalog parser admits the common group before the optional selection.
+for entry in ACTIONLINT:LINUX_AMD64 SHELLCHECK:LINUX_X86_64 GITLEAKS:LINUX_X64; do
+    printf 'SHARED_TOOLING_%s_VERSION=1.0.0\nSHARED_TOOLING_%s_SHA256_%s=%064d\n' "${entry%:*}" "${entry%:*}" "${entry#*:}" 0 >> "$fixture/snapshot/ci/tool-versions.env"
+done
+jq -n '{crate:{id:"sccache"},versions:[{crate:"sccache",num:"0.19.0",yanked:false}]}' > "$fixture/sccache.json"
+perl "$fixture/snapshot/scripts/dev/check-cargo-tool-versions.pl" --consumer "$fixture/consumer" --cargo-home "$fixture/home" --tool sccache --json > "$fixture/sccache-report.json"
+jq -e '.tools|length==1' "$fixture/sccache-report.json" >/dev/null
+jq -e '.tools[0]|.tool=="sccache" and .status=="current" and .local==null' "$fixture/sccache-report.json" >/dev/null
+jq '.versions += [{crate:"sccache",num:"0.20.0",yanked:false}]' "$fixture/sccache.json" > "$fixture/sccache-new.json"
+cp "$fixture/sccache-new.json" "$fixture/sccache.json"
+status=0
+perl "$fixture/snapshot/scripts/dev/check-cargo-tool-versions.pl" --consumer "$fixture/consumer" --cargo-home "$fixture/home" --tool sccache --json > "$fixture/sccache-outdated.json" || status=$?
+[[ "$status" == 1 ]] || exit 1
+jq -e '.tools[0].status|contains("pinned outdated")' "$fixture/sccache-outdated.json" >/dev/null
 fixture_complete=true

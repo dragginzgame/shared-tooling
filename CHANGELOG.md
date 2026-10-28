@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.27.3]
+
+### 🔒 Security
+
+- Make unattended maintenance report-only, with explicit source-read/evidence-write
+  permissions, no network or connected apps, no approval escalation and a cleared
+  launch environment. Requalify the installed host configuration before resuming
+  scheduled runs ([#320](https://github.com/dragginzgame/shared-tooling/issues/320)).
+
+### ➕ Added
+
+- Compare snapshot payloads against an independently reviewed source commit at
+  adoption, while retaining offline local integrity checks for ordinary builds
+  ([#321](https://github.com/dragginzgame/shared-tooling/issues/321)).
+- Supply optional sccache 0.19.0 through the existing catalog and installer, with
+  maintenance-only freshness inspection and explicit compatibility exceptions
+  ([#319](https://github.com/dragginzgame/shared-tooling/issues/319)).
+
 ## [0.27.2]
 
 ### 📚 Documentation

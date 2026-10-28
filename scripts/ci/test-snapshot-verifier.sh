@@ -83,5 +83,40 @@ for corruption in payload helper both; do
     cp -p "$fixture/checksum" "$consumer/scripts/ci/verify-file-checksum.sh"
     "$BASH" "$verifier" --consumer "$consumer" > "$fixture/restored.log"
 done
+# Source admission is anchored outside the consumer manifest. A rewritten
+# payload and digest pass local integrity, but must fail reviewed-source proof.
+source_root="$fixture/trusted-source"
+mkdir -p "$source_root"
+cp -Rp "$consumer/." "$source_root/"
+git -C "$source_root" init -q
+git -C "$source_root" add payload.txt scripts/ci
+git -C "$source_root" -c user.name=Fixture -c user.email=fixture@example.invalid -c core.hooksPath=/dev/null commit -qm 'reviewed fixture'
+revision="$(git -C "$source_root" rev-parse HEAD)"
+sed "s/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/$revision/" "$fixture/manifest" > "$consumer/.shared-tooling.snapshot"
+"$BASH" "$verifier" --consumer "$consumer" --source "$source_root" --revision "$revision" > "$fixture/source-valid.log"
+cp "$consumer/.shared-tooling.snapshot" "$fixture/source-manifest"
+old_digest="$("$BASH" "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$consumer/payload.txt")"
+printf 'tampered payload\n' > "$consumer/payload.txt"
+new_digest="$("$BASH" "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$consumer/payload.txt")"
+sed "s/$old_digest/$new_digest/" "$fixture/source-manifest" > "$consumer/.shared-tooling.snapshot"
+"$BASH" "$verifier" --consumer "$consumer" > "$fixture/rewritten-integrity.log"
+if "$BASH" "$verifier" --consumer "$consumer" --source "$source_root" --revision "$revision" > "$fixture/rewritten-source.log" 2>&1; then exit 1; fi
+grep -F 'manifest payload differs from reviewed source' "$fixture/rewritten-source.log"
+cp "$fixture/payload" "$consumer/payload.txt"
+cp "$fixture/manifest" "$consumer/.shared-tooling.snapshot"
+if "$BASH" "$verifier" --consumer "$consumer" --source "$source_root" --revision "$revision" > "$fixture/wrong-revision.log" 2>&1; then exit 1; fi
+grep -F 'manifest revision differs' "$fixture/wrong-revision.log"
+cp "$fixture/source-manifest" "$consumer/.shared-tooling.snapshot"
+# Working source edits do not change immutable source proof.
+printf 'unreviewed source edit\n' > "$source_root/payload.txt"
+"$BASH" "$verifier" --consumer "$consumer" --source "$source_root" --revision "$revision" > "$fixture/source-dirty.log"
+chmod +x "$consumer/payload.txt"
+sed $'s/\t-\tpayload.txt/\tx\tpayload.txt/' "$fixture/source-manifest" > "$consumer/.shared-tooling.snapshot"
+"$BASH" "$verifier" --consumer "$consumer" > "$fixture/rewritten-mode-integrity.log"
+if "$BASH" "$verifier" --consumer "$consumer" --source "$source_root" --revision "$revision" > "$fixture/rewritten-mode-source.log" 2>&1; then exit 1; fi
+grep -F 'reviewed source mode differs' "$fixture/rewritten-mode-source.log"
+chmod -x "$consumer/payload.txt"
+cp "$fixture/source-manifest" "$consumer/.shared-tooling.snapshot"
+if "$BASH" "$verifier" --consumer "$consumer" --source "$source_root" > "$fixture/unpaired.log" 2>&1; then exit 1; fi
 fixture_complete=true
 printf 'Snapshot verifier path admission and inert-helper corruption checks passed\n'

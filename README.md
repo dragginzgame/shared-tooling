@@ -55,6 +55,7 @@ flowchart TD
     r_ic_blob_storage -.-> r_ic_tooling
     r_ic_persistence --> r_ic_metrics
     r_ic_persistence --> r_ic_platform
+    r_ic_platform -.-> r_ic_tooling
     r_ic_platform --> r_ic_wire
     r_ic_query --> r_ic_metrics
     r_ic_query --> r_ic_platform

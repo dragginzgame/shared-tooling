@@ -143,8 +143,10 @@ SHARED_TOOLING_SHELLCHECK_VERSION=0.11.0
 SHARED_TOOLING_SHELLCHECK_SHA256_LINUX_X86_64=$shellcheck_checksum
 SHARED_TOOLING_GITLEAKS_VERSION=8.30.1
 SHARED_TOOLING_GITLEAKS_SHA256_LINUX_X64=$gitleaks_checksum
+SHARED_TOOLING_SCCACHE_VERSION=0.17.0
+SHARED_TOOLING_SCCACHE_SHA256_LINUX_AMD64=$sccache_checksum
 CATALOG
-for tool in actionlint shellcheck gitleaks; do
+for tool in actionlint shellcheck gitleaks sccache; do
     PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
         bash "$ROOT/scripts/ci/install-ci-tool.sh" "$tool" --catalog "$FIXTURE/ci.env" \
         --install-dir "$FIXTURE/catalog-installed" > "$FIXTURE/catalog-$tool.log"

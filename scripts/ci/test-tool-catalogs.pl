@@ -80,6 +80,9 @@ for my $invalid_ic ($ic . "$last_record\n", $ic =~ s/\Q$last_record\E\n?\z//r,
 ($record_status, $record_bytes) = run_records('ci', 'ci/host.env');
 is($record_status, 0, 'admit the common CI pins');
 is(scalar(split /\n/, $record_bytes), 3, 'one record per reviewed CI tool');
+my ($optional_status, $optional_bytes) = run_records('ci', 'ci/host.env', 'SCCACHE');
+is($optional_status, 0, 'optional sccache has a canonical selection');
+like($optional_bytes, qr/^SCCACHE\t0\.19\.0\tLINUX_AMD64\t[0-9a-f]{64}\n$/, 'optional compiler cache uses its reviewed asset identity');
 like($record_bytes, qr/^SHELLCHECK\t[^\t]+\tLINUX_AMD64\t[0-9a-f]{64}$/m, 'asset-specific checksum keys project one host identity');
 ($record_status, $record_bytes) = run_records('rust', 'ci/host.env', 'UNKNOWN');
 isnt($record_status, 0, 'missing selected tool refuses');

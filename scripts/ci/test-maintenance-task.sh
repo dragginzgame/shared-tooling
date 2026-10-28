@@ -30,29 +30,49 @@ export MAINTENANCE_TEST_CALLS="$FIXTURE/calls"
 cat > "$FIXTURE/codex" <<'CLI'
 #!/usr/bin/env bash
 set -euo pipefail
-printf '%s\n' "$*" >> "$MAINTENANCE_TEST_CALLS"
+base="${0%/*}"
+printf '%s\n' "$*" >> "$base/calls"
+[[ -z "${CARGO_REGISTRY_TOKEN:-}" && -z "${GH_TOKEN:-}" && -z "${SSH_AUTH_SOCK:-}" && -z "${BASH_ENV:-}" ]] || exit 20
 case "$*" in
     --version) echo 'codex-cli fixture'; exit 0 ;;
-    'exec --help') echo '--approve-for-me'; exit 0 ;;
+    'exec --help') echo '--ignore-user-config --strict-config'; exit 0 ;;
     'login status') exit 0 ;;
 esac
-[[ $# == 8 && "$1" == exec && "$2" == --approve-for-me && "$3" == --cd && -d "$4" && "$5" == --json && "$6" == --output-last-message && "$8" == - ]] || exit 1
-printf 'dispatch\n' >> "$MAINTENANCE_TEST_TRACE"
-cat > "${7%/*}/received-prompt"
-[[ -s "${7%/*}/received-prompt" ]] || exit 1
-case "${MAINTENANCE_TEST_RESULT:-success}" in
+[[ "$1" == exec && "$*" != *--approve-for-me* && "$*" == *'approval_policy="never"'* && "$*" == *'default_permissions="maintenance"'* ]] || exit 1
+output='' work=''
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --output-last-message) output="$2"; shift ;;
+        --cd) work="$2"; shift ;;
+    esac
+    shift
+done
+[[ -n "$output" && "$work" == "${output%/*}" ]] || exit 1
+printf 'dispatch\n' >> "$base/trace"
+cat > "${output%/*}/received-prompt"
+[[ -s "${output%/*}/received-prompt" ]] || exit 1
+case "$(cat "$base/result")" in
     failure) echo 'retained failure' >&2; exit 17 ;;
     empty) exit 0 ;;
-    success) printf 'Fixture report\n' > "$7" ;;
+    success) printf 'Fixture report\n' > "$output" ;;
 esac
 CLI
 chmod +x "$FIXTURE/codex"
+printf 'success\n' > "$FIXTURE/result"
+export CARGO_REGISTRY_TOKEN=fixture-only GH_TOKEN=fixture-only SSH_AUTH_SOCK=fixture-only
 export CODEX_BIN="$FIXTURE/codex"
 runner="$ROOT/scripts/dev/run-maintenance.sh"
 projects="$FIXTURE/projects with spaces"
 state="$FIXTURE/state with spaces"
 bash "$runner" --check "$projects" "$state" > "$FIXTURE/check.log"
 [[ ! -e "$MAINTENANCE_TEST_TRACE" && ! -e "$state/runs" ]] || exit 1
+for broad in / "$HOME"; do
+    if bash "$runner" --check "$broad" "$state" > "$FIXTURE/broad.log" 2>&1; then exit 1; fi
+done
+mkdir "$FIXTURE/project-state"
+git -C "$FIXTURE/project-state" init -q
+if bash "$runner" --run "$projects" "$FIXTURE/project-state" > "$FIXTURE/project-state.log" 2>&1; then exit 1; fi
+[[ ! -e "$MAINTENANCE_TEST_TRACE" && ! -e "$FIXTURE/project-state/last-attempt" ]] || exit 1
 # Bad literal or physical directory names must not probe the CLI, consume an
 # interval or create state, even when a future state root does not exist yet.
 cp "$MAINTENANCE_TEST_CALLS" "$FIXTURE/expected-calls"
@@ -87,19 +107,24 @@ ln -s "$projects" "$FIXTURE/projects-alias"
 ln -s "$state" "$FIXTURE/state-alias"
 bash "$runner" --check "$FIXTURE/projects-alias" "$FIXTURE/state-alias/new/nested" > "$FIXTURE/alias-check.log"
 [[ ! -e "$state/new" ]] || exit 1
-bash "$runner" --if-due "$projects" "$state" > "$FIXTURE/first.log"
+MAINTENANCE_CODEX_RUNTIME_ROOT="$FIXTURE/bin" bash "$runner" --if-due "$projects" "$state" > "$FIXTURE/first.log"
 set -- "$state"/runs/*
 first="$1"
 [[ $# == 1 && "$(cat "$first/exit-status")" == 0 ]] || exit 1
 cmp "$first/prompt.txt" "$first/received-prompt"
 [[ "$(cat "$first/report.md")" == 'Fixture report' ]] || exit 1
+grep -F 'permissions.maintenance.network.enabled=false' "$first/permissions.txt"
+grep -F 'apps._default.enabled=false' "$first/permissions.txt"
+grep -F 'credentials.toml"="deny"' "$first/permissions.txt"
+grep -F "permissions.maintenance.filesystem.\"$FIXTURE/bin\"=\"read\"" "$first/permissions.txt"
 bash "$runner" --if-due "$projects" "$state" > "$FIXTURE/not-due.log"
 [[ "$(wc -l < "$MAINTENANCE_TEST_TRACE" | tr -d ' ')" == 1 ]] || exit 1
 # A third-morning wakeup one second earlier still dispatches, rather than
 # slipping to day four. Failure keeps logs and consumes the interval.
 export MAINTENANCE_TEST_NOW=2000259199
 status=0
-MAINTENANCE_TEST_RESULT=failure bash "$runner" --if-due "$projects" "$state" > "$FIXTURE/failed.log" 2>&1 || status=$?
+printf 'failure\n' > "$FIXTURE/result"
+bash "$runner" --if-due "$projects" "$state" > "$FIXTURE/failed.log" 2>&1 || status=$?
 [[ "$status" == 17 ]] || exit 1
 failure_count=0
 for attempt in "$state"/runs/*; do
@@ -112,7 +137,8 @@ done
 bash "$runner" --if-due "$projects" "$state" > "$FIXTURE/failed-not-due.log"
 [[ "$(wc -l < "$MAINTENANCE_TEST_TRACE" | tr -d ' ')" == 2 ]] || exit 1
 # A manual retry bypasses the interval but still rejects an empty final report.
-if MAINTENANCE_TEST_RESULT=empty bash "$runner" --run "$projects" "$state" > "$FIXTURE/empty.log" 2>&1; then exit 1; fi
+printf 'empty\n' > "$FIXTURE/result"
+if bash "$runner" --run "$projects" "$state" > "$FIXTURE/empty.log" 2>&1; then exit 1; fi
 [[ -s "$first/report.md" && "$(wc -l < "$MAINTENANCE_TEST_TRACE" | tr -d ' ')" == 3 ]] || exit 1
 status=0
 CODEX_BIN="$FIXTURE/missing-codex" bash "$runner" --run "$projects" "$state" > "$FIXTURE/missing-cli.log" 2>&1 || status=$?
