@@ -17,6 +17,13 @@
 - Supply optional sccache 0.19.0 through the existing catalog and installer, with
   maintenance-only freshness inspection and explicit compatibility exceptions
   ([#319](https://github.com/dragginzgame/shared-tooling/issues/319)).
+  
+### 🩹 Fixed
+
+- Build consumer formatting-hook fixtures from explicit roots and their declared
+  companion closure, including new unstaged helpers, instead of requiring each
+  consumer to repeat the transitive file list. Preserve opaque Git submodules
+  and newline-bearing consumer paths while retaining relative-path admission.
 
 ## [0.27.2]
 
