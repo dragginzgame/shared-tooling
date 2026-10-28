@@ -109,7 +109,6 @@ permissions=(
     --ignore-user-config --ignore-rules --strict-config --skip-git-repo-check
     -c 'approval_policy="never"'
     -c 'default_permissions="maintenance"'
-    -c 'permissions.maintenance.filesystem={":minimal"="read"}'
     -c 'permissions.maintenance.network.enabled=false'
     -c 'allow_login_shell=false'
     -c 'shell_environment_policy.inherit="core"'
@@ -118,10 +117,13 @@ permissions=(
     -c 'features.apps=false'
     -c 'web_search="disabled"'
 )
+filesystem_entries='":minimal"="read"'
 permission_path() {
     local path="$1" access="$2" quoted
     quoted="$(perl -MJSON::PP -e 'print encode_json($ARGV[0])' "$path")"
-    permissions+=(-c "permissions.maintenance.filesystem.$quoted=\"$access\"")
+    # CLI -c splits dotted keys without TOML quoted-key semantics. Keep paths
+    # (including dots and slashes) as literal keys in one inline TOML table.
+    filesystem_entries+=",$quoted=\"$access\""
 }
 run_dir="$(cd -P "$run_dir" && pwd)"
 permission_path "$ROOT" read
@@ -142,6 +144,7 @@ for private in "$HOME/.ssh" "$HOME/.aws" "$HOME/.config/gh" "$HOME/.git-credenti
     "${CODEX_HOME:-$HOME/.codex}"; do
     permission_path "$private" deny
 done
+permissions+=(-c "permissions.maintenance.filesystem={$filesystem_entries}")
 printf '%s\n' "${permissions[@]}" > "$run_dir/permissions.txt"
 codex_clean exec "${permissions[@]}" --cd "$run_dir" --json \
     --output-last-message "$run_dir/report.md" - \

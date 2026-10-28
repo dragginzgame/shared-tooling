@@ -39,15 +39,21 @@ case "$*" in
     'login status') exit 0 ;;
 esac
 [[ "$1" == exec && "$*" != *--approve-for-me* && "$*" == *'approval_policy="never"'* && "$*" == *'default_permissions="maintenance"'* ]] || exit 1
-output='' work=''
+output='' work='' filesystem_count=0
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        -c)
+            if [[ "$2" == permissions.maintenance.filesystem* ]]; then
+                [[ "$2" == 'permissions.maintenance.filesystem={'* ]] || exit 1
+                filesystem_count=$((filesystem_count + 1))
+            fi
+            shift ;;
         --output-last-message) output="$2"; shift ;;
         --cd) work="$2"; shift ;;
     esac
     shift
 done
-[[ -n "$output" && "$work" == "${output%/*}" ]] || exit 1
+[[ "$filesystem_count" == 1 && -n "$output" && "$work" == "${output%/*}" ]] || exit 1
 printf 'dispatch\n' >> "$base/trace"
 cat > "${output%/*}/received-prompt"
 [[ -s "${output%/*}/received-prompt" ]] || exit 1
@@ -116,7 +122,7 @@ cmp "$first/prompt.txt" "$first/received-prompt"
 grep -F 'permissions.maintenance.network.enabled=false' "$first/permissions.txt"
 grep -F 'apps._default.enabled=false' "$first/permissions.txt"
 grep -F 'credentials.toml"="deny"' "$first/permissions.txt"
-grep -F "permissions.maintenance.filesystem.\"$FIXTURE/bin\"=\"read\"" "$first/permissions.txt"
+grep -F "\"$FIXTURE/bin\"=\"read\"" "$first/permissions.txt"
 bash "$runner" --if-due "$projects" "$state" > "$FIXTURE/not-due.log"
 [[ "$(wc -l < "$MAINTENANCE_TEST_TRACE" | tr -d ' ')" == 1 ]] || exit 1
 # A third-morning wakeup one second earlier still dispatches, rather than

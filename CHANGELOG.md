@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.27.4]
+
+### 🩹 Fixed
+
+- Serialize maintenance filesystem permissions as one table so Codex admits
+  literal paths containing dots and slashes. Qualify the report-only runner
+  through the installed host environment before unattended execution
+  ([#320](https://github.com/dragginzgame/shared-tooling/issues/320)).
+
 ## [0.27.3]
 
 ### 🔒 Security
