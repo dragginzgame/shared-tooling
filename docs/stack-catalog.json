@@ -1,5 +1,10 @@
 {
   "roots": ["toko", "toko-miner"],
+  "overview": [
+    "canic", "icydb", "ic-auth", "ic-backup", "ic-blob-storage", "ic-jobs",
+    "ic-metrics", "ic-logging", "ic-memory", "ic-metrics-stable", "ic-storage",
+    "ic-call", "ic-platform", "ic-query", "ic-relay", "ic-timers", "ic-wire"
+  ],
   "repositories": [
     {"name": "toko", "branch": "development", "paths": ["backend", "fleets"], "native": ["backend/src/bin"], "npm": ["frontend/package.json"]},
     {"name": "toko-miner", "paths": ["apps", "crates"], "npm": ["frontend/package.json"]},

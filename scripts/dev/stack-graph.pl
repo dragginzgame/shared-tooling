@@ -172,13 +172,13 @@ for my $key (sort keys %edges) {
     $graph{$from}{$to} = 1 if $edges{$key}{solid};
 }
 sub reachable {
-    my ($start, $goal, $skip) = @_;
+    my ($graph, $start, $goal, $skip) = @_;
     my (%seen, @queue);
     @queue = ($start);
     while (@queue) {
         my $node = shift @queue;
         next if $seen{$node}++;
-        for my $next (sort keys %{$graph{$node} // {}}) {
+        for my $next (sort keys %{$graph->{$node} // {}}) {
             next if defined($skip) && "$node\t$next" eq $skip;
             return 1 if $next eq $goal;
             push @queue, $next;
@@ -195,24 +195,76 @@ while (@pending) {
         push @pending, $to unless $visible{$to}++;
     }
 }
-# Transitive reduction is unique on DAGs. Retain all edges if a cycle appears;
-# independently removing edges in a cycle can destroy reachability.
-my $cyclic = grep { reachable($_, $_, undef) } keys %nodes;
-my $diagram = "```mermaid\nflowchart TD\n";
-for my $name (sort keys %visible) {
-    my $label = $nodes{$name}{name};
-    $label =~ s/"/&quot;/g;
-    $diagram .= '    ' . node_id($name) . "[\"$label\"]\n";
+sub diagram {
+    my ($labels, $normal, $solid) = @_;
+    # Reduction is safe on DAGs; retain all edges if a cycle appears.
+    my $cyclic = grep { reachable($solid, $_, $_, undef) } keys %$labels;
+    my $diagram = "```mermaid\nflowchart TD\n";
+    for my $name (sort keys %$labels) {
+        my $label = $labels->{$name};
+        $label =~ s/"/&quot;/g;
+        my ($open, $close) = $name =~ /^app:/ ? ('([', '])') : ('[', ']');
+        $diagram .= '    ' . node_id($name) . "$open\"$label\"$close\n";
+    }
+    for my $from (sort keys %$labels) {
+        for my $to (sort keys %{$normal->{$from} // {}}) {
+            my $native = !$solid->{$from}{$to};
+            next if !$native && !$cyclic && reachable($solid, $from, $to, "$from\t$to");
+            $diagram .= '    ' . node_id($from) . ($native ? ' -.-> ' : ' --> ') . node_id($to) . "\n";
+        }
+    }
+    return "$diagram```\n";
 }
-for my $from (sort keys %visible) {
-    for my $to (sort keys %{$normal{$from} // {}}) {
-        my $native = !$edges{"$from\t$to"}{solid};
-        next if !$native && !$cyclic && reachable($from, $to, "$from\t$to");
-        $diagram .= '    ' . node_id($from) . ($native ? ' -.-> ' : ' --> ') . node_id($to) . "\n";
+my %labels = map { $_ => $nodes{$_}{name} } keys %visible;
+my $full_diagram = diagram(\%labels, \%normal, \%graph);
+
+# The README shows application groups and selected library entry points. Walk
+# through omitted internal crates, stopping at the next displayed dependency.
+# This preserves real package paths rather than merging a workspace's edges.
+my %focus = map { $_ => 1 } grep { /\|cargo:/ && !$nodes{$_}{native} } keys %selected;
+if (exists $catalog->{overview}) {
+    die "Catalog overview must be a nonempty crate-name array\n"
+        unless ref($catalog->{overview}) eq 'ARRAY' && @{$catalog->{overview}};
+    %focus = ();
+    for my $package (@{$catalog->{overview}}) {
+        my @owners = sort keys %{$owner{"cargo:$package"} // {}};
+        die "Unknown or ambiguous overview crate: $package\n" unless @owners == 1;
+        my $key = "$owners[0]|cargo:$package";
+        die "Overview crate is not a selected library: $package\n"
+            unless $selected{$key} && !$nodes{$key}{native};
+        $focus{$key} = 1;
     }
 }
-$diagram .= "```\n";
-my $details = "## Workspace inventory\n\nRepository | Selected packages and manifests\n--- | ---\n";
+my (%overview_labels, %overview, %starts);
+for my $repo (@{$catalog->{roots}}) {
+    my $key = "app:$repo";
+    $overview_labels{$key} = $repo;
+    $starts{$key} = [grep { /^\Q$repo\E\|cargo:/ && !$nodes{$_}{native} } sort keys %selected];
+}
+@pending = sort keys %overview_labels;
+while (@pending) {
+    my $from = shift @pending;
+    my %seen;
+    my @queue = map { sort keys %{$graph{$_} // {}} } @{$starts{$from}};
+    while (@queue) {
+        my $next = shift @queue;
+        next if $seen{$next}++;
+        my $target = $root_repos{$nodes{$next}{repo}} ? "app:$nodes{$next}{repo}" : $next;
+        if ($target ne $from && ($focus{$next} || exists $starts{$target})) {
+            $overview{$from}{$target} = 1;
+            unless (exists $overview_labels{$target}) {
+                $overview_labels{$target} = $nodes{$next}{name};
+                $starts{$target} = [$next];
+                push @pending, $target;
+            }
+            next;
+        }
+        push @queue, sort keys %{$graph{$next} // {}};
+    }
+}
+my $overview_diagram = diagram(\%overview_labels, \%overview, \%overview);
+my $details = "## Full package graph\n\n<details>\n<summary>Expand all crates, browser packages and native tools</summary>\n\n"
+    . $full_diagram . "\n</details>\n\n## Workspace inventory\n\nRepository | Selected packages and manifests\n--- | ---\n";
 for my $name (sort keys %repos) {
     $details .= "[$name](https://github.com/dragginzgame/$name) | " . join('<br>',
         map { "[$_->[0]](@{[source_link($name, $_->[1])]})" }
@@ -231,7 +283,7 @@ $details .= "\nSelected packages without a normal-dependency path from the appli
     . join(', ', map { "`$nodes{$_}{name}`" } @outside) . ".\n" if @outside;
 
 my @updates;
-for my $selection (['README.md', $diagram], ['docs/stack.md', $details]) {
+for my $selection (['README.md', $overview_diagram], ['docs/stack.md', $details]) {
     my ($relative, $generated) = @$selection;
     my $file = "$output_root/$relative";
     die "Refusing symlink output: $file\n" if -l $file;

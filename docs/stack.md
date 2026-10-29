@@ -1,18 +1,31 @@
 # Toko stack dependency overview
 
-The [README diagram](../README.md#toko-stack) shows individual first-party crates
-and npm packages. Arrows point from consumer package to dependency package,
-including dependencies within one workspace. It starts at the selected packages
-in the **Toko** and **Toko Miner** application workspaces; they are separate
-products, with no assumed dependency between them. Repository ownership is
-recorded in the inventory, not merged into graph nodes: `ic-memory`, `ic-storage`
-and `ic-metrics-stable` remain independent packages within `ic-persistence`.
-Dashed arrows identify normal dependencies from or to catalogued native packages.
-Redundant solid arrows are omitted when that portion of the
-normal-dependency graph is acyclic, preserving reachability without routing
-library dependencies through native tooling. The table below retains every
-direct first-party declaration from the selected packages, including build
-and development dependencies.
+The [README diagram](../README.md#toko-stack) is a compact application and library
+overview. The expandable [full package graph](#full-package-graph) below retains
+individual first-party crates and npm packages, including dependencies within
+one workspace. Both start at the **Toko** and **Toko Miner** applications; they
+are separate products, with no assumed dependency between them.
+
+Arrows point from consumer to dependency. Repository ownership is recorded in
+the inventory: `ic-memory`, `ic-storage` and `ic-metrics-stable` are independent
+packages within `ic-persistence`. The direct-evidence table retains every
+first-party declaration from the selected packages, including build and
+development dependencies.
+
+## README overview
+
+The catalog's `overview` crate list selects the library entry points worth showing
+on the README. Each application workspace becomes one rounded node. Other
+internal crates are traversed to the next displayed dependency; an arrow can
+therefore represent several real declaration steps. A crate never acquires an
+unrelated sibling's dependencies. Browser packages and native tooling are shown
+only in the full graph. Review this list when adding a new application capability;
+new helper crates do not automatically expand the README. Custom catalogs without
+an `overview` list show all selected non-native Rust crates.
+
+Redundant arrows are omitted when the relevant graph is acyclic. In the full
+graph, dashed arrows identify normal dependencies from or to catalogued native
+packages; native paths do not hide library dependencies during reduction.
 
 ## Scope and interpretation
 
@@ -117,6 +130,192 @@ The timer reads the selected checkout's current generator and catalog. Snapshot
 adoption does not install or enable this timer for consumers.
 
 <!-- stack-graph:start -->
+## Full package graph
+
+<details>
+<summary>Expand all crates, browser packages and native tools</summary>
+
+```mermaid
+flowchart TD
+    p_canic_7ccargo_3acanic["canic"]
+    p_canic_7ccargo_3acanic_2dblob_2dservice["canic-blob-service"]
+    p_canic_7ccargo_3acanic_2dcontracts["canic-contracts"]
+    p_canic_7ccargo_3acanic_2dcontrol_2dplane["canic-control-plane"]
+    p_canic_7ccargo_3acanic_2dcore["canic-core"]
+    p_canic_7ccargo_3acanic_2dicydb["canic-icydb"]
+    p_canic_7ccargo_3acanic_2dmacros["canic-macros"]
+    p_ic_2dauth_7ccargo_3aic_2dauth["ic-auth"]
+    p_ic_2dauth_7ccargo_3aic_2dauth_2dprotocol_2dtypes["ic-auth-protocol-types"]
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage["ic-blob-storage"]
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcontracts["ic-blob-storage-contracts"]
+    p_ic_2dobservability_7ccargo_3aic_2dlogging["ic-logging"]
+    p_ic_2dobservability_7ccargo_3aic_2dmetrics["ic-metrics"]
+    p_ic_2dpersistence_7ccargo_3aic_2dmemory["ic-memory"]
+    p_ic_2dpersistence_7ccargo_3aic_2dstorage["ic-storage"]
+    p_ic_2dplatform_7ccargo_3aic_2dcall["ic-call"]
+    p_ic_2dplatform_7ccargo_3aic_2dplatform["ic-platform"]
+    p_ic_2dplatform_7ccargo_3aic_2dplatform_2dmacros["ic-platform-macros"]
+    p_ic_2dplatform_7cnpm_3a_40tokostudios_2fic_2dplatform["@tokostudios/ic-platform"]
+    p_ic_2dtimers_7ccargo_3aic_2dtimers["ic-timers"]
+    p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts["ic-host-artifacts"]
+    p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs["ic-host-fs"]
+    p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess["ic-host-process"]
+    p_ic_2dtooling_7ccargo_3aic_2dtestkit["ic-testkit"]
+    p_ic_2dwire_7ccargo_3aic_2dwire["ic-wire"]
+    p_ic_2dwire_7ccargo_3aic_2dwire_2dderive["ic-wire-derive"]
+    p_icydb_7ccargo_3aicydb["icydb"]
+    p_icydb_7ccargo_3aicydb_2dcore["icydb-core"]
+    p_icydb_7ccargo_3aicydb_2ddiagnostic_2dcode["icydb-diagnostic-code"]
+    p_icydb_7ccargo_3aicydb_2dmodel["icydb-model"]
+    p_icydb_7ccargo_3aicydb_2dmodel_2dmacros["icydb-model-macros"]
+    p_icydb_7ccargo_3aicydb_2dschema["icydb-schema"]
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fblob["canister_toko_miner_blob"]
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fgame_5fhub["canister_toko_miner_game_hub"]
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fgame_5fshard["canister_toko_miner_game_shard"]
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5ftranslation["canister_toko_miner_translation"]
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fuser_5fhub["canister_toko_miner_user_hub"]
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fuser_5fshard["canister_toko_miner_user_shard"]
+    p_toko_2dminer_7ccargo_3atoko_2dminer_2dcontracts["toko-miner-contracts"]
+    p_toko_2dminer_7cnpm_3a_40toko_2dminer_2ffrontend["@toko-miner/frontend"]
+    p_toko_7ccargo_3acanister_5fdiscovery_5fhub["canister_discovery_hub"]
+    p_toko_7ccargo_3acanister_5fdiscovery_5fshard["canister_discovery_shard"]
+    p_toko_7ccargo_3acanister_5fhttp_5fhub["canister_http_hub"]
+    p_toko_7ccargo_3acanister_5fhttp_5fworker["canister_http_worker"]
+    p_toko_7ccargo_3acanister_5fmarket["canister_market"]
+    p_toko_7ccargo_3acanister_5fnotification["canister_notification"]
+    p_toko_7ccargo_3acanister_5foracle_5fpokemon["canister_oracle_pokemon"]
+    p_toko_7ccargo_3acanister_5foracle_5fregistry["canister_oracle_registry"]
+    p_toko_7ccargo_3acanister_5fproject_5fgenerator["canister_project_generator"]
+    p_toko_7ccargo_3acanister_5fproject_5fhub["canister_project_hub"]
+    p_toko_7ccargo_3acanister_5fproject_5finstance["canister_project_instance"]
+    p_toko_7ccargo_3acanister_5fproject_5fledger["canister_project_ledger"]
+    p_toko_7ccargo_3acanister_5fproject_5fregistry["canister_project_registry"]
+    p_toko_7ccargo_3acanister_5fproject_5fuser["canister_project_user"]
+    p_toko_7ccargo_3acanister_5fuser_5fhub["canister_user_hub"]
+    p_toko_7ccargo_3acanister_5fuser_5fshard["canister_user_shard"]
+    p_toko_7ccargo_3adesign["design"]
+    p_toko_7ccargo_3adesign_5fmacros["design_macros"]
+    p_toko_7ccargo_3aoracle["oracle"]
+    p_toko_7ccargo_3aschemagen["schemagen"]
+    p_toko_7ccargo_3atoko["toko"]
+    p_toko_7cnpm_3afrontend["frontend"]
+    p_canic_7ccargo_3acanic --> p_canic_7ccargo_3acanic_2dcontrol_2dplane
+    p_canic_7ccargo_3acanic --> p_canic_7ccargo_3acanic_2dmacros
+    p_canic_7ccargo_3acanic -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
+    p_canic_7ccargo_3acanic -.-> p_ic_2dtooling_7ccargo_3aic_2dtestkit
+    p_canic_7ccargo_3acanic_2dblob_2dservice --> p_canic_7ccargo_3acanic
+    p_canic_7ccargo_3acanic_2dblob_2dservice --> p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage
+    p_canic_7ccargo_3acanic_2dcontracts --> p_ic_2dauth_7ccargo_3aic_2dauth_2dprotocol_2dtypes
+    p_canic_7ccargo_3acanic_2dcontrol_2dplane --> p_canic_7ccargo_3acanic_2dcore
+    p_canic_7ccargo_3acanic_2dcore --> p_canic_7ccargo_3acanic_2dcontracts
+    p_canic_7ccargo_3acanic_2dcore --> p_ic_2dauth_7ccargo_3aic_2dauth
+    p_canic_7ccargo_3acanic_2dcore --> p_ic_2dobservability_7ccargo_3aic_2dlogging
+    p_canic_7ccargo_3acanic_2dcore --> p_ic_2dpersistence_7ccargo_3aic_2dstorage
+    p_canic_7ccargo_3acanic_2dcore --> p_ic_2dplatform_7ccargo_3aic_2dcall
+    p_canic_7ccargo_3acanic_2dcore --> p_ic_2dtimers_7ccargo_3aic_2dtimers
+    p_canic_7ccargo_3acanic_2dicydb --> p_canic_7ccargo_3acanic_2dmacros
+    p_canic_7ccargo_3acanic_2dicydb --> p_ic_2dtimers_7ccargo_3aic_2dtimers
+    p_ic_2dauth_7ccargo_3aic_2dauth --> p_ic_2dauth_7ccargo_3aic_2dauth_2dprotocol_2dtypes
+    p_ic_2dauth_7ccargo_3aic_2dauth_2dprotocol_2dtypes --> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage --> p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcontracts
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage --> p_ic_2dpersistence_7ccargo_3aic_2dstorage
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcontracts --> p_ic_2dobservability_7ccargo_3aic_2dmetrics
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcontracts --> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dobservability_7ccargo_3aic_2dmetrics --> p_ic_2dwire_7ccargo_3aic_2dwire
+    p_ic_2dpersistence_7ccargo_3aic_2dmemory --> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dpersistence_7ccargo_3aic_2dstorage --> p_ic_2dpersistence_7ccargo_3aic_2dmemory
+    p_ic_2dplatform_7ccargo_3aic_2dcall --> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dplatform_7ccargo_3aic_2dplatform --> p_ic_2dplatform_7ccargo_3aic_2dplatform_2dmacros
+    p_ic_2dplatform_7ccargo_3aic_2dplatform -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
+    p_ic_2dplatform_7ccargo_3aic_2dplatform --> p_ic_2dwire_7ccargo_3aic_2dwire
+    p_ic_2dtimers_7ccargo_3aic_2dtimers --> p_ic_2dobservability_7ccargo_3aic_2dmetrics
+    p_ic_2dtimers_7ccargo_3aic_2dtimers --> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
+    p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
+    p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs
+    p_ic_2dtooling_7ccargo_3aic_2dtestkit -.-> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dtooling_7ccargo_3aic_2dtestkit -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
+    p_ic_2dtooling_7ccargo_3aic_2dtestkit -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs
+    p_ic_2dtooling_7ccargo_3aic_2dtestkit -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess
+    p_ic_2dtooling_7ccargo_3aic_2dtestkit -.-> p_ic_2dwire_7ccargo_3aic_2dwire
+    p_ic_2dwire_7ccargo_3aic_2dwire --> p_ic_2dwire_7ccargo_3aic_2dwire_2dderive
+    p_icydb_7ccargo_3aicydb --> p_icydb_7ccargo_3aicydb_2dcore
+    p_icydb_7ccargo_3aicydb --> p_icydb_7ccargo_3aicydb_2dmodel
+    p_icydb_7ccargo_3aicydb_2dcore --> p_ic_2dobservability_7ccargo_3aic_2dmetrics
+    p_icydb_7ccargo_3aicydb_2dcore --> p_ic_2dpersistence_7ccargo_3aic_2dstorage
+    p_icydb_7ccargo_3aicydb_2dcore --> p_icydb_7ccargo_3aicydb_2ddiagnostic_2dcode
+    p_icydb_7ccargo_3aicydb_2dcore --> p_icydb_7ccargo_3aicydb_2dschema
+    p_icydb_7ccargo_3aicydb_2dmodel --> p_icydb_7ccargo_3aicydb_2dmodel_2dmacros
+    p_icydb_7ccargo_3aicydb_2dmodel_2dmacros --> p_icydb_7ccargo_3aicydb_2dschema
+    p_icydb_7ccargo_3aicydb_2dschema --> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fblob --> p_canic_7ccargo_3acanic_2dblob_2dservice
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fgame_5fhub --> p_canic_7ccargo_3acanic
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fgame_5fhub --> p_icydb_7ccargo_3aicydb
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fgame_5fhub --> p_toko_2dminer_7ccargo_3atoko_2dminer_2dcontracts
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fgame_5fshard --> p_canic_7ccargo_3acanic
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fgame_5fshard --> p_canic_7ccargo_3acanic_2dicydb
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fgame_5fshard --> p_icydb_7ccargo_3aicydb
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fgame_5fshard --> p_toko_2dminer_7ccargo_3atoko_2dminer_2dcontracts
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5ftranslation --> p_canic_7ccargo_3acanic
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5ftranslation --> p_canic_7ccargo_3acanic_2dicydb
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5ftranslation --> p_icydb_7ccargo_3aicydb
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5ftranslation --> p_toko_2dminer_7ccargo_3atoko_2dminer_2dcontracts
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fuser_5fhub --> p_canic_7ccargo_3acanic
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fuser_5fhub --> p_canic_7ccargo_3acanic_2dicydb
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fuser_5fhub --> p_icydb_7ccargo_3aicydb
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fuser_5fhub --> p_toko_2dminer_7ccargo_3atoko_2dminer_2dcontracts
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fuser_5fshard --> p_canic_7ccargo_3acanic
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fuser_5fshard --> p_canic_7ccargo_3acanic_2dicydb
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fuser_5fshard --> p_icydb_7ccargo_3aicydb
+    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fuser_5fshard --> p_toko_2dminer_7ccargo_3atoko_2dminer_2dcontracts
+    p_toko_2dminer_7ccargo_3atoko_2dminer_2dcontracts --> p_icydb_7ccargo_3aicydb_2dmodel
+    p_toko_2dminer_7cnpm_3a_40toko_2dminer_2ffrontend --> p_ic_2dplatform_7cnpm_3a_40tokostudios_2fic_2dplatform
+    p_toko_7ccargo_3acanister_5fdiscovery_5fhub --> p_canic_7ccargo_3acanic
+    p_toko_7ccargo_3acanister_5fdiscovery_5fhub --> p_toko_7ccargo_3atoko
+    p_toko_7ccargo_3acanister_5fdiscovery_5fshard --> p_canic_7ccargo_3acanic
+    p_toko_7ccargo_3acanister_5fdiscovery_5fshard --> p_toko_7ccargo_3atoko
+    p_toko_7ccargo_3acanister_5fhttp_5fhub --> p_canic_7ccargo_3acanic
+    p_toko_7ccargo_3acanister_5fhttp_5fhub --> p_toko_7ccargo_3atoko
+    p_toko_7ccargo_3acanister_5fhttp_5fworker --> p_canic_7ccargo_3acanic
+    p_toko_7ccargo_3acanister_5fhttp_5fworker --> p_toko_7ccargo_3atoko
+    p_toko_7ccargo_3acanister_5fmarket --> p_canic_7ccargo_3acanic
+    p_toko_7ccargo_3acanister_5fmarket --> p_toko_7ccargo_3atoko
+    p_toko_7ccargo_3acanister_5fnotification --> p_canic_7ccargo_3acanic
+    p_toko_7ccargo_3acanister_5fnotification --> p_toko_7ccargo_3atoko
+    p_toko_7ccargo_3acanister_5foracle_5fpokemon --> p_canic_7ccargo_3acanic
+    p_toko_7ccargo_3acanister_5foracle_5fpokemon --> p_toko_7ccargo_3aoracle
+    p_toko_7ccargo_3acanister_5foracle_5fpokemon --> p_toko_7ccargo_3atoko
+    p_toko_7ccargo_3acanister_5foracle_5fregistry --> p_canic_7ccargo_3acanic
+    p_toko_7ccargo_3acanister_5foracle_5fregistry --> p_toko_7ccargo_3atoko
+    p_toko_7ccargo_3acanister_5fproject_5fgenerator --> p_canic_7ccargo_3acanic
+    p_toko_7ccargo_3acanister_5fproject_5fgenerator --> p_toko_7ccargo_3atoko
+    p_toko_7ccargo_3acanister_5fproject_5fhub --> p_canic_7ccargo_3acanic
+    p_toko_7ccargo_3acanister_5fproject_5fhub --> p_toko_7ccargo_3atoko
+    p_toko_7ccargo_3acanister_5fproject_5finstance --> p_canic_7ccargo_3acanic
+    p_toko_7ccargo_3acanister_5fproject_5finstance --> p_toko_7ccargo_3atoko
+    p_toko_7ccargo_3acanister_5fproject_5fledger --> p_canic_7ccargo_3acanic
+    p_toko_7ccargo_3acanister_5fproject_5fledger --> p_toko_7ccargo_3atoko
+    p_toko_7ccargo_3acanister_5fproject_5fregistry --> p_canic_7ccargo_3acanic
+    p_toko_7ccargo_3acanister_5fproject_5fregistry --> p_toko_7ccargo_3atoko
+    p_toko_7ccargo_3acanister_5fproject_5fuser --> p_canic_7ccargo_3acanic
+    p_toko_7ccargo_3acanister_5fproject_5fuser --> p_toko_7ccargo_3atoko
+    p_toko_7ccargo_3acanister_5fuser_5fhub --> p_canic_7ccargo_3acanic
+    p_toko_7ccargo_3acanister_5fuser_5fhub --> p_toko_7ccargo_3atoko
+    p_toko_7ccargo_3acanister_5fuser_5fshard --> p_canic_7ccargo_3acanic
+    p_toko_7ccargo_3acanister_5fuser_5fshard --> p_toko_7ccargo_3atoko
+    p_toko_7ccargo_3adesign --> p_icydb_7ccargo_3aicydb
+    p_toko_7ccargo_3adesign --> p_toko_7ccargo_3adesign_5fmacros
+    p_toko_7ccargo_3aoracle --> p_toko_7ccargo_3adesign
+    p_toko_7ccargo_3aschemagen -.-> p_canic_7ccargo_3acanic_2dcontrol_2dplane
+    p_toko_7ccargo_3aschemagen -.-> p_canic_7ccargo_3acanic_2dcore
+    p_toko_7ccargo_3aschemagen -.-> p_canic_7ccargo_3acanic_2dmacros
+    p_toko_7ccargo_3aschemagen -.-> p_icydb_7ccargo_3aicydb_2dmodel
+    p_toko_7ccargo_3aschemagen -.-> p_toko_7ccargo_3adesign
+    p_toko_7ccargo_3atoko --> p_toko_7ccargo_3adesign
+```
+
+</details>
+
 ## Workspace inventory
 
 Repository | Selected packages and manifests
@@ -127,7 +326,7 @@ Repository | Selected packages and manifests
 [ic-blob-storage](https://github.com/dragginzgame/ic-blob-storage) | [ic-blob-storage](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage/Cargo.toml)<br>[ic-blob-storage-canister](https://github.com/dragginzgame/ic-blob-storage/blob/main/canisters/standalone/Cargo.toml)<br>[ic-blob-storage-cli](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-cli/Cargo.toml)<br>[ic-blob-storage-client](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-client/Cargo.toml)<br>[ic-blob-storage-contracts](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-contracts/Cargo.toml)
 [ic-jobs](https://github.com/dragginzgame/ic-jobs) | [ic-jobs](https://github.com/dragginzgame/ic-jobs/blob/main/crates/ic-jobs/Cargo.toml)
 [ic-observability](https://github.com/dragginzgame/ic-observability) | [ic-logging](https://github.com/dragginzgame/ic-observability/blob/main/crates/ic-logging/Cargo.toml)<br>[ic-metrics](https://github.com/dragginzgame/ic-observability/blob/main/crates/ic-metrics/Cargo.toml)
-[ic-persistence](https://github.com/dragginzgame/ic-persistence) | [ic-memory](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-memory/Cargo.toml)<br>[ic-metrics-stable](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-metrics-stable/Cargo.toml)<br>[ic-storage](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-storage/Cargo.toml)
+[ic-persistence](https://github.com/dragginzgame/ic-persistence) | [ic-logging-stable](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-logging-stable/Cargo.toml)<br>[ic-memory](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-memory/Cargo.toml)<br>[ic-metrics-stable](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-metrics-stable/Cargo.toml)<br>[ic-storage](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-storage/Cargo.toml)
 [ic-platform](https://github.com/dragginzgame/ic-platform) | [@tokostudios/ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/packages/browser/package.json)<br>[ic-call](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-call/Cargo.toml)<br>[ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform/Cargo.toml)<br>[ic-platform-macros](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform-macros/Cargo.toml)
 [ic-profiler](https://github.com/dragginzgame/ic-profiler) | [ic-system-profiler](https://github.com/dragginzgame/ic-profiler/blob/main/profiler/system/Cargo.toml)
 [ic-query](https://github.com/dragginzgame/ic-query) | [ic-query](https://github.com/dragginzgame/ic-query/blob/main/crates/ic-query/Cargo.toml)<br>[ic-query-cli](https://github.com/dragginzgame/ic-query/blob/main/crates/ic-query-cli/Cargo.toml)
@@ -482,5 +681,5 @@ toko → icydb | [toko](https://github.com/dragginzgame/toko/blob/development/ba
 toko → icydb-model | [toko](https://github.com/dragginzgame/toko/blob/development/backend/src/toko/Cargo.toml) → `icydb-model` (cargo normal)
 toko → design | [toko](https://github.com/dragginzgame/toko/blob/development/backend/src/toko/Cargo.toml) → `design` (cargo normal)
 
-Selected packages without a normal-dependency path from the application roots: `canic-auth`, `canic-backup`, `canic-cli`, `canic-host`, `ic-auth-tooling`, `ic-auth-wire`, `ic-backup`, `ic-backup-agent`, `ic-blob-storage-canister`, `ic-blob-storage-cli`, `ic-blob-storage-client`, `ic-jobs`, `ic-metrics-stable`, `ic-system-profiler`, `ic-query`, `ic-query-cli`, `ic-relay`, `ic-build`, `ic-host-http`, `ic-host-text`, `ic-host-tools`, `ic-host-wasm-inspect`, `ic-testkit-dev`, `ic-testkit-native`, `icydb-cli`.
+Selected packages without a normal-dependency path from the application roots: `canic-auth`, `canic-backup`, `canic-cli`, `canic-host`, `ic-auth-tooling`, `ic-auth-wire`, `ic-backup`, `ic-backup-agent`, `ic-blob-storage-canister`, `ic-blob-storage-cli`, `ic-blob-storage-client`, `ic-jobs`, `ic-logging-stable`, `ic-metrics-stable`, `ic-system-profiler`, `ic-query`, `ic-query-cli`, `ic-relay`, `ic-build`, `ic-host-http`, `ic-host-text`, `ic-host-tools`, `ic-host-wasm-inspect`, `ic-testkit-dev`, `ic-testkit-native`, `icydb-cli`.
 <!-- stack-graph:end -->

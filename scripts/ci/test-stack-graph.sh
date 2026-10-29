@@ -82,19 +82,20 @@ sed 's/members=\["crates\/engine"\]/members=["crates\/engine", "crates\/engine-c
 cp "$FIXTURE/engine-members" "$parent/engine/Cargo.toml"
 cat >> "$parent/engine/crates/engine/Cargo.toml" <<'TOML'
 [dependencies]
-storage = { path = "../storage" }
+engine-core = { path = "../engine-core" }
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 platform = { path = "../../../platform/crates/platform", optional = true }
 TOML
 # Two crates in one workspace are independent dependencies. A consumer of only
 # memory must not inherit storage or the unrelated native CLI's dependencies.
-for package in memory storage; do
+for package in memory storage engine-core; do
     mkdir -p "$parent/engine/crates/$package/src"
     : > "$parent/engine/crates/$package/src/lib.rs"
     printf '[package]\nname="%s"\nversion="0.1.0"\nedition="2021"\n' "$package" > "$parent/engine/crates/$package/Cargo.toml"
 done
 printf '\n[dependencies]\nmemory = { path = "../memory" }\n' >> "$parent/engine/crates/storage/Cargo.toml"
-sed 's/"crates\/engine-cli"/"crates\/engine-cli", "crates\/memory", "crates\/storage"/' "$parent/engine/Cargo.toml" > "$FIXTURE/engine-members"
+printf '\n[dependencies]\nstorage = { path = "../storage" }\n' >> "$parent/engine/crates/engine-core/Cargo.toml"
+sed 's/"crates\/engine-cli"/"crates\/engine-cli", "crates\/memory", "crates\/storage", "crates\/engine-core"/' "$parent/engine/Cargo.toml" > "$FIXTURE/engine-members"
 cp "$FIXTURE/engine-members" "$parent/engine/Cargo.toml"
 mkdir -p "$parent/app/crates/memory-client/src"
 : > "$parent/app/crates/memory-client/src/lib.rs"
@@ -112,7 +113,7 @@ for name in app platform; do mkdir -p "$parent/$name/browser"; done
 printf '{"name":"app-browser","dependencies":{"@fleet/platform":"1"}}\n' > "$parent/app/browser/package.json"
 printf '{"name":"@fleet/platform"}\n' > "$parent/platform/browser/package.json"
 cat > "$FIXTURE/catalog.json" <<'JSON'
-{"roots":["app"],"repositories":[
+{"roots":["app"],"overview":["engine","storage","memory","platform"],"repositories":[
   {"name":"app","branch":"development","paths":["crates"],"exclude":["crates/fixture"],"npm":["browser/package.json"]},
   {"name":"engine","paths":["crates"],"native":["crates/engine-cli"]},
   {"name":"platform","paths":["crates"],"npm":["browser/package.json"]},
@@ -128,16 +129,26 @@ graph() {
 # dev-only dependency are classified using real Cargo metadata, without builds.
 graph --write
 graph --check
-grep -Fq 'p_app_7ccargo_3aapp --> p_engine_7ccargo_3aengine' "$output/README.md"
-grep -Fq 'p_engine_7ccargo_3aengine --> p_platform_7ccargo_3aplatform' "$output/README.md"
-grep -Fq 'p_app_7ccargo_3aapp -.-> p_ic_2dtooling_7ccargo_3aic_2dbuild' "$output/README.md"
-grep -Fq 'p_ic_2dtooling_7ccargo_3aic_2dbuild -.-> p_platform_7ccargo_3aplatform' "$output/README.md"
+grep -Fq 'p_app_7ccargo_3aapp --> p_engine_7ccargo_3aengine' "$output/docs/stack.md"
+grep -Fq 'p_engine_7ccargo_3aengine --> p_platform_7ccargo_3aplatform' "$output/docs/stack.md"
+grep -Fq 'p_app_7ccargo_3aapp -.-> p_ic_2dtooling_7ccargo_3aic_2dbuild' "$output/docs/stack.md"
+grep -Fq 'p_ic_2dtooling_7ccargo_3aic_2dbuild -.-> p_platform_7ccargo_3aplatform' "$output/docs/stack.md"
+grep -Fq 'p_engine_7ccargo_3aengine --> p_engine_7ccargo_3aengine_2dcore' "$output/docs/stack.md"
+grep -Fq 'p_engine_7ccargo_3aengine_2dcore --> p_engine_7ccargo_3astorage' "$output/docs/stack.md"
+grep -Fq 'p_engine_7ccargo_3astorage --> p_engine_7ccargo_3amemory' "$output/docs/stack.md"
+grep -Fq 'p_app_7ccargo_3amemory_2dclient --> p_engine_7ccargo_3amemory' "$output/docs/stack.md"
+grep -Fq 'p_app_7cnpm_3aapp_2dbrowser --> p_platform_7cnpm_3a_40fleet_2fplatform' "$output/docs/stack.md"
+if grep -Eq 'p_app_7ccargo_3aapp --> p_platform_7ccargo_3aplatform|p_unused_7ccargo_3aunused|p_app_7ccargo_3amemory_2dclient --> p_engine_7ccargo_3astorage' "$output/docs/stack.md"; then
+    echo 'graph invented a workspace dependency or retained a redundant arrow' >&2; exit 1
+fi
+# The README groups application packages, contracts through hidden internals,
+# and omits native/browser plumbing without merging distinct storage crates.
+grep -Fq 'p_app_3aapp(["app"])' "$output/README.md"
+grep -Fq 'p_app_3aapp --> p_engine_7ccargo_3aengine' "$output/README.md"
 grep -Fq 'p_engine_7ccargo_3aengine --> p_engine_7ccargo_3astorage' "$output/README.md"
 grep -Fq 'p_engine_7ccargo_3astorage --> p_engine_7ccargo_3amemory' "$output/README.md"
-grep -Fq 'p_app_7ccargo_3amemory_2dclient --> p_engine_7ccargo_3amemory' "$output/README.md"
-grep -Fq 'p_app_7cnpm_3aapp_2dbrowser --> p_platform_7cnpm_3a_40fleet_2fplatform' "$output/README.md"
-if grep -Eq 'p_app_7ccargo_3aapp --> p_platform_7ccargo_3aplatform|p_unused_7ccargo_3aunused|p_engine_7ccargo_3aengine_2dcli|\["ic-tooling"\]|p_app_7ccargo_3amemory_2dclient --> p_engine_7ccargo_3astorage' "$output/README.md"; then
-    echo 'graph invented a workspace dependency or retained a redundant arrow' >&2; exit 1
+if grep -Eq 'engine-core|engine-cli|ic-build|app-browser|memory-client|p_app_3aapp --> p_platform_7ccargo_3aplatform' "$output/README.md"; then
+    echo 'overview expanded internals or retained a redundant arrow' >&2; exit 1
 fi
 grep -Fq 'storage → memory' "$output/docs/stack.md"
 grep -Fq 'engine-cli → app' "$output/docs/stack.md"
@@ -158,6 +169,26 @@ if grep -Fq '/crates/fixture/' "$output/docs/stack.md"; then
 fi
 cp "$output/README.md" "$FIXTURE/saved-readme"
 cp "$output/docs/stack.md" "$FIXTURE/saved-details"
+graph --write
+cmp "$FIXTURE/saved-readme" "$output/README.md"
+cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
+
+# A typo or a native tool in the overview selection must not replace either
+# output. Custom catalogs may still omit the optional overview selection.
+cp "$FIXTURE/catalog.json" "$FIXTURE/saved-catalog"
+for package in missing ic-build; do
+    perl -MJSON::PP -e 'local $/; my $p=shift; my $c=decode_json(<>); $c->{overview}=[$p]; print encode_json($c)' \
+        "$package" "$FIXTURE/saved-catalog" > "$FIXTURE/catalog.json"
+    if graph --write; then echo 'invalid overview selection accepted' >&2; exit 1; fi
+    grep -Eq 'Unknown or ambiguous overview crate|Overview crate is not a selected library' "$FIXTURE/command.log"
+    cmp "$FIXTURE/saved-readme" "$output/README.md"
+    cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
+done
+perl -MJSON::PP -e 'local $/; my $c=decode_json(<>); delete $c->{overview}; print encode_json($c)' \
+    "$FIXTURE/saved-catalog" > "$FIXTURE/catalog.json"
+graph --write
+grep -Fq '["engine-core"]' "$output/README.md"
+cp "$FIXTURE/saved-catalog" "$FIXTURE/catalog.json"
 graph --write
 cmp "$FIXTURE/saved-readme" "$output/README.md"
 cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
@@ -187,7 +218,7 @@ cp "$FIXTURE/cyclic-manifest" "$parent/platform/crates/platform/Cargo.toml"
 graph --write
 grep -Fq 'p_engine_7ccargo_3aengine --> p_platform_7ccargo_3aplatform' "$output/README.md"
 grep -Fq 'p_platform_7ccargo_3aplatform --> p_engine_7ccargo_3aengine' "$output/README.md"
-grep -Fq 'p_app_7ccargo_3aapp --> p_platform_7ccargo_3aplatform' "$output/README.md"
+grep -Fq 'p_app_3aapp --> p_platform_7ccargo_3aplatform' "$output/README.md"
 
 # A broken second output must not publish an already prepared README change.
 cp "$output/README.md" "$FIXTURE/saved-readme"

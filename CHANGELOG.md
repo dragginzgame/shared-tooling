@@ -4,9 +4,9 @@
 
 ### 🩹 Fixed
 
-- Show individual crates and npm packages in the Toko stack diagram, including
-  dependencies within a workspace. Keep memory, storage and host-tool packages
-  distinct instead of merging their dependencies under repository names.
+- Keep the README stack diagram compact by grouping application packages and
+  showing main library crates, with Memory and Storage separate. Retain the full
+  package graph in an expandable detailed view alongside direct manifest evidence.
 - Refresh the stack catalog for IC Observability and Canic's current package
   layout so the daily refresh follows the existing checkouts.
 
