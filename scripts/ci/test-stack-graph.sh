@@ -23,10 +23,12 @@ for file in "$output/README.md" "$output/docs/stack.md"; do
 done
 for name in app engine platform unused ic-tooling; do
     directory="$parent/$name"
-    mkdir -p "$directory/crates/$name/src"
-    printf '[workspace]\nmembers=["crates/%s"]\nresolver="2"\n' "$name" > "$directory/Cargo.toml"
-    printf '[package]\nname="%s"\nversion="0.1.0"\nedition="2021"\n' "$name" > "$directory/crates/$name/Cargo.toml"
-    : > "$directory/crates/$name/src/lib.rs"
+    package="$name"
+    [[ "$name" != ic-tooling ]] || package=ic-build
+    mkdir -p "$directory/crates/$package/src"
+    printf '[workspace]\nmembers=["crates/%s"]\nresolver="2"\n' "$package" > "$directory/Cargo.toml"
+    printf '[package]\nname="%s"\nversion="0.1.0"\nedition="2021"\n' "$package" > "$directory/crates/$package/Cargo.toml"
+    : > "$directory/crates/$package/src/lib.rs"
 done
 cat >> "$parent/app/Cargo.toml" <<'TOML'
 [workspace.dependencies]
@@ -38,12 +40,12 @@ cat >> "$parent/app/crates/app/Cargo.toml" <<'TOML'
 [dependencies]
 renamed_engine.workspace = true
 platform = { path = "../../../platform/crates/platform", optional = true }
-ic-tooling = { path = "../../../ic-tooling/crates/ic-tooling" }
+ic-build = { path = "../../../ic-tooling/crates/ic-build" }
 [dev-dependencies]
 unused = { path = "../../../unused/crates/unused" }
 legacy-bridge = { git = "https://github.com/dragginzgame/engine", rev = "0000000000000000000000000000000000000000" }
 TOML
-cat >> "$parent/ic-tooling/crates/ic-tooling/Cargo.toml" <<'TOML'
+cat >> "$parent/ic-tooling/crates/ic-build/Cargo.toml" <<'TOML'
 [dependencies]
 platform = { path = "../../../platform/crates/platform" }
 TOML
@@ -73,9 +75,33 @@ TOML
 sed 's/members=\["crates\/engine"\]/members=["crates\/engine", "crates\/engine-cli"]/' "$parent/engine/Cargo.toml" > "$FIXTURE/engine-members"
 cp "$FIXTURE/engine-members" "$parent/engine/Cargo.toml"
 cat >> "$parent/engine/crates/engine/Cargo.toml" <<'TOML'
+[dependencies]
+storage = { path = "../storage" }
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 platform = { path = "../../../platform/crates/platform", optional = true }
 TOML
+# Two crates in one workspace are independent dependencies. A consumer of only
+# memory must not inherit storage or the unrelated native CLI's dependencies.
+for package in memory storage; do
+    mkdir -p "$parent/engine/crates/$package/src"
+    : > "$parent/engine/crates/$package/src/lib.rs"
+    printf '[package]\nname="%s"\nversion="0.1.0"\nedition="2021"\n' "$package" > "$parent/engine/crates/$package/Cargo.toml"
+done
+printf '\n[dependencies]\nmemory = { path = "../memory" }\n' >> "$parent/engine/crates/storage/Cargo.toml"
+sed 's/"crates\/engine-cli"/"crates\/engine-cli", "crates\/memory", "crates\/storage"/' "$parent/engine/Cargo.toml" > "$FIXTURE/engine-members"
+cp "$FIXTURE/engine-members" "$parent/engine/Cargo.toml"
+mkdir -p "$parent/app/crates/memory-client/src"
+: > "$parent/app/crates/memory-client/src/lib.rs"
+cat > "$parent/app/crates/memory-client/Cargo.toml" <<'TOML'
+[package]
+name = "memory-client"
+version = "0.1.0"
+edition = "2021"
+[dependencies]
+memory = { path = "../../../engine/crates/memory" }
+TOML
+sed 's/"crates\/fixture"/"crates\/fixture", "crates\/memory-client"/' "$parent/app/Cargo.toml" > "$FIXTURE/app-members"
+cp "$FIXTURE/app-members" "$parent/app/Cargo.toml"
 for name in app platform; do mkdir -p "$parent/$name/browser"; done
 printf '{"name":"app-browser","dependencies":{"@fleet/platform":"1"}}\n' > "$parent/app/browser/package.json"
 printf '{"name":"@fleet/platform"}\n' > "$parent/platform/browser/package.json"
@@ -96,14 +122,19 @@ graph() {
 # dev-only dependency are classified using real Cargo metadata, without builds.
 graph --write
 graph --check
-grep -Fq 'r_app --> r_engine' "$output/README.md"
-grep -Fq 'r_engine --> r_platform' "$output/README.md"
-grep -Fq 'r_app -.-> r_ic_tooling' "$output/README.md"
-grep -Fq 'r_ic_tooling -.-> r_platform' "$output/README.md"
-grep -Fq 'r_engine -.-> r_app' "$output/README.md"
-if grep -Eq 'r_app --> r_platform|r_unused' "$output/README.md"; then
-    echo 'graph retained a redundant arrow or promoted a dev-only owner' >&2; exit 1
+grep -Fq 'p_cargo_3aapp --> p_cargo_3aengine' "$output/README.md"
+grep -Fq 'p_cargo_3aengine --> p_cargo_3aplatform' "$output/README.md"
+grep -Fq 'p_cargo_3aapp -.-> p_cargo_3aic_2dbuild' "$output/README.md"
+grep -Fq 'p_cargo_3aic_2dbuild -.-> p_cargo_3aplatform' "$output/README.md"
+grep -Fq 'p_cargo_3aengine --> p_cargo_3astorage' "$output/README.md"
+grep -Fq 'p_cargo_3astorage --> p_cargo_3amemory' "$output/README.md"
+grep -Fq 'p_cargo_3amemory_2dclient --> p_cargo_3amemory' "$output/README.md"
+grep -Fq 'p_npm_3aapp_2dbrowser --> p_npm_3a_40fleet_2fplatform' "$output/README.md"
+if grep -Eq 'p_cargo_3aapp --> p_cargo_3aplatform|p_cargo_3aunused|p_cargo_3aengine_2dcli|\["ic-tooling"\]|p_cargo_3amemory_2dclient --> p_cargo_3astorage' "$output/README.md"; then
+    echo 'graph invented a workspace dependency or retained a redundant arrow' >&2; exit 1
 fi
+grep -Fq 'storage → memory' "$output/docs/stack.md"
+grep -Fq 'engine-cli → app' "$output/docs/stack.md"
 # shellcheck disable=SC2016 # Match literal Markdown code spans.
 grep -Fq '→ `engine` (cargo normal)' "$output/docs/stack.md"
 grep -Fq 'target-specific' "$output/docs/stack.md"
@@ -147,9 +178,9 @@ mv "$parent/unused.saved" "$parent/unused"
 sed 's/\[build-dependencies\]/[dependencies]/' "$parent/platform/crates/platform/Cargo.toml" > "$FIXTURE/cyclic-manifest"
 cp "$FIXTURE/cyclic-manifest" "$parent/platform/crates/platform/Cargo.toml"
 graph --write
-grep -Fq 'r_engine --> r_platform' "$output/README.md"
-grep -Fq 'r_platform --> r_engine' "$output/README.md"
-grep -Fq 'r_app --> r_platform' "$output/README.md"
+grep -Fq 'p_cargo_3aengine --> p_cargo_3aplatform' "$output/README.md"
+grep -Fq 'p_cargo_3aplatform --> p_cargo_3aengine' "$output/README.md"
+grep -Fq 'p_cargo_3aapp --> p_cargo_3aplatform' "$output/README.md"
 
 # A broken second output must not publish an already prepared README change.
 cp "$output/README.md" "$FIXTURE/saved-readme"

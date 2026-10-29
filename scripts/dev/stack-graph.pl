@@ -46,13 +46,17 @@ sub source_link {
     $path =~ s/([^A-Za-z0-9_.~\/-])/sprintf('%%%02X', ord($1))/ge;
     return "https://github.com/dragginzgame/$repo/blob/$repos{$repo}/$path";
 }
-sub node_id { my $id = shift; $id =~ s/-/_/g; return "r_$id"; }
+sub node_id {
+    my $id = shift;
+    $id =~ s/([^A-Za-z0-9])/sprintf('_%02x', ord($1))/ge;
+    return "p_$id";
+}
 
 my $catalog = decode_json(read_file($catalog_file));
 die "Catalog needs nonempty roots and repositories\n"
     unless ref($catalog) eq 'HASH' && ref($catalog->{roots}) eq 'ARRAY' && @{$catalog->{roots}}
         && ref($catalog->{repositories}) eq 'ARRAY' && @{$catalog->{repositories}};
-my (%workspaces, %owner, @packages, @npm, %edges, %inventory);
+my (%workspaces, %owner, %nodes, %selected, @packages, @npm, %edges, %inventory);
 for my $repo (@{$catalog->{repositories}}) {
     my $name = $repo->{name};
     die "Invalid or duplicate repository name\n"
@@ -89,12 +93,15 @@ for my $repo (@{$catalog->{repositories}}) {
         next unless $members{$package->{id}};
         my $path = File::Spec->abs2rel($package->{manifest_path}, $workspace);
         die "Workspace member outside $name: $path\n" if $path =~ m{^\.\./};
-        $owner{"cargo:$package->{name}"}{$name} = 1;
+        my $key = "cargo:$package->{name}";
+        $owner{$key}{$name} = 1;
+        my $native = $name eq 'ic-tooling' || grep { under($path, $_) } @{$repo->{native} // []};
+        $nodes{$key} = { name => $package->{name}, repo => $name, native => $native };
         my @selected = grep { under($path, $_) } @{$repo->{paths}};
         $matched{$_} = 1 for @selected;
         next unless @selected;
         next if grep { under($path, $_) } @{$repo->{exclude} // []};
-        my $native = $name eq 'ic-tooling' || grep { under($path, $_) } @{$repo->{native} // []};
+        $selected{$key} = 1;
         push @packages, [$name, $path, $package, $native];
         push @{$inventory{$name}}, [$package->{name}, $path];
     }
@@ -104,30 +111,41 @@ for my $repo (@{$catalog->{repositories}}) {
         my $package = decode_json(read_file("$workspace/$path"));
         die "Missing npm name: $name/$path\n" unless $package->{name};
         $owner{"npm:$package->{name}"}{$name} = 1;
+        $nodes{"npm:$package->{name}"} = { name => $package->{name}, repo => $name };
+        $selected{"npm:$package->{name}"} = 1;
         push @npm, [$name, $path, $package];
         push @{$inventory{$name}}, [$package->{name}, $path];
     }
 }
+for my $key (sort keys %owner) {
+    my ($ecosystem, $package) = split /:/, $key, 2;
+    die "Ambiguous owner for $ecosystem dependency $package\n" if keys %{$owner{$key}} > 1;
+}
 sub dependency {
-    my ($from, $path, $package, $ecosystem, $dependency, $kind, $annotation, $source, $native) = @_;
+    my ($repo, $path, $package, $ecosystem, $dependency, $kind, $annotation, $source, $native) = @_;
+    my $from = "$ecosystem:$package";
+    my $to = "$ecosystem:$dependency";
     my @owners = sort keys %{$owner{"$ecosystem:$dependency"} // {}};
     # Pinned Git dependencies can name packages absent from today's workspace.
     if (defined($source) && $source =~ m{^git\+(?:https://github\.com/|ssh://git\@github\.com/)dragginzgame/([a-z][a-z0-9-]*)(?:\.git)?(?:[?#]|$)}) {
         my $git_owner = $1;
         die "Uncatalogued first-party Git owner: $git_owner\n" unless exists $repos{$git_owner};
         @owners = ($git_owner);
+        unless (exists($nodes{$to}) && $nodes{$to}{repo} eq $git_owner) {
+            $to .= ":git:$git_owner";
+            $nodes{$to} = { name => "$dependency (pinned Git)", repo => $git_owner,
+                native => $git_owner eq 'ic-tooling', historical => 1 };
+        }
     }
     return unless @owners;
-    die "Ambiguous owner for $ecosystem dependency $dependency in $from/$path\n" if @owners > 1;
-    my $to = $owners[0];
     return if $to eq $from;
     my $key = "$from\t$to";
     if ($kind eq 'normal') {
         $edges{$key}{normal} = 1;
-        $edges{$key}{solid} = 1 unless $native || $from eq 'ic-tooling' || $to eq 'ic-tooling';
+        $edges{$key}{solid} = 1 unless $native || $nodes{$to}{native};
     }
     $annotation .= ', native package' if $native;
-    my $evidence = "[$package](@{[source_link($from, $path)]}) → `$dependency` ($ecosystem $kind$annotation)";
+    my $evidence = "[$package](@{[source_link($repo, $path)]}) → `$dependency` ($ecosystem $kind$annotation)";
     $edges{$key}{evidence}{$evidence} = 1;
 }
 for my $entry (@packages) {
@@ -171,8 +189,9 @@ sub reachable {
     }
     return 0;
 }
-my %visible = map { $_ => 1 } @{$catalog->{roots}};
-my @pending = @{$catalog->{roots}};
+my %root_repos = map { $_ => 1 } @{$catalog->{roots}};
+my %visible = map { $_ => 1 } grep { $root_repos{$nodes{$_}{repo}} } keys %selected;
+my @pending = sort keys %visible;
 while (@pending) {
     my $from = shift @pending;
     for my $to (keys %{$normal{$from} // {}}) {
@@ -181,10 +200,12 @@ while (@pending) {
 }
 # Transitive reduction is unique on DAGs. Retain all edges if a cycle appears;
 # independently removing edges in a cycle can destroy reachability.
-my $cyclic = grep { reachable($_, $_, undef) } keys %repos;
+my $cyclic = grep { reachable($_, $_, undef) } keys %nodes;
 my $diagram = "```mermaid\nflowchart TD\n";
 for my $name (sort keys %visible) {
-    $diagram .= '    ' . node_id($name) . "[\"$name\"]\n";
+    my $label = $nodes{$name}{name};
+    $label =~ s/"/&quot;/g;
+    $diagram .= '    ' . node_id($name) . "[\"$label\"]\n";
 }
 for my $from (sort keys %visible) {
     for my $to (sort keys %{$normal{$from} // {}}) {
@@ -200,14 +221,17 @@ for my $name (sort keys %repos) {
         map { "[$_->[0]](@{[source_link($name, $_->[1])]})" }
         sort { $a->[0] cmp $b->[0] } @{$inventory{$name}}) . "\n";
 }
-$details .= "\n## Direct dependency evidence\n\nConsumer → owner | Declarations\n--- | ---\n";
+$details .= "\n## Direct dependency evidence\n\nConsumer package → dependency package | Declarations\n--- | ---\n";
 for my $key (sort keys %edges) {
     my ($from, $to) = split /\t/, $key;
-    $details .= "$from → $to | " . join('<br>', sort keys %{$edges{$key}{evidence}}) . "\n";
+    $details .= "$nodes{$from}{name} → $nodes{$to}{name} | " . join('<br>', sort keys %{$edges{$key}{evidence}}) . "\n";
 }
-my @outside = grep { !$visible{$_} } sort keys %repos;
-$details .= "\nCatalogued without a normal-dependency path from the application roots: "
-    . join(', ', map { "`$_`" } @outside) . ".\n" if @outside;
+my @historical = grep { $nodes{$_}{historical} } sort keys %nodes;
+$details .= "\nPinned Git packages absent from their owner's current checkout (no outgoing dependencies inferred): "
+    . join(', ', map { "`$nodes{$_}{name}` (`$nodes{$_}{repo}`)" } @historical) . ".\n" if @historical;
+my @outside = grep { !$visible{$_} } sort keys %selected;
+$details .= "\nSelected packages without a normal-dependency path from the application roots: "
+    . join(', ', map { "`$nodes{$_}{name}`" } @outside) . ".\n" if @outside;
 
 my @updates;
 for my $selection (['README.md', $diagram], ['docs/stack.md', $details]) {

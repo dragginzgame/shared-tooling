@@ -9,7 +9,7 @@
     {"name": "ic-backup", "paths": ["crates"]},
     {"name": "ic-blob-storage", "paths": ["crates", "canisters/standalone"], "native": ["crates/ic-blob-storage-cli"]},
     {"name": "ic-jobs", "paths": ["crates/ic-jobs"]},
-    {"name": "ic-metrics", "paths": ["crates"]},
+    {"name": "ic-observability", "paths": ["crates"]},
     {"name": "ic-persistence", "paths": ["crates"]},
     {"name": "ic-platform", "paths": ["crates"], "npm": ["packages/browser/package.json"]},
     {"name": "ic-profiler", "paths": ["profiler/system"]},

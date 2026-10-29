@@ -18,11 +18,14 @@ policy, deployment identity and validation gates.
 
 ## Toko stack
 
-Arrows point from consumer to dependency owner. This is a condensed view of
-first-party declarations, including optional dependencies, rather than the
-contents of a particular Wasm build. Dashed arrows identify native tooling;
-redundant solid arrows are omitted. The [detailed inventory](docs/stack.md)
-retains direct manifest evidence, build/test declarations and frontend packages.
+Each node is an individual crate or npm package, including dependencies within
+the same workspace. Arrows point from consumer to dependency. For example,
+`ic-memory` and `ic-storage` are separate nodes, not one `ic-persistence` node.
+This is a condensed view of first-party declarations, including optional
+dependencies, rather than the contents of a particular Wasm build. Dashed
+arrows identify native tooling; redundant solid arrows are omitted. The
+[detailed inventory](docs/stack.md) retains repository ownership, every direct
+manifest declaration and build/test dependencies.
 
 <!-- stack-graph:start -->
 ```mermaid
@@ -101,7 +104,7 @@ explains what belongs in Shared Tooling.
 | External IC-specific dependencies and browser SDK boundary | [IC Platform](https://github.com/dragginzgame/ic-platform), through explicit features and interfaces |
 | Owned application encoding and generated TypeScript codecs | [IC Wire](https://github.com/dragginzgame/ic-wire); consumers own transport and application semantics |
 | Cargo/Wasm builds, host primitives, artifact encoding and PocketIC lifecycle | [IC Tooling](https://github.com/dragginzgame/ic-tooling): Build, Host and Testkit in one workspace |
-| Measurement arithmetic | [IC Metrics](https://github.com/dragginzgame/ic-metrics); fleet discovery and dashboards remain here |
+| Measurement arithmetic | [IC Observability](https://github.com/dragginzgame/ic-observability): `ic-metrics`; fleet discovery and dashboards remain here |
 | Product deployment, limits, release inputs and acceptance evidence | Each consuming repository |
 
 Shared distributes reviewed commands and source; consumers compile the standalone

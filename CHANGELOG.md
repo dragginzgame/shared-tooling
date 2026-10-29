@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.27.7]
+
+### 🩹 Fixed
+
+- Show individual crates and npm packages in the Toko stack diagram, including
+  dependencies within a workspace. Keep memory, storage and host-tool packages
+  distinct instead of merging their dependencies under repository names.
+
 ## [0.27.6]
 
 ### 🩹 Fixed

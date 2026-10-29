@@ -1,10 +1,13 @@
 # Toko stack dependency overview
 
-The [README diagram](../README.md#toko-stack) is the compact first-party workspace
-view. Arrows point from consumer to dependency owner. It starts at the **Toko**
-and **Toko Miner** application workspaces; they are separate products, with no
-assumed dependency between them. Dashed arrows identify normal dependencies
-from catalogued native packages or involving IC Tooling's native capabilities.
+The [README diagram](../README.md#toko-stack) shows individual first-party crates
+and npm packages. Arrows point from consumer package to dependency package,
+including dependencies within one workspace. It starts at the selected packages
+in the **Toko** and **Toko Miner** application workspaces; they are separate
+products, with no assumed dependency between them. Repository ownership is
+recorded in the inventory, not merged into graph nodes: `ic-memory`, `ic-storage`
+and `ic-metrics-stable` remain independent packages within `ic-persistence`.
+Dashed arrows identify normal dependencies from or to catalogued native packages.
 Redundant solid arrows are omitted when that portion of the
 normal-dependency graph is acyclic, preserving reachability without routing
 library dependencies through native tooling. The table below retains every
@@ -25,10 +28,11 @@ and development dependencies.
 - The selected frontend and browser `package.json` files contribute first-party
   npm dependencies. The SDK package belongs to IC Platform. External Cargo/npm
   dependencies and generated frontend declarations are outside this overview.
-- Package names map declarations to the catalogued local owner; first-party Git
-  sources identify their repository even when a pinned package has since been
-  removed there. For example, IcyDB's native CLI still declares `canic-icydb`
-  from a pinned Canic revision. This combines
+- Package names map declarations to the catalogued local owner. A first-party
+  Git dependency absent from that owner's current checkout remains a distinct
+  package marked **pinned Git**; no outgoing dependencies are inferred for it.
+  Unrelated packages in the same workspace do not contribute dependencies to a
+  reachable crate. This combines
   current local checkouts, which can contain pending work. It is not a resolved
   lockfile graph, publication/adoption proof, version compatibility check, feature
   closure, deployed topology or Wasm-size report. Source links navigate to the
