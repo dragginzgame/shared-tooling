@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.27.8]
+
+### 🧹 Changed
+
+- Let Cargo graph policies export rendered source/version identities and effective
+  feature unions from one locked offline observation. Keep existing output and
+  policy behavior unless `--json --observations` is selected.
+
 ## [0.27.7]
 
 ### 🩹 Fixed
