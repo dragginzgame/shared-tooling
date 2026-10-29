@@ -17,8 +17,6 @@
   package graph in an expandable detailed view alongside direct manifest evidence.
 - Refresh the stack catalog for IC Observability and Canic's current package
   layout so the daily refresh follows the existing checkouts.
-- Grey out sibling dashboard rows with no open issues or PRs, and rank by open
-  issues, then open PRs, highest first.
 
 ## [0.27.6]
 

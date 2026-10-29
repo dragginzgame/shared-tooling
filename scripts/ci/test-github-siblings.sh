@@ -199,33 +199,15 @@ awk '$1 ~ /^(alpha|beta|zero)$/ { print $1 }' "$fixture/output" > "$fixture/orde
 printf '%s\n' beta alpha zero > "$fixture/expected-order"
 cmp "$fixture/order" "$fixture/expected-order"
 
-# Equal issue counts rank by open PRs numerically, regardless of closed counts.
+# Equal open counts rank by name, regardless of closed counts.
 jq '.data.r0.open.totalCount=9 | .data.r0.closed.totalCount=9990 |
-    .data.r1.open.totalCount=1 | .data.r1.closed.totalCount=1000 | .data.r1.prOpen.totalCount=3 |
-    .data.r2.open.totalCount=1 | .data.r2.closed.totalCount=1000 | .data.r2.prOpen.totalCount=12' \
+    .data.r1.open.totalCount=1 | .data.r1.closed.totalCount=1000 |
+    .data.r2.open.totalCount=1 | .data.r2.closed.totalCount=1000' \
     "$GITHUB_SIBLINGS_TEST_RESPONSE" > "$fixture/ranked"
-cp "$fixture/ranked" "$GITHUB_SIBLINGS_TEST_RESPONSE"
-run --once
-awk '$1 ~ /^(alpha|beta|zero)$/ { print $1 }' "$fixture/output" > "$fixture/order"
-printf '%s\n' alpha zero beta > "$fixture/expected-order"
-cmp "$fixture/order" "$fixture/expected-order"
-
-# Exact ties use repository name for a stable order.
-jq '.data.r2.prOpen.totalCount=3' "$GITHUB_SIBLINGS_TEST_RESPONSE" > "$fixture/ranked"
 cp "$fixture/ranked" "$GITHUB_SIBLINGS_TEST_RESPONSE"
 run --once
 awk '$1 ~ /^(alpha|beta|zero)$/ { print $1 }' "$fixture/output" > "$fixture/order"
 printf '%s\n' alpha beta zero > "$fixture/expected-order"
-cmp "$fixture/order" "$fixture/expected-order"
-
-# PR-only work sorts above repositories with neither issues nor PRs open.
-jq '.data[].open.totalCount=0 | .data.r0.prOpen.totalCount=0 |
-    .data.r1.prOpen.totalCount=3 | .data.r2.prOpen.totalCount=12' \
-    "$GITHUB_SIBLINGS_TEST_RESPONSE" > "$fixture/ranked"
-cp "$fixture/ranked" "$GITHUB_SIBLINGS_TEST_RESPONSE"
-run --once
-awk '$1 ~ /^(alpha|beta|zero)$/ { print $1 }' "$fixture/output" > "$fixture/order"
-printf '%s\n' zero beta alpha > "$fixture/expected-order"
 cmp "$fixture/order" "$fixture/expected-order"
 
 # A GraphQL partial response retains successful rows and fails the report.
@@ -405,12 +387,11 @@ if LC_ALL=C grep -q $'\033' "$fixture/output"; then exit 1; fi
 plain_script="$script"
 sed 's/^colour=false$/colour=true/' "$script" > "${script%.sh}-colour.sh"
 script="${script%.sh}-colour.sh"
-for scenario in gradient equal pr_only all_clear; do
+for scenario in gradient equal zero; do
     case "$scenario" in
         gradient) filter='.data.r1.open.totalCount=5' ;;
         equal) filter='.data.r1.open.totalCount=10 | .data.r1.closed.totalCount=10000' ;;
-        pr_only) filter='.data.r0.open.totalCount=0' ;;
-        all_clear) filter='.data.r0.open.totalCount=0 | .data.r0.prOpen.totalCount=0' ;;
+        zero) filter='.data.r0.open.totalCount=0' ;;
     esac
     jq "$filter" "$fixture/valid-response" > "$GITHUB_SIBLINGS_TEST_RESPONSE"
     run --once
@@ -426,12 +407,9 @@ while (<$fh>) {
     } elsif (/\e/) { die "only repository foregrounds may be coloured\n"; }
 }
 die "missing coloured repositories\n" unless keys(%colours) == 3;
-die "no open issues or PRs must be grey\n" unless $colours{zero} eq '144;144;144';
-if ($scenario eq 'all_clear') {
-    die "empty backlogs must all be grey\n" if grep { $_ ne $colours{zero} } values %colours;
-} elsif ($scenario eq 'pr_only') {
-    die "PR-only work must remain green\n" unless $colours{alpha} eq '170;214;186';
-    die "empty backlog must be grey\n" unless $colours{beta} eq $colours{zero};
+die "zero backlog must be green\n" unless $colours{zero} eq '170;214;186';
+if ($scenario eq 'zero') {
+    die "all-zero backlog must be green\n" if grep { $_ ne $colours{zero} } values %colours;
 } else {
     die "largest backlog must be red\n" unless $colours{alpha} eq '238;180;180';
     my $expected=$scenario eq 'equal' ? $colours{alpha} : '238;220;160';
