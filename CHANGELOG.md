@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.27.6]
+
+### 🩹 Fixed
+
+- Keep single-tool freshness checks independent of unrelated Cargo installations,
+  while preserving refusal for unsupported selected identities and invalid receipts.
+- Correct release help to distinguish fresh releases from explicit saved-attempt
+  recovery with `release-resume VERSION=X.Y.Z`.
+
 ## [0.27.5]
 
 ### 🩹 Fixed

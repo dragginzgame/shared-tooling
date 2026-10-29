@@ -135,6 +135,49 @@ jq -n '{crate:{id:"sccache"},versions:[{crate:"sccache",num:"0.19.0",yanked:fals
 perl "$fixture/snapshot/scripts/dev/check-cargo-tool-versions.pl" --consumer "$fixture/consumer" --cargo-home "$fixture/home" --tool sccache --json > "$fixture/sccache-report.json"
 jq -e '.tools|length==1' "$fixture/sccache-report.json" >/dev/null
 jq -e '.tools[0]|.tool=="sccache" and .status=="current" and .local==null' "$fixture/sccache-report.json" >/dev/null
+# A targeted check admits only its package's global/local receipt identities.
+# Ordinary Git, alternate-registry and prerelease installations remain visible
+# to a full inventory but cannot block observing a different selected tool.
+cp "$fixture/valid.json" "$fixture/cargo-sort.json"
+ln -s "$fixture/bundle/bin/cargo-sort" "$fixture/consumer/.tools/rust/common/bin/cargo-sort"
+jq '.installs += {
+ "twiggy 0.8.0 (git+https://example.invalid/repo)":{},
+ "preview-tool 1.0.0-rc.1 (registry+https://github.com/rust-lang/crates.io-index)":{},
+ "private-tool 1.0.0 (registry+https://example.invalid/index)":{}
+}' "$fixture/bundle/.crates2.json" > "$fixture/mixed-receipt.json"
+cp "$fixture/mixed-receipt.json" "$fixture/home/.crates2.json"
+cp "$fixture/mixed-receipt.json" "$fixture/bundle/.crates2.json"
+sed 's/SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4/SHARED_TOOLING_CARGO_SORT_VERSION=2.1.10/' \
+    "$fixture/snapshot/ci/tool-versions.env" > "$fixture/current-pins"
+cp "$fixture/current-pins" "$fixture/snapshot/ci/tool-versions.env"
+single() {
+    local expected="$1" tool="$2" status=0
+    : > "$fixture/calls"
+    perl "$fixture/snapshot/scripts/dev/check-cargo-tool-versions.pl" --consumer "$fixture/consumer" \
+        --cargo-home "$fixture/home" --tool "$tool" --json > "$fixture/single.json" 2> "$fixture/single.stderr" || status=$?
+    [[ "$status" == "$expected" ]] || { cat "$fixture/single.json" "$fixture/single.stderr"; exit 1; }
+}
+for tool in sccache cargo-sort; do
+    single 0 "$tool"
+    jq -e --arg tool "$tool" '.tools | length == 1 and .[0].tool == $tool and .[0].status == "current"' "$fixture/single.json" >/dev/null
+    [[ "$(wc -l < "$fixture/calls" | tr -d ' ')" == 1 ]] || exit 1
+    grep -F "https://crates.io/api/v1/crates/$tool" "$fixture/calls" >/dev/null
+done
+single 2 twiggy
+[[ ! -s "$fixture/calls" ]] || exit 1
+single 2 preview-tool
+single 2 private-tool
+cp "$fixture/snapshot/ci/tool-versions.env" "$fixture/consumer/ci/tool-versions.env"
+run 2
+grep -E 'unsupported installation identity|non-stable' "$fixture/stderr" >/dev/null
+printf 'invalid JSON\n' > "$fixture/home/.crates2.json"
+single 2 sccache
+printf '{"installs":{"ambiguous":{}}}\n' > "$fixture/home/.crates2.json"
+single 2 sccache
+printf '{"installs":{"sccache 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)":{},"sccache 0.18.0 (registry+https://github.com/rust-lang/crates.io-index)":{}}}\n' > "$fixture/home/.crates2.json"
+single 2 sccache
+# Restore valid observations for the existing outdated-version case below.
+printf '{"installs":{}}\n' > "$fixture/home/.crates2.json"
 jq '.versions += [{crate:"sccache",num:"0.20.0",yanked:false}]' "$fixture/sccache.json" > "$fixture/sccache-new.json"
 cp "$fixture/sccache-new.json" "$fixture/sccache.json"
 status=0

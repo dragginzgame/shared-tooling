@@ -48,7 +48,7 @@ help:
 	@echo "Full release/explicit-check gates: ci, test-portable, check-shell"
 	@echo "Maintainer releases: release-patch, release-minor, release-major"
 	@echo "Delivery: direct by default; RELEASE_DELIVERY=pr selects review then merged validation/tag"
-	@echo "Recovery: rerun the normal release target; saved releases reconcile automatically"
+	@echo "Normal releases start fresh; recover a specific saved attempt with release-resume VERSION=X.Y.Z"
 
 tasks:
 	@cat tasks/README.md
