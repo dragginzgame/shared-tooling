@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: .githooks/pre-commit scripts/dev/install-git-hooks.sh scripts/ci/check-make-execution.sh scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh scripts/ci/check-formatting-hooks.sh scripts/dev/format-frontend.sh make/consumer.mk make/tools.mk make/release.mk make/rust-format.mk make/execution.mk ci/tool-versions.env scripts/ci/fixture-lifecycle.sh scripts/ci/tool-catalog-records.pl
+# Shared companions: .githooks/pre-commit scripts/dev/install-git-hooks.sh scripts/ci/check-make-execution.sh scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh scripts/ci/check-formatting-hooks.sh scripts/ci/prepare-script-fixture.sh scripts/dev/format-frontend.sh make/consumer.mk make/tools.mk make/release.mk make/rust-format.mk make/execution.mk ci/tool-versions.env scripts/ci/fixture-lifecycle.sh scripts/ci/tool-catalog-records.pl
 set -euo pipefail
 
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
@@ -428,8 +428,7 @@ expect_failure bash scripts/dev/install-git-hooks.sh --consumer "$PWD"
 # Qualify the optional shared formatter against real Cargo and the actual hook,
 # including the adoption checker's partial-stage and preservation cases.
 new_fixture $'shared-format-include\n'
-cp "$ROOT/make/consumer.mk" "$ROOT/make/release.mk" "$ROOT/make/rust-format.mk" "$ROOT/make/execution.mk" make/
-cp "$ROOT/scripts/ci/check-format-tools.sh" "$ROOT/scripts/ci/run-formatting.sh" "$ROOT/scripts/ci/run-rust-formatting.pl" "$ROOT/scripts/ci/RustSource.pm" scripts/ci/
+bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$PWD" make/consumer.mk
 cat > Makefile <<'MAKE'
 include make/consumer.mk
 MAKE
@@ -450,7 +449,7 @@ alpha = { package = "shared-format-fixture", path = "." }
 CARGO
 mkdir -p src
 printf 'pub fn fixture( ){}\n' > src/lib.rs
-git add Makefile Cargo.toml src/lib.rs make/consumer.mk make/release.mk make/rust-format.mk make/execution.mk scripts/ci/check-format-tools.sh scripts/ci/run-formatting.sh scripts/ci/run-rust-formatting.pl scripts/ci/RustSource.pm
+git add Makefile Cargo.toml src/lib.rs make scripts
 bash .githooks/pre-commit > output
 [[ "$(git show :src/lib.rs)" == 'pub fn fixture() {}' ]] || exit 1
 awk '/^(alpha|zeta) =/ { print $1 }' Cargo.toml > observed-groups

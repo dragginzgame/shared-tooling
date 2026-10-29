@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.27.5]
+
+### 🩹 Fixed
+
+- Admit maintenance permissions with a no-model sandbox preflight before recording
+  dispatch. Reuse the same settings for execution, carry one completed prior
+  report, and scope scheduled work to the checks its offline permissions support.
+
+### ♻️ Changed
+
+- Run one documentation-only CI job while retaining all native hosts for code
+  changes. Build real-helper test fixtures from their declared dependency roots.
+- Select failed-target excerpts once for retained reports and replay them only
+  in the outer runner's final console summary, preserving complete raw logs.
+
 ## [0.27.4]
 
 ### 🩹 Fixed

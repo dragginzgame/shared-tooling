@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/ci/prepare-script-fixture.sh make/release.mk
 set -euo pipefail
 root="$0"
 [[ "$root" == /* ]] || root="$PWD/$root"
@@ -27,8 +27,7 @@ done
 # The include preserves defaults and consumer admission/environment even in a
 # nested snapshot. Only the runner is substituted; no release effects occur.
 mkdir -p "$fixture/included/vendor/make" "$fixture/included/vendor/scripts/ci"
-cp "$root/make/release.mk" "$root/make/execution.mk" "$fixture/included/vendor/make/"
-cp "$root/scripts/ci/check-make-execution.sh" "$fixture/included/vendor/scripts/ci/"
+bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$fixture/included/vendor" make/release.mk
 cat > "$fixture/included/vendor/scripts/ci/run-release.sh" <<'RUNNER'
 #!/usr/bin/env bash
 set -eu

@@ -38,11 +38,15 @@ case "$*" in
     'exec --help') echo '--ignore-user-config --strict-config'; exit 0 ;;
     'login status') exit 0 ;;
 esac
-[[ "$1" == exec && "$*" != *--approve-for-me* && "$*" == *'approval_policy="never"'* && "$*" == *'default_permissions="maintenance"'* ]] || exit 1
+command="$1"
+[[ "$command" == exec || "$command" == sandbox ]] || exit 1
+[[ "$*" != *--approve-for-me* && "$*" == *'approval_policy="never"'* && "$*" == *'default_permissions="maintenance"'* ]] || exit 1
 output='' work='' filesystem_count=0
+configuration=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -c)
+            configuration+=("$2")
             if [[ "$2" == permissions.maintenance.filesystem* ]]; then
                 [[ "$2" == 'permissions.maintenance.filesystem={'* ]] || exit 1
                 filesystem_count=$((filesystem_count + 1))
@@ -50,10 +54,20 @@ while [[ $# -gt 0 ]]; do
             shift ;;
         --output-last-message) output="$2"; shift ;;
         --cd) work="$2"; shift ;;
+        --) break ;;
     esac
     shift
 done
-[[ "$filesystem_count" == 1 && -n "$output" && "$work" == "${output%/*}" ]] || exit 1
+[[ "$filesystem_count" == 1 ]] || exit 1
+if [[ "$command" == sandbox ]]; then
+    [[ -d "$CODEX_HOME" && "$CODEX_HOME" == "$work/sandbox-config" ]] || exit 1
+    [[ ! -e "$base/preflight-fail" ]] || exit 29
+    printf '%s\n' "${configuration[@]}" > "$base/preflight-configuration"
+    exit 0
+fi
+printf '%s\n' "${configuration[@]}" > "$base/exec-configuration"
+cmp "$base/preflight-configuration" "$base/exec-configuration"
+[[ -n "$output" && "$work" == "${output%/*}" ]] || exit 1
 printf 'dispatch\n' >> "$base/trace"
 cat > "${output%/*}/received-prompt"
 [[ -s "${output%/*}/received-prompt" ]] || exit 1
@@ -72,6 +86,12 @@ projects="$FIXTURE/projects with spaces"
 state="$FIXTURE/state with spaces"
 bash "$runner" --check "$projects" "$state" > "$FIXTURE/check.log"
 [[ ! -e "$MAINTENANCE_TEST_TRACE" && ! -e "$state/runs" ]] || exit 1
+# Configuration admission fails before dispatch and leaves cadence untouched.
+touch "$FIXTURE/preflight-fail"
+if bash "$runner" --check "$projects" "$state" > "$FIXTURE/refused-check.log" 2>&1; then exit 1; fi
+if bash "$runner" --run "$projects" "$FIXTURE/refused-state" > "$FIXTURE/refused-run.log" 2>&1; then exit 1; fi
+[[ ! -e "$FIXTURE/refused-state/last-attempt" && ! -e "$MAINTENANCE_TEST_TRACE" ]] || exit 1
+rm "$FIXTURE/preflight-fail"
 for broad in / "$HOME"; do
     if bash "$runner" --check "$broad" "$state" > "$FIXTURE/broad.log" 2>&1; then exit 1; fi
 done
@@ -119,6 +139,11 @@ first="$1"
 [[ $# == 1 && "$(cat "$first/exit-status")" == 0 ]] || exit 1
 cmp "$first/prompt.txt" "$first/received-prompt"
 [[ "$(cat "$first/report.md")" == 'Fixture report' ]] || exit 1
+# A later failed or incomplete report is never supplied as completed history.
+mkdir "$state/runs/zz-failed" "$state/runs/zz-unfinished"
+printf '9\n' > "$state/runs/zz-failed/exit-status"
+printf 'failed report\n' > "$state/runs/zz-failed/report.md"
+printf 'unfinished report\n' > "$state/runs/zz-unfinished/report.md"
 grep -F 'permissions.maintenance.network.enabled=false' "$first/permissions.txt"
 grep -F 'apps._default.enabled=false' "$first/permissions.txt"
 grep -F 'credentials.toml"="deny"' "$first/permissions.txt"
@@ -134,8 +159,11 @@ bash "$runner" --if-due "$projects" "$state" > "$FIXTURE/failed.log" 2>&1 || sta
 [[ "$status" == 17 ]] || exit 1
 failure_count=0
 for attempt in "$state"/runs/*; do
+    [[ -f "$attempt/exit-status" ]] || continue
     if [[ "$(cat "$attempt/exit-status")" == 17 ]]; then
         [[ "$(cat "$attempt/stderr.log")" == 'retained failure' ]] || exit 1
+        cmp "$first/report.md" "$attempt/prior-report.md"
+        [[ "$(cat "$attempt/prior-report-source.txt")" == "$first/report.md" ]] || exit 1
         failure_count=$((failure_count + 1))
     fi
 done

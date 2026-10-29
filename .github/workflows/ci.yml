@@ -23,6 +23,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       scope: ${{ steps.classify.outputs.scope }}
+      hosts: ${{ steps.classify.outputs.hosts }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
@@ -43,6 +44,11 @@ jobs:
             git diff --check "$CHANGE_BASE...$CHANGE_HEAD" --
           fi
           echo "scope=$scope" >> "$GITHUB_OUTPUT"
+          if [[ "$scope" == docs ]]; then
+            echo 'hosts=["ubuntu-24.04"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'hosts=["ubuntu-24.04","macos-15","macos-15-intel"]' >> "$GITHUB_OUTPUT"
+          fi
 
   lint-and-security:
     runs-on: ubuntu-24.04
@@ -99,11 +105,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-24.04
-          - macos-15
-          - macos-15-intel
-    runs-on: ${{ needs.change-scope.outputs.scope == 'docs' && 'ubuntu-24.04' || matrix.os }}
+        os: ${{ fromJSON(needs.change-scope.outputs.hosts || '["ubuntu-24.04","macos-15","macos-15-intel"]') }}
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:

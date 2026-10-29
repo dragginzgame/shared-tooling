@@ -66,6 +66,11 @@ of failed targets' raw logs in dispatch order. `latest.log` continues to hold
 the last failed target alone. Successful or interrupted batches leave the last
 completed combined view intact; interrupted raw logs remain available separately.
 Nested runs combine their own target streams without rediscovering child files.
+Each failed target's diagnostic excerpt is selected once and reused for retained
+highlights and the GitHub summary. Live output still streams as it arrives;
+only the outermost runner replays final console excerpts, once at the end of the
+batch. Nested runs retain their raw logs and report paths without replaying the
+same excerpts through every parent.
 
 `latest.log`, `latest-errors.log` and `latest-combined.log` are atomically replaced
 convenience copies. A failed update preserves the previous copy and any failed
