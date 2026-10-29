@@ -3,7 +3,7 @@
   "repositories": [
     {"name": "toko", "branch": "development", "paths": ["backend", "fleets"], "native": ["backend/src/bin"], "npm": ["frontend/package.json"]},
     {"name": "toko-miner", "paths": ["apps", "crates"], "npm": ["frontend/package.json"]},
-    {"name": "canic", "paths": ["crates", "integrations"], "native": ["crates/canic-cli", "crates/canic-host"], "exclude": ["crates/canic-tests", "crates/canic-testing-internal"]},
+    {"name": "canic", "paths": ["crates"], "native": ["crates/canic-cli", "crates/canic-host"], "exclude": ["crates/canic-tests", "crates/canic-testing-internal"]},
     {"name": "icydb", "paths": ["crates"], "native": ["crates/icydb-cli"]},
     {"name": "ic-auth", "paths": ["crates", "apps/tooling"], "native": ["apps/tooling"]},
     {"name": "ic-backup", "paths": ["crates"]},

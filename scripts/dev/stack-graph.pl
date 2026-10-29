@@ -93,8 +93,8 @@ for my $repo (@{$catalog->{repositories}}) {
         next unless $members{$package->{id}};
         my $path = File::Spec->abs2rel($package->{manifest_path}, $workspace);
         die "Workspace member outside $name: $path\n" if $path =~ m{^\.\./};
-        my $key = "cargo:$package->{name}";
-        $owner{$key}{$name} = 1;
+        my $key = "$name|cargo:$package->{name}";
+        $owner{"cargo:$package->{name}"}{$name} = 1;
         my $native = $name eq 'ic-tooling' || grep { under($path, $_) } @{$repo->{native} // []};
         $nodes{$key} = { name => $package->{name}, repo => $name, native => $native };
         my @selected = grep { under($path, $_) } @{$repo->{paths}};
@@ -111,33 +111,30 @@ for my $repo (@{$catalog->{repositories}}) {
         my $package = decode_json(read_file("$workspace/$path"));
         die "Missing npm name: $name/$path\n" unless $package->{name};
         $owner{"npm:$package->{name}"}{$name} = 1;
-        $nodes{"npm:$package->{name}"} = { name => $package->{name}, repo => $name };
-        $selected{"npm:$package->{name}"} = 1;
+        $nodes{"$name|npm:$package->{name}"} = { name => $package->{name}, repo => $name };
+        $selected{"$name|npm:$package->{name}"} = 1;
         push @npm, [$name, $path, $package];
         push @{$inventory{$name}}, [$package->{name}, $path];
     }
 }
-for my $key (sort keys %owner) {
-    my ($ecosystem, $package) = split /:/, $key, 2;
-    die "Ambiguous owner for $ecosystem dependency $package\n" if keys %{$owner{$key}} > 1;
-}
 sub dependency {
     my ($repo, $path, $package, $ecosystem, $dependency, $kind, $annotation, $source, $native) = @_;
-    my $from = "$ecosystem:$package";
-    my $to = "$ecosystem:$dependency";
+    my $from = "$repo|$ecosystem:$package";
     my @owners = sort keys %{$owner{"$ecosystem:$dependency"} // {}};
     # Pinned Git dependencies can name packages absent from today's workspace.
     if (defined($source) && $source =~ m{^git\+(?:https://github\.com/|ssh://git\@github\.com/)dragginzgame/([a-z][a-z0-9-]*)(?:\.git)?(?:[?#]|$)}) {
         my $git_owner = $1;
         die "Uncatalogued first-party Git owner: $git_owner\n" unless exists $repos{$git_owner};
         @owners = ($git_owner);
-        unless (exists($nodes{$to}) && $nodes{$to}{repo} eq $git_owner) {
-            $to .= ":git:$git_owner";
+        my $to = "$git_owner|$ecosystem:$dependency";
+        unless (exists($nodes{$to})) {
             $nodes{$to} = { name => "$dependency (pinned Git)", repo => $git_owner,
                 native => $git_owner eq 'ic-tooling', historical => 1 };
         }
     }
     return unless @owners;
+    die "Ambiguous owner for $ecosystem dependency $dependency in $repo/$path\n" if @owners > 1;
+    my $to = "$owners[0]|$ecosystem:$dependency";
     return if $to eq $from;
     my $key = "$from\t$to";
     if ($kind eq 'normal') {

@@ -7,6 +7,8 @@
 - Show individual crates and npm packages in the Toko stack diagram, including
   dependencies within a workspace. Keep memory, storage and host-tool packages
   distinct instead of merging their dependencies under repository names.
+- Refresh the stack catalog for IC Observability and Canic's current package
+  layout so the daily refresh follows the existing checkouts.
 
 ## [0.27.6]
 

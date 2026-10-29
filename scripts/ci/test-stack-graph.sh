@@ -30,6 +30,12 @@ for name in app engine platform unused ic-tooling; do
     printf '[package]\nname="%s"\nversion="0.1.0"\nedition="2021"\n' "$package" > "$directory/crates/$package/Cargo.toml"
     : > "$directory/crates/$package/src/lib.rs"
 done
+# An unselected test package can reuse an application's name in another repo.
+# It must neither replace the application's node nor make an unused name ambiguous.
+mkdir -p "$parent/unused/testing/memory-client/src"
+: > "$parent/unused/testing/memory-client/src/lib.rs"
+printf '[package]\nname="memory-client"\nversion="0.1.0"\nedition="2021"\n' > "$parent/unused/testing/memory-client/Cargo.toml"
+printf '[workspace]\nmembers=["crates/unused", "testing/memory-client"]\nresolver="2"\n' > "$parent/unused/Cargo.toml"
 cat >> "$parent/app/Cargo.toml" <<'TOML'
 [workspace.dependencies]
 renamed_engine = { package = "engine", path = "../engine/crates/engine" }
@@ -122,19 +128,20 @@ graph() {
 # dev-only dependency are classified using real Cargo metadata, without builds.
 graph --write
 graph --check
-grep -Fq 'p_cargo_3aapp --> p_cargo_3aengine' "$output/README.md"
-grep -Fq 'p_cargo_3aengine --> p_cargo_3aplatform' "$output/README.md"
-grep -Fq 'p_cargo_3aapp -.-> p_cargo_3aic_2dbuild' "$output/README.md"
-grep -Fq 'p_cargo_3aic_2dbuild -.-> p_cargo_3aplatform' "$output/README.md"
-grep -Fq 'p_cargo_3aengine --> p_cargo_3astorage' "$output/README.md"
-grep -Fq 'p_cargo_3astorage --> p_cargo_3amemory' "$output/README.md"
-grep -Fq 'p_cargo_3amemory_2dclient --> p_cargo_3amemory' "$output/README.md"
-grep -Fq 'p_npm_3aapp_2dbrowser --> p_npm_3a_40fleet_2fplatform' "$output/README.md"
-if grep -Eq 'p_cargo_3aapp --> p_cargo_3aplatform|p_cargo_3aunused|p_cargo_3aengine_2dcli|\["ic-tooling"\]|p_cargo_3amemory_2dclient --> p_cargo_3astorage' "$output/README.md"; then
+grep -Fq 'p_app_7ccargo_3aapp --> p_engine_7ccargo_3aengine' "$output/README.md"
+grep -Fq 'p_engine_7ccargo_3aengine --> p_platform_7ccargo_3aplatform' "$output/README.md"
+grep -Fq 'p_app_7ccargo_3aapp -.-> p_ic_2dtooling_7ccargo_3aic_2dbuild' "$output/README.md"
+grep -Fq 'p_ic_2dtooling_7ccargo_3aic_2dbuild -.-> p_platform_7ccargo_3aplatform' "$output/README.md"
+grep -Fq 'p_engine_7ccargo_3aengine --> p_engine_7ccargo_3astorage' "$output/README.md"
+grep -Fq 'p_engine_7ccargo_3astorage --> p_engine_7ccargo_3amemory' "$output/README.md"
+grep -Fq 'p_app_7ccargo_3amemory_2dclient --> p_engine_7ccargo_3amemory' "$output/README.md"
+grep -Fq 'p_app_7cnpm_3aapp_2dbrowser --> p_platform_7cnpm_3a_40fleet_2fplatform' "$output/README.md"
+if grep -Eq 'p_app_7ccargo_3aapp --> p_platform_7ccargo_3aplatform|p_unused_7ccargo_3aunused|p_engine_7ccargo_3aengine_2dcli|\["ic-tooling"\]|p_app_7ccargo_3amemory_2dclient --> p_engine_7ccargo_3astorage' "$output/README.md"; then
     echo 'graph invented a workspace dependency or retained a redundant arrow' >&2; exit 1
 fi
 grep -Fq 'storage → memory' "$output/docs/stack.md"
 grep -Fq 'engine-cli → app' "$output/docs/stack.md"
+grep -Fq 'app → legacy-bridge (pinned Git)' "$output/docs/stack.md"
 # shellcheck disable=SC2016 # Match literal Markdown code spans.
 grep -Fq '→ `engine` (cargo normal)' "$output/docs/stack.md"
 grep -Fq 'target-specific' "$output/docs/stack.md"
@@ -178,9 +185,9 @@ mv "$parent/unused.saved" "$parent/unused"
 sed 's/\[build-dependencies\]/[dependencies]/' "$parent/platform/crates/platform/Cargo.toml" > "$FIXTURE/cyclic-manifest"
 cp "$FIXTURE/cyclic-manifest" "$parent/platform/crates/platform/Cargo.toml"
 graph --write
-grep -Fq 'p_cargo_3aengine --> p_cargo_3aplatform' "$output/README.md"
-grep -Fq 'p_cargo_3aplatform --> p_cargo_3aengine' "$output/README.md"
-grep -Fq 'p_cargo_3aapp --> p_cargo_3aplatform' "$output/README.md"
+grep -Fq 'p_engine_7ccargo_3aengine --> p_platform_7ccargo_3aplatform' "$output/README.md"
+grep -Fq 'p_platform_7ccargo_3aplatform --> p_engine_7ccargo_3aengine' "$output/README.md"
+grep -Fq 'p_app_7ccargo_3aapp --> p_platform_7ccargo_3aplatform' "$output/README.md"
 
 # A broken second output must not publish an already prepared README change.
 cp "$output/README.md" "$FIXTURE/saved-readme"
