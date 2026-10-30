@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.27.8]
+
+### 🧹 Cleanup
+
+- Keep validation input checkpointing in a declared companion captured with the
+  runner, preserving input-drift refusal even when a gate replaces source files.
+- Share coordinated Cargo workspace admission across preparation and checks,
+  retaining independent observations, original-lock admission and complete
+  Cargo/logger failure evidence at each boundary.
+
 ## [0.27.7]
 
 ### 🩹 Fixed

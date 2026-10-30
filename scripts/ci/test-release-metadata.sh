@@ -254,9 +254,7 @@ if RELEASE_DATE=2026-10-07 bash "$ROOT/scripts/release/metadata.sh" preflight > 
 logging_root="$FIXTURE/logging"
 mkdir -p "$logging_root/scripts/ci"
 git init -q "$logging_root"
-cp "$ROOT/scripts/ci/run-validation-targets.sh" "$logging_root/scripts/ci/"
-cp "$ROOT/scripts/ci/check-make-execution.sh" "$logging_root/scripts/ci/"
-cp "$ROOT/scripts/ci/verify-file-checksum.sh" "$logging_root/scripts/ci/"
+bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$logging_root" scripts/ci/run-validation-targets.sh
 cp "$ROOT/Makefile" "$logging_root/Makefile"
 mkdir -p "$logging_root/make"
 cp "$ROOT/make/consumer.mk" "$logging_root/make/"
