@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.27.9]
+
+### 🥾 Governance
+
+- Prefer existing Host owners and safe standard-library/Rustix interfaces for
+  native operations, retaining documented raw-FFI exceptions and native-host
+  qualification without requiring Rustix in unrelated or Wasm packages.
+
 ## [0.27.8]
 
 ### 🥾 Governance
