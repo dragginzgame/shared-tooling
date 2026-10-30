@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.27.11]
+
+### 🥾 Governance
+
+- Prohibit Rust `#[path]` module wiring, including conditional overrides and
+  generated code. Require ordinary module layouts or a shared library owner
+  across production code, tests, examples and benchmarks.
+- Prefer scoped Rust lint expectations over allowances. Require repositories to
+  review every `allow` for conversion, explain retained exceptions, and keep
+  unfulfilled expectations visible.
+
 ## [0.27.10]
 
 ### ➕ Added
