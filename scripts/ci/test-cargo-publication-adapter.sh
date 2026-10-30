@@ -30,6 +30,7 @@ cat > "$fixture/bin/cargo" <<'CARGO'
 set -euo pipefail
 case "$1" in
     metadata)
+        printf '%s\0' "$@" > "$PUBLICATION_FIXTURE/metadata-arguments"
         printf 'metadata\n' >> "$PUBLICATION_FIXTURE/events"
         cat "$PUBLICATION_FIXTURE/metadata.json"
         if [[ "${PUB_METADATA_FAILURE:-0}" == 1 ]]; then echo metadata-error >&2; exit 43; fi ;;
@@ -69,7 +70,7 @@ cat > "$fixture/metadata-original.json" <<'JSON'
 {"version":1,"workspace_members":["library-id","cli-id"],"packages":[{"id":"library-id","name":"library","version":"1.2.3","source":null,"publish":null},{"id":"cli-id","name":"cli","version":"2.0.0","source":null,"publish":["crates-io"]}]}
 JSON
 reset_case() {
-    rm -f "$fixture/arguments" "$fixture/prepared" "$fixture/verified"
+    rm -f "$fixture/arguments" "$fixture/metadata-arguments" "$fixture/prepared" "$fixture/verified"
     : > "$fixture/events"
     cp "$fixture/metadata-original.json" "$fixture/metadata.json"
     unset PUB_DRIFT PUB_DIRTY PUB_METADATA_FAILURE PUB_VERIFY_STATUS PUB_UPLOAD_STATUS PUB_WAIT_PREPARE
@@ -101,6 +102,53 @@ reset_case
 PUB_WAIT_PREPARE=1 run -j2 publish-check
 printf '%s\n' metadata prepare verify publish > "$fixture/expected-events"
 cmp "$fixture/expected-events" "$fixture/events"
+
+# Structured fields retain exact argument bytes without evaluating shell text.
+mkdir -p "selected project's" 'cache ; touch injected'
+printf '[workspace]\n' > "selected project's/Cargo.toml"
+manifest="$PWD/selected project's/Cargo.toml"
+target_dir="$PWD/cache ; touch injected"
+for feature in all named; do
+    reset_case
+    if [[ "$feature" == all ]]; then
+        selected_features=(CARGO_PUBLISH_ALL_FEATURES=1)
+        feature_arguments=(--all-features)
+    else
+        selected_features=('CARGO_PUBLISH_FEATURES=library/one cli/two;touch injected' CARGO_PUBLISH_NO_DEFAULT_FEATURES=1)
+        feature_arguments=(--no-default-features --features 'library/one cli/two;touch injected')
+    fi
+    PUB_DIRTY=1 run publish-check "CARGO_PUBLISH_MANIFEST_PATH=$manifest" \
+        "CARGO_PUBLISH_TARGET_DIR=$target_dir" CARGO_PUBLISH_CHECK_ALLOW_DIRTY=1 "${selected_features[@]}"
+    printf '%s\0' publish --locked --registry crates-io --package library@1.2.3 --package cli@2.0.0 \
+        --manifest-path "$manifest" --target-dir "$target_dir" "${feature_arguments[@]}" --allow-dirty --dry-run > "$fixture/expected-arguments"
+    cmp "$fixture/expected-arguments" "$fixture/arguments"
+    printf '%s\0' metadata --no-deps --locked --offline --format-version 1 --manifest-path "$manifest" > "$fixture/expected-metadata"
+    cmp "$fixture/expected-metadata" "$fixture/metadata-arguments"
+    [[ ! -e injected ]]
+done
+reset_case
+PUB_DIRTY=1 refuse publish CARGO_PUBLISH_CHECK_ALLOW_DIRTY=1
+reset_case
+run publish CARGO_PUBLISH_CHECK_ALLOW_DIRTY=1
+if tr '\0' '\n' < "$fixture/arguments" | grep -Fx -- --allow-dirty; then exit 1; fi
+for option in 'CARGO_PUBLISH_ALL_FEATURES=invalid' 'CARGO_PUBLISH_NO_DEFAULT_FEATURES=invalid' \
+    'CARGO_PUBLISH_CHECK_ALLOW_DIRTY=invalid' 'CARGO_PUBLISH_FEATURES=--all' \
+    'CARGO_PUBLISH_TARGET_DIR=missing directory' "CARGO_PUBLISH_MANIFEST_PATH=$fixture/metadata.json"; do
+    reset_case
+    refuse publish-check "$option"
+    [[ ! -s "$fixture/events" ]]
+done
+reset_case
+refuse publish-check CARGO_PUBLISH_ALL_FEATURES=1 CARGO_PUBLISH_FEATURES=one
+[[ ! -s "$fixture/events" ]]
+reset_case
+refuse publish-check $'CARGO_PUBLISH_FEATURES=one\ntwo'
+[[ ! -s "$fixture/events" ]]
+ln -s "$manifest" "linked.toml"
+reset_case
+refuse publish-check "CARGO_PUBLISH_MANIFEST_PATH=$PWD/linked.toml"
+[[ ! -s "$fixture/events" ]]
+
 for selection in '' unknown 'library library' '--workspace' 'library;touch injected'; do
     reset_case
     refuse publish "PACKAGE=$selection"
