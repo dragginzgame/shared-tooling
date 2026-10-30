@@ -34,9 +34,10 @@ OVERALL shows OPEN, CLOSED; TODAY shows ADDED, CLOSED for both sections.
 Closed PRs include merged PRs.
 Open PRs include drafts. Numeric padding starts at four characters and expands
 to fit repository counts. Totals grow independently; headings/errors also fit.
-Sort by open issues descending, then name; failed rows appear last.
-Pale green-to-yellow-to-red row text marks increasing open issue counts,
-relative to the largest backlog in this report. Totals and errors stay uncoloured.
+Sort by open issues descending, then open PRs descending, then name; errors last.
+Rows with no open issues or PRs are grey. Otherwise pale green-to-yellow-to-red
+text marks increasing open issue counts, relative to the largest backlog in
+this report. Totals and errors stay uncoloured.
 NO_COLOR or TERM=dumb disables colour; redirected reports are always plain.
 Closed issues include duplicates and issues closed as not planned.
 TODAY counts creations in any state and currently closed items whose latest
@@ -297,7 +298,11 @@ colour_open() {
 print_counts() {
     local name="$1" open="$2" closed="$3" foreground='' reset=''
     if [[ "$colour" == true && $# == 9 ]]; then
-        foreground="$(colour_open "$open" "$max_open")"
+        if [[ "$open" == 0 && "$4" == 0 ]]; then
+            foreground=$'\033[38;2;144;144;144m'
+        else
+            foreground="$(colour_open "$open" "$max_open")"
+        fi
         reset=$'\033[39m'
     fi
     print_row "$name" "$(format_count "$open")" "$(format_count "$closed")" \
@@ -319,7 +324,7 @@ render() {
     printf 'Sibling GitHub issues and pull requests | %s\n' "$(date '+%Y-%m-%d %H:%M:%S %Z')"
     printf 'OVERALL: OPEN, CLOSED. TODAY: ADDED, CLOSED. Closed PRs include merges.\n'
     printf 'TODAY since %s (06:00 Paris time).\n' "$cutoff"
-    printf 'Most open issues first; colour scales by backlog. Refresh: %ss | q quit | r refresh\n\n' "$interval"
+    printf 'Sort: open issues, then open PRs (descending). Refresh: %ss | q quit | r refresh\n\n' "$interval"
     : > "$scratch/rows"
     for ((i=0; i<repo_count; i++)); do
         if counts="$(jq -er --arg key "r$i" '
@@ -370,7 +375,7 @@ render() {
         width="$expanded_width"
         show_owner=true
     fi
-    sort -t $'\t' -k1,1nr -k2,2 "$scratch/rows" > "$scratch/sorted"
+    sort -t $'\t' -k1,1nr -k4,4nr -k2,2 "$scratch/rows" > "$scratch/sorted"
     printf '%*s  %s | %s\n' "$width" '' "$(center_text ISSUES "$((issues_width + 3 + today_group_width))")" \
         "$(center_text PRS "$((prs_width + 3 + pr_today_width))")"
     printf '%*s  %s | %s | %s | %s\n' "$width" '' "$(center_text OVERALL "$issues_width")" \
