@@ -2,6 +2,12 @@
 
 ## [0.27.9]
 
+### ➕ Added
+
+- Add an opt-in publication Make adapter over the retained Cargo attempt runner.
+  Consumers declare their package roster, registry and validation targets; shared
+  mechanics select exact workspace versions for default or `PACKAGE=` requests.
+
 ### 🧹 Cleanup
 
 - Keep validation input checkpointing in a declared companion captured with the
