@@ -17,7 +17,7 @@ export GRAPH_CALLS="$fixture/calls" GRAPH_INPUT="$fixture/graph" GRAPH_MODE=pass
 cat > "$fixture/bin/cargo" <<'CARGO'
 #!/usr/bin/env bash
 set -euo pipefail
-[[ "$*" == 'tree --locked --offline --color never --target wasm32-unknown-unknown --edges normal,build --prefix none --format {p} --package consumer'* || "$*" == 'tree --locked --offline --color never --target wasm32-unknown-unknown --edges normal,build,features --prefix none --format {p} --package consumer'* ]]
+[[ "$*" == 'tree --locked --offline --color never --target wasm32-unknown-unknown --edges normal,build --prefix none --format {p} --package consumer'* || "$*" == 'tree --locked --offline --color never --target wasm32-unknown-unknown --edges normal,build,features --prefix none --format {p} --package consumer'* || "$*" == *$'--format {p}\t{f} --package consumer'* ]]
 [[ "$CARGO_NET_OFFLINE" == true && "$RUSTUP_AUTO_INSTALL" == 0 ]]
 printf '%s\n' "$*" >> "$GRAPH_CALLS"
 cat "$GRAPH_INPUT"
@@ -114,6 +114,17 @@ for suffix in $'\n' $'\r'; do
  rm "$fixture/alias"
 done
 [[ ! -s "$GRAPH_CALLS" ]]
+# One query supplies identities and effective unions, including selected roots.
+: > "$GRAPH_CALLS"
+printf 'consumer v0.1.0\troot\nsubstrate v2.0.0 (file:///a source)\tstd\nsubstrate v2.0.0 (file:///a source)\tother,std\n' > "$GRAPH_INPUT"
+"${checker[@]}" --require substrate=1 --json --observations > "$fixture/observation.json"
+[[ "$(wc -l < "$GRAPH_CALLS")" == 1 ]]
+jq -e '[.observations[] | select(.name == "substrate")][0].features == ["other","std"]' "$fixture/observation.json" > /dev/null
+for invalid in 'consumer v0.1.0' $'consumer v0.1.0\tbad,,feature' $'consumer v0.1.0\tbad feature'; do
+    printf '%s\n' "$invalid" > "$GRAPH_INPUT"
+    if "${checker[@]}" --forbid absent --json --observations > "$fixture/malformed.json" 2> "$fixture/malformed.log"; then exit 1; fi
+    [[ ! -s "$fixture/malformed.json" ]]
+done
 # Real offline Cargo: transitive aliases, optional features, build/dev edges and
 # target placement. No registry dependencies, compilation or network is involved.
 export PATH="$original_path"
@@ -173,6 +184,11 @@ status=0
 jq -e '.violations[0].feature == "bridge/danger" and .violations[0].path[-1] == "bridge feature \"danger\""' "$fixture/feature-explain.json" > /dev/null
 "${checker[@]}" --target "$native" --forbid substrate --json > "$fixture/clean.json"
 jq -e '.passed == true and .violations == []' "$fixture/clean.json" > /dev/null
+cmp "$fixture/lock.before" "$actual/Cargo.lock"
+"${checker[@]}" --target "$native" --features runtime --require bridge=1 --observations --json > "$fixture/observed.json"
+jq -e '[.observations[] | select(.name == "bridge")][0] | (.identity | startswith("bridge v0.1.0 (")) and .features == ["danger", "default"]' "$fixture/observed.json" > /dev/null
+"${overlapping[@]}" --all-features --forbid-feature bridge/other --observations --explain --json > "$fixture/overlapping.json"
+jq -e '[.observations[] | select(.name == "bridge")][0].features == ["danger", "default"]' "$fixture/overlapping.json" > /dev/null
 cmp "$fixture/lock.before" "$actual/Cargo.lock"
 fixture_complete=true
 echo 'Locked graph selection, identity counts, aliases, failed observations and offline Cargo checks passed'

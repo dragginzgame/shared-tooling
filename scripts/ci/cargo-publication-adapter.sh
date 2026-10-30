@@ -33,7 +33,9 @@ perl "$self/cargo-publication-selection.pl" "$selection/metadata.json" \
 arguments=()
 while IFS= read -r -d '' package; do arguments+=(--package "$package"); done < "$selection/packages.nul"
 [[ ${#arguments[@]} -gt 0 ]] || exit 2
-"${CARGO_PUBLISH_MAKE:-make}" --no-print-directory "${verify_targets[@]}"
+for target in "${verify_targets[@]}"; do
+    "${CARGO_PUBLISH_MAKE:-make}" --no-print-directory "$target"
+done
 # Every invocation uses the same parent lock; unique selection evidence is never
 # the runner's lock namespace. Retained incomplete attempts prevent blind replay.
 attempt="$parent/$mode.${selection##*/}"

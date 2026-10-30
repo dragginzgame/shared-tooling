@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.27.9]
+## [0.27.10]
 
 ### ➕ Added
 
@@ -8,8 +8,13 @@
   Consumers declare their package roster, registry and validation targets; shared
   mechanics select exact workspace versions for default or `PACKAGE=` requests.
 
+## [0.27.9]
+
 ### 🧹 Cleanup
 
+- Let Cargo graph policies export rendered source/version identities and effective
+  feature unions from one locked offline observation. Keep existing output and
+  policy behavior unless `--json --observations` is selected.
 - Keep validation input checkpointing in a declared companion captured with the
   runner, preserving input-drift refusal even when a gate replaces source files.
 - Share coordinated Cargo workspace admission across preparation and checks,
@@ -21,6 +26,12 @@
 - Prefer existing Host owners and safe standard-library/Rustix interfaces for
   native operations, retaining documented raw-FFI exceptions and native-host
   qualification without requiring Rustix in unrelated or Wasm packages.
+
+### 🧪 Testing
+
+- Qualify release tracking against Git's observed post-push ref, including Git
+  versions that refresh it during a URL push. Continue to require the runner to
+  leave that ref alone when no matching upstream is configured.
 
 ## [0.27.8]
 

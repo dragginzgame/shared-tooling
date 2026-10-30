@@ -51,11 +51,16 @@ SHARED_TOOLING_RUST := 0
 PACKAGE := library
 CARGO_PUBLISH_PACKAGES := library cli
 CARGO_PUBLISH_REGISTRY := crates-io
-CARGO_PUBLISH_VERIFY_TARGETS := verify
+CARGO_PUBLISH_VERIFY_TARGETS := prepare verify
 include $(SHARED_TOOLING_ROOT)/make/consumer.mk
 help:
 	@echo help
+prepare:
+	@if [ "$${PUB_WAIT_PREPARE:-0}" = 1 ]; then sleep 1; fi
+	@echo prepare >> "$$PUBLICATION_FIXTURE/events"
+	@touch "$$PUBLICATION_FIXTURE/prepared"
 verify:
+	@test -f "$$PUBLICATION_FIXTURE/prepared"
 	@echo verify >> "$$PUBLICATION_FIXTURE/events"
 	@touch "$$PUBLICATION_FIXTURE/verified"
 	@exit $${PUB_VERIFY_STATUS:-0}
@@ -64,10 +69,10 @@ cat > "$fixture/metadata-original.json" <<'JSON'
 {"version":1,"workspace_members":["library-id","cli-id"],"packages":[{"id":"library-id","name":"library","version":"1.2.3","source":null,"publish":null},{"id":"cli-id","name":"cli","version":"2.0.0","source":null,"publish":["crates-io"]}]}
 JSON
 reset_case() {
-    rm -f "$fixture/arguments" "$fixture/verified"
+    rm -f "$fixture/arguments" "$fixture/prepared" "$fixture/verified"
     : > "$fixture/events"
     cp "$fixture/metadata-original.json" "$fixture/metadata.json"
-    unset PUB_DRIFT PUB_DIRTY PUB_METADATA_FAILURE PUB_VERIFY_STATUS PUB_UPLOAD_STATUS
+    unset PUB_DRIFT PUB_DIRTY PUB_METADATA_FAILURE PUB_VERIFY_STATUS PUB_UPLOAD_STATUS PUB_WAIT_PREPARE
 }
 run() { make --no-print-directory "$@" > "$fixture/result.log" 2>&1; }
 refuse() {
@@ -85,13 +90,17 @@ for goal in publish-check publish; do
             if [[ "$selection" == library ]]; then selectors=(--package library@1.2.3); else selectors=(--package cli@2.0.0); fi
         fi
         run "$goal" ${package_args[@]+"${package_args[@]}"}
-        printf '%s\n' metadata verify publish > "$fixture/expected-events"
+        printf '%s\n' metadata prepare verify publish > "$fixture/expected-events"
         cmp "$fixture/expected-events" "$fixture/events"
         printf '%s\0' publish --locked --registry crates-io "${selectors[@]}" > "$fixture/expected-arguments"
         [[ "$goal" != publish-check ]] || printf '%s\0' --dry-run >> "$fixture/expected-arguments"
         cmp "$fixture/expected-arguments" "$fixture/arguments"
     done
 done
+reset_case
+PUB_WAIT_PREPARE=1 run -j2 publish-check
+printf '%s\n' metadata prepare verify publish > "$fixture/expected-events"
+cmp "$fixture/expected-events" "$fixture/events"
 for selection in '' unknown 'library library' '--workspace' 'library;touch injected'; do
     reset_case
     refuse publish "PACKAGE=$selection"
