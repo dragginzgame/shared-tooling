@@ -674,8 +674,10 @@ done
 selection_consumer="$FIXTURE/selection"
 mkdir "$selection_consumer"
 git init -q "$selection_consumer"
-for path in scripts/ci/run-validation-targets.sh scripts/ci/check-make-execution.sh \
-    scripts/ci/run-release.sh scripts/ci/validate-release-inputs.pl scripts/ci/StableVersion.pm \
+for selected_source in "$source_root" "$revision_root"; do
+    bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$selected_source" scripts/ci/run-validation-targets.sh
+done
+for path in scripts/ci/run-release.sh scripts/ci/validate-release-inputs.pl scripts/ci/StableVersion.pm \
     scripts/ci/check-release-tag.sh scripts/ci/fixture-lifecycle.sh \
     scripts/ci/test-release-runner.sh scripts/ci/finalize-release-changelog.awk \
     scripts/ci/test-host-tools.sh scripts/ci/test-ic-tools.sh scripts/ci/test-tool-evidence.sh \
@@ -699,7 +701,7 @@ for attempt in first retry; do
     if [[ "$attempt" == first ]]; then cp "$selection_consumer/config/selection" "$FIXTURE/selection-after"; fi
 done
 cmp "$FIXTURE/selection-after" "$selection_consumer/config/selection"
-[[ "$(awk '$1 == "file" { n++ } END { print n }' "$selection_consumer/config/selection")" == 4 ]] || exit 1
+[[ "$(awk '$1 == "file" { n++ } END { print n }' "$selection_consumer/config/selection")" == 5 ]] || exit 1
 [[ "$(cat "$selection_consumer/local.txt")" == 'unrelated input' ]] || exit 1
 bash "$selection_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
     --consumer "$selection_consumer" --manifest config/selection >/dev/null

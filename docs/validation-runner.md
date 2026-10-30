@@ -10,8 +10,12 @@ prefix, retains complete and condensed failure logs, and writes a GitHub step
 summary when one is available. Pass `--fail-fast` to stop after the first
 failed target.
 
-Vendor `scripts/ci/check-make-execution.sh` and `scripts/ci/verify-file-checksum.sh`
-alongside the runner. The execution check rejects
+Vendor `scripts/ci/check-make-execution.sh`, `scripts/ci/verify-file-checksum.sh`
+and [the input-checkpoint companion](../scripts/ci/validation-input-checkpoint.pl)
+alongside the runner through its declared companion closure. The runner captures
+that companion with its own source before dispatch, so a gate replacing the
+original checkout cannot change the active invocation's input admission.
+The execution check rejects
 inherited Make ignore-errors, dry-run, question, touch and version-only modes before validation;
 normal Make variables and parallel-job settings remain available to targets.
 The complete argument list is checked before dispatch: arguments must be named

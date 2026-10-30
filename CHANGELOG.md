@@ -2,6 +2,14 @@
 
 ## [0.27.9]
 
+### 🧹 Cleanup
+
+- Keep validation input checkpointing in a declared companion captured with the
+  runner, preserving input-drift refusal even when a gate replaces source files.
+- Share coordinated Cargo workspace admission across preparation and checks,
+  retaining independent observations, original-lock admission and complete
+  Cargo/logger failure evidence at each boundary.
+
 ### 🥾 Governance
 
 - Prefer existing Host owners and safe standard-library/Rustix interfaces for
