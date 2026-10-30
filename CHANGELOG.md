@@ -1,12 +1,50 @@
 # Changelog
 
-## [0.27.8]
+## [0.27.9]
 
 ### 🧹 Cleanup
 
 - Let Cargo graph policies export rendered source/version identities and effective
   feature unions from one locked offline observation. Keep existing output and
   policy behavior unless `--json --observations` is selected.
+
+### 🥾 Governance
+
+- Prefer existing Host owners and safe standard-library/Rustix interfaces for
+  native operations, retaining documented raw-FFI exceptions and native-host
+  qualification without requiring Rustix in unrelated or Wasm packages.
+
+### 🧪 Testing
+
+- Qualify release tracking against Git's observed post-push ref, including Git
+  versions that refresh it during a URL push. Continue to require the runner to
+  leave that ref alone when no matching upstream is configured.
+
+## [0.27.8]
+
+### 🥾 Governance
+
+- Make the [Clap contract](rules/engineering-details.md#cli-applications) explicit
+  across Rust CLIs, generators, benchmarks and maintained examples. Use its typed
+  values, argument relationships, command composition, help and diagnostics;
+  remove duplicate CLI mechanics while preserving domain and runtime validation.
+- Document the [canonical observability owners](rules/engineering-details.md#metrics-and-logging):
+  use `ic-metrics` and `ic-logging`, and resolve capability gaps in IC Observability.
+  Keep application policy and governed persistence integration with their owners.
+
+### 📊 Audit
+
+- Audit sibling codecs and imports for IC Wire reuse, filing or extending owning
+  issues for codec migrations and byte-buffer reuse. Retain external-protocol,
+  signing and ordered-storage boundaries; the migrations remain follow-up work.
+- Audit sibling Clap usage and record owning issues for command composition,
+  typed argument values and handwritten example, generator and benchmark parsers.
+  These findings identify follow-up work rather than completed CLI migrations.
+
+### 📚 Documentation
+
+- Refresh the stack diagrams and manifest evidence for stable metrics/logging
+  integration, Canic's current package layout and updated sibling dependencies.
 
 ## [0.27.7]
 
@@ -17,6 +55,8 @@
   package graph in an expandable detailed view alongside direct manifest evidence.
 - Refresh the stack catalog for IC Observability and Canic's current package
   layout so the daily refresh follows the existing checkouts.
+- Grey out sibling dashboard rows with no open issues or PRs, and rank by open
+  issues, then open PRs, highest first.
 
 ## [0.27.6]
 

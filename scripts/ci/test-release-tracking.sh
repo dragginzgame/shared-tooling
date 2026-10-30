@@ -31,7 +31,25 @@ case "$1" in
     push)
         echo push >> "$TRACKING_EVENTS"
         [[ "${TRACKING_PUSH_FAIL:-}" != yes ]] || exit 9
+        before_push="$("$REAL_GIT" show-ref --verify --hash "$TRACKING_SELECTED_REF" 2>/dev/null || :)"
         "$REAL_GIT" "$@"
+        # Git versions can refresh a matching remote-tracking ref even when
+        # the push uses its URL. Record that native effect independently of
+        # the runner's explicit upstream-refresh callback.
+        if [[ "${TRACKING_NATIVE_UPDATE:-}" == yes ]]; then
+            "$REAL_GIT" update-ref "$TRACKING_SELECTED_REF" "$("$REAL_GIT" rev-parse HEAD)"
+        fi
+        # Fault/race cases must reach the explicit refresh callback even if
+        # this Git already refreshed the ref. Recreate their stale checkpoint
+        # at the transport boundary, entirely inside this disposable fixture.
+        if [[ "${TRACKING_CALLBACK_CHECKPOINT:-}" == yes ]]; then
+            if [[ -n "$before_push" ]]; then
+                "$REAL_GIT" update-ref "$TRACKING_SELECTED_REF" "$before_push"
+            else
+                "$REAL_GIT" update-ref -d "$TRACKING_SELECTED_REF"
+            fi
+        fi
+        "$REAL_GIT" show-ref --verify --hash "$TRACKING_SELECTED_REF" > "$TRACKING_EVENTS.after-push" || :
         if [[ "${TRACKING_PUSH_LOST:-}" == yes && ! -e "$TRACKING_EVENTS.lost" ]]; then
             touch "$TRACKING_EVENTS.lost"
             exit 9
@@ -67,10 +85,12 @@ esac
 exec "$REAL_GIT" "$@"
 GIT
 chmod +x "$TRACKING_ROOT/bin/git"
-for tracking_case in normal completed-resume custom-map missing-ref no-upstream other-remote other-branch fetch-destination symbolic newer divergent rejected-push lost-push update-failure update-race symbolic-race missing-symbolic-race prepared-symbolic-race inspection-failure; do
+for tracking_case in normal completed-resume custom-map missing-ref no-upstream no-upstream-native-update other-remote other-branch fetch-destination symbolic newer divergent rejected-push lost-push update-failure update-race symbolic-race missing-symbolic-race prepared-symbolic-race inspection-failure; do
     (
         unset FIXTURE_DESTINATION FIXTURE_REMOTE_FAIL FIXTURE_PUSH_MUTATION
         unset TRACKING_PUSH_FAIL TRACKING_PUSH_LOST TRACKING_UPDATE_FAIL TRACKING_RACE_OID
+        unset TRACKING_NATIVE_UPDATE
+        unset TRACKING_CALLBACK_CHECKPOINT
         unset TRACKING_SYMBOLIC_RACE TRACKING_PREPARED_RACE TRACKING_INSPECTION_FAIL TRACKING_SELECTED_REF
         selected="$TRACKING_ROOT/$tracking_case"
         mkdir -p "$selected"
@@ -104,7 +124,10 @@ MAKE
                 "$REAL_GIT" update-ref "$tracking_ref" "$source_head"
                 ;;
             missing-ref|missing-symbolic-race) "$REAL_GIT" update-ref -d "$tracking_ref" ;;
-            no-upstream) "$REAL_GIT" config --unset branch.main.remote; "$REAL_GIT" config --unset branch.main.merge ;;
+            no-upstream|no-upstream-native-update)
+                "$REAL_GIT" config --unset branch.main.remote
+                "$REAL_GIT" config --unset branch.main.merge
+                ;;
             other-remote)
                 "$REAL_GIT" remote add other "$selected/destination.git"
                 "$REAL_GIT" config branch.main.remote other
@@ -129,6 +152,11 @@ MAKE
         : > "$TRACKING_EVENTS"
         export PATH="$TRACKING_ROOT/bin:$PATH"
         export RELEASE_MAKE="$REAL_MAKE"
+        if [[ "$tracking_case" == no-upstream-native-update ]]; then export TRACKING_NATIVE_UPDATE=yes; fi
+        case "$tracking_case" in
+            update-failure|update-race|symbolic-race|missing-symbolic-race|prepared-symbolic-race|inspection-failure)
+                export TRACKING_CALLBACK_CHECKPOINT=yes ;;
+        esac
         if [[ "$tracking_case" == rejected-push ]]; then export TRACKING_PUSH_FAIL=yes; fi
         if [[ "$tracking_case" == lost-push ]]; then export TRACKING_PUSH_LOST=yes; fi
         if [[ "$tracking_case" == update-failure ]]; then export TRACKING_UPDATE_FAIL=yes; fi
@@ -148,9 +176,11 @@ MAKE
             if bash "$ROOT/scripts/ci/run-release.sh" patch origin main > "$selected/first.log" 2>&1; then
                 echo "tracking fixture accepted failed/lost push: $tracking_case" >&2; exit 1
             fi
-            [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$source_head" ]] || exit 1
             if [[ "$tracking_case" == rejected-push ]]; then
+                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$source_head" ]] || exit 1
                 [[ "$("$REAL_GIT" --git-dir="$selected/destination.git" rev-parse refs/heads/main)" == "$source_head" ]] || exit 1
+            else
+                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$(cat "$TRACKING_EVENTS.after-push")" ]] || exit 1
             fi
             unset TRACKING_PUSH_FAIL TRACKING_PUSH_LOST
             bash "$ROOT/scripts/ci/run-release.sh" resume 0.1.1 origin main > "$selected/resume.log" 2>&1
@@ -161,12 +191,12 @@ MAKE
         [[ "$("$REAL_GIT" --git-dir="$selected/destination.git" rev-parse refs/heads/main)" == "$release_head" ]] || exit 1
         [[ "$(tail -n 1 .git/release-state/0.1.1.plan)" == complete ]] || exit 1
         case "$tracking_case" in
-            no-upstream|other-remote|other-branch|fetch-destination|symbolic)
-                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$source_head" ]] || exit 1
+            no-upstream|no-upstream-native-update|other-remote|other-branch|fetch-destination|symbolic)
+                [[ "$("$REAL_GIT" rev-parse "$tracking_ref")" == "$(cat "$TRACKING_EVENTS.after-push")" ]] || exit 1
                 [[ "$(awk '$0 == "tracking" { count++ } END { print count+0 }' "$TRACKING_EVENTS")" == 0 ]] || exit 1
                 if [[ "$tracking_case" == symbolic ]]; then
                     [[ "$("$REAL_GIT" symbolic-ref "$tracking_ref")" == refs/heads/preserved ]] || exit 1
-                    [[ "$("$REAL_GIT" rev-parse preserved)" == "$source_head" ]] || exit 1
+                    [[ "$("$REAL_GIT" rev-parse preserved)" == "$(cat "$TRACKING_EVENTS.after-push")" ]] || exit 1
                 fi
                 ;;
             update-race)
