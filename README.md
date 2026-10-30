@@ -36,6 +36,7 @@ flowchart TD
     p_ic_2dobservability_7ccargo_3aic_2dlogging["ic-logging"]
     p_ic_2dobservability_7ccargo_3aic_2dmetrics["ic-metrics"]
     p_ic_2dpersistence_7ccargo_3aic_2dmemory["ic-memory"]
+    p_ic_2dpersistence_7ccargo_3aic_2dmetrics_2dstable["ic-metrics-stable"]
     p_ic_2dpersistence_7ccargo_3aic_2dstorage["ic-storage"]
     p_ic_2dplatform_7ccargo_3aic_2dcall["ic-call"]
     p_ic_2dplatform_7ccargo_3aic_2dplatform["ic-platform"]
@@ -49,7 +50,7 @@ flowchart TD
     p_app_3atoko_2dminer --> p_icydb_7ccargo_3aicydb
     p_canic_7ccargo_3acanic --> p_ic_2dauth_7ccargo_3aic_2dauth
     p_canic_7ccargo_3acanic --> p_ic_2dobservability_7ccargo_3aic_2dlogging
-    p_canic_7ccargo_3acanic --> p_ic_2dpersistence_7ccargo_3aic_2dstorage
+    p_canic_7ccargo_3acanic --> p_ic_2dpersistence_7ccargo_3aic_2dmetrics_2dstable
     p_canic_7ccargo_3acanic --> p_ic_2dplatform_7ccargo_3aic_2dcall
     p_canic_7ccargo_3acanic --> p_ic_2dtimers_7ccargo_3aic_2dtimers
     p_ic_2dauth_7ccargo_3aic_2dauth --> p_ic_2dplatform_7ccargo_3aic_2dplatform
@@ -57,6 +58,8 @@ flowchart TD
     p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage --> p_ic_2dpersistence_7ccargo_3aic_2dstorage
     p_ic_2dobservability_7ccargo_3aic_2dmetrics --> p_ic_2dwire_7ccargo_3aic_2dwire
     p_ic_2dpersistence_7ccargo_3aic_2dmemory --> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dpersistence_7ccargo_3aic_2dmetrics_2dstable --> p_ic_2dobservability_7ccargo_3aic_2dmetrics
+    p_ic_2dpersistence_7ccargo_3aic_2dmetrics_2dstable --> p_ic_2dpersistence_7ccargo_3aic_2dstorage
     p_ic_2dpersistence_7ccargo_3aic_2dstorage --> p_ic_2dpersistence_7ccargo_3aic_2dmemory
     p_ic_2dplatform_7ccargo_3aic_2dcall --> p_ic_2dplatform_7ccargo_3aic_2dplatform
     p_ic_2dplatform_7ccargo_3aic_2dplatform --> p_ic_2dwire_7ccargo_3aic_2dwire

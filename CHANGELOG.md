@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.27.8]
+
+### 🥾 Governance
+
+- Make the [Clap contract](rules/engineering-details.md#cli-applications) explicit
+  across Rust CLIs, generators, benchmarks and maintained examples. Use its typed
+  values, argument relationships, command composition, help and diagnostics;
+  remove duplicate CLI mechanics while preserving domain and runtime validation.
+- Document the [canonical observability owners](rules/engineering-details.md#metrics-and-logging):
+  use `ic-metrics` and `ic-logging`, and resolve capability gaps in IC Observability.
+  Keep application policy and governed persistence integration with their owners.
+
+### 📊 Audit
+
+- Audit sibling codecs and imports for IC Wire reuse, filing or extending owning
+  issues for codec migrations and byte-buffer reuse. Retain external-protocol,
+  signing and ordered-storage boundaries; the migrations remain follow-up work.
+- Audit sibling Clap usage and record owning issues for command composition,
+  typed argument values and handwritten example, generator and benchmark parsers.
+  These findings identify follow-up work rather than completed CLI migrations.
+
+### 📚 Documentation
+
+- Refresh the stack diagrams and manifest evidence for stable metrics/logging
+  integration, Canic's current package layout and updated sibling dependencies.
+
 ## [0.27.7]
 
 ### 🩹 Fixed
