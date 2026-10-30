@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.27.10]
+
+### ➕ Added
+
+- Add an opt-in publication Make adapter over the retained Cargo attempt runner.
+  Consumers declare their package roster, registry and validation targets; shared
+  mechanics select exact workspace versions for default or `PACKAGE=` requests.
+
 ## [0.27.9]
 
 ### 🧹 Cleanup

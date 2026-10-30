@@ -118,6 +118,7 @@ run_fixture test-stable-version-ordering.pl perl "$ROOT/scripts/ci/test-stable-v
 run_fixture test-tag-maintenance.pl perl "$ROOT/scripts/ci/test-tag-maintenance.pl"
 run_fixture test-verification-helpers.sh bash "$ROOT/scripts/ci/test-verification-helpers.sh"
 run_fixture test-cargo-publication-attempt.sh bash "$ROOT/scripts/ci/test-cargo-publication-attempt.sh"
+run_fixture test-cargo-publication-adapter.sh bash "$ROOT/scripts/ci/test-cargo-publication-adapter.sh"
 run_fixture test-tool-catalogs.pl perl "$ROOT/scripts/ci/test-tool-catalogs.pl"
 run_fixture test-documentation-links.pl perl "$ROOT/scripts/ci/test-documentation-links.pl"
 run_fixture test-license.pl perl "$ROOT/scripts/ci/test-license.pl"
