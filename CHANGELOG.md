@@ -2,6 +2,12 @@
 
 ## [0.27.7]
 
+### 🥾 Governance
+
+- Prefer existing Host owners and safe standard-library/Rustix interfaces for
+  native operations, retaining documented raw-FFI exceptions and native-host
+  qualification without requiring Rustix in unrelated or Wasm packages.
+
 ### 🩹 Fixed
 
 - Keep the README stack diagram compact by grouping application packages and
