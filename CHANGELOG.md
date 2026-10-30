@@ -7,6 +7,11 @@
 - Let Cargo graph policies export rendered source/version identities and effective
   feature unions from one locked offline observation. Keep existing output and
   policy behavior unless `--json --observations` is selected.
+- Keep validation input checkpointing in a declared companion captured with the
+  runner, preserving input-drift refusal even when a gate replaces source files.
+- Share coordinated Cargo workspace admission across preparation and checks,
+  retaining independent observations, original-lock admission and complete
+  Cargo/logger failure evidence at each boundary.
 
 ### 🥾 Governance
 
