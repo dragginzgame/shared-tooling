@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.27.13]
+
+### 🩹 Fixed
+
+- Admit registry Principal conversions in Platform’s canonical `ic-platform-types`
+  owner. Keep every other external IC dependency restricted to the facade and
+  preserve stricter consumer policies.
+
 ## [0.27.12]
 
 ### 🥾 Governance

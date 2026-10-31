@@ -196,7 +196,9 @@ one only with a concrete reason why an expectation cannot work. Follow the
 
 Use root-owned workspace dependencies and versions, reviewed shared tooling,
 explicit setup and the product's declared compiler/host requirements. External
-IC dependencies go through `ic-platform`; npm SDK Core uses
+IC dependencies go through `ic-platform`; its canonical `ic-platform-types`
+identity owner may additionally select only `ic_principal` for explicit registry
+conversions and unchanged self-authentication. npm SDK Core uses
 `@tokostudios/ic-platform`. Keep reusable cores independently upgradable;
 adapters own their matching integration stacks and must not impose consumer
 framework dependencies on core development. Follow the
