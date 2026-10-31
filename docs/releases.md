@@ -858,7 +858,7 @@ Ordinary coordinated workspaces need no configuration or invocation changes.
 Keep related packages in their existing workspace; separate release identities
 do not require package moves or another lockfile. Make the declared groups easy
 to inspect using the root
-[`Cargo.toml` comment map](../rules/rust-workspaces.md#visible-release-group-map-in-cargotoml).
+[`Cargo.toml` group catalog](../rules/rust-workspaces.md#visible-release-group-map-in-cargotoml).
 Use [one changelog per group and retained shared history](../rules/changelogs.md#release-group-changelogs-and-shared-history);
 all ledgers live at `releases/<group>/CHANGELOG.md`. Root `CHANGELOG.md` is an
 index, and root `Cargo.toml` has no `workspace.package.version`. Comments, the

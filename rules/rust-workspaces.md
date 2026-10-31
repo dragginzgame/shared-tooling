@@ -151,36 +151,39 @@ For a workspace with independent release groups, include every workspace member
 in root `[workspace.dependencies]` with its local path and full current version.
 This is a complete crate catalog, including private qualification/tooling members
 and crates that no other member currently depends on.
-Label those entries with their release group using nearby comments, preserving
-the normal formatter's dependency ordering. Keep a concise comment map next to
-`[workspace]` listing every group's name, member package names,
-canonical version source and changelog path. Include private members; identify
-them as qualification/tooling where helpful. For example:
+List release groups once in this manifest, as contiguous blocks in
+`[workspace.dependencies]`. Give each block a short title identifying the policy
+group and a separate `# Changelog : releases/<group>/CHANGELOG.md` line.
+Separate blocks with a blank line. Sort entries within each block using the
+formatter's grouped mode; do not interleave groups to impose a global alphabetic
+order. The declarations already show package names, paths and current versions;
+do not repeat them in a header above `[workspace]` or add a second comment map.
+Include private members and annotate their role only where it adds useful context.
+For example:
 
 ```toml
-# Release groups: ci/cargo-release-groups.json
-# codec: ic-wire, ic-wire-derive, ic-wire-benchmarks (private qualification)
-#   version: crates/ic-wire/Cargo.toml package.version
-#   changelog: releases/codec/CHANGELOG.md
-# endpoint: ic-wire-endpoint
-#   version: crates/ic-wire-endpoint/Cargo.toml package.version
-#   changelog: releases/endpoint/CHANGELOG.md
 [workspace]
 members = [
-    "crates/ic-wire",
-    "crates/ic-wire-benchmarks",
-    "crates/ic-wire-derive",
-    "crates/ic-wire-endpoint",
+    "crates/ic-logging-stable",
+    "crates/ic-memory",
+    "crates/ic-metrics-stable",
+    "crates/ic-storage",
 ]
 resolver = "3"
 
 [workspace.dependencies]
-# codec group; authoritative versions are in the member manifests above.
-ic-wire = { path = "crates/ic-wire", version = "0.13.0" }
-ic-wire-benchmarks = { path = "crates/ic-wire-benchmarks", version = "0.13.0" } # private qualification
-ic-wire-derive = { path = "crates/ic-wire-derive", version = "0.13.0" }
-# endpoint group
-ic-wire-endpoint = { path = "crates/ic-wire-endpoint", version = "0.2.0" }
+# Persistence
+# Changelog : releases/persistence/CHANGELOG.md
+ic-memory = { path = "crates/ic-memory", version = "0.60.0" }
+ic-storage = { path = "crates/ic-storage", version = "0.60.0" }
+
+# Metrics-stable
+# Changelog : releases/metrics-stable/CHANGELOG.md
+ic-metrics-stable = { path = "crates/ic-metrics-stable", version = "0.60.0" }
+
+# Logging-stable
+# Changelog : releases/logging-stable/CHANGELOG.md
+ic-logging-stable = { path = "crates/ic-logging-stable", version = "0.60.0" }
 ```
 
 The example illustrates the convention, not an instruction to create or rename
@@ -214,11 +217,12 @@ table itself does not assign a dependency kind; member tables and features do.
 Keep group and ledger labels near their catalog entries. The root view reports
 declared versions, not proof of registry publication.
 
-Review the map against the policy and actual Cargo members when membership,
+Review the catalog against the policy and actual Cargo members when membership,
 version ownership or changelog paths change. Keep it readable after the normal
-formatter runs; do not bypass formatting to preserve a visual grouping. The map
-can sit above the table without reordering the `members` array or replacing the
-[member-role comments](#workspace-member-roles). A single-group workspace needs
+group-aware formatter runs; update formatting callers consistently during adoption
+rather than bypassing them. The `members` array need not repeat release groups;
+optional [member-role comments](#workspace-member-roles) describe development roles.
+A single-group workspace needs
 no JSON policy solely for documentation; an optional comment may name its shared
 version source and root changelog.
 

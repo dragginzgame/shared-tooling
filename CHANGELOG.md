@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.27.22]
+
+### 🧹 Cleanup
+
+- Present release groups once in the root Cargo dependency catalog, with short
+  titles, separate changelog lines and blank lines between groups. Keep each
+  group's crates together under grouped formatting; remove duplicate header maps.
+- Reserve configuration and lint comments for non-obvious choices or constraints,
+  avoiding repeated explanations of self-explanatory settings.
+
 ## [0.27.21]
 
 ### ➕ Added
