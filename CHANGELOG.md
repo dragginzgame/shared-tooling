@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.27.15]
+
+### ⬆️ Dependencies
+
+- Select IC Build 0.73.0 with its explicit CLI feature for the managed release
+  editor. Refresh it with `make install-release-editor` before offline admission.
+
+### 🧪 Testing
+
+- Include independent Cargo release-group qualification in portable CI while
+  preserving coordinated-workspace coverage and isolating fixture Git state
+  ([#328 — Support approved Cargo release groups](https://github.com/dragginzgame/shared-tooling/issues/328)).
+
+### 🩹 Fixed
+
+- Admit explicitly declared consumer metadata in Cargo release-group file plans,
+  preserving transaction rollback and exact staging/receipt custody. This allows
+  Platform's runtime qualification lock and guard-pin metadata to accompany its
+  facade release without changing the stable identity group ([#328](https://github.com/dragginzgame/shared-tooling/issues/328)).
+
 ## [0.27.14]
 
 ### 🩹 Fixed

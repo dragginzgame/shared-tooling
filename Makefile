@@ -13,10 +13,10 @@ LOCAL_TOOL_CHECK_TARGETS += ic-tools-check release-editor-check
 IC_TOOLS := didc ic-wasm icp quill wasm-opt
 # Shared's own integration fixtures use this optional product tool. Consumers
 # retain their release-tool selections; it is not part of the common Cargo set.
-RELEASE_EDITOR_VERSION := 0.18.0
+RELEASE_EDITOR_VERSION := 0.73.0
 RELEASE_EDITOR_MAX_BYTES := 8388608
 RELEASE_EDITOR_COMMAND = bash "$(CURDIR)/scripts/dev/install-rust-tools.sh" --consumer "$(CURDIR)" \
-    --package ic-build --version "$(RELEASE_EDITOR_VERSION)" --bin ic-build-release-metadata --profile debug
+    --package ic-build --version "$(RELEASE_EDITOR_VERSION)" --bin ic-build-release-metadata --profile debug --features cli
 export PATH := $(CURDIR)/.tools/ic/bin:$(PATH)
 include make/consumer.mk
 

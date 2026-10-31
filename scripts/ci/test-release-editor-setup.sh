@@ -26,7 +26,7 @@ if [[ "$name" == install-ic-tools.sh && "${EDITOR_SETUP_FAILURE:-}" == ic-prefli
 fi
 case "$*" in
     *--package\ ic-build*)
-        [[ "$*" == *'--version '*' --bin ic-build-release-metadata --profile debug'* ]] || exit 91
+        [[ "$*" == *'--version '*' --bin ic-build-release-metadata --profile debug --features cli'* ]] || exit 91
         printf '%s\n' "$EDITOR_SETUP_PATH"
         case "${EDITOR_SETUP_FAILURE:-}" in
             check) [[ "$*" != *--check* ]] || exit 37 ;;
