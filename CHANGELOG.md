@@ -2,6 +2,14 @@
 
 ## [0.27.20]
 
+### ➕ Added
+
+- Keep existing root Cargo dependency declarations aligned with their local
+  release-group packages. Dependency and release checks reject stale or abbreviated
+  versions across all groups, while release preparation preserves requirement
+  operators and updates the selected group transactionally. Use labelled real
+  declarations for version visibility instead of duplicated numeric comments.
+
 ### 🥾 Governance
 
 - Keep plain `cargo clean` and general workspace cleanup able to remove the

@@ -72,6 +72,36 @@ done
 bash "$helper" check-graph endpoint
 [[ "$(bash "$group_helper" version endpoint)" == 0.1.0 ]]
 bash "$ROOT/scripts/ci/check-dependency-pins.sh" --consumer "$PWD" --cargo-inheritance
+# Real requirements remain usable as the visible version map, including renamed
+# dependencies and each supported operator. Planning preserves the operator.
+for prefix in '' '^' '~' '='; do
+    sed "s/version = \"\^0.1.0\"/version = \"${prefix}0.1.0\"/" "$fixture/manifest" > Cargo.toml
+    bash "$group_helper" plan endpoint | jq -e --arg expected "${prefix}0.2.0" \
+        '.dependencies[] | select(.alias == "entry") | .next == $expected' > /dev/null
+done
+cp "$fixture/manifest" Cargo.toml
+# Cargo accepts an abbreviated requirement in the unselected group, but the
+# shared admission and its dependency-check caller must reject that stale view.
+sed 's/path = "codec", version = "0.11.0"/path = "codec", version = "0.11"/' "$fixture/manifest" > Cargo.toml
+cargo metadata --locked --offline --format-version 1 > /dev/null
+refuse bash "$helper" check-graph endpoint > "$fixture/abbreviated.log" 2>&1
+grep -F 'root dependency codec declares 0.11; expected full local version 0.11.0' "$fixture/abbreviated.log"
+refuse bash "$ROOT/scripts/ci/check-dependency-pins.sh" --consumer "$PWD" --cargo-inheritance > "$fixture/pins-drift.log" 2>&1
+cp "$fixture/manifest" Cargo.toml
+# A full but older compatible bound also passes Cargo. Reject it before release
+# writes, without changing the current packages, lock or selected ledger.
+sed 's/^version = "0.11.0"$/version = "0.11.1"/' "$fixture/manifest" > Cargo.toml
+cargo generate-lockfile --offline > "$fixture/drift-lock.log" 2>&1
+cargo metadata --locked --offline --format-version 1 > /dev/null
+cp Cargo.toml "$fixture/drift-manifest"
+cp Cargo.lock "$fixture/drift-lock"
+refuse bash "$helper" prepare endpoint > "$fixture/stale-requirement.log" 2>&1
+grep -F 'root dependency codec declares 0.11.0; expected full local version 0.11.1' "$fixture/stale-requirement.log"
+cmp Cargo.toml "$fixture/drift-manifest"
+cmp Cargo.lock "$fixture/drift-lock"
+cmp docs/endpoint.md "$fixture/changelog"
+cp "$fixture/manifest" Cargo.toml
+cp "$fixture/lock" Cargo.lock
 RELEASE_GROUP='' refuse bash "$helper" check-graph codec
 refuse bash "$helper" check-graph codec
 for fault in missing overlap version unknown-alias missing-alias ledger traversal metadata-shape metadata-missing metadata-traversal metadata-duplicate metadata-overlap metadata-manifest metadata-ledger metadata-policy metadata-git shared-shape shared-duplicate shared-overlap shared-reserved shared-missing shared-traversal; do
