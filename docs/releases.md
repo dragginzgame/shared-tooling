@@ -849,6 +849,12 @@ when qualifying this adapter; it is not a fleet-wide automatic replacement.
 Independent release groups require the maintainer agreement described in
 [workspace boundaries](../rules/rust-workspaces.md#coordinated-versions-and-workspace-boundaries).
 Ordinary coordinated workspaces need no configuration or invocation changes.
+Keep related packages in their existing workspace; separate release identities
+do not require package moves or another lockfile. Make the declared groups easy
+to inspect using the root
+[`Cargo.toml` comment map](../rules/rust-workspaces.md#visible-release-group-map-in-cargotoml).
+Use [one changelog per group and retained shared history](../rules/changelogs.md#release-group-changelogs-and-shared-history);
+comments and a historical ledger are not executable release inputs.
 An approved consumer declares `ci/cargo-release-groups.json`, for example:
 
 ```json
@@ -868,7 +874,7 @@ An approved consumer declares `ci/cargo-release-groups.json`, for example:
       "primary": "ic-wire-endpoint",
       "version": "package",
       "members": ["ic-wire-endpoint"],
-      "changelog": "docs/changelog/endpoint.md",
+      "changelog": "crates/ic-wire-endpoint/CHANGELOG.md",
       "dependencies": ["ic-wire-endpoint"]
     }
   ]

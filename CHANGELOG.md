@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.27.16]
+
+### 🥾 Governance
+
+- Keep related crates in one development workspace while allowing explicit
+  independent release groups. Document group members, version sources and
+  changelog paths in root Cargo comments; use one ledger per group and preserve
+  earlier coordinated history once, without forcing package moves.
+
 ## [0.27.15]
 
 ### ⬆️ Dependencies
