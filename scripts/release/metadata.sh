@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/check-release-source.sh scripts/ci/finalize-release-changelog.awk
+# Shared companions: scripts/ci/check-release-source.sh scripts/ci/finalize-release-changelog.awk scripts/release/work-version.pl
 set -euo pipefail
 SCRIPT_ROOT="${BASH_SOURCE[0]}"
 [[ "$SCRIPT_ROOT" == /* ]] || SCRIPT_ROOT="$PWD/$SCRIPT_ROOT"
@@ -49,7 +49,7 @@ case "$operation" in
     version) version ;;
     preflight|prepare)
         observed_version="$(version)" || exit 1
-        [[ "$observed_version" == "${RELEASE_PREVIOUS:?}" ]] || exit 1
+        [[ "$observed_version" == "${RELEASE_PREVIOUS:?}" || "$observed_version" == "${RELEASE_VERSION:?}" ]] || exit 1
         bash "$SCRIPT_ROOT/scripts/ci/check-release-source.sh" --allow CHANGELOG.md --allow VERSION
         [[ -f CHANGELOG.md && ! -L CHANGELOG.md ]] || exit 1
         # Git-owned scratch cannot become an unrelated untracked release input

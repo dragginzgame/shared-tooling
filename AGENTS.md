@@ -6,6 +6,12 @@ overlay. Consumers adopt the baseline and keep their own `AGENTS.md`.
 
 ## Validation in Shared Tooling
 
+For meaningful new work, run `make prepare-work` and add the batch's notes to
+the selected pending entry. Use `WORK_VERSION_KIND=minor` or `major` when the
+compatibility assessment requires it. The helper reuses a pending version and
+keeps `VERSION` aligned; `make check-version` validates the pair without edits.
+This is ordinary local preparation, not staging, committing or releasing.
+
 Shared's own compiler is pinned in `rust-toolchain.toml`. Prepare it explicitly
 as described in [local setup](docs/local-setup.md#shared-toolings-own-compiler)
 before installing Cargo tools. Consumer compiler policy remains locally owned;

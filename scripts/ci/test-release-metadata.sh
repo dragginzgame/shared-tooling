@@ -32,6 +32,60 @@ chmod +x "$FIXTURE/tool-make"
 export RELEASE_MAKE="$FIXTURE/tool-make"
 export RELEASE_PREVIOUS=0.1.0 RELEASE_VERSION=0.1.1 RELEASE_DATE=2026-10-06
 export RELEASE_COMMIT=''
+# Ordinary work prepares both files once and carries notes when promoted.
+printf '0.1.0\n' > VERSION
+printf '# Changelog\n\n## [0.1.0]\n\n- Preserved history.\n' > CHANGELOG.md
+perl "$ROOT/scripts/release/work-version.pl" prepare patch > "$FIXTURE/work-version"
+[[ "$(cat VERSION)" == 0.1.1 && "$(cat "$FIXTURE/work-version")" == 0.1.1 ]]
+[[ "$(perl "$ROOT/scripts/release/work-version.pl" base)" == 0.1.0 ]]
+perl "$ROOT/scripts/release/work-version.pl" check
+cp CHANGELOG.md "$FIXTURE/work-notes"
+perl "$ROOT/scripts/release/work-version.pl" prepare patch > /dev/null
+cmp CHANGELOG.md "$FIXTURE/work-notes"
+printf '# Changelog\n\n## [0.1.1] - Unreleased\n\n- New work.\n\n## [0.1.0]\n\n- Preserved history.\n' > CHANGELOG.md
+perl "$ROOT/scripts/release/work-version.pl" prepare minor > /dev/null
+[[ "$(cat VERSION)" == 0.2.0 ]]
+rg -F -- '- New work.' CHANGELOG.md > /dev/null
+cp CHANGELOG.md "$FIXTURE/promoted-notes"
+perl "$ROOT/scripts/release/work-version.pl" prepare patch > /dev/null
+cmp CHANGELOG.md "$FIXTURE/promoted-notes"
+[[ "$(cat VERSION)" == 0.2.0 ]]
+
+# A tagged candidate cannot be silently relabelled or reused as pending work.
+git -c core.hooksPath=/dev/null tag v0.2.0 HEAD
+if perl "$ROOT/scripts/release/work-version.pl" prepare patch > "$FIXTURE/tagged-work.log" 2>&1; then
+    echo 'work version rewrote a tagged candidate' >&2; exit 1
+fi
+rg -F 'already tagged' "$FIXTURE/tagged-work.log" > /dev/null
+cmp CHANGELOG.md "$FIXTURE/promoted-notes"
+[[ "$(cat VERSION)" == 0.2.0 ]]
+git -c core.hooksPath=/dev/null tag -d v0.2.0 > /dev/null
+
+# Drift is rejected before writes; inspection never repairs it implicitly.
+printf '0.1.0\n' > VERSION
+for operation in check 'prepare patch'; do
+    read -r -a arguments <<< "$operation"
+    if perl "$ROOT/scripts/release/work-version.pl" "${arguments[@]}" > "$FIXTURE/drift.log" 2>&1; then
+        echo 'work version accepted inconsistent notes' >&2; exit 1
+    fi
+    cmp CHANGELOG.md "$FIXTURE/promoted-notes"
+    [[ "$(cat VERSION)" == 0.1.0 ]]
+done
+
+# A prepared VERSION still needs notes finalization, including retry.
+printf '0.1.1\n' > VERSION
+printf '# Changelog\n\n## [0.1.1] - Unreleased\n\n- New work.\n\n## [0.1.0]\n\n- Preserved history.\n' > CHANGELOG.md
+cp CHANGELOG.md "$FIXTURE/prepared-pending"
+bash "$ROOT/scripts/release/metadata.sh" preflight
+cmp CHANGELOG.md "$FIXTURE/prepared-pending"
+bash "$ROOT/scripts/release/metadata.sh" prepare
+bash "$ROOT/scripts/release/metadata.sh" check
+cp CHANGELOG.md "$FIXTURE/prepared-finalized"
+bash "$ROOT/scripts/release/metadata.sh" prepare
+cmp CHANGELOG.md "$FIXTURE/prepared-finalized"
+[[ "$(cat VERSION)" == 0.1.1 ]]
+[[ "$(perl "$ROOT/scripts/release/work-version.pl" base)" == 0.1.1 ]]
+
 printf '0.1.0\n' > VERSION
 cat > CHANGELOG.md <<'NOTES'
 # Changelog

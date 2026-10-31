@@ -84,6 +84,7 @@ jobs:
           make check-no-symlinks
           make check-pins
           make check-doc-links
+          make check-version
       - name: Qualify independent downloaded-evidence readers
         run: python3 scripts/ci/test-failure-evidence.py
       - name: Scan repository history for secrets

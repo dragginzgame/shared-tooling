@@ -1,6 +1,7 @@
 .DEFAULT_GOAL := help
 
 export RELEASE_DELIVERY ?= direct
+WORK_VERSION_KIND ?= patch
 SHELLCHECK ?= shellcheck
 CLOC_REPORT := $(CURDIR)/scripts/dev/cloc-siblings.sh
 CLOC_ROOT = $(CLOC_PARENT)
@@ -23,8 +24,10 @@ include make/consumer.mk
 # Only the standard release request authorizes tool preparation. Standalone
 # metadata/check commands remain offline; the adapter consumes this selection.
 release-patch release-minor release-major release-resume: export SHARED_RELEASE_PREPARE_TOOLS := 1
+release-patch release-minor release-major release-resume: export RELEASE_VERSION_MODE := pending
 
 .PHONY: help tasks version check-shell check-pins check-doc-links check-release-commands test-portable ci \
+        prepare-work check-version release-base-version \
         release-version release-preflight release-verify \
         release-prepare-version release-prepared-check release-files \
         release-commit-check release-committed-check release-tagged-check release-push-check \
@@ -33,6 +36,7 @@ release-patch release-minor release-major release-resume: export SHARED_RELEASE_
 
 help:
 	@echo "Current local version: make version"
+	@echo "Prepare/reuse pending notes and VERSION: make prepare-work [WORK_VERSION_KIND=patch|minor|major]"
 	@echo "Repeatable maintenance catalog: make tasks"
 	@echo "Sibling Rust LOC summaries: make cloc [CLOC_PARENT=/path/to/projects]"
 	@echo "Sibling CI/tooling inventory: make cloc-tooling [CLOC_PARENT=/path/to/projects]"
@@ -102,7 +106,16 @@ check-release-commands:
 	bash scripts/ci/check-release-commands.sh . make/consumer.mk
 
 ci:
-	+@bash scripts/ci/run-validation-targets.sh --fail-fast check-no-symlinks check-shell check-pins check-doc-links test-portable
+	+@bash scripts/ci/run-validation-targets.sh --fail-fast check-version check-no-symlinks check-shell check-pins check-doc-links test-portable
+
+prepare-work:
+	@perl scripts/release/work-version.pl prepare "$(WORK_VERSION_KIND)"
+
+check-version:
+	@perl scripts/release/work-version.pl check
+
+release-base-version:
+	@perl scripts/release/work-version.pl base
 
 version release-version:
 	@bash scripts/release/metadata.sh version
@@ -111,7 +124,7 @@ release-preflight:
 	+@bash scripts/release/metadata.sh preflight
 
 release-verify:
-	+@unset SHARED_RELEASE_PREPARE_TOOLS; \
+	+@unset SHARED_RELEASE_PREPARE_TOOLS RELEASE_VERSION_MODE; \
 		VALIDATION_FAILURE_LOG_DIR="$$(git rev-parse --git-path release-state)/validation-failures" \
 		bash scripts/ci/run-validation-targets.sh ci
 

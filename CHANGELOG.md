@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.27.23] - Unreleased
+
+### ➕ Added
+
+- Automatically prepare the canonical `VERSION` file alongside pending changelog
+  notes during meaningful work. Shared's `make prepare-work` creates or reuses
+  the pending entry, promotes it when needed and preserves its notes; CI rejects
+  disagreement between the version file and the ledger.
+
+### 🔧 Changed
+
+- Finalize an already prepared Shared version without incrementing it again.
+  Keep Cargo package and release-group versions on their existing release path;
+  local notes/version preparation does not stage, commit, tag or publish.
+
 ## [0.27.22]
 
 ### 🧹 Cleanup
