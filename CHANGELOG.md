@@ -2,6 +2,14 @@
 
 ## [0.27.13]
 
+### 🩹 Fixed
+
+- Admit registry Principal conversions in Platform’s canonical `ic-platform-types`
+  owner. Keep every other external IC dependency restricted to the facade and
+  preserve stricter consumer policies.
+- Exclude two exact historical generated Mermaid node fingerprints from secret
+  scanning; retain detection for other files, commits and candidate credentials.
+
 ### ➕ Added
 
 - Support explicitly approved Cargo release groups through the existing metadata
