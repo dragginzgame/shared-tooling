@@ -89,6 +89,10 @@ enable optional features or update downstream lockfiles automatically.
   qualification cost for consumers.
   Preserve approved independent graphs and require explicit maintainer agreement
   for a boundary or versioning-policy change.
+  Approved release groups may keep one workspace and lockfile using the existing
+  [explicit release-group contract](../docs/releases.md#explicit-cargo-release-groups).
+  Its admitted member versions are the scoped exception to workspace-version
+  inheritance; root dependency inheritance and full workspace qualification remain.
 - Prefer batching related, already-planned breaking changes into one coordinated
   release before downstream adoption. Avoid repeated consumer migrations for
   adjacent changes, but do not hold urgent fixes for unrelated work or enlarge a

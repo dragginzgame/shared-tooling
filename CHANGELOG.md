@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.27.13]
+
+### ➕ Added
+
+- Support explicitly approved Cargo release groups through the existing metadata
+  transaction and release runner. Preserve other groups' public versions and
+  external lock selections, retain full graph qualification, bind receipts/resume
+  and tags to the group, and admit group-owned versions in inheritance checks
+  ([#328](https://github.com/dragginzgame/shared-tooling/issues/328)).
+
 ## [0.27.12]
 
 ### 🥾 Governance
