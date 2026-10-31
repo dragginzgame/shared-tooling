@@ -80,6 +80,40 @@ for prefix in '' '^' '~' '='; do
         '.dependencies[] | select(.alias == "entry") | .next == $expected' > /dev/null
 done
 cp "$fixture/manifest" Cargo.toml
+# Unused private members still need a valid catalog entry. Cargo accepts these
+# malformed/absent unused declarations; admission must check them across groups.
+printf 'publish = false\n' >> derive/Cargo.toml
+for fault in missing-entry missing-version missing-path wrong-path; do
+    case "$fault" in
+        missing-entry) sed '/^derive = /d' "$fixture/manifest" > Cargo.toml ;;
+        missing-version) sed 's/derive = .*/derive = { path = "derive" }/' "$fixture/manifest" > Cargo.toml ;;
+        missing-path) sed 's/derive = .*/derive = { version = "0.11.0" }/' "$fixture/manifest" > Cargo.toml ;;
+        wrong-path) sed 's/derive = .*/derive = { path = "codec", version = "0.11.0" }/' "$fixture/manifest" > Cargo.toml ;;
+    esac
+    cargo metadata --locked --offline --format-version 1 > /dev/null
+    refuse bash "$helper" prepare endpoint > "$fixture/catalog-$fault.log" 2>&1
+    cmp Cargo.lock "$fixture/lock"
+    cmp docs/endpoint.md "$fixture/changelog"
+done
+grep -F 'root dependency catalog must include every workspace member' "$fixture/catalog-missing-entry.log"
+grep -F 'root dependency derive requires a local path and full version' "$fixture/catalog-missing-version.log"
+grep -F 'root dependency derive requires a local path and full version' "$fixture/catalog-missing-path.log"
+grep -F 'root dependency path for derive is not its owned member' "$fixture/catalog-wrong-path.log"
+cp "$fixture/manifest" Cargo.toml
+# Equivalent relative paths remain valid; catalog-only entries add no edges.
+sed 's/path = "derive"/path = ".\/derive"/' "$fixture/manifest" > Cargo.toml
+bash "$helper" check-graph endpoint
+cargo metadata --locked --offline --format-version 1 | jq -e '
+    [.packages[] | select(.name == "derive")][0] as $p |
+    $p.publish == [] and all(.resolve.nodes[]; all(.deps[]; .pkg != $p.id))' > /dev/null
+cp "$fixture/manifest" Cargo.toml
+sed '/^publish = false$/d' derive/Cargo.toml > "$fixture/derive"
+cp "$fixture/derive" derive/Cargo.toml
+# An unselected group's policy must also own its complete alias roster.
+jq '.groups[0].dependencies=["codec"]' "$fixture/policy.json" > ci/cargo-release-groups.json
+refuse bash "$helper" check-graph endpoint > "$fixture/catalog-policy.log" 2>&1
+grep -F 'release-group dependency aliases must match the complete root member catalog' "$fixture/catalog-policy.log"
+cp "$fixture/policy.json" ci/cargo-release-groups.json
 # Cargo accepts an abbreviated requirement in the unselected group, but the
 # shared admission and its dependency-check caller must reject that stale view.
 sed 's/path = "codec", version = "0.11.0"/path = "codec", version = "0.11"/' "$fixture/manifest" > Cargo.toml
@@ -335,14 +369,17 @@ members = ["other"]
 resolver = "3"
 [workspace.package]
 version = "0.11.0"
+[workspace.dependencies]
+root = { path = ".", version = "0.1.0" }
+other = { path = "other", version = "0.11.0" }
 TOML
 printf '[package]\nname="other"\nversion.workspace=true\nedition="2024"\n' > other/Cargo.toml
 printf 'pub fn fixture() {}\n' > src/lib.rs
 cp src/lib.rs other/src/lib.rs
 cat > ci/cargo-release-groups.json <<'JSON'
 {"schema":1,"groups":[
- {"name":"root","primary":"root","version":"package","members":["root"],"changelog":"CHANGELOG.md","dependencies":[]},
- {"name":"other","primary":"other","version":"workspace","members":["other"],"changelog":"other.md","dependencies":[]}
+ {"name":"root","primary":"root","version":"package","members":["root"],"changelog":"CHANGELOG.md","dependencies":["root"]},
+ {"name":"other","primary":"other","version":"workspace","members":["other"],"changelog":"other.md","dependencies":["other"]}
 ]}
 JSON
 cp "$fixture/changelog" CHANGELOG.md
@@ -350,6 +387,7 @@ printf '# Other group\n' > other.md
 cargo generate-lockfile --offline > /dev/null
 RELEASE_GROUP=root RELEASE_PREVIOUS=0.1.0 RELEASE_VERSION=0.2.0 RELEASE_DATE=2026-10-31 \
     bash "$helper" prepare root > "$fixture/root-package.log" 2>&1
-yq -p toml -o json '.' Cargo.toml | jq -e '.package.version == "0.2.0" and .workspace.package.version == "0.11.0"' > /dev/null
+yq -p toml -o json '.' Cargo.toml | jq -e '.package.version == "0.2.0" and .workspace.package.version == "0.11.0" and
+    .workspace.dependencies.root.version == "0.2.0" and .workspace.dependencies.other.version == "0.11.0"' > /dev/null
 fixture_complete=true
 printf 'Cargo release-group fixtures passed\n'

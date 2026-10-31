@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.27.21]
+
+### ➕ Added
+
+- Make root Cargo manifests a complete crate catalog: show every workspace
+  member's full version and path, label release groups and changelogs, and
+  distinguish external production, build and test dependencies by actual usage.
+- Check catalog coverage, local paths and release-policy aliases across every
+  group, including private crates and unused entries. Catalog-only declarations
+  add no dependency edges; release preparation updates their real requirements.
+
+### 🔧 Changed
+
+- Before adopting the stricter checks, add missing member entries to
+  `[workspace.dependencies]` and their aliases to each group's `dependencies`
+  roster. Keep existing package versions and requirement operators.
+
 ## [0.27.20]
 
 ### ➕ Added

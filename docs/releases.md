@@ -986,17 +986,25 @@ Cargo output/statuses, policy/root inputs and preparation evidence. Source, inde
 receipt custody and the complete gate remain consumer-owned.
 
 The root dependency catalog also provides readable version information. Every
-versioned `[workspace.dependencies]` path entry naming a workspace member must
-spell its full current package version, optionally prefixed by `=`, `^` or `~`.
+workspace member must have a `[workspace.dependencies]` entry with its local path
+and full current package version, optionally prefixed by `=`, `^` or `~`. Include
+private members and unused aliases, and register every alias in its owning
+group's `dependencies` roster. Unused catalog entries add no dependency edges.
 Admission checks all groups, even when releasing only one; the existing
 `check-dependency-pins.sh --cargo-inheritance` path uses this same admission.
+It rejects missing catalog entries, missing paths/versions, paths pointing at
+other packages and incomplete group alias rosters, including unused entries that
+Cargo itself does not resolve.
 For example, `0.73` and `0.73.0` both fail for a local package at `0.73.1`, even
-though Cargo accepts them as compatible requirements. Registry-only dependencies
-and unversioned path entries retain their existing policies. Preparation updates
+though Cargo accepts them as compatible requirements. External dependencies
+retain their existing policies. Preparation updates
 selected local requirements and preserves their operators within the existing
 transaction; no generated numeric comment summary or second version catalog is
-maintained. Before adopting this check, expand abbreviated local requirements
-and align stale ones without changing the packages' own versions.
+maintained. Before adopting this check, complete the member catalog and group
+alias rosters, expand abbreviated local requirements and align stale ones without
+changing the packages' own versions. Label local groups/ledgers and external
+production, build and test dependencies under the
+[visible catalog convention](../rules/rust-workspaces.md#visible-release-group-map-in-cargotoml).
 
 Group preparation requires an IC Build editor supplying `group-manifest` with
 the existing bounded input contract. Its selection JSON explicitly names a
