@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.27.11] - Unreleased
+## [0.27.12] - Unreleased
 
 ### ➕ Added
 
@@ -8,6 +8,22 @@
   admission through the publication Make adapter without evaluating argument text.
   Preserve path admission, source checks and retained attempts
   ([#326 — Support explicit Cargo options in the opt-in publication adapter](https://github.com/dragginzgame/shared-tooling/issues/326)).
+
+### 🧪 Testing
+
+- Prepare documentation alongside script companions in snapshot fixtures so
+  publication adapters remain exportable through their committed closure.
+
+## [0.27.11]
+
+### 🥾 Governance
+
+- Prohibit Rust `#[path]` module wiring, including conditional overrides and
+  generated code. Require ordinary module layouts or a shared library owner
+  across production code, tests, examples and benchmarks.
+- Prefer scoped Rust lint expectations over allowances. Require repositories to
+  review every `allow` for conversion, explain retained exceptions, and keep
+  unfulfilled expectations visible.
 
 ## [0.27.10]
 

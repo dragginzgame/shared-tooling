@@ -729,11 +729,10 @@ bash "$selection_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
     --consumer "$selection_consumer" --manifest config/selection >/dev/null
 # Resolve actual maintained companion declarations from the selected revision.
 fixture_directories=()
-for directory in scripts make ci .githooks .github; do
+for directory in scripts make ci docs .githooks .github; do
     [[ ! -d "$ROOT/$directory" ]] || fixture_directories+=("$directory")
 done
 (cd "$ROOT" && rg --files --hidden "${fixture_directories[@]}") > "$FIXTURE/companion-sources"
-printf '%s\n' docs/type-docs.md >> "$FIXTURE/companion-sources"
 while IFS= read -r path; do
     mkdir -p "$source_root/$(dirname "$path")" "$revision_root/$(dirname "$path")"
     [[ -e "$source_root/$path" ]] || cp -p "$ROOT/$path" "$source_root/$path"
@@ -776,6 +775,8 @@ scripts/dev/check-cargo-tool-versions.pl scripts/ci/tool-catalog-records.pl
 scripts/ci/test-tool-catalogs.pl scripts/ci/check-tool-catalogs.pl
 scripts/ci/collect-native-diagnostics.sh scripts/ci/verify-file-checksum.sh
 scripts/ci/run-cargo-publication.sh scripts/ci/check-make-execution.sh
+scripts/ci/run-cargo-publication.sh scripts/ci/cargo-publication-paths.sh
+scripts/ci/cargo-publication-adapter.sh docs/cargo-publication.md
 scripts/ci/test-cargo-publication-attempt.sh scripts/ci/run-cargo-publication.sh
 scripts/ci/run-release.sh scripts/ci/check-release-tag.sh
 scripts/ci/test-release-runner.sh scripts/ci/fixture-lifecycle.sh
