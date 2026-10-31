@@ -616,8 +616,9 @@ contracts; ordinary development does not require rereading these mechanics.
 - Keep related crates in one development workspace; release groups own their
   coordinated versions under the
   [workspace versioning guidance](rust-workspaces.md#coordinated-versions-and-workspace-boundaries).
-  One group may inherit the root package version; other groups use admitted
-  package literals. Document the group map in root `Cargo.toml` comments and use
+  Independent groups all use literal package versions; omit the root
+  `workspace.package.version`. Require explicit group selection for release,
+  resume and publication. Document the group map in root `Cargo.toml` comments and use
   [group changelogs and retained history](changelogs.md#release-group-changelogs-and-shared-history).
   Do not move packages or synchronize unrelated releases merely for versioning.
   Apply the [core and integration graph boundary](rust-workspaces.md#core-and-integration-graph-boundary)

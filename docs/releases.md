@@ -854,7 +854,9 @@ do not require package moves or another lockfile. Make the declared groups easy
 to inspect using the root
 [`Cargo.toml` comment map](../rules/rust-workspaces.md#visible-release-group-map-in-cargotoml).
 Use [one changelog per group and retained shared history](../rules/changelogs.md#release-group-changelogs-and-shared-history);
-comments and a historical ledger are not executable release inputs.
+all ledgers live at `releases/<group>/CHANGELOG.md`. Root `CHANGELOG.md` is an
+index, and root `Cargo.toml` has no `workspace.package.version`. Comments, the
+index and the historical ledger are not executable release inputs.
 An approved consumer declares `ci/cargo-release-groups.json`, for example:
 
 ```json
@@ -864,9 +866,9 @@ An approved consumer declares `ci/cargo-release-groups.json`, for example:
     {
       "name": "codec",
       "primary": "ic-wire",
-      "version": "workspace",
+      "version": "package",
       "members": ["ic-wire", "ic-wire-derive", "ic-wire-benchmarks"],
-      "changelog": "CHANGELOG.md",
+      "changelog": "releases/codec/CHANGELOG.md",
       "dependencies": ["ic-wire", "ic-wire-derive"]
     },
     {
@@ -874,7 +876,7 @@ An approved consumer declares `ci/cargo-release-groups.json`, for example:
       "primary": "ic-wire-endpoint",
       "version": "package",
       "members": ["ic-wire-endpoint"],
-      "changelog": "crates/ic-wire-endpoint/CHANGELOG.md",
+      "changelog": "releases/endpoint/CHANGELOG.md",
       "dependencies": ["ic-wire-endpoint"]
     }
   ]
@@ -884,10 +886,21 @@ An approved consumer declares `ci/cargo-release-groups.json`, for example:
 This is an illustrative approved layout, not an instruction to create these
 packages or select their versions. Every actual workspace member, including
 private qualification packages, belongs to exactly one group. Names and ledgers
-are unique. A `workspace` group inherits `workspace.package.version`; at most one
-group uses that source. A `package` group owns literal `package.version` values
-in every member, all matching its primary member. No shadow version file is
-introduced. Member paths come from successful locked Cargo metadata.
+are unique. Every independent group uses `version: "package"`: literal
+`package.version` values in every member, all matching its primary member. The
+primary owns only that group's version; no group is the workspace master. No
+shadow version file is introduced. Member paths come from successful locked Cargo
+metadata. The helper/editor still understand `workspace` mode for existing
+adoptions and recorded recovery; that mechanism capability is not the current
+layout policy for independent groups.
+
+Adopt the layout without changing numeric versions: convert inherited versions
+to their existing values, move each independent ledger to its group directory,
+preserve coordinated entries once in `releases/history.md`, and make the root
+ledger an index. Update policy paths, root comments, documentation-link rosters,
+snapshot/export companions, archive inputs and local adapters/fixtures together
+where affected. Keep historical links and release evidence usable. Do not
+reinterpret an unfinished attempt under the new policy or file plan.
 
 A group may declare an optional `metadata_files` array for additional
 consumer-owned release metadata, for example a runtime qualification lockfile
@@ -923,8 +936,22 @@ that is workspace qualification, not publication of the other group's new
 dependency declaration under an already-published version. Release that consumer
 group separately when its own changed contract needs publication.
 
-Select `RELEASE_GROUP=endpoint` with the existing release commands and consumer
-policy adapter. The runner uses `endpoint-vX.Y.Z` tags, `Release endpoint X.Y.Z`
+Select `RELEASE_GROUP=endpoint` explicitly with the existing release commands and
+consumer policy adapter. In a workspace with independent groups, release, resume
+and publication entrypoints must reject missing, empty or unknown group selections
+before setup, validation or mutation. Do not install an implicit Make/environment
+default or infer the group from a `PACKAGE` override. An explicitly supplied
+environment selection is valid; any package subset must belong to that group.
+Workspace-wide read-only inventory and qualification may still inspect every
+group. Single-group repositories keep their existing commands.
+
+Consumer adoption must qualify these refusals at the public Make/CLI entrypoints,
+both groups' metadata transactions and preservation of unselected versions and
+ledgers, as well as exact files, publication selection and saved-attempt recovery.
+These are adoption requirements; updating this documentation does not change
+existing consumers' executable defaults or migrate their files automatically.
+
+The runner uses `endpoint-vX.Y.Z` tags, `Release endpoint X.Y.Z`
 commit subjects and `endpoint-X.Y.Z.plan` journals. Group PR delivery uses
 `release/endpoint-vX.Y.Z`. One repository-wide release lock still protects the
 shared lockfile and source. Group journals record the group explicitly, and

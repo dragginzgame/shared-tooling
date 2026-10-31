@@ -196,8 +196,11 @@ one only with a concrete reason why an expectation cannot work. Follow the
 
 Keep related crates in one development workspace, with coordinated versions
 within explicit release groups where unrelated contracts need independent
-releases. Make group membership, version sources and changelog locations visible
-in root `Cargo.toml` comments under the
+releases. Independent groups all use explicit package versions and
+`releases/<group>/CHANGELOG.md`; the root has no shared version and its changelog
+is an index. Require explicit group selection for releases and publication.
+Make membership, version sources and changelog locations visible in root
+`Cargo.toml` comments under the
 [workspace versioning rules](rules/rust-workspaces.md#coordinated-versions-and-workspace-boundaries).
 Use root-owned dependency selections, reviewed shared tooling, explicit setup
 and the product's declared compiler/host requirements. External

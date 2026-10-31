@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.27.18]
+
+### 🥾 Governance
+
+- Give independent release groups symmetric ownership: explicit package versions,
+  group ledgers under `releases/`, a root changelog index and preserved shared
+  history. Require explicit group selection for release, resume and publication;
+  consumer adoption retains existing versions, crate paths and release machinery.
+
 ## [0.27.17]
 
 ### 🩹 Fixed
