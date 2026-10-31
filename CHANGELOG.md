@@ -1,14 +1,17 @@
 # Changelog
 
-## [0.27.13]
+## [0.27.14]
 
 ### 🩹 Fixed
 
 - Admit registry Principal conversions in Platform’s canonical `ic-platform-types`
   owner. Keep every other external IC dependency restricted to the facade and
-  preserve stricter consumer policies.
+  preserve stricter consumer policies
+  ([#329 — Admit registry Principal conversions](https://github.com/dragginzgame/shared-tooling/pull/329)).
 - Exclude two exact historical generated Mermaid node fingerprints from secret
   scanning; retain detection for other files, commits and candidate credentials.
+
+## [0.27.13]
 
 ### ➕ Added
 
