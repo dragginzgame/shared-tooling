@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.27.19]
+
+### 🥾 Governance
+
+- Let agents complete scoped release, shipping and deployment requests, selecting
+  affected groups, semantic versions and delivery order without per-command
+  confirmation. Preserve narrower implementation requests, explicit target limits,
+  required checks and separate release/publication execution.
+
 ## [0.27.18]
 
 ### 🥾 Governance

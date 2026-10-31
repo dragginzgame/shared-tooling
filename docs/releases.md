@@ -10,12 +10,13 @@ a publishable package, must provide these Make targets:
 | `make release-minor` | Increment minor; reset patch | `0.2.0` |
 | `make release-major` | Increment major; reset minor and patch | `1.0.0` |
 
-These are user-operated commands. Preparing code or notes for a named release
-does not authorize an agent to invoke them, their recovery target or mutating
-adapters, or to perform their staging, commit, version or tag effects manually.
-Follow the [user-owned Git and release boundary](../rules/contributions.md#user-owned-git-and-release-flow)
-and any approved local maintainer-only restriction. Only an express delegation
-of execution permits an agent to run a release within that policy.
+Users or delegated agents operate these commands. A request to release, ship or
+deploy the scoped changes authorizes the corresponding workflow under
+[delegated delivery](../rules/contributions.md#delegated-delivery). The agent may
+select affected approved groups, semantic-version increments and dependency order,
+and execute necessary preparation and delivery without per-command confirmation.
+Preparing code/notes, asking how to deploy or checking readiness does not itself
+authorize execution. Preserve explicit target restrictions and required protections.
 
 The names, version arithmetic and recovery contract are shared across repositories.
 Each repository supplies its canonical version source, metadata file set,
@@ -84,8 +85,10 @@ The default `RELEASE_DELIVERY=direct` workflow is:
 
 These commands finish with the branch and tag on GitHub. They do not implicitly
 publish packages, create GitHub Release objects, deploy products, bump to another
-development version or clean build/evidence directories. Those actions require
-their own explicit commands and authority. Keep the finalized release at the
+development version or clean build/evidence directories. Those actions retain
+their own commands; a scoped ship/deploy request may already authorize publication
+or deployment, so do not request separate approval again. Cleanup and unrelated
+effects remain outside that scope. Keep the finalized release at the
 top of the changelog until subsequent work needs a new numbered, undated pending
 entry under the [automatic next-version rules](../rules/changelogs.md).
 
@@ -454,7 +457,8 @@ status **75** (GNU Make reports a failed recipe/status 2), with its URL and retr
 instructions. This is pending review, not release completion: a chained
 `&& make publish` cannot proceed.
 
-After the separately authorized merge, run `make release-resume VERSION=X.Y.Z`
+After an authorized merge (covered by a full delivery request or a separate merge
+instruction), run `make release-resume VERSION=X.Y.Z`
 with the same PR delivery policy.
 Merge, squash and rebase merges are accepted when GitHub's recorded merged commit
 is in the selected remote base history and its tree exactly equals the saved
@@ -616,19 +620,21 @@ not a deletion target. Existing adoption work is tracked in
 
 ### Authorized release effects
 
-The maintainer owns execution. Where local policy permits delegation, they may
-explicitly ask an agent to run the selected release for the identified repository
-and destination. Naming a version, preparing a release, completing validation or
-asking for push readiness is not that delegation. An explicit execution request
-covers the documented complete gate, version preparation, release commit, tag
+The maintainer may execute delivery or delegate its outcome to an agent under
+[delegated delivery](../rules/contributions.md#delegated-delivery). The agent then
+selects the affected groups and commands for the scoped repository and established
+destination. Naming a version, preparing notes, completing validation or asking
+for push readiness alone is not that delegation. A delivery request covers the
+documented complete gate, version preparation, release commit, tag
 and selected delivery effects. Direct delivery includes the atomic branch/tag
-push; PR delivery includes its branch/PR, fresh validation after an independently
-authorized merge, and exact tag push. Permission to fix code, create a commit, open a PR,
+push; PR delivery includes its branch/PR, fresh validation after an authorized
+merge, and exact tag push. Permission to fix code, create a commit, open a PR,
 push a topic branch or change a version alone is not permission to run this flow.
 Agents may inspect release state and prepare source, dependencies and changelog
 notes within existing scope. Mutating version preparation, staging and saved
-release recovery require their own explicit execution authority; calling a
-helper directly does not bypass the boundary.
+release recovery require execution authority, which a scoped delivery request
+supplies for its necessary substeps; calling a helper directly does not bypass
+that boundary.
 
 Ordinary contributions follow the [PR rules](../rules/contributions.md). The
 runner defaults to direct delivery and supports explicit PR delivery under

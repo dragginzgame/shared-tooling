@@ -30,11 +30,12 @@ owns when to run checks. This overlay identifies the local checks only.
   consistency review and `git diff --check`.
 
 The common [contribution authority rules](rules/contributions.md) apply here.
-Staging, commits, version changes, tags and `make release-*` are user-owned by
-default. Ordinary fixes and continuation leave reviewable working-tree changes;
-they do not authorize `git add .`, `git commit` or release execution.
-An authorized PR includes its necessary branch, commits and branch push; merges,
-direct integration-branch pushes and releases require their own authorization.
+Ordinary fixes leave reviewable working-tree changes; they do not implicitly
+stage, commit or release. A release/ship/deploy request delegates its scoped
+delivery workflow under [delegated delivery](rules/contributions.md#delegated-delivery),
+including routine release choices and necessary Git effects without per-step
+confirmation. An authorized PR alone includes its branch, commits and branch
+push, but not its merge or release. Never use blanket staging or bypass protections.
 Relevant contributions to other `dragginzgame` repositories use the standing
 [isolated PR workflow](rules/contributions.md#cross-repository-pull-requests)
 without per-PR approval. Leave sibling working checkouts untouched and respect
