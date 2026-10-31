@@ -1,0 +1,4 @@
+# Generated Mermaid dependency node IDs, not credentials. Scope each exception
+# to the exact historical commit, file, rule and line; retain all other findings.
+a50b3e99da132e697c66e1b016991fe8e8f686f1:README.md:generic-api-key:54
+a50b3e99da132e697c66e1b016991fe8e8f686f1:docs/stack.md:generic-api-key:229

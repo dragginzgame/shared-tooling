@@ -7,6 +7,16 @@
 - Admit registry Principal conversions in Platform’s canonical `ic-platform-types`
   owner. Keep every other external IC dependency restricted to the facade and
   preserve stricter consumer policies.
+- Exclude two exact historical generated Mermaid node fingerprints from secret
+  scanning; retain detection for other files, commits and candidate credentials.
+
+### ➕ Added
+
+- Support explicitly approved Cargo release groups through the existing metadata
+  transaction and release runner. Preserve other groups' public versions and
+  external lock selections, retain full graph qualification, bind receipts/resume
+  and tags to the group, and admit group-owned versions in inheritance checks
+  ([#328](https://github.com/dragginzgame/shared-tooling/issues/328)).
 
 ## [0.27.12]
 
