@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.27.20]
+
+### 🥾 Governance
+
+- Keep plain `cargo clean` and general workspace cleanup able to remove the
+  entire workspace `target/`, including nested build caches and retained evidence.
+  Preserve Cargo's normal workspace defaults and explicit operator selections.
+- Preserve artifacts during normal builds and releases without narrowing
+  user-requested cleanup. Keep evidence that must survive cleanup outside
+  `target/`, and verify cleanup changes in disposable fixtures.
+
 ## [0.27.19]
 
 ### 🥾 Governance

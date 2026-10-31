@@ -179,6 +179,8 @@ Use IcyDB-style emoji category sections in root release notes; read the
 [changelog rules](rules/changelogs.md) when updating them. Preserve build and
 recovery evidence on success, failure and retry; no implicit cleanup. See
 [artifact preservation](rules/engineering-details.md#changelogs-and-artifact-preservation).
+Keep plain `cargo clean` able to remove the owning workspace's entire `target/`
+directory. Artifact retention must not narrow explicit cleanup.
 
 ## IC stable-memory governance
 
