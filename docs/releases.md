@@ -897,6 +897,15 @@ and cannot overlap workspace manifests, the root lockfile, group ledgers, the
 group policy or Git state. They are appended in declared order to the exact
 release-file plan and bound by the existing source/receipt checks.
 
+A workspace may additionally declare top-level `shared_metadata_files` for
+consumer metadata needed by multiple groups, such as one combined qualification
+lock. These paths have one explicit common declaration and are included exactly
+once in every group's file plan. The same regular-file, reserved-path and
+uniqueness rules apply across common and group-local metadata; repeating a common
+path in any group is rejected. Consumers retain selective rendering and semantic
+checks so a release preserves unrelated portions of common files. This is not
+permission to share conflicting group ownership or stage undeclared files.
+
 Shared preparation preserves these files byte-for-byte and restores them with
 its transaction on failure. The consumer owns their rendering, semantic checks
 and any recovery spanning its additional preparation steps; listing a file does

@@ -46,11 +46,12 @@ done
 printf '\n[dev-dependencies]\nentry.workspace = true\n' >> codec/Cargo.toml
 printf '\n[dependencies]\ncodec.workspace = true\nserde.workspace = true\n' >> endpoint/Cargo.toml
 cat > ci/cargo-release-groups.json <<'JSON'
-{"schema":1,"groups":[
+{"schema":1,"shared_metadata_files":["ci/qualification.lock"],"groups":[
  {"name":"codec","primary":"codec","version":"workspace","members":["codec","derive"],"changelog":"CHANGELOG.md","dependencies":["codec","derive"]},
  {"name":"endpoint","primary":"endpoint","version":"package","members":["endpoint"],"changelog":"docs/endpoint.md","dependencies":["entry"],"metadata_files":["ci/endpoint-pin.json"]}
 ]}
 JSON
+printf 'shared qualification bytes\n' > ci/qualification.lock
 printf '{"version":"0.1.0"}\n' > ci/endpoint-pin.json
 printf '# Changelog\n\n## [0.12.0]\n\n- Codec draft.\n\n## [0.11.0] - 2026-10-30\n\n- Previous.\n' > CHANGELOG.md
 printf '# Endpoint\n\n## [0.2.0]\n\n- Endpoint draft.\n\n## [0.1.0] - 2026-10-30\n\n- Previous.\n' > docs/endpoint.md
@@ -64,12 +65,16 @@ cp docs/endpoint.md "$fixture/changelog"
 cp codec/Cargo.toml "$fixture/codec"
 cp ci/endpoint-pin.json "$fixture/endpoint-pin"
 refuse() { if "$@"; then echo 'unexpected release-group admission' >&2; exit 1; fi; }
+for selected in codec endpoint; do
+    bash "$group_helper" plan "$selected" | jq -e '
+        [.files[] | select(. == "ci/qualification.lock")] | length == 1' > /dev/null
+done
 bash "$helper" check-graph endpoint
 [[ "$(bash "$group_helper" version endpoint)" == 0.1.0 ]]
 bash "$ROOT/scripts/ci/check-dependency-pins.sh" --consumer "$PWD" --cargo-inheritance
 RELEASE_GROUP='' refuse bash "$helper" check-graph codec
 refuse bash "$helper" check-graph codec
-for fault in missing overlap version unknown-alias missing-alias ledger traversal metadata-shape metadata-missing metadata-traversal metadata-duplicate metadata-overlap metadata-manifest metadata-ledger metadata-policy metadata-git; do
+for fault in missing overlap version unknown-alias missing-alias ledger traversal metadata-shape metadata-missing metadata-traversal metadata-duplicate metadata-overlap metadata-manifest metadata-ledger metadata-policy metadata-git shared-shape shared-duplicate shared-overlap shared-reserved shared-missing shared-traversal; do
     case "$fault" in
         missing) filter='.groups[0].members=["codec"]' ;;
         overlap) filter='.groups[1].members += ["codec"]' ;;
@@ -87,6 +92,12 @@ for fault in missing overlap version unknown-alias missing-alias ledger traversa
         metadata-ledger) filter='.groups[1].metadata_files=["CHANGELOG.md"]' ;;
         metadata-policy) filter='.groups[1].metadata_files=["ci/cargo-release-groups.json"]' ;;
         metadata-git) filter='.groups[1].metadata_files=[".git/config"]' ;;
+        shared-shape) filter='.shared_metadata_files=null' ;;
+        shared-duplicate) filter='.shared_metadata_files += .shared_metadata_files' ;;
+        shared-overlap) filter='.shared_metadata_files += ["ci/endpoint-pin.json"]' ;;
+        shared-reserved) filter='.shared_metadata_files=["Cargo.lock"]' ;;
+        shared-missing) filter='.shared_metadata_files=["ci/missing.lock"]' ;;
+        shared-traversal) filter='.shared_metadata_files=["../outside"]' ;;
     esac
     jq "$filter" "$fixture/policy.json" > ci/cargo-release-groups.json
     refuse bash "$helper" prepare endpoint > "$fixture/$fault.log" 2>&1
@@ -94,6 +105,7 @@ for fault in missing overlap version unknown-alias missing-alias ledger traversa
     cmp Cargo.lock "$fixture/lock"
     cmp docs/endpoint.md "$fixture/changelog"
     cmp ci/endpoint-pin.json "$fixture/endpoint-pin"
+    [[ "$(cat ci/qualification.lock)" == "shared qualification bytes" ]]
 done
 cp "$fixture/policy.json" ci/cargo-release-groups.json
 # A stale unsourced lock record refuses even if its rendered version is plausible.
