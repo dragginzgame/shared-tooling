@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.27.12] - Unreleased
+
+### ➕ Added
+
+- Carry explicit manifest/target paths, feature selections and check-only dirty
+  admission through the publication Make adapter without evaluating argument text.
+  Preserve path admission, source checks and retained attempts
+  ([#326 — Support explicit Cargo options in the opt-in publication adapter](https://github.com/dragginzgame/shared-tooling/issues/326)).
+
+### 🧪 Testing
+
+- Prepare documentation alongside script companions in snapshot fixtures so
+  publication adapters remain exportable through their committed closure.
+
 ## [0.27.11]
 
 ### 🥾 Governance
