@@ -4,10 +4,10 @@
 
 ### 🩹 Fixed
 
-- Admit explicitly declared common consumer metadata in each release-group file
-  plan. Preserve duplicate/reserved-path rejection, rollback and exact receipt
-  custody so independent Platform/Types releases can retain one runtime
-  qualification lock ([#328](https://github.com/dragginzgame/shared-tooling/issues/328)).
+- Allow independent Platform and Types releases to share one runtime
+  qualification lock through explicit `shared_metadata_files` declarations.
+  Preserve path validation, transaction rollback and exact release receipts
+  ([#328 — Support approved Cargo release groups](https://github.com/dragginzgame/shared-tooling/issues/328)).
 
 ## [0.27.16]
 
