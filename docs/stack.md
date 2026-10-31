@@ -11,6 +11,8 @@ the inventory: `ic-memory`, `ic-storage` and `ic-metrics-stable` are independent
 packages within `ic-persistence`. The direct-evidence table retains every
 first-party declaration from the selected packages, including build and
 development dependencies.
+`ic-jobs` and `ic-timers` belong to `ic-scheduling`; prepared calls are a module
+of `ic-platform`, not a separate `ic-call` package.
 
 ## README overview
 
@@ -55,6 +57,13 @@ packages; native paths do not hide library dependencies during reduction.
   it is not a canister runtime dependency. Snapshot adoption and runtime
   interactions are not inferred from Cargo or npm declarations. Product runtime
   architecture stays with the product repositories.
+- This is a package declaration map, not a workspace adoption order. Excluding
+  qualification packages from the diagram does not isolate their Cargo lock
+  resolution. Development dependencies and unshown integration members can still
+  constrain a core upgrade. Use the
+  [core and integration graph boundary](../rules/rust-workspaces.md#core-and-integration-graph-boundary)
+  and the affected independent locked graphs to determine adoption prerequisites;
+  do not collapse all packages in a repository into one mandatory release step.
 
 ## Refreshing the overview
 
@@ -153,11 +162,11 @@ flowchart TD
     p_ic_2dpersistence_7ccargo_3aic_2dmemory["ic-memory"]
     p_ic_2dpersistence_7ccargo_3aic_2dmetrics_2dstable["ic-metrics-stable"]
     p_ic_2dpersistence_7ccargo_3aic_2dstorage["ic-storage"]
-    p_ic_2dplatform_7ccargo_3aic_2dcall["ic-call"]
     p_ic_2dplatform_7ccargo_3aic_2dplatform["ic-platform"]
     p_ic_2dplatform_7ccargo_3aic_2dplatform_2dmacros["ic-platform-macros"]
+    p_ic_2dplatform_7ccargo_3aic_2dplatform_2druntime_2dguard["ic-platform-runtime-guard"]
     p_ic_2dplatform_7cnpm_3a_40tokostudios_2fic_2dplatform["@tokostudios/ic-platform"]
-    p_ic_2dtimers_7ccargo_3aic_2dtimers["ic-timers"]
+    p_ic_2dscheduling_7ccargo_3aic_2dtimers["ic-timers"]
     p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts["ic-host-artifacts"]
     p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs["ic-host-fs"]
     p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess["ic-host-process"]
@@ -207,32 +216,29 @@ flowchart TD
     p_canic_7ccargo_3acanic_2dblob_2dservice --> p_canic_7ccargo_3acanic
     p_canic_7ccargo_3acanic_2dblob_2dservice --> p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage
     p_canic_7ccargo_3acanic_2dcontracts --> p_ic_2dauth_7ccargo_3aic_2dauth_2dprotocol_2dtypes
+    p_canic_7ccargo_3acanic_2dcontracts --> p_ic_2dwire_7ccargo_3aic_2dwire
     p_canic_7ccargo_3acanic_2dcontrol_2dplane --> p_canic_7ccargo_3acanic_2dcore
     p_canic_7ccargo_3acanic_2dcore --> p_canic_7ccargo_3acanic_2dcontracts
     p_canic_7ccargo_3acanic_2dcore --> p_ic_2dauth_7ccargo_3aic_2dauth
     p_canic_7ccargo_3acanic_2dcore --> p_ic_2dobservability_7ccargo_3aic_2dlogging
     p_canic_7ccargo_3acanic_2dcore --> p_ic_2dpersistence_7ccargo_3aic_2dmetrics_2dstable
-    p_canic_7ccargo_3acanic_2dcore --> p_ic_2dplatform_7ccargo_3aic_2dcall
-    p_canic_7ccargo_3acanic_2dcore --> p_ic_2dtimers_7ccargo_3aic_2dtimers
+    p_canic_7ccargo_3acanic_2dcore --> p_ic_2dscheduling_7ccargo_3aic_2dtimers
     p_canic_7ccargo_3acanic_2dicydb --> p_canic_7ccargo_3acanic_2dmacros
-    p_canic_7ccargo_3acanic_2dicydb --> p_ic_2dtimers_7ccargo_3aic_2dtimers
+    p_canic_7ccargo_3acanic_2dicydb --> p_ic_2dscheduling_7ccargo_3aic_2dtimers
     p_ic_2dauth_7ccargo_3aic_2dauth --> p_ic_2dauth_7ccargo_3aic_2dauth_2dprotocol_2dtypes
+    p_ic_2dauth_7ccargo_3aic_2dauth --> p_ic_2dwire_7ccargo_3aic_2dwire
     p_ic_2dauth_7ccargo_3aic_2dauth_2dprotocol_2dtypes --> p_ic_2dplatform_7ccargo_3aic_2dplatform
     p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage --> p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcontracts
     p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage --> p_ic_2dpersistence_7ccargo_3aic_2dstorage
     p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcontracts --> p_ic_2dobservability_7ccargo_3aic_2dmetrics
-    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcontracts --> p_ic_2dplatform_7ccargo_3aic_2dplatform
     p_ic_2dobservability_7ccargo_3aic_2dmetrics --> p_ic_2dwire_7ccargo_3aic_2dwire
-    p_ic_2dpersistence_7ccargo_3aic_2dmemory --> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dpersistence_7ccargo_3aic_2dmemory --> p_ic_2dwire_7ccargo_3aic_2dwire
     p_ic_2dpersistence_7ccargo_3aic_2dmetrics_2dstable --> p_ic_2dobservability_7ccargo_3aic_2dmetrics
     p_ic_2dpersistence_7ccargo_3aic_2dmetrics_2dstable --> p_ic_2dpersistence_7ccargo_3aic_2dstorage
     p_ic_2dpersistence_7ccargo_3aic_2dstorage --> p_ic_2dpersistence_7ccargo_3aic_2dmemory
-    p_ic_2dplatform_7ccargo_3aic_2dcall --> p_ic_2dplatform_7ccargo_3aic_2dplatform
     p_ic_2dplatform_7ccargo_3aic_2dplatform --> p_ic_2dplatform_7ccargo_3aic_2dplatform_2dmacros
-    p_ic_2dplatform_7ccargo_3aic_2dplatform -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
-    p_ic_2dplatform_7ccargo_3aic_2dplatform --> p_ic_2dwire_7ccargo_3aic_2dwire
-    p_ic_2dtimers_7ccargo_3aic_2dtimers --> p_ic_2dobservability_7ccargo_3aic_2dmetrics
-    p_ic_2dtimers_7ccargo_3aic_2dtimers --> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dplatform_7ccargo_3aic_2dplatform --> p_ic_2dplatform_7ccargo_3aic_2dplatform_2druntime_2dguard
+    p_ic_2dscheduling_7ccargo_3aic_2dtimers --> p_ic_2dobservability_7ccargo_3aic_2dmetrics
     p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
     p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
     p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs
@@ -241,6 +247,7 @@ flowchart TD
     p_ic_2dtooling_7ccargo_3aic_2dtestkit -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs
     p_ic_2dtooling_7ccargo_3aic_2dtestkit -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess
     p_ic_2dtooling_7ccargo_3aic_2dtestkit -.-> p_ic_2dwire_7ccargo_3aic_2dwire
+    p_ic_2dwire_7ccargo_3aic_2dwire --> p_ic_2dplatform_7ccargo_3aic_2dplatform
     p_ic_2dwire_7ccargo_3aic_2dwire --> p_ic_2dwire_7ccargo_3aic_2dwire_2dderive
     p_icydb_7ccargo_3aicydb --> p_icydb_7ccargo_3aicydb_2dcore
     p_icydb_7ccargo_3aicydb --> p_icydb_7ccargo_3aicydb_2dmodel
@@ -250,7 +257,7 @@ flowchart TD
     p_icydb_7ccargo_3aicydb_2dcore --> p_icydb_7ccargo_3aicydb_2dschema
     p_icydb_7ccargo_3aicydb_2dmodel --> p_icydb_7ccargo_3aicydb_2dmodel_2dmacros
     p_icydb_7ccargo_3aicydb_2dmodel_2dmacros --> p_icydb_7ccargo_3aicydb_2dschema
-    p_icydb_7ccargo_3aicydb_2dschema --> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_icydb_7ccargo_3aicydb_2dschema --> p_ic_2dwire_7ccargo_3aic_2dwire
     p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fblob --> p_canic_7ccargo_3acanic_2dblob_2dservice
     p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fgame_5fhub --> p_canic_7ccargo_3acanic
     p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fgame_5fhub --> p_icydb_7ccargo_3aicydb
@@ -327,14 +334,13 @@ Repository | Selected packages and manifests
 [ic-auth](https://github.com/dragginzgame/ic-auth) | [ic-auth](https://github.com/dragginzgame/ic-auth/blob/main/crates/ic-auth/Cargo.toml)<br>[ic-auth-protocol-types](https://github.com/dragginzgame/ic-auth/blob/main/crates/ic-auth-protocol-types/Cargo.toml)<br>[ic-auth-tooling](https://github.com/dragginzgame/ic-auth/blob/main/apps/tooling/Cargo.toml)<br>[ic-auth-wire](https://github.com/dragginzgame/ic-auth/blob/main/crates/ic-auth-wire/Cargo.toml)
 [ic-backup](https://github.com/dragginzgame/ic-backup) | [ic-backup](https://github.com/dragginzgame/ic-backup/blob/main/crates/ic-backup/Cargo.toml)<br>[ic-backup-agent](https://github.com/dragginzgame/ic-backup/blob/main/crates/ic-backup-agent/Cargo.toml)
 [ic-blob-storage](https://github.com/dragginzgame/ic-blob-storage) | [ic-blob-storage](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage/Cargo.toml)<br>[ic-blob-storage-canister](https://github.com/dragginzgame/ic-blob-storage/blob/main/canisters/standalone/Cargo.toml)<br>[ic-blob-storage-cli](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-cli/Cargo.toml)<br>[ic-blob-storage-client](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-client/Cargo.toml)<br>[ic-blob-storage-contracts](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-contracts/Cargo.toml)
-[ic-jobs](https://github.com/dragginzgame/ic-jobs) | [ic-jobs](https://github.com/dragginzgame/ic-jobs/blob/main/crates/ic-jobs/Cargo.toml)
 [ic-observability](https://github.com/dragginzgame/ic-observability) | [ic-logging](https://github.com/dragginzgame/ic-observability/blob/main/crates/ic-logging/Cargo.toml)<br>[ic-metrics](https://github.com/dragginzgame/ic-observability/blob/main/crates/ic-metrics/Cargo.toml)
 [ic-persistence](https://github.com/dragginzgame/ic-persistence) | [ic-logging-stable](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-logging-stable/Cargo.toml)<br>[ic-memory](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-memory/Cargo.toml)<br>[ic-metrics-stable](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-metrics-stable/Cargo.toml)<br>[ic-storage](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-storage/Cargo.toml)
-[ic-platform](https://github.com/dragginzgame/ic-platform) | [@tokostudios/ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/packages/browser/package.json)<br>[ic-call](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-call/Cargo.toml)<br>[ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform/Cargo.toml)<br>[ic-platform-macros](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform-macros/Cargo.toml)
+[ic-platform](https://github.com/dragginzgame/ic-platform) | [@tokostudios/ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/packages/browser/package.json)<br>[ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform/Cargo.toml)<br>[ic-platform-macros](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform-macros/Cargo.toml)<br>[ic-platform-runtime-guard](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform-runtime-guard/Cargo.toml)
 [ic-profiler](https://github.com/dragginzgame/ic-profiler) | [ic-system-profiler](https://github.com/dragginzgame/ic-profiler/blob/main/profiler/system/Cargo.toml)
 [ic-query](https://github.com/dragginzgame/ic-query) | [ic-query](https://github.com/dragginzgame/ic-query/blob/main/crates/ic-query/Cargo.toml)<br>[ic-query-cli](https://github.com/dragginzgame/ic-query/blob/main/crates/ic-query-cli/Cargo.toml)
 [ic-relay](https://github.com/dragginzgame/ic-relay) | [ic-relay](https://github.com/dragginzgame/ic-relay/blob/main/crates/ic-relay/Cargo.toml)
-[ic-timers](https://github.com/dragginzgame/ic-timers) | [ic-timers](https://github.com/dragginzgame/ic-timers/blob/main/crates/ic-timers/Cargo.toml)
+[ic-scheduling](https://github.com/dragginzgame/ic-scheduling) | [ic-jobs](https://github.com/dragginzgame/ic-scheduling/blob/main/crates/ic-jobs/Cargo.toml)<br>[ic-timers](https://github.com/dragginzgame/ic-scheduling/blob/main/crates/ic-timers/Cargo.toml)
 [ic-tooling](https://github.com/dragginzgame/ic-tooling) | [ic-build](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-build/Cargo.toml)<br>[ic-host-artifacts](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-host-artifacts/Cargo.toml)<br>[ic-host-fs](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-host-fs/Cargo.toml)<br>[ic-host-http](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-host-http/Cargo.toml)<br>[ic-host-process](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-host-process/Cargo.toml)<br>[ic-host-text](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-host-text/Cargo.toml)<br>[ic-host-tools](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-host-tools/Cargo.toml)<br>[ic-host-wasm-inspect](https://github.com/dragginzgame/ic-tooling/blob/main/apps/ic-host-wasm-inspect/Cargo.toml)<br>[ic-testkit](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-testkit/Cargo.toml)<br>[ic-testkit-dev](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-testkit-dev/Cargo.toml)<br>[ic-testkit-native](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-testkit-native/Cargo.toml)
 [ic-wire](https://github.com/dragginzgame/ic-wire) | [ic-wire](https://github.com/dragginzgame/ic-wire/blob/main/crates/ic-wire/Cargo.toml)<br>[ic-wire-derive](https://github.com/dragginzgame/ic-wire/blob/main/crates/ic-wire-derive/Cargo.toml)
 [icydb](https://github.com/dragginzgame/icydb) | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml)<br>[icydb-cli](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-cli/Cargo.toml)<br>[icydb-core](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-core/Cargo.toml)<br>[icydb-diagnostic-code](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-diagnostic-code/Cargo.toml)<br>[icydb-model](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-model/Cargo.toml)<br>[icydb-model-macros](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-model-macros/Cargo.toml)<br>[icydb-schema](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-schema/Cargo.toml)
@@ -374,7 +380,6 @@ canic-contracts → ic-wire | [canic-contracts](https://github.com/dragginzgame/
 canic-control-plane → canic-contracts | [canic-control-plane](https://github.com/dragginzgame/canic/blob/main/crates/canic-control-plane/Cargo.toml) → `canic-contracts` (cargo normal)
 canic-control-plane → canic-core | [canic-control-plane](https://github.com/dragginzgame/canic/blob/main/crates/canic-control-plane/Cargo.toml) → `canic-core` (cargo normal)
 canic-control-plane → ic-memory | [canic-control-plane](https://github.com/dragginzgame/canic/blob/main/crates/canic-control-plane/Cargo.toml) → `ic-memory` (cargo dev)
-canic-control-plane → ic-call | [canic-control-plane](https://github.com/dragginzgame/canic/blob/main/crates/canic-control-plane/Cargo.toml) → `ic-call` (cargo normal)
 canic-control-plane → ic-platform | [canic-control-plane](https://github.com/dragginzgame/canic/blob/main/crates/canic-control-plane/Cargo.toml) → `ic-platform` (cargo normal)
 canic-control-plane → ic-timers | [canic-control-plane](https://github.com/dragginzgame/canic/blob/main/crates/canic-control-plane/Cargo.toml) → `ic-timers` (cargo normal)
 canic-control-plane → ic-wire | [canic-control-plane](https://github.com/dragginzgame/canic/blob/main/crates/canic-control-plane/Cargo.toml) → `ic-wire` (cargo normal)
@@ -386,7 +391,6 @@ canic-core → ic-metrics | [canic-core](https://github.com/dragginzgame/canic/b
 canic-core → ic-memory | [canic-core](https://github.com/dragginzgame/canic/blob/main/crates/canic-core/Cargo.toml) → `ic-memory` (cargo dev)<br>[canic-core](https://github.com/dragginzgame/canic/blob/main/crates/canic-core/Cargo.toml) → `ic-memory` (cargo normal)
 canic-core → ic-metrics-stable | [canic-core](https://github.com/dragginzgame/canic/blob/main/crates/canic-core/Cargo.toml) → `ic-metrics-stable` (cargo normal)
 canic-core → ic-storage | [canic-core](https://github.com/dragginzgame/canic/blob/main/crates/canic-core/Cargo.toml) → `ic-storage` (cargo normal)
-canic-core → ic-call | [canic-core](https://github.com/dragginzgame/canic/blob/main/crates/canic-core/Cargo.toml) → `ic-call` (cargo normal)
 canic-core → ic-platform | [canic-core](https://github.com/dragginzgame/canic/blob/main/crates/canic-core/Cargo.toml) → `ic-platform` (cargo dev)<br>[canic-core](https://github.com/dragginzgame/canic/blob/main/crates/canic-core/Cargo.toml) → `ic-platform` (cargo normal)<br>[canic-core](https://github.com/dragginzgame/canic/blob/main/crates/canic-core/Cargo.toml) → `ic-platform` (cargo normal, target-specific)
 canic-core → ic-timers | [canic-core](https://github.com/dragginzgame/canic/blob/main/crates/canic-core/Cargo.toml) → `ic-timers` (cargo normal)
 canic-core → ic-wire | [canic-core](https://github.com/dragginzgame/canic/blob/main/crates/canic-core/Cargo.toml) → `ic-wire` (cargo normal)
@@ -412,13 +416,12 @@ canic-icydb → ic-timers | [canic-icydb](https://github.com/dragginzgame/canic/
 canic-icydb → ic-wire | [canic-icydb](https://github.com/dragginzgame/canic/blob/main/crates/canic-icydb/Cargo.toml) → `ic-wire` (cargo normal)
 ic-auth → ic-auth-protocol-types | [ic-auth](https://github.com/dragginzgame/ic-auth/blob/main/crates/ic-auth/Cargo.toml) → `ic-auth-protocol-types` (cargo normal)
 ic-auth → ic-platform | [ic-auth](https://github.com/dragginzgame/ic-auth/blob/main/crates/ic-auth/Cargo.toml) → `ic-platform` (cargo dev)<br>[ic-auth](https://github.com/dragginzgame/ic-auth/blob/main/crates/ic-auth/Cargo.toml) → `ic-platform` (cargo normal)
-ic-auth → ic-wire | [ic-auth](https://github.com/dragginzgame/ic-auth/blob/main/crates/ic-auth/Cargo.toml) → `ic-wire` (cargo normal, optional)
+ic-auth → ic-wire | [ic-auth](https://github.com/dragginzgame/ic-auth/blob/main/crates/ic-auth/Cargo.toml) → `ic-wire` (cargo dev)<br>[ic-auth](https://github.com/dragginzgame/ic-auth/blob/main/crates/ic-auth/Cargo.toml) → `ic-wire` (cargo normal, optional)
 ic-auth-protocol-types → ic-platform | [ic-auth-protocol-types](https://github.com/dragginzgame/ic-auth/blob/main/crates/ic-auth-protocol-types/Cargo.toml) → `ic-platform` (cargo normal)
 ic-auth-tooling → ic-auth-wire | [ic-auth-tooling](https://github.com/dragginzgame/ic-auth/blob/main/apps/tooling/Cargo.toml) → `ic-auth-wire` (cargo normal, native package)
 ic-auth-tooling → ic-build | [ic-auth-tooling](https://github.com/dragginzgame/ic-auth/blob/main/apps/tooling/Cargo.toml) → `ic-build` (cargo normal, native package)
 ic-auth-tooling → ic-host-fs | [ic-auth-tooling](https://github.com/dragginzgame/ic-auth/blob/main/apps/tooling/Cargo.toml) → `ic-host-fs` (cargo normal, native package)
 ic-auth-wire → ic-auth-protocol-types | [ic-auth-wire](https://github.com/dragginzgame/ic-auth/blob/main/crates/ic-auth-wire/Cargo.toml) → `ic-auth-protocol-types` (cargo normal)
-ic-auth-wire → ic-platform | [ic-auth-wire](https://github.com/dragginzgame/ic-auth/blob/main/crates/ic-auth-wire/Cargo.toml) → `ic-platform` (cargo normal, optional)
 ic-auth-wire → ic-wire | [ic-auth-wire](https://github.com/dragginzgame/ic-auth/blob/main/crates/ic-auth-wire/Cargo.toml) → `ic-wire` (cargo normal)
 ic-backup → ic-platform | [ic-backup](https://github.com/dragginzgame/ic-backup/blob/main/crates/ic-backup/Cargo.toml) → `ic-platform` (cargo dev, target-specific)<br>[ic-backup](https://github.com/dragginzgame/ic-backup/blob/main/crates/ic-backup/Cargo.toml) → `ic-platform` (cargo normal)
 ic-backup → ic-host-artifacts | [ic-backup](https://github.com/dragginzgame/ic-backup/blob/main/crates/ic-backup/Cargo.toml) → `ic-host-artifacts` (cargo dev, target-specific)<br>[ic-backup](https://github.com/dragginzgame/ic-backup/blob/main/crates/ic-backup/Cargo.toml) → `ic-host-artifacts` (cargo normal)
@@ -455,7 +458,7 @@ ic-blob-storage-contracts → ic-platform | [ic-blob-storage-contracts](https://
 ic-blob-storage-contracts → ic-host-artifacts | [ic-blob-storage-contracts](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-contracts/Cargo.toml) → `ic-host-artifacts` (cargo dev, target-specific)
 ic-blob-storage-contracts → ic-host-fs | [ic-blob-storage-contracts](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-contracts/Cargo.toml) → `ic-host-fs` (cargo dev, target-specific)
 ic-blob-storage-contracts → ic-wire | [ic-blob-storage-contracts](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-contracts/Cargo.toml) → `ic-wire` (cargo normal)
-ic-metrics → ic-wire | [ic-metrics](https://github.com/dragginzgame/ic-observability/blob/main/crates/ic-metrics/Cargo.toml) → `ic-wire` (cargo normal, target-specific)
+ic-metrics → ic-wire | [ic-metrics](https://github.com/dragginzgame/ic-observability/blob/main/crates/ic-metrics/Cargo.toml) → `ic-wire` (cargo normal, optional, target-specific)
 ic-logging-stable → ic-logging | [ic-logging-stable](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-logging-stable/Cargo.toml) → `ic-logging` (cargo normal)
 ic-logging-stable → ic-memory | [ic-logging-stable](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-logging-stable/Cargo.toml) → `ic-memory` (cargo dev)<br>[ic-logging-stable](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-logging-stable/Cargo.toml) → `ic-memory` (cargo normal)
 ic-logging-stable → ic-storage | [ic-logging-stable](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-logging-stable/Cargo.toml) → `ic-storage` (cargo normal)
@@ -474,10 +477,9 @@ ic-metrics-stable → ic-storage | [ic-metrics-stable](https://github.com/draggi
 ic-metrics-stable → ic-wire | [ic-metrics-stable](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-metrics-stable/Cargo.toml) → `ic-wire` (cargo normal)
 ic-storage → ic-memory | [ic-storage](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-storage/Cargo.toml) → `ic-memory` (cargo dev)<br>[ic-storage](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-storage/Cargo.toml) → `ic-memory` (cargo normal)
 ic-storage → ic-platform | [ic-storage](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-storage/Cargo.toml) → `ic-platform` (cargo normal)
-ic-call → ic-platform | [ic-call](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-call/Cargo.toml) → `ic-platform` (cargo normal)
+ic-storage → ic-wire | [ic-storage](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-storage/Cargo.toml) → `ic-wire` (cargo dev)
 ic-platform → ic-platform-macros | [ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform/Cargo.toml) → `ic-platform-macros` (cargo normal, optional)
-ic-platform → ic-host-artifacts | [ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform/Cargo.toml) → `ic-host-artifacts` (cargo normal, optional, target-specific)
-ic-platform → ic-wire | [ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform/Cargo.toml) → `ic-wire` (cargo normal, optional, target-specific)
+ic-platform → ic-platform-runtime-guard | [ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform/Cargo.toml) → `ic-platform-runtime-guard` (cargo normal, optional)
 ic-system-profiler → ic-metrics | [ic-system-profiler](https://github.com/dragginzgame/ic-profiler/blob/main/profiler/system/Cargo.toml) → `ic-metrics` (cargo normal)
 ic-system-profiler → ic-platform | [ic-system-profiler](https://github.com/dragginzgame/ic-profiler/blob/main/profiler/system/Cargo.toml) → `ic-platform` (cargo normal)
 ic-system-profiler → ic-host-process | [ic-system-profiler](https://github.com/dragginzgame/ic-profiler/blob/main/profiler/system/Cargo.toml) → `ic-host-process` (cargo normal)
@@ -505,8 +507,8 @@ ic-relay → ic-platform | [ic-relay](https://github.com/dragginzgame/ic-relay/b
 ic-relay → ic-timers | [ic-relay](https://github.com/dragginzgame/ic-relay/blob/main/crates/ic-relay/Cargo.toml) → `ic-timers` (cargo normal, optional)
 ic-relay → ic-host-text | [ic-relay](https://github.com/dragginzgame/ic-relay/blob/main/crates/ic-relay/Cargo.toml) → `ic-host-text` (cargo dev, target-specific)
 ic-relay → ic-wire | [ic-relay](https://github.com/dragginzgame/ic-relay/blob/main/crates/ic-relay/Cargo.toml) → `ic-wire` (cargo normal)
-ic-timers → ic-metrics | [ic-timers](https://github.com/dragginzgame/ic-timers/blob/main/crates/ic-timers/Cargo.toml) → `ic-metrics` (cargo normal)
-ic-timers → ic-platform | [ic-timers](https://github.com/dragginzgame/ic-timers/blob/main/crates/ic-timers/Cargo.toml) → `ic-platform` (cargo normal)
+ic-timers → ic-metrics | [ic-timers](https://github.com/dragginzgame/ic-scheduling/blob/main/crates/ic-timers/Cargo.toml) → `ic-metrics` (cargo normal)
+ic-timers → ic-platform | [ic-timers](https://github.com/dragginzgame/ic-scheduling/blob/main/crates/ic-timers/Cargo.toml) → `ic-platform` (cargo normal)
 ic-build → ic-host-artifacts | [ic-build](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-build/Cargo.toml) → `ic-host-artifacts` (cargo normal, native package)
 ic-build → ic-host-fs | [ic-build](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-build/Cargo.toml) → `ic-host-fs` (cargo dev, native package)<br>[ic-build](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-build/Cargo.toml) → `ic-host-fs` (cargo normal, native package)
 ic-build → ic-host-process | [ic-build](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-build/Cargo.toml) → `ic-host-process` (cargo dev, target-specific, native package)<br>[ic-build](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-build/Cargo.toml) → `ic-host-process` (cargo normal, native package)
@@ -534,10 +536,10 @@ ic-testkit-dev → ic-host-process | [ic-testkit-dev](https://github.com/draggin
 ic-testkit-dev → ic-host-text | [ic-testkit-dev](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-testkit-dev/Cargo.toml) → `ic-host-text` (cargo normal, native package)
 ic-testkit-dev → ic-testkit | [ic-testkit-dev](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-testkit-dev/Cargo.toml) → `ic-testkit` (cargo normal, native package)
 ic-testkit-dev → ic-testkit-perf-probe | [ic-testkit-dev](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-testkit-dev/Cargo.toml) → `ic-testkit-perf-probe` (cargo normal, native package)
-ic-testkit-dev → ic-wire | [ic-testkit-dev](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-testkit-dev/Cargo.toml) → `ic-wire` (cargo normal, native package)
+ic-testkit-dev → ic-wire | [ic-testkit-dev](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-testkit-dev/Cargo.toml) → `ic-wire` (cargo dev, native package)
 ic-testkit-native → ic-platform | [ic-testkit-native](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-testkit-native/Cargo.toml) → `ic-platform` (cargo normal, optional, target-specific, native package)
+ic-wire → ic-platform | [ic-wire](https://github.com/dragginzgame/ic-wire/blob/main/crates/ic-wire/Cargo.toml) → `ic-platform` (cargo normal, optional)
 ic-wire → ic-wire-derive | [ic-wire](https://github.com/dragginzgame/ic-wire/blob/main/crates/ic-wire/Cargo.toml) → `ic-wire-derive` (cargo normal)
-icydb → canic-icydb | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `canic-icydb` (cargo dev)
 icydb → ic-memory | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-memory` (cargo normal)
 icydb → ic-platform | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-platform` (cargo dev)<br>[icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-platform` (cargo normal)
 icydb → ic-wire | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-wire` (cargo normal)<br>[icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-wire` (cargo normal, target-specific)
@@ -546,7 +548,6 @@ icydb → icydb-diagnostic-code | [icydb](https://github.com/dragginzgame/icydb/
 icydb → icydb-model | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `icydb-model` (cargo normal)
 icydb → icydb-model-macros | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `icydb-model-macros` (cargo normal)
 icydb → icydb-schema | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `icydb-schema` (cargo normal)
-icydb-cli → canic-icydb | [icydb-cli](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-cli/Cargo.toml) → `canic-icydb` (cargo normal, native package)
 icydb-cli → ic-metrics | [icydb-cli](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-cli/Cargo.toml) → `ic-metrics` (cargo dev, native package)
 icydb-cli → ic-host-artifacts | [icydb-cli](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-cli/Cargo.toml) → `ic-host-artifacts` (cargo normal, native package)
 icydb-cli → ic-host-fs | [icydb-cli](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-cli/Cargo.toml) → `ic-host-fs` (cargo dev, native package)<br>[icydb-cli](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-cli/Cargo.toml) → `ic-host-fs` (cargo normal, native package)
@@ -559,7 +560,7 @@ icydb-core → ic-metrics | [icydb-core](https://github.com/dragginzgame/icydb/b
 icydb-core → ic-memory | [icydb-core](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-core/Cargo.toml) → `ic-memory` (cargo normal)
 icydb-core → ic-storage | [icydb-core](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-core/Cargo.toml) → `ic-storage` (cargo normal)
 icydb-core → ic-platform | [icydb-core](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-core/Cargo.toml) → `ic-platform` (cargo normal)
-icydb-core → ic-wire | [icydb-core](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-core/Cargo.toml) → `ic-wire` (cargo normal, target-specific)
+icydb-core → ic-wire | [icydb-core](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-core/Cargo.toml) → `ic-wire` (cargo normal)<br>[icydb-core](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-core/Cargo.toml) → `ic-wire` (cargo normal, target-specific)
 icydb-core → icydb-diagnostic-code | [icydb-core](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-core/Cargo.toml) → `icydb-diagnostic-code` (cargo normal)
 icydb-core → icydb-schema | [icydb-core](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-core/Cargo.toml) → `icydb-schema` (cargo normal)
 icydb-core → icydb-testing-sql-generator | [icydb-core](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-core/Cargo.toml) → `icydb-testing-sql-generator` (cargo dev)
@@ -691,5 +692,5 @@ toko → icydb | [toko](https://github.com/dragginzgame/toko/blob/development/ba
 toko → icydb-model | [toko](https://github.com/dragginzgame/toko/blob/development/backend/src/toko/Cargo.toml) → `icydb-model` (cargo normal)
 toko → design | [toko](https://github.com/dragginzgame/toko/blob/development/backend/src/toko/Cargo.toml) → `design` (cargo normal)
 
-Selected packages without a normal-dependency path from the application roots: `canic-auth`, `canic-cli`, `canic-host`, `ic-auth-tooling`, `ic-auth-wire`, `ic-backup`, `ic-backup-agent`, `ic-blob-storage-canister`, `ic-blob-storage-cli`, `ic-blob-storage-client`, `ic-jobs`, `ic-logging-stable`, `ic-system-profiler`, `ic-query`, `ic-query-cli`, `ic-relay`, `ic-build`, `ic-host-http`, `ic-host-text`, `ic-host-tools`, `ic-host-wasm-inspect`, `ic-testkit-dev`, `ic-testkit-native`, `icydb-cli`.
+Selected packages without a normal-dependency path from the application roots: `canic-auth`, `canic-cli`, `canic-host`, `ic-auth-tooling`, `ic-auth-wire`, `ic-backup`, `ic-backup-agent`, `ic-blob-storage-canister`, `ic-blob-storage-cli`, `ic-blob-storage-client`, `ic-logging-stable`, `ic-system-profiler`, `ic-query`, `ic-query-cli`, `ic-relay`, `ic-jobs`, `ic-build`, `ic-host-http`, `ic-host-text`, `ic-host-tools`, `ic-host-wasm-inspect`, `ic-testkit-dev`, `ic-testkit-native`, `icydb-cli`.
 <!-- stack-graph:end -->

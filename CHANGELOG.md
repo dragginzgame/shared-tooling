@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.27.12]
+
+### 🥾 Governance
+
+- Keep reusable cores independently upgradable. Adapters own matching integration
+  stacks; isolate demonstrated integration blockers without dropping core or
+  composition qualification, changing public versioning or weakening runtime guards.
+
+### 🩹 Fixed
+
+- Refresh the stack graph for the combined Scheduling workspace and retire the
+  separate Call package entry. Preserve package-level dependency evidence and
+  distinguish the declaration map from workspace adoption prerequisites.
+
 ## [0.27.11]
 
 ### 🥾 Governance
