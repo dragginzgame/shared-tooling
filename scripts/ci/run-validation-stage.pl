@@ -8,7 +8,7 @@ use Digest::SHA qw(sha256_hex);
 use DynaLoader ();
 use File::Path qw(make_path);
 use File::Temp qw(tempdir);
-use Fcntl qw(O_WRONLY O_CREAT O_EXCL);
+use Fcntl qw(O_RDONLY O_NONBLOCK O_WRONLY O_CREAT O_EXCL S_ISREG);
 use Getopt::Long qw(GetOptions);
 use JSON::PP;
 use POSIX qw(uname);
@@ -20,7 +20,7 @@ GetOptions('state=s'=>\$state, 'stage=s'=>\$stage, 'contract=s'=>\$contract,
     'source=s'=>\$source, 'group=s'=>\$group, 'observe=s'=>\$observer,
     'environment=s'=>\$environment, 'max-bytes=s'=>\$limit)
     && @ARGV && !grep { !defined($_) || !length($_) } ($state,$stage,$contract,$source,$group,$observer,$environment,$limit)
-    or die "usage: run-validation-stage.pl --state DIR --stage NAME --contract REV --source COMMIT --group NAME --observe EXECUTABLE --environment JSON --max-bytes N -- COMMAND [ARG...]\n";
+    or die "usage: run-validation-stage.pl --state DIR --stage NAME --contract REV --source ID --group NAME --observe EXECUTABLE --environment JSON --max-bytes N -- COMMAND [ARG...]\n";
 $stage =~ /\A[A-Za-z0-9][A-Za-z0-9_-]*\z/ && $group =~ /\A[A-Za-z0-9][A-Za-z0-9_-]*\z/
     && $contract =~ /\A[A-Za-z0-9][A-Za-z0-9_.\/-]*\z/ && $source =~ /\A(?:[0-9a-f]{40}|[0-9a-f]{64})\z/
     && $limit =~ /\A[1-9][0-9]{0,8}\z/ or die "invalid stage identity or byte allowance\n";
@@ -31,10 +31,20 @@ my $root = getcwd();
 sub bytes {
     my ($path) = @_;
     -f $path && -r $path && -s $path <= $limit or die "missing, unreadable or oversized stage input: $path\n";
-    open my $in, '<:raw', $path or die "read $path: $!\n";
-    local $/; my $value = <$in> // '';
+    sysopen my $in, $path, O_RDONLY|O_NONBLOCK or die "read $path: $!\n";
+    binmode $in;
+    my @metadata = stat($in);
+    @metadata && S_ISREG($metadata[2]) or die "stage input is no longer a regular file: $path\n";
+    my $value = '';
+    while (1) {
+        my $remaining = $limit - length($value);
+        my $count = read($in, my $chunk, $remaining < 65536 ? $remaining + 1 : 65536);
+        defined($count) or die "read stage input $path: $!\n";
+        last unless $count;
+        $count <= $remaining or die "stage input grew beyond allowance: $path\n";
+        $value .= $chunk;
+    }
     close $in or die "close $path: $!\n";
-    length($value) <= $limit or die "stage input grew beyond allowance: $path\n";
     return $value;
 }
 sub exact_keys {
@@ -109,6 +119,7 @@ sub observe {
     if ($status) { print STDERR bytes("$attempt/$phase-observation.stderr"); print STDERR "stage observation failed ($status); no stage admitted\n"; exit $status; }
     $observer_digest eq sha256_hex(bytes($observer)) && $runner_digest eq sha256_hex(bytes(abs_path($0)))
         or die "stage observer/runner changed during observation\n";
+    -x $program && -x $observer or die "stage executable admission changed during observation\n";
     my $observation = canonical_record("$attempt/$phase-observation.json");
     exact_keys($observation,qw(schema files configuration));
     $json->encode($observation->{schema}) eq '1' && ref($observation->{files}) eq 'ARRAY' && @{$observation->{files}}

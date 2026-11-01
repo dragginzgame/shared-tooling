@@ -14,6 +14,10 @@ The caller supplies an executable observer, an explicit bounded environment as
 canonical JSON, a byte allowance for each input/log, the exact command, a trusted
 exclusive state directory and fresh source/group identities. For example:
 
+The source identifier is a caller-admitted 40- or 64-digit hexadecimal content
+identity, such as a Git commit or a retained source-projection digest. This tool
+does not authenticate or admit that identity on the caller's behalf.
+
 ```bash
 perl scripts/ci/run-validation-stage.pl \
   --state target/validation-stages --stage shellcheck \

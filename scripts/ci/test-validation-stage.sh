@@ -78,6 +78,11 @@ jq -cS '.LC_ALL="POSIX"' environment.json > "$fixture/environment.next"
 cp "$fixture/environment.next" environment.json
 run_stage > "$fixture/environment.log" 2>&1
 [[ "$(cat execution-count)" == 6 ]]
+perl -e 'print "large selected input\n" x 10000' > inputs/large
+run_stage > "$fixture/large-input.log" 2>&1
+printf 'changed end of input\n' >> inputs/large
+run_stage > "$fixture/large-input-drift.log" 2>&1
+[[ "$(cat execution-count)" == 8 ]]
 before="$(admission_count)"
 printf '\nexit 37\n' >> command.sh
 status=0
