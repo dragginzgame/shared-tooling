@@ -675,18 +675,9 @@ selection_consumer="$FIXTURE/selection"
 mkdir "$selection_consumer"
 git init -q "$selection_consumer"
 for selected_source in "$source_root" "$revision_root"; do
-    bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$selected_source" scripts/ci/run-validation-targets.sh
-done
-for path in scripts/ci/run-release.sh scripts/ci/validate-release-inputs.pl scripts/ci/StableVersion.pm \
-    scripts/ci/check-release-tag.sh scripts/ci/fixture-lifecycle.sh \
-    scripts/ci/test-release-runner.sh scripts/ci/finalize-release-changelog.awk \
-    scripts/ci/test-host-tools.sh scripts/ci/test-ic-tools.sh scripts/ci/test-tool-evidence.sh \
-    scripts/ci/test-tool-store.sh scripts/dev/tool-store.sh scripts/dev/install-host-tools.sh \
-    scripts/dev/cargo-tool-build.sh scripts/dev/install-rust-tools.sh \
-    scripts/ci/tool-catalog-records.pl scripts/ci/ic-tool-pins.awk; do
-    mkdir -p "$source_root/${path%/*}" "$revision_root/${path%/*}"
-    cp -p "$ROOT/$path" "$source_root/$path"
-    cp -p "$ROOT/$path" "$revision_root/$path"
+    bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$selected_source" \
+        scripts/ci/run-validation-targets.sh scripts/ci/run-release.sh \
+        scripts/ci/test-release-runner.sh
 done
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$selection_consumer" --manifest config/selection \
