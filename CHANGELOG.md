@@ -15,6 +15,8 @@
 
 ### 🔧 Changed
 
+- Keep grouped-release fixtures entirely local so their offline admission does
+  not depend on an incidental registry cache populated by tool installation.
 - Build the snapshot selection fixture from declared script companions so the
   grouped release runner includes its metadata helper closure.
 - Give tool-contention fixtures up to 60 seconds to observe installer startup
