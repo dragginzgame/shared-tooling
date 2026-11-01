@@ -121,6 +121,15 @@ cat > "$FIXTURE/catalog.json" <<'JSON'
   {"name":"ic-tooling","paths":["crates"]}
 ]}
 JSON
+mkdir -p "$parent/engine/ci" "$parent/engine/releases"
+printf '# Engine\n' > "$parent/engine/releases/engine.md"
+printf '# Storage\n' > "$parent/engine/releases/storage.md"
+cat > "$parent/engine/ci/cargo-release-groups.json" <<'JSON'
+{"schema":1,"groups":[
+  {"name":"engine","primary":"engine","members":["engine","engine-core","engine-cli"],"changelog":"releases/engine.md"},
+  {"name":"storage","primary":"storage","members":["storage","memory"],"changelog":"releases/storage.md"}
+]}
+JSON
 graph() {
     perl "$ROOT/scripts/dev/stack-graph.pl" --parent "$parent" \
         --catalog "$FIXTURE/catalog.json" --output-root "$output" "$@" > "$FIXTURE/command.log" 2>&1
@@ -138,7 +147,7 @@ grep -Fq 'p_engine_7ccargo_3aengine_2dcore --> p_engine_7ccargo_3astorage' "$out
 grep -Fq 'p_engine_7ccargo_3astorage --> p_engine_7ccargo_3amemory' "$output/docs/stack.md"
 grep -Fq 'p_app_7ccargo_3amemory_2dclient --> p_engine_7ccargo_3amemory' "$output/docs/stack.md"
 grep -Fq 'p_app_7cnpm_3aapp_2dbrowser --> p_platform_7cnpm_3a_40fleet_2fplatform' "$output/docs/stack.md"
-if grep -Eq 'p_app_7ccargo_3aapp --> p_platform_7ccargo_3aplatform|p_unused_7ccargo_3aunused|p_app_7ccargo_3amemory_2dclient --> p_engine_7ccargo_3astorage' "$output/docs/stack.md"; then
+if grep -Eq 'p_app_7ccargo_3aapp --> p_platform_7ccargo_3aplatform|p_app_7ccargo_3aapp --> p_unused_7ccargo_3aunused|p_app_7ccargo_3amemory_2dclient --> p_engine_7ccargo_3astorage' "$output/docs/stack.md"; then
     echo 'graph invented a workspace dependency or retained a redundant arrow' >&2; exit 1
 fi
 # The README groups application packages, contracts through hidden internals,
@@ -169,6 +178,51 @@ if grep -Fq '/crates/fixture/' "$output/docs/stack.md"; then
 fi
 cp "$output/README.md" "$FIXTURE/saved-readme"
 cp "$output/docs/stack.md" "$FIXTURE/saved-details"
+graph --write
+cmp "$FIXTURE/saved-readme" "$output/README.md"
+cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
+
+# Policies group nodes without merging their dependency edges; the full view
+# also retains selected packages outside the application closure.
+grep -Fq 'subgraph p_group_3aengine_7cstorage["storage · 0.1.0"]' "$output/README.md"
+grep -Fq 'subgraph p_group_3aengine_7cengine["engine · 0.1.0"]' "$output/docs/stack.md"
+grep -Fq 'p_unused_7ccargo_3aunused["unused"]' "$output/docs/stack.md"
+grep -Fq '/engine/blob/main/releases/storage.md' "$output/docs/stack.md"
+cp "$parent/engine/ci/cargo-release-groups.json" "$FIXTURE/saved-groups"
+for fault in duplicate unknown unassigned primary ledger; do
+    perl -MJSON::PP -e '
+        local $/; my $fault=shift; my $p=decode_json(<>);
+        push @{$p->{groups}[1]{members}}, "engine" if $fault eq "duplicate";
+        push @{$p->{groups}[1]{members}}, "missing" if $fault eq "unknown";
+        pop @{$p->{groups}[1]{members}} if $fault eq "unassigned";
+        $p->{groups}[1]{primary}="engine" if $fault eq "primary";
+        $p->{groups}[1]{changelog}="releases/missing.md" if $fault eq "ledger";
+        print encode_json($p);
+    ' "$fault" "$FIXTURE/saved-groups" > "$parent/engine/ci/cargo-release-groups.json"
+    if graph --write; then echo "invalid group accepted: $fault" >&2; exit 1; fi
+    grep -Eq 'release-group member|primary is not a member|Invalid group changelog' "$FIXTURE/command.log"
+    cmp "$FIXTURE/saved-readme" "$output/README.md"
+    cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
+done
+cp "$FIXTURE/saved-groups" "$parent/engine/ci/cargo-release-groups.json"
+cp "$parent/engine/crates/memory/Cargo.toml" "$FIXTURE/saved-memory"
+sed 's/0.1.0/0.2.0/' "$FIXTURE/saved-memory" > "$parent/engine/crates/memory/Cargo.toml"
+if graph --write; then echo 'mismatched group version accepted' >&2; exit 1; fi
+grep -Fq 'Release-group version mismatch' "$FIXTURE/command.log"
+cmp "$FIXTURE/saved-readme" "$output/README.md"
+cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
+cp "$FIXTURE/saved-memory" "$parent/engine/crates/memory/Cargo.toml"
+# A legitimate independent version change must refresh both group projections.
+cp "$parent/engine/crates/storage/Cargo.toml" "$FIXTURE/saved-storage"
+sed 's/0.1.0/0.2.0/' "$FIXTURE/saved-memory" > "$parent/engine/crates/memory/Cargo.toml"
+sed 's/0.1.0/0.2.0/' "$FIXTURE/saved-storage" > "$parent/engine/crates/storage/Cargo.toml"
+if graph --check; then echo 'stale group version accepted' >&2; exit 1; fi
+grep -Fq 'Stack graph is stale' "$FIXTURE/command.log"
+graph --write
+grep -Fq 'storage · 0.2.0' "$output/README.md"
+grep -Fq 'engine · 0.1.0' "$output/docs/stack.md"
+cp "$FIXTURE/saved-memory" "$parent/engine/crates/memory/Cargo.toml"
+cp "$FIXTURE/saved-storage" "$parent/engine/crates/storage/Cargo.toml"
 graph --write
 cmp "$FIXTURE/saved-readme" "$output/README.md"
 cmp "$FIXTURE/saved-details" "$output/docs/stack.md"

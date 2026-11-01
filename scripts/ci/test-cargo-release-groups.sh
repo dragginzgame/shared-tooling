@@ -34,7 +34,6 @@ edition = "2024"
 codec = { path = "codec", version = "0.11.0" }
 derive = { path = "derive", version = "0.11.0" }
 entry = { package = "endpoint", path = "endpoint", version = "^0.1.0" }
-serde = { version = "1.0", default-features = false }
 TOML
 for package in codec derive endpoint; do
     mkdir -p "$package/src"
@@ -44,7 +43,7 @@ for package in codec derive endpoint; do
     printf 'pub fn fixture() {}\n' > "$package/src/lib.rs"
 done
 printf '\n[dev-dependencies]\nentry.workspace = true\n' >> codec/Cargo.toml
-printf '\n[dependencies]\ncodec.workspace = true\nserde.workspace = true\n' >> endpoint/Cargo.toml
+printf '\n[dependencies]\ncodec.workspace = true\n' >> endpoint/Cargo.toml
 cat > ci/cargo-release-groups.json <<'JSON'
 {"schema":1,"shared_metadata_files":["ci/qualification.lock"],"groups":[
  {"name":"codec","primary":"codec","version":"workspace","members":["codec","derive"],"changelog":"CHANGELOG.md","dependencies":["codec","derive"]},

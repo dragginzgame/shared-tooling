@@ -56,7 +56,7 @@ my $catalog = decode_json(read_file($catalog_file));
 die "Catalog needs nonempty roots and repositories\n"
     unless ref($catalog) eq 'HASH' && ref($catalog->{roots}) eq 'ARRAY' && @{$catalog->{roots}}
         && ref($catalog->{repositories}) eq 'ARRAY' && @{$catalog->{repositories}};
-my (%workspaces, %owner, %nodes, %selected, @packages, @npm, %edges, %inventory);
+my (%workspaces, %owner, %nodes, %selected, @packages, @npm, %edges, %inventory, %groups);
 for my $repo (@{$catalog->{repositories}}) {
     my $name = $repo->{name};
     die "Invalid or duplicate repository name\n"
@@ -88,6 +88,41 @@ for my $repo (@{$catalog->{repositories}}) {
     my $metadata = decode_json($json);
     die "Unexpected workspace root for $name\n" unless $metadata->{workspace_root} eq $workspace;
     my %members = map { $_ => 1 } @{$metadata->{workspace_members}};
+    my %member_packages = map { $_->{name} => $_ }
+        grep { $members{$_->{id}} } @{$metadata->{packages}};
+    my %membership;
+    my $policy_path = 'ci/cargo-release-groups.json';
+    if (-e "$workspace/$policy_path") {
+        my $policy = decode_json(read_file("$workspace/$policy_path"));
+        die "Invalid release-group policy in $name\n"
+            unless ref($policy) eq 'HASH' && ($policy->{schema} // 0) == 1
+                && ref($policy->{groups}) eq 'ARRAY' && @{$policy->{groups}};
+        for my $group (@{$policy->{groups}}) {
+            die "Invalid release group in $name\n"
+                unless ref($group) eq 'HASH' && ($group->{name} // '') =~ /^[a-z][a-z0-9-]*$/
+                    && ref($group->{members}) eq 'ARRAY' && @{$group->{members}}
+                    && $member_packages{$group->{primary} // ''};
+            my $key = "$name|$group->{name}";
+            die "Duplicate release group $key\n" if exists $groups{$key};
+            my $ledger = $group->{changelog} // '';
+            die "Invalid group changelog in $key\n"
+                unless $ledger =~ m{^[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_.-]+)*$}
+                    && $ledger !~ m{(?:^|/)\.\.(?:/|$)} && -f "$workspace/$ledger";
+            my $version = $member_packages{$group->{primary}}{version};
+            for my $member (@{$group->{members}}) {
+                die "Unknown or duplicate release-group member in $name: $member\n"
+                    unless $member_packages{$member} && !exists $membership{$member};
+                die "Release-group version mismatch in $key: $member\n"
+                    unless $member_packages{$member}{version} eq $version;
+                $membership{$member} = $key;
+            }
+            die "Group primary is not a member in $key\n"
+                unless ($membership{$group->{primary}} // '') eq $key;
+            $groups{$key} = { %$group, repo => $name, selected_version => $version };
+        }
+        die "Unassigned release-group member in $name: $_\n"
+            for grep { !exists $membership{$_} } sort keys %member_packages;
+    }
     my %matched;
     for my $package (@{$metadata->{packages}}) {
         next unless $members{$package->{id}};
@@ -96,7 +131,8 @@ for my $repo (@{$catalog->{repositories}}) {
         my $key = "$name|cargo:$package->{name}";
         $owner{"cargo:$package->{name}"}{$name} = 1;
         my $native = $name eq 'ic-tooling' || grep { under($path, $_) } @{$repo->{native} // []};
-        $nodes{$key} = { name => $package->{name}, repo => $name, native => $native };
+        $nodes{$key} = { name => $package->{name}, repo => $name, native => $native,
+            group => $membership{$package->{name}} };
         my @selected = grep { under($path, $_) } @{$repo->{paths}};
         $matched{$_} = 1 for @selected;
         next unless @selected;
@@ -187,7 +223,7 @@ sub reachable {
     return 0;
 }
 my %root_repos = map { $_ => 1 } @{$catalog->{roots}};
-my %visible = map { $_ => 1 } grep { $root_repos{$nodes{$_}{repo}} } keys %selected;
+my %visible = map { $_ => 1 } keys %selected;
 my @pending = sort keys %visible;
 while (@pending) {
     my $from = shift @pending;
@@ -200,14 +236,38 @@ sub diagram {
     # Reduction is safe on DAGs; retain all edges if a cycle appears.
     my $cyclic = grep { reachable($solid, $_, $_, undef) } keys %$labels;
     my $diagram = "```mermaid\nflowchart TD\n";
-    for my $name (sort keys %$labels) {
+    my $declare = sub {
+        my ($name, $indent) = @_;
         my $label = $labels->{$name};
         $label =~ s/"/&quot;/g;
         my ($open, $close) = $name =~ /^app:/ ? ('([', '])') : ('[', ']');
-        $diagram .= '    ' . node_id($name) . "$open\"$label\"$close\n";
+        return $indent . node_id($name) . "$open\"$label\"$close\n";
+    };
+    $diagram .= $declare->($_, '    ') for grep { /^app:/ } sort keys %$labels;
+    my %by_repo;
+    push @{$by_repo{$nodes{$_}{repo}}}, $_ for grep { !/^app:/ } sort keys %$labels;
+    for my $repo (sort keys %by_repo) {
+        $diagram .= '    subgraph ' . node_id("repo:$repo") . "[\"$repo\"]\n";
+        my %by_group;
+        for my $name (@{$by_repo{$repo}}) {
+            if (my $group = $nodes{$name}{group}) {
+                push @{$by_group{$group}}, $name;
+            } else {
+                $diagram .= $declare->($name, '        ');
+            }
+        }
+        for my $key (sort keys %by_group) {
+            my $group = $groups{$key};
+            $diagram .= '        subgraph ' . node_id("group:$key")
+                . "[\"$group->{name} · $group->{selected_version}\"]\n";
+            $diagram .= $declare->($_, '            ') for @{$by_group{$key}};
+            $diagram .= "        end\n";
+        }
+        $diagram .= "    end\n";
     }
     for my $from (sort keys %$labels) {
         for my $to (sort keys %{$normal->{$from} // {}}) {
+            next unless exists $labels->{$to};
             my $native = !$solid->{$from}{$to};
             next if !$native && !$cyclic && reachable($solid, $from, $to, "$from\t$to");
             $diagram .= '    ' . node_id($from) . ($native ? ' -.-> ' : ' --> ') . node_id($to) . "\n";
@@ -264,7 +324,19 @@ while (@pending) {
 }
 my $overview_diagram = diagram(\%overview_labels, \%overview, \%overview);
 my $details = "## Full package graph\n\n<details>\n<summary>Expand all crates, browser packages and native tools</summary>\n\n"
-    . $full_diagram . "\n</details>\n\n## Workspace inventory\n\nRepository | Selected packages and manifests\n--- | ---\n";
+    . $full_diagram . "\n</details>\n\n## Release groups\n\n"
+    . "Local policy and manifest versions; not registry publication or downstream adoption evidence. "
+    . "Membership includes private qualification packages omitted from the diagram.\n\n"
+    . "Workspace / group | Version | Members | Changelog\n--- | --- | --- | ---\n";
+for my $key (sort keys %groups) {
+    my $group = $groups{$key};
+    $details .= "[$group->{repo} / $group->{name}](@{[source_link($group->{repo}, 'ci/cargo-release-groups.json')]})"
+        . " | $group->{selected_version} | " . join(', ', map { "`$_`" } sort @{$group->{members}})
+        . " | [Changelog](@{[source_link($group->{repo}, $group->{changelog})]})\n";
+}
+$details .= "\nWorkspaces without an explicit release-group policy retain repository boundaries only; "
+    . "no independent group membership is inferred. Browser packages and historical Git-only packages "
+    . "remain outside Cargo release groups.\n\n## Workspace inventory\n\nRepository | Selected packages and manifests\n--- | ---\n";
 for my $name (sort keys %repos) {
     $details .= "[$name](https://github.com/dragginzgame/$name) | " . join('<br>',
         map { "[$_->[0]](@{[source_link($name, $_->[1])]})" }
@@ -278,7 +350,11 @@ for my $key (sort keys %edges) {
 my @historical = grep { $nodes{$_}{historical} } sort keys %nodes;
 $details .= "\nPinned Git packages absent from their owner's current checkout (no outgoing dependencies inferred): "
     . join(', ', map { "`$nodes{$_}{name}` (`$nodes{$_}{repo}`)" } @historical) . ".\n" if @historical;
-my @outside = grep { !$visible{$_} } sort keys %selected;
+my @roots = grep { $root_repos{$nodes{$_}{repo}} } keys %selected;
+my @outside = grep {
+    my $package = $_;
+    !$root_repos{$nodes{$package}{repo}} && !grep { reachable(\%normal, $_, $package, undef) } @roots
+} sort keys %selected;
 $details .= "\nSelected packages without a normal-dependency path from the application roots: "
     . join(', ', map { "`$nodes{$_}{name}`" } @outside) . ".\n" if @outside;
 

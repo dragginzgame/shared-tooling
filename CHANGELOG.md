@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.27.25] - Unreleased
+
+### 🔧 Changed
+
+- Draw stack diagrams with workspace and release-group boundaries, using each
+  sibling's group policy and actual manifest versions. Include Wire Endpoint and
+  all selected packages in the full graph, with complete group membership and
+  changelog links; reject inconsistent group inputs before refreshing outputs.
+- Let resolved graph checks select normal dependency edges explicitly and show
+  an introducing path for every conflicting package identity. Runtime singleton
+  policy can now exclude independent build graphs while retaining locked,
+  offline failure propagation.
+  [#335 — Check the destination dependency graph before planning downstream release cascades](https://github.com/dragginzgame/shared-tooling/issues/335).
+- Require destination-graph evidence and explicit required/optional dependency
+  selections before downstream release planning. Preserve independent core
+  qualification, runtime singleton ownership and effective build-flag evidence;
+  newer external patches alone do not require consumer republication.
+  The graph checker and consumer admission contract enforce this boundary.
+  [#335 — Check the destination dependency graph before planning downstream release cascades](https://github.com/dragginzgame/shared-tooling/issues/335).
+
+### ➕ Added
+
+- Add source-only grouped Cargo bootstrap observation through
+  `observe-cargo-release-bootstrap.sh` for interrupted manifest/lock
+  replacement. It shares group-policy admission, reports every group's declared
+  and locked versions with source-byte identities, and leaves coherent graph
+  admission and recovery effects with the existing release caller.
+  [#333 — Review a shared read-only observation boundary for grouped Cargo bootstrap](https://github.com/dragginzgame/shared-tooling/issues/333).
+
+- Add opt-in `run-validation-stage.pl` proofs with immutable execution
+  provenance and separate current-group admission. Re-observe file inventories,
+  tools, configuration and the bounded environment around execution and reuse;
+  retain failures and force ordinary execution for stale or unknown evidence.
+  Existing complete release gates and receipts retain their current meaning.
+  [#334 — Review content-bound validation proof reuse across independent release groups](https://github.com/dragginzgame/shared-tooling/issues/334).
+
+### 🩹 Fixed
+
+- Keep grouped-release fixtures independent of incidental registry caches so
+  offline admission also works with a cold cache.
+
 ## [0.27.24] - Unreleased
 
 ### 🔧 Changed

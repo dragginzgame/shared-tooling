@@ -88,6 +88,7 @@ VALIDATION_LOG_DIR="$FIXTURE/runner-parent/logs" \
     VALIDATION_FAILURE_LOG_DIR="$FIXTURE/runner-parent/failures" \
     GITHUB_STEP_SUMMARY="$FIXTURE/runner-parent/summary.md" \
     run_fixture test-validation-target-runner.sh bash "$ROOT/scripts/ci/test-validation-target-runner.sh"
+run_fixture test-validation-stage.sh bash "$ROOT/scripts/ci/test-validation-stage.sh"
 for destination in logs/sentinel failures/sentinel summary.md; do
     cmp "$FIXTURE/runner-parent/expected" "$FIXTURE/runner-parent/$destination"
 done
@@ -161,6 +162,7 @@ run_fixture test-release-pr.sh bash "$ROOT/scripts/ci/test-release-pr.sh"
 run_fixture test-release-metadata.sh bash "$ROOT/scripts/ci/test-release-metadata.sh"
 run_fixture test-cargo-release-metadata.sh bash "$ROOT/scripts/ci/test-cargo-release-metadata.sh"
 run_fixture test-cargo-release-groups.sh bash "$ROOT/scripts/ci/test-cargo-release-groups.sh"
+run_fixture test-cargo-release-bootstrap.sh bash "$ROOT/scripts/ci/test-cargo-release-bootstrap.sh"
 run_fixture test-hosted-failure.sh bash "$ROOT/scripts/ci/test-hosted-failure.sh"
 run_fixture test-release-source.sh bash "$ROOT/scripts/ci/test-release-source.sh"
 run_fixture test-release-receipts.sh bash "$ROOT/scripts/ci/test-release-receipts.sh"

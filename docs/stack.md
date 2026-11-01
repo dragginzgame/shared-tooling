@@ -3,16 +3,31 @@
 The [README diagram](../README.md#toko-stack) is a compact application and library
 overview. The expandable [full package graph](#full-package-graph) below retains
 individual first-party crates and npm packages, including dependencies within
-one workspace. Both start at the **Toko** and **Toko Miner** applications; they
-are separate products, with no assumed dependency between them.
+one workspace and selected packages not yet used by either application.
+**Toko** and **Toko Miner** are separate products, with no assumed dependency
+between them.
 
 Arrows point from consumer to dependency. Repository ownership is recorded in
 the inventory: `ic-memory`, `ic-storage` and `ic-metrics-stable` are independent
 packages within `ic-persistence`. The direct-evidence table retains every
 first-party declaration from the selected packages, including build and
 development dependencies.
-`ic-jobs` and `ic-timers` belong to `ic-scheduling`; prepared calls are a module
-of `ic-platform`, not a separate `ic-call` package.
+`ic-jobs` and `ic-timers` belong to `ic-scheduling`; prepared calls belong to
+Platform's runtime owner, not a separate `ic-call` package.
+
+Workspace boxes contain release-group boxes where the local repository declares
+`ci/cargo-release-groups.json`. Group names and membership come from that policy;
+versions come from Cargo member metadata, and changelog links come from the same
+policy. The generator rejects missing or duplicate members, inconsistent group
+versions and missing ledgers before updating either document. The
+[release-group inventory](#release-groups) includes all declared members, including
+private fixtures outside the diagram's package selection. Repositories without a
+policy retain workspace boxes without an invented release-group assignment.
+
+The current local Platform split is `platform`, `types` and `runtime`; Tooling
+uses `foundation`, `tools` and `testkit`. These are source-declared groups, not
+proof of published releases. Proposed issue-only boundaries are not substituted
+for the policies. Refresh after their implementation to reflect the actual graph.
 
 ## README overview
 
@@ -146,76 +161,175 @@ adoption does not install or enable this timer for consumers.
 
 ```mermaid
 flowchart TD
-    p_canic_7ccargo_3acanic["canic"]
-    p_canic_7ccargo_3acanic_2dblob_2dservice["canic-blob-service"]
-    p_canic_7ccargo_3acanic_2dcontracts["canic-contracts"]
-    p_canic_7ccargo_3acanic_2dcontrol_2dplane["canic-control-plane"]
-    p_canic_7ccargo_3acanic_2dcore["canic-core"]
-    p_canic_7ccargo_3acanic_2dicydb["canic-icydb"]
-    p_canic_7ccargo_3acanic_2dmacros["canic-macros"]
-    p_ic_2dauth_7ccargo_3aic_2dauth["ic-auth"]
-    p_ic_2dauth_7ccargo_3aic_2dauth_2dprotocol_2dtypes["ic-auth-protocol-types"]
-    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage["ic-blob-storage"]
-    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcontracts["ic-blob-storage-contracts"]
-    p_ic_2dobservability_7ccargo_3aic_2dlogging["ic-logging"]
-    p_ic_2dobservability_7ccargo_3aic_2dmetrics["ic-metrics"]
-    p_ic_2dpersistence_7ccargo_3aic_2dmemory["ic-memory"]
-    p_ic_2dpersistence_7ccargo_3aic_2dmetrics_2dstable["ic-metrics-stable"]
-    p_ic_2dpersistence_7ccargo_3aic_2dstorage["ic-storage"]
-    p_ic_2dplatform_7ccargo_3aic_2dplatform["ic-platform"]
-    p_ic_2dplatform_7ccargo_3aic_2dplatform_2dmacros["ic-platform-macros"]
-    p_ic_2dplatform_7ccargo_3aic_2dplatform_2druntime_2dguard["ic-platform-runtime-guard"]
-    p_ic_2dplatform_7ccargo_3aic_2dplatform_2dtypes["ic-platform-types"]
-    p_ic_2dplatform_7cnpm_3a_40tokostudios_2fic_2dplatform["@tokostudios/ic-platform"]
-    p_ic_2dscheduling_7ccargo_3aic_2dtimers["ic-timers"]
-    p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts["ic-host-artifacts"]
-    p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs["ic-host-fs"]
-    p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess["ic-host-process"]
-    p_ic_2dtooling_7ccargo_3aic_2dtestkit["ic-testkit"]
-    p_ic_2dwire_7ccargo_3aic_2dwire["ic-wire"]
-    p_ic_2dwire_7ccargo_3aic_2dwire_2dderive["ic-wire-derive"]
-    p_icydb_7ccargo_3aicydb["icydb"]
-    p_icydb_7ccargo_3aicydb_2dcore["icydb-core"]
-    p_icydb_7ccargo_3aicydb_2ddiagnostic_2dcode["icydb-diagnostic-code"]
-    p_icydb_7ccargo_3aicydb_2dmodel["icydb-model"]
-    p_icydb_7ccargo_3aicydb_2dmodel_2dmacros["icydb-model-macros"]
-    p_icydb_7ccargo_3aicydb_2dschema["icydb-schema"]
-    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fblob["canister_toko_miner_blob"]
-    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fgame_5fhub["canister_toko_miner_game_hub"]
-    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fgame_5fshard["canister_toko_miner_game_shard"]
-    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5ftranslation["canister_toko_miner_translation"]
-    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fuser_5fhub["canister_toko_miner_user_hub"]
-    p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fuser_5fshard["canister_toko_miner_user_shard"]
-    p_toko_2dminer_7ccargo_3atoko_2dminer_2dcontracts["toko-miner-contracts"]
-    p_toko_2dminer_7cnpm_3a_40toko_2dminer_2ffrontend["@toko-miner/frontend"]
-    p_toko_7ccargo_3acanister_5fdiscovery_5fhub["canister_discovery_hub"]
-    p_toko_7ccargo_3acanister_5fdiscovery_5fshard["canister_discovery_shard"]
-    p_toko_7ccargo_3acanister_5fhttp_5fhub["canister_http_hub"]
-    p_toko_7ccargo_3acanister_5fhttp_5fworker["canister_http_worker"]
-    p_toko_7ccargo_3acanister_5fmarket["canister_market"]
-    p_toko_7ccargo_3acanister_5fnotification["canister_notification"]
-    p_toko_7ccargo_3acanister_5foracle_5fpokemon["canister_oracle_pokemon"]
-    p_toko_7ccargo_3acanister_5foracle_5fregistry["canister_oracle_registry"]
-    p_toko_7ccargo_3acanister_5fproject_5fgenerator["canister_project_generator"]
-    p_toko_7ccargo_3acanister_5fproject_5fhub["canister_project_hub"]
-    p_toko_7ccargo_3acanister_5fproject_5finstance["canister_project_instance"]
-    p_toko_7ccargo_3acanister_5fproject_5fledger["canister_project_ledger"]
-    p_toko_7ccargo_3acanister_5fproject_5fregistry["canister_project_registry"]
-    p_toko_7ccargo_3acanister_5fproject_5fuser["canister_project_user"]
-    p_toko_7ccargo_3acanister_5fuser_5fhub["canister_user_hub"]
-    p_toko_7ccargo_3acanister_5fuser_5fshard["canister_user_shard"]
-    p_toko_7ccargo_3adesign["design"]
-    p_toko_7ccargo_3adesign_5fmacros["design_macros"]
-    p_toko_7ccargo_3aoracle["oracle"]
-    p_toko_7ccargo_3aschemagen["schemagen"]
-    p_toko_7ccargo_3atoko["toko"]
-    p_toko_7cnpm_3afrontend["frontend"]
+    subgraph p_repo_3acanic["canic"]
+        p_canic_7ccargo_3acanic["canic"]
+        p_canic_7ccargo_3acanic_2dauth["canic-auth"]
+        p_canic_7ccargo_3acanic_2dblob_2dservice["canic-blob-service"]
+        p_canic_7ccargo_3acanic_2dcli["canic-cli"]
+        p_canic_7ccargo_3acanic_2dcontracts["canic-contracts"]
+        p_canic_7ccargo_3acanic_2dcontrol_2dplane["canic-control-plane"]
+        p_canic_7ccargo_3acanic_2dcore["canic-core"]
+        p_canic_7ccargo_3acanic_2dhost["canic-host"]
+        p_canic_7ccargo_3acanic_2dicydb["canic-icydb"]
+        p_canic_7ccargo_3acanic_2dmacros["canic-macros"]
+    end
+    subgraph p_repo_3aic_2dauth["ic-auth"]
+        p_ic_2dauth_7ccargo_3aic_2dauth["ic-auth"]
+        p_ic_2dauth_7ccargo_3aic_2dauth_2dprotocol_2dtypes["ic-auth-protocol-types"]
+        p_ic_2dauth_7ccargo_3aic_2dauth_2dtooling["ic-auth-tooling"]
+        p_ic_2dauth_7ccargo_3aic_2dauth_2dwire["ic-auth-wire"]
+    end
+    subgraph p_repo_3aic_2dbackup["ic-backup"]
+        p_ic_2dbackup_7ccargo_3aic_2dbackup["ic-backup"]
+        p_ic_2dbackup_7ccargo_3aic_2dbackup_2dagent["ic-backup-agent"]
+    end
+    subgraph p_repo_3aic_2dblob_2dstorage["ic-blob-storage"]
+        p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage["ic-blob-storage"]
+        p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcanister["ic-blob-storage-canister"]
+        p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcli["ic-blob-storage-cli"]
+        p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dclient["ic-blob-storage-client"]
+        p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcontracts["ic-blob-storage-contracts"]
+    end
+    subgraph p_repo_3aic_2dobservability["ic-observability"]
+        subgraph p_group_3aic_2dobservability_7clogging["logging · 0.23.6"]
+            p_ic_2dobservability_7ccargo_3aic_2dlogging["ic-logging"]
+        end
+        subgraph p_group_3aic_2dobservability_7cmetrics["metrics · 0.24.5"]
+            p_ic_2dobservability_7ccargo_3aic_2dmetrics["ic-metrics"]
+        end
+    end
+    subgraph p_repo_3aic_2dpersistence["ic-persistence"]
+        subgraph p_group_3aic_2dpersistence_7clogging_2dstable["logging-stable · 0.60.5"]
+            p_ic_2dpersistence_7ccargo_3aic_2dlogging_2dstable["ic-logging-stable"]
+        end
+        subgraph p_group_3aic_2dpersistence_7cmetrics_2dstable["metrics-stable · 0.61.5"]
+            p_ic_2dpersistence_7ccargo_3aic_2dmetrics_2dstable["ic-metrics-stable"]
+        end
+        subgraph p_group_3aic_2dpersistence_7cpersistence["persistence · 0.60.7"]
+            p_ic_2dpersistence_7ccargo_3aic_2dmemory["ic-memory"]
+            p_ic_2dpersistence_7ccargo_3aic_2dstorage["ic-storage"]
+        end
+    end
+    subgraph p_repo_3aic_2dplatform["ic-platform"]
+        p_ic_2dplatform_7cnpm_3a_40tokostudios_2fic_2dplatform["@tokostudios/ic-platform"]
+        subgraph p_group_3aic_2dplatform_7cplatform["platform · 0.16.0"]
+            p_ic_2dplatform_7ccargo_3aic_2dplatform["ic-platform"]
+            p_ic_2dplatform_7ccargo_3aic_2dplatform_2dpocket_2dic["ic-platform-pocket-ic"]
+        end
+        subgraph p_group_3aic_2dplatform_7cruntime["runtime · 0.17.0"]
+            p_ic_2dplatform_7ccargo_3aic_2dplatform_2dmacros["ic-platform-macros"]
+            p_ic_2dplatform_7ccargo_3aic_2dplatform_2druntime["ic-platform-runtime"]
+            p_ic_2dplatform_7ccargo_3aic_2dplatform_2druntime_2dguard["ic-platform-runtime-guard"]
+        end
+        subgraph p_group_3aic_2dplatform_7ctypes["types · 0.15.1"]
+            p_ic_2dplatform_7ccargo_3aic_2dplatform_2dtypes["ic-platform-types"]
+        end
+    end
+    subgraph p_repo_3aic_2dprofiler["ic-profiler"]
+        p_ic_2dprofiler_7ccargo_3aic_2dsystem_2dprofiler["ic-system-profiler"]
+    end
+    subgraph p_repo_3aic_2dquery["ic-query"]
+        p_ic_2dquery_7ccargo_3aic_2dquery["ic-query"]
+        p_ic_2dquery_7ccargo_3aic_2dquery_2dcli["ic-query-cli"]
+    end
+    subgraph p_repo_3aic_2drelay["ic-relay"]
+        p_ic_2drelay_7ccargo_3aic_2drelay["ic-relay"]
+    end
+    subgraph p_repo_3aic_2dscheduling["ic-scheduling"]
+        subgraph p_group_3aic_2dscheduling_7cjobs["jobs · 0.33.4"]
+            p_ic_2dscheduling_7ccargo_3aic_2djobs["ic-jobs"]
+        end
+        subgraph p_group_3aic_2dscheduling_7ctimers["timers · 0.35.4"]
+            p_ic_2dscheduling_7ccargo_3aic_2dtimers["ic-timers"]
+        end
+    end
+    subgraph p_repo_3aic_2dtooling["ic-tooling"]
+        subgraph p_group_3aic_2dtooling_7cfoundation["foundation · 0.73.5"]
+            p_ic_2dtooling_7ccargo_3aic_2dbuild["ic-build"]
+            p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts["ic-host-artifacts"]
+            p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs["ic-host-fs"]
+            p_ic_2dtooling_7ccargo_3aic_2dhost_2dhttp["ic-host-http"]
+            p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess["ic-host-process"]
+            p_ic_2dtooling_7ccargo_3aic_2dhost_2dtext["ic-host-text"]
+            p_ic_2dtooling_7ccargo_3aic_2dhost_2dwasm_2dinspect["ic-host-wasm-inspect"]
+        end
+        subgraph p_group_3aic_2dtooling_7ctestkit["testkit · 0.76.1"]
+            p_ic_2dtooling_7ccargo_3aic_2dtestkit["ic-testkit"]
+            p_ic_2dtooling_7ccargo_3aic_2dtestkit_2ddev["ic-testkit-dev"]
+            p_ic_2dtooling_7ccargo_3aic_2dtestkit_2dnative["ic-testkit-native"]
+            p_ic_2dtooling_7ccargo_3aic_2dtestkit_2dperf_2dprobe["ic-testkit-perf-probe"]
+        end
+        subgraph p_group_3aic_2dtooling_7ctools["tools · 0.76.1"]
+            p_ic_2dtooling_7ccargo_3aic_2dhost_2dtools["ic-host-tools"]
+        end
+    end
+    subgraph p_repo_3aic_2dwire["ic-wire"]
+        subgraph p_group_3aic_2dwire_7ccore["core · 0.13.4"]
+            p_ic_2dwire_7ccargo_3aic_2dwire["ic-wire"]
+            p_ic_2dwire_7ccargo_3aic_2dwire_2dderive["ic-wire-derive"]
+        end
+        subgraph p_group_3aic_2dwire_7cendpoint["endpoint · 0.3.0"]
+            p_ic_2dwire_7ccargo_3aic_2dwire_2dendpoint["ic-wire-endpoint"]
+        end
+    end
+    subgraph p_repo_3aicydb["icydb"]
+        p_icydb_7ccargo_3aicydb["icydb"]
+        p_icydb_7ccargo_3aicydb_2dcli["icydb-cli"]
+        p_icydb_7ccargo_3aicydb_2dcore["icydb-core"]
+        p_icydb_7ccargo_3aicydb_2ddiagnostic_2dcode["icydb-diagnostic-code"]
+        p_icydb_7ccargo_3aicydb_2dmodel["icydb-model"]
+        p_icydb_7ccargo_3aicydb_2dmodel_2dmacros["icydb-model-macros"]
+        p_icydb_7ccargo_3aicydb_2dschema["icydb-schema"]
+    end
+    subgraph p_repo_3atoko["toko"]
+        p_toko_7ccargo_3acanister_5fdiscovery_5fhub["canister_discovery_hub"]
+        p_toko_7ccargo_3acanister_5fdiscovery_5fshard["canister_discovery_shard"]
+        p_toko_7ccargo_3acanister_5fhttp_5fhub["canister_http_hub"]
+        p_toko_7ccargo_3acanister_5fhttp_5fworker["canister_http_worker"]
+        p_toko_7ccargo_3acanister_5fmarket["canister_market"]
+        p_toko_7ccargo_3acanister_5fnotification["canister_notification"]
+        p_toko_7ccargo_3acanister_5foracle_5fpokemon["canister_oracle_pokemon"]
+        p_toko_7ccargo_3acanister_5foracle_5fregistry["canister_oracle_registry"]
+        p_toko_7ccargo_3acanister_5fproject_5fgenerator["canister_project_generator"]
+        p_toko_7ccargo_3acanister_5fproject_5fhub["canister_project_hub"]
+        p_toko_7ccargo_3acanister_5fproject_5finstance["canister_project_instance"]
+        p_toko_7ccargo_3acanister_5fproject_5fledger["canister_project_ledger"]
+        p_toko_7ccargo_3acanister_5fproject_5fregistry["canister_project_registry"]
+        p_toko_7ccargo_3acanister_5fproject_5fuser["canister_project_user"]
+        p_toko_7ccargo_3acanister_5fuser_5fhub["canister_user_hub"]
+        p_toko_7ccargo_3acanister_5fuser_5fshard["canister_user_shard"]
+        p_toko_7ccargo_3adesign["design"]
+        p_toko_7ccargo_3adesign_5fmacros["design_macros"]
+        p_toko_7ccargo_3aoracle["oracle"]
+        p_toko_7ccargo_3aschemagen["schemagen"]
+        p_toko_7ccargo_3atoko["toko"]
+        p_toko_7cnpm_3afrontend["frontend"]
+    end
+    subgraph p_repo_3atoko_2dminer["toko-miner"]
+        p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fblob["canister_toko_miner_blob"]
+        p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fgame_5fhub["canister_toko_miner_game_hub"]
+        p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fgame_5fshard["canister_toko_miner_game_shard"]
+        p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5ftranslation["canister_toko_miner_translation"]
+        p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fuser_5fhub["canister_toko_miner_user_hub"]
+        p_toko_2dminer_7ccargo_3acanister_5ftoko_5fminer_5fuser_5fshard["canister_toko_miner_user_shard"]
+        p_toko_2dminer_7ccargo_3atoko_2dminer_2dcontracts["toko-miner-contracts"]
+        p_toko_2dminer_7cnpm_3a_40toko_2dminer_2ffrontend["@toko-miner/frontend"]
+    end
     p_canic_7ccargo_3acanic --> p_canic_7ccargo_3acanic_2dcontrol_2dplane
     p_canic_7ccargo_3acanic --> p_canic_7ccargo_3acanic_2dmacros
     p_canic_7ccargo_3acanic -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
     p_canic_7ccargo_3acanic -.-> p_ic_2dtooling_7ccargo_3aic_2dtestkit
     p_canic_7ccargo_3acanic_2dblob_2dservice --> p_canic_7ccargo_3acanic
     p_canic_7ccargo_3acanic_2dblob_2dservice --> p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage
+    p_canic_7ccargo_3acanic_2dcli -.-> p_canic_7ccargo_3acanic_2dcontracts
+    p_canic_7ccargo_3acanic_2dcli -.-> p_canic_7ccargo_3acanic_2dcore
+    p_canic_7ccargo_3acanic_2dcli -.-> p_canic_7ccargo_3acanic_2dhost
+    p_canic_7ccargo_3acanic_2dcli -.-> p_ic_2dobservability_7ccargo_3aic_2dmetrics
+    p_canic_7ccargo_3acanic_2dcli -.-> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_canic_7ccargo_3acanic_2dcli -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs
+    p_canic_7ccargo_3acanic_2dcli -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess
+    p_canic_7ccargo_3acanic_2dcli -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dtext
+    p_canic_7ccargo_3acanic_2dcli -.-> p_ic_2dwire_7ccargo_3aic_2dwire
     p_canic_7ccargo_3acanic_2dcontracts --> p_ic_2dauth_7ccargo_3aic_2dauth_2dprotocol_2dtypes
     p_canic_7ccargo_3acanic_2dcontracts --> p_ic_2dwire_7ccargo_3aic_2dwire
     p_canic_7ccargo_3acanic_2dcontrol_2dplane --> p_canic_7ccargo_3acanic_2dcore
@@ -224,39 +338,123 @@ flowchart TD
     p_canic_7ccargo_3acanic_2dcore --> p_ic_2dobservability_7ccargo_3aic_2dlogging
     p_canic_7ccargo_3acanic_2dcore --> p_ic_2dpersistence_7ccargo_3aic_2dmetrics_2dstable
     p_canic_7ccargo_3acanic_2dcore --> p_ic_2dscheduling_7ccargo_3aic_2dtimers
+    p_canic_7ccargo_3acanic_2dhost -.-> p_canic_7ccargo_3acanic_2dcontracts
+    p_canic_7ccargo_3acanic_2dhost -.-> p_canic_7ccargo_3acanic_2dcontrol_2dplane
+    p_canic_7ccargo_3acanic_2dhost -.-> p_canic_7ccargo_3acanic_2dcore
+    p_canic_7ccargo_3acanic_2dhost -.-> p_ic_2dbackup_7ccargo_3aic_2dbackup
+    p_canic_7ccargo_3acanic_2dhost -.-> p_ic_2dbackup_7ccargo_3aic_2dbackup_2dagent
+    p_canic_7ccargo_3acanic_2dhost -.-> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_canic_7ccargo_3acanic_2dhost -.-> p_ic_2dquery_7ccargo_3aic_2dquery
+    p_canic_7ccargo_3acanic_2dhost -.-> p_ic_2dtooling_7ccargo_3aic_2dbuild
+    p_canic_7ccargo_3acanic_2dhost -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
+    p_canic_7ccargo_3acanic_2dhost -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs
+    p_canic_7ccargo_3acanic_2dhost -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess
+    p_canic_7ccargo_3acanic_2dhost -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dtext
+    p_canic_7ccargo_3acanic_2dhost -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dtools
+    p_canic_7ccargo_3acanic_2dhost -.-> p_ic_2dtooling_7ccargo_3aic_2dtestkit
+    p_canic_7ccargo_3acanic_2dhost -.-> p_ic_2dwire_7ccargo_3aic_2dwire
     p_canic_7ccargo_3acanic_2dicydb --> p_canic_7ccargo_3acanic_2dmacros
     p_canic_7ccargo_3acanic_2dicydb --> p_ic_2dscheduling_7ccargo_3aic_2dtimers
     p_ic_2dauth_7ccargo_3aic_2dauth --> p_ic_2dauth_7ccargo_3aic_2dauth_2dprotocol_2dtypes
     p_ic_2dauth_7ccargo_3aic_2dauth --> p_ic_2dwire_7ccargo_3aic_2dwire
     p_ic_2dauth_7ccargo_3aic_2dauth_2dprotocol_2dtypes --> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dauth_7ccargo_3aic_2dauth_2dtooling -.-> p_ic_2dauth_7ccargo_3aic_2dauth_2dwire
+    p_ic_2dauth_7ccargo_3aic_2dauth_2dtooling -.-> p_ic_2dtooling_7ccargo_3aic_2dbuild
+    p_ic_2dauth_7ccargo_3aic_2dauth_2dtooling -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs
+    p_ic_2dauth_7ccargo_3aic_2dauth_2dwire --> p_ic_2dauth_7ccargo_3aic_2dauth_2dprotocol_2dtypes
+    p_ic_2dauth_7ccargo_3aic_2dauth_2dwire --> p_ic_2dwire_7ccargo_3aic_2dwire
+    p_ic_2dbackup_7ccargo_3aic_2dbackup --> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dbackup_7ccargo_3aic_2dbackup -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
+    p_ic_2dbackup_7ccargo_3aic_2dbackup -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs
+    p_ic_2dbackup_7ccargo_3aic_2dbackup -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess
+    p_ic_2dbackup_7ccargo_3aic_2dbackup_2dagent --> p_ic_2dbackup_7ccargo_3aic_2dbackup
+    p_ic_2dbackup_7ccargo_3aic_2dbackup_2dagent -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
     p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage --> p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcontracts
     p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage --> p_ic_2dpersistence_7ccargo_3aic_2dstorage
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcanister --> p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcli -.-> p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dclient
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcli -.-> p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcontracts
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcli -.-> p_ic_2dobservability_7ccargo_3aic_2dmetrics
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcli -.-> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcli -.-> p_ic_2dtooling_7ccargo_3aic_2dbuild
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcli -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcli -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcli -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dhttp
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcli -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dclient --> p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcontracts
+    p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dclient -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs
     p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcontracts --> p_ic_2dobservability_7ccargo_3aic_2dmetrics
     p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcontracts --> p_ic_2dplatform_7ccargo_3aic_2dplatform
     p_ic_2dobservability_7ccargo_3aic_2dmetrics --> p_ic_2dwire_7ccargo_3aic_2dwire
+    p_ic_2dpersistence_7ccargo_3aic_2dlogging_2dstable --> p_ic_2dobservability_7ccargo_3aic_2dlogging
+    p_ic_2dpersistence_7ccargo_3aic_2dlogging_2dstable --> p_ic_2dpersistence_7ccargo_3aic_2dstorage
     p_ic_2dpersistence_7ccargo_3aic_2dmemory --> p_ic_2dplatform_7ccargo_3aic_2dplatform
     p_ic_2dpersistence_7ccargo_3aic_2dmemory --> p_ic_2dwire_7ccargo_3aic_2dwire
     p_ic_2dpersistence_7ccargo_3aic_2dmetrics_2dstable --> p_ic_2dobservability_7ccargo_3aic_2dmetrics
     p_ic_2dpersistence_7ccargo_3aic_2dmetrics_2dstable --> p_ic_2dpersistence_7ccargo_3aic_2dstorage
     p_ic_2dpersistence_7ccargo_3aic_2dstorage --> p_ic_2dpersistence_7ccargo_3aic_2dmemory
-    p_ic_2dplatform_7ccargo_3aic_2dplatform --> p_ic_2dplatform_7ccargo_3aic_2dplatform_2dmacros
-    p_ic_2dplatform_7ccargo_3aic_2dplatform --> p_ic_2dplatform_7ccargo_3aic_2dplatform_2druntime_2dguard
-    p_ic_2dplatform_7ccargo_3aic_2dplatform --> p_ic_2dplatform_7ccargo_3aic_2dplatform_2dtypes
+    p_ic_2dplatform_7ccargo_3aic_2dplatform --> p_ic_2dplatform_7ccargo_3aic_2dplatform_2dpocket_2dic
+    p_ic_2dplatform_7ccargo_3aic_2dplatform --> p_ic_2dplatform_7ccargo_3aic_2dplatform_2druntime
+    p_ic_2dplatform_7ccargo_3aic_2dplatform_2druntime --> p_ic_2dplatform_7ccargo_3aic_2dplatform_2dmacros
+    p_ic_2dplatform_7ccargo_3aic_2dplatform_2druntime --> p_ic_2dplatform_7ccargo_3aic_2dplatform_2druntime_2dguard
+    p_ic_2dplatform_7ccargo_3aic_2dplatform_2druntime --> p_ic_2dplatform_7ccargo_3aic_2dplatform_2dtypes
+    p_ic_2dprofiler_7ccargo_3aic_2dsystem_2dprofiler --> p_ic_2dobservability_7ccargo_3aic_2dmetrics
+    p_ic_2dprofiler_7ccargo_3aic_2dsystem_2dprofiler -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
+    p_ic_2dprofiler_7ccargo_3aic_2dsystem_2dprofiler -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess
+    p_ic_2dquery_7ccargo_3aic_2dquery --> p_ic_2dobservability_7ccargo_3aic_2dmetrics
+    p_ic_2dquery_7ccargo_3aic_2dquery --> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dquery_7ccargo_3aic_2dquery -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
+    p_ic_2dquery_7ccargo_3aic_2dquery -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs
+    p_ic_2dquery_7ccargo_3aic_2dquery -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dhttp
+    p_ic_2dquery_7ccargo_3aic_2dquery -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dtext
+    p_ic_2dquery_7ccargo_3aic_2dquery -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dtools
+    p_ic_2dquery_7ccargo_3aic_2dquery_2dcli -.-> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dquery_7ccargo_3aic_2dquery_2dcli -.-> p_ic_2dquery_7ccargo_3aic_2dquery
+    p_ic_2dquery_7ccargo_3aic_2dquery_2dcli -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dtext
+    p_ic_2drelay_7ccargo_3aic_2drelay --> p_ic_2dpersistence_7ccargo_3aic_2dstorage
+    p_ic_2drelay_7ccargo_3aic_2drelay --> p_ic_2dscheduling_7ccargo_3aic_2dtimers
     p_ic_2dscheduling_7ccargo_3aic_2dtimers --> p_ic_2dobservability_7ccargo_3aic_2dmetrics
     p_ic_2dscheduling_7ccargo_3aic_2dtimers --> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dtooling_7ccargo_3aic_2dbuild -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
+    p_ic_2dtooling_7ccargo_3aic_2dbuild -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs
+    p_ic_2dtooling_7ccargo_3aic_2dbuild -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess
     p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
+    p_ic_2dtooling_7ccargo_3aic_2dhost_2dhttp -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
     p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
     p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs
+    p_ic_2dtooling_7ccargo_3aic_2dhost_2dtools -.-> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dtooling_7ccargo_3aic_2dhost_2dtools -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
+    p_ic_2dtooling_7ccargo_3aic_2dhost_2dtools -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dtext
+    p_ic_2dtooling_7ccargo_3aic_2dhost_2dwasm_2dinspect -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
+    p_ic_2dtooling_7ccargo_3aic_2dhost_2dwasm_2dinspect -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs
     p_ic_2dtooling_7ccargo_3aic_2dtestkit -.-> p_ic_2dobservability_7ccargo_3aic_2dmetrics
     p_ic_2dtooling_7ccargo_3aic_2dtestkit -.-> p_ic_2dplatform_7ccargo_3aic_2dplatform
     p_ic_2dtooling_7ccargo_3aic_2dtestkit -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
     p_ic_2dtooling_7ccargo_3aic_2dtestkit -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs
     p_ic_2dtooling_7ccargo_3aic_2dtestkit -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess
     p_ic_2dtooling_7ccargo_3aic_2dtestkit -.-> p_ic_2dwire_7ccargo_3aic_2dwire
+    p_ic_2dtooling_7ccargo_3aic_2dtestkit_2ddev -.-> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dtooling_7ccargo_3aic_2dtestkit_2ddev -.-> p_ic_2dtooling_7ccargo_3aic_2dbuild
+    p_ic_2dtooling_7ccargo_3aic_2dtestkit_2ddev -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
+    p_ic_2dtooling_7ccargo_3aic_2dtestkit_2ddev -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs
+    p_ic_2dtooling_7ccargo_3aic_2dtestkit_2ddev -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess
+    p_ic_2dtooling_7ccargo_3aic_2dtestkit_2ddev -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dtext
+    p_ic_2dtooling_7ccargo_3aic_2dtestkit_2ddev -.-> p_ic_2dtooling_7ccargo_3aic_2dtestkit
+    p_ic_2dtooling_7ccargo_3aic_2dtestkit_2ddev -.-> p_ic_2dtooling_7ccargo_3aic_2dtestkit_2dperf_2dprobe
+    p_ic_2dtooling_7ccargo_3aic_2dtestkit_2dnative -.-> p_ic_2dplatform_7ccargo_3aic_2dplatform
     p_ic_2dwire_7ccargo_3aic_2dwire --> p_ic_2dplatform_7ccargo_3aic_2dplatform_2dtypes
     p_ic_2dwire_7ccargo_3aic_2dwire --> p_ic_2dwire_7ccargo_3aic_2dwire_2dderive
+    p_ic_2dwire_7ccargo_3aic_2dwire_2dendpoint --> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dwire_7ccargo_3aic_2dwire_2dendpoint --> p_ic_2dwire_7ccargo_3aic_2dwire
     p_icydb_7ccargo_3aicydb --> p_icydb_7ccargo_3aicydb_2dcore
     p_icydb_7ccargo_3aicydb --> p_icydb_7ccargo_3aicydb_2dmodel
+    p_icydb_7ccargo_3aicydb_2dcli -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
+    p_icydb_7ccargo_3aicydb_2dcli -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dfs
+    p_icydb_7ccargo_3aicydb_2dcli -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dprocess
+    p_icydb_7ccargo_3aicydb_2dcli -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dtext
+    p_icydb_7ccargo_3aicydb_2dcli -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dtools
+    p_icydb_7ccargo_3aicydb_2dcli -.-> p_icydb_7ccargo_3aicydb
+    p_icydb_7ccargo_3aicydb_2dcli -.-> p_icydb_7ccargo_3aicydb_2dschema
     p_icydb_7ccargo_3aicydb_2dcore --> p_ic_2dobservability_7ccargo_3aic_2dmetrics
     p_icydb_7ccargo_3aicydb_2dcore --> p_ic_2dpersistence_7ccargo_3aic_2dstorage
     p_icydb_7ccargo_3aicydb_2dcore --> p_icydb_7ccargo_3aicydb_2ddiagnostic_2dcode
@@ -333,6 +531,30 @@ flowchart TD
 
 </details>
 
+## Release groups
+
+Local policy and manifest versions; not registry publication or downstream adoption evidence. Membership includes private qualification packages omitted from the diagram.
+
+Workspace / group | Version | Members | Changelog
+--- | --- | --- | ---
+[ic-observability / logging](https://github.com/dragginzgame/ic-observability/blob/main/ci/cargo-release-groups.json) | 0.23.6 | `ic-logging` | [Changelog](https://github.com/dragginzgame/ic-observability/blob/main/releases/logging/CHANGELOG.md)
+[ic-observability / metrics](https://github.com/dragginzgame/ic-observability/blob/main/ci/cargo-release-groups.json) | 0.24.5 | `ic-metrics` | [Changelog](https://github.com/dragginzgame/ic-observability/blob/main/releases/metrics/CHANGELOG.md)
+[ic-persistence / logging-stable](https://github.com/dragginzgame/ic-persistence/blob/main/ci/cargo-release-groups.json) | 0.60.5 | `ic-logging-stable` | [Changelog](https://github.com/dragginzgame/ic-persistence/blob/main/releases/logging-stable/CHANGELOG.md)
+[ic-persistence / metrics-stable](https://github.com/dragginzgame/ic-persistence/blob/main/ci/cargo-release-groups.json) | 0.61.5 | `ic-metrics-stable` | [Changelog](https://github.com/dragginzgame/ic-persistence/blob/main/releases/metrics-stable/CHANGELOG.md)
+[ic-persistence / persistence](https://github.com/dragginzgame/ic-persistence/blob/main/ci/cargo-release-groups.json) | 0.60.7 | `ic-memory`, `ic-storage` | [Changelog](https://github.com/dragginzgame/ic-persistence/blob/main/releases/persistence/CHANGELOG.md)
+[ic-platform / platform](https://github.com/dragginzgame/ic-platform/blob/main/ci/cargo-release-groups.json) | 0.16.0 | `ic-platform`, `ic-platform-pocket-ic` | [Changelog](https://github.com/dragginzgame/ic-platform/blob/main/releases/platform/CHANGELOG.md)
+[ic-platform / runtime](https://github.com/dragginzgame/ic-platform/blob/main/ci/cargo-release-groups.json) | 0.17.0 | `ic-platform-macros`, `ic-platform-runtime`, `ic-platform-runtime-guard` | [Changelog](https://github.com/dragginzgame/ic-platform/blob/main/releases/runtime/CHANGELOG.md)
+[ic-platform / types](https://github.com/dragginzgame/ic-platform/blob/main/ci/cargo-release-groups.json) | 0.15.1 | `ic-platform-types` | [Changelog](https://github.com/dragginzgame/ic-platform/blob/main/releases/types/CHANGELOG.md)
+[ic-scheduling / jobs](https://github.com/dragginzgame/ic-scheduling/blob/main/ci/cargo-release-groups.json) | 0.33.4 | `ic-jobs`, `ic-jobs-canister-test-support`, `ic-jobs-canister-tests`, `ic-jobs-test-consumer` | [Changelog](https://github.com/dragginzgame/ic-scheduling/blob/main/releases/jobs/CHANGELOG.md)
+[ic-scheduling / timers](https://github.com/dragginzgame/ic-scheduling/blob/main/ci/cargo-release-groups.json) | 0.35.4 | `ic-timers`, `ic-timers-pocketic`, `ic-timers-runtime-probe`, `ic-timers-size-probe`, `ic-timers-test-protocol` | [Changelog](https://github.com/dragginzgame/ic-scheduling/blob/main/releases/timers/CHANGELOG.md)
+[ic-tooling / foundation](https://github.com/dragginzgame/ic-tooling/blob/main/ci/cargo-release-groups.json) | 0.73.5 | `ic-build`, `ic-host-artifacts`, `ic-host-fs`, `ic-host-http`, `ic-host-process`, `ic-host-text`, `ic-host-wasm-inspect` | [Changelog](https://github.com/dragginzgame/ic-tooling/blob/main/releases/foundation/CHANGELOG.md)
+[ic-tooling / testkit](https://github.com/dragginzgame/ic-tooling/blob/main/ci/cargo-release-groups.json) | 0.76.1 | `ic-testkit`, `ic-testkit-dev`, `ic-testkit-native`, `ic-testkit-perf-probe` | [Changelog](https://github.com/dragginzgame/ic-tooling/blob/main/releases/testkit/CHANGELOG.md)
+[ic-tooling / tools](https://github.com/dragginzgame/ic-tooling/blob/main/ci/cargo-release-groups.json) | 0.76.1 | `ic-host-tools` | [Changelog](https://github.com/dragginzgame/ic-tooling/blob/main/releases/tools/CHANGELOG.md)
+[ic-wire / core](https://github.com/dragginzgame/ic-wire/blob/main/ci/cargo-release-groups.json) | 0.13.4 | `ic-wire`, `ic-wire-benchmarks`, `ic-wire-derive`, `ic-wire-endpoint-fixture`, `ic-wire-qualification` | [Changelog](https://github.com/dragginzgame/ic-wire/blob/main/releases/core/CHANGELOG.md)
+[ic-wire / endpoint](https://github.com/dragginzgame/ic-wire/blob/main/ci/cargo-release-groups.json) | 0.3.0 | `ic-wire-endpoint` | [Changelog](https://github.com/dragginzgame/ic-wire/blob/main/releases/endpoint/CHANGELOG.md)
+
+Workspaces without an explicit release-group policy retain repository boundaries only; no independent group membership is inferred. Browser packages and historical Git-only packages remain outside Cargo release groups.
+
 ## Workspace inventory
 
 Repository | Selected packages and manifests
@@ -343,13 +565,13 @@ Repository | Selected packages and manifests
 [ic-blob-storage](https://github.com/dragginzgame/ic-blob-storage) | [ic-blob-storage](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage/Cargo.toml)<br>[ic-blob-storage-canister](https://github.com/dragginzgame/ic-blob-storage/blob/main/canisters/standalone/Cargo.toml)<br>[ic-blob-storage-cli](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-cli/Cargo.toml)<br>[ic-blob-storage-client](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-client/Cargo.toml)<br>[ic-blob-storage-contracts](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-contracts/Cargo.toml)
 [ic-observability](https://github.com/dragginzgame/ic-observability) | [ic-logging](https://github.com/dragginzgame/ic-observability/blob/main/crates/ic-logging/Cargo.toml)<br>[ic-metrics](https://github.com/dragginzgame/ic-observability/blob/main/crates/ic-metrics/Cargo.toml)
 [ic-persistence](https://github.com/dragginzgame/ic-persistence) | [ic-logging-stable](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-logging-stable/Cargo.toml)<br>[ic-memory](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-memory/Cargo.toml)<br>[ic-metrics-stable](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-metrics-stable/Cargo.toml)<br>[ic-storage](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-storage/Cargo.toml)
-[ic-platform](https://github.com/dragginzgame/ic-platform) | [@tokostudios/ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/packages/browser/package.json)<br>[ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform/Cargo.toml)<br>[ic-platform-macros](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform-macros/Cargo.toml)<br>[ic-platform-runtime-guard](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform-runtime-guard/Cargo.toml)<br>[ic-platform-types](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform-types/Cargo.toml)
+[ic-platform](https://github.com/dragginzgame/ic-platform) | [@tokostudios/ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/packages/browser/package.json)<br>[ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform/Cargo.toml)<br>[ic-platform-macros](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform-macros/Cargo.toml)<br>[ic-platform-pocket-ic](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform-pocket-ic/Cargo.toml)<br>[ic-platform-runtime](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform-runtime/Cargo.toml)<br>[ic-platform-runtime-guard](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform-runtime-guard/Cargo.toml)<br>[ic-platform-types](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform-types/Cargo.toml)
 [ic-profiler](https://github.com/dragginzgame/ic-profiler) | [ic-system-profiler](https://github.com/dragginzgame/ic-profiler/blob/main/profiler/system/Cargo.toml)
 [ic-query](https://github.com/dragginzgame/ic-query) | [ic-query](https://github.com/dragginzgame/ic-query/blob/main/crates/ic-query/Cargo.toml)<br>[ic-query-cli](https://github.com/dragginzgame/ic-query/blob/main/crates/ic-query-cli/Cargo.toml)
 [ic-relay](https://github.com/dragginzgame/ic-relay) | [ic-relay](https://github.com/dragginzgame/ic-relay/blob/main/crates/ic-relay/Cargo.toml)
 [ic-scheduling](https://github.com/dragginzgame/ic-scheduling) | [ic-jobs](https://github.com/dragginzgame/ic-scheduling/blob/main/crates/ic-jobs/Cargo.toml)<br>[ic-timers](https://github.com/dragginzgame/ic-scheduling/blob/main/crates/ic-timers/Cargo.toml)
 [ic-tooling](https://github.com/dragginzgame/ic-tooling) | [ic-build](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-build/Cargo.toml)<br>[ic-host-artifacts](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-host-artifacts/Cargo.toml)<br>[ic-host-fs](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-host-fs/Cargo.toml)<br>[ic-host-http](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-host-http/Cargo.toml)<br>[ic-host-process](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-host-process/Cargo.toml)<br>[ic-host-text](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-host-text/Cargo.toml)<br>[ic-host-tools](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-host-tools/Cargo.toml)<br>[ic-host-wasm-inspect](https://github.com/dragginzgame/ic-tooling/blob/main/apps/ic-host-wasm-inspect/Cargo.toml)<br>[ic-testkit](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-testkit/Cargo.toml)<br>[ic-testkit-dev](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-testkit-dev/Cargo.toml)<br>[ic-testkit-native](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-testkit-native/Cargo.toml)
-[ic-wire](https://github.com/dragginzgame/ic-wire) | [ic-wire](https://github.com/dragginzgame/ic-wire/blob/main/crates/ic-wire/Cargo.toml)<br>[ic-wire-derive](https://github.com/dragginzgame/ic-wire/blob/main/crates/ic-wire-derive/Cargo.toml)
+[ic-wire](https://github.com/dragginzgame/ic-wire) | [ic-wire](https://github.com/dragginzgame/ic-wire/blob/main/crates/ic-wire/Cargo.toml)<br>[ic-wire-derive](https://github.com/dragginzgame/ic-wire/blob/main/crates/ic-wire-derive/Cargo.toml)<br>[ic-wire-endpoint](https://github.com/dragginzgame/ic-wire/blob/main/crates/ic-wire-endpoint/Cargo.toml)
 [icydb](https://github.com/dragginzgame/icydb) | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml)<br>[icydb-cli](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-cli/Cargo.toml)<br>[icydb-core](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-core/Cargo.toml)<br>[icydb-diagnostic-code](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-diagnostic-code/Cargo.toml)<br>[icydb-model](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-model/Cargo.toml)<br>[icydb-model-macros](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-model-macros/Cargo.toml)<br>[icydb-schema](https://github.com/dragginzgame/icydb/blob/main/crates/icydb-schema/Cargo.toml)
 [toko](https://github.com/dragginzgame/toko) | [canister_discovery_hub](https://github.com/dragginzgame/toko/blob/development/fleets/toko/discovery/hub/Cargo.toml)<br>[canister_discovery_shard](https://github.com/dragginzgame/toko/blob/development/fleets/toko/discovery/shard/Cargo.toml)<br>[canister_http_hub](https://github.com/dragginzgame/toko/blob/development/fleets/toko/http/hub/Cargo.toml)<br>[canister_http_worker](https://github.com/dragginzgame/toko/blob/development/fleets/toko/http/worker/Cargo.toml)<br>[canister_market](https://github.com/dragginzgame/toko/blob/development/fleets/toko/market/Cargo.toml)<br>[canister_notification](https://github.com/dragginzgame/toko/blob/development/fleets/toko/notification/Cargo.toml)<br>[canister_oracle_pokemon](https://github.com/dragginzgame/toko/blob/development/fleets/toko/oracle/pokemon/Cargo.toml)<br>[canister_oracle_registry](https://github.com/dragginzgame/toko/blob/development/fleets/toko/oracle/registry/Cargo.toml)<br>[canister_project_generator](https://github.com/dragginzgame/toko/blob/development/fleets/toko/project/generator/Cargo.toml)<br>[canister_project_hub](https://github.com/dragginzgame/toko/blob/development/fleets/toko/project/hub/Cargo.toml)<br>[canister_project_instance](https://github.com/dragginzgame/toko/blob/development/fleets/toko/project/instance/Cargo.toml)<br>[canister_project_ledger](https://github.com/dragginzgame/toko/blob/development/fleets/toko/project/ledger/Cargo.toml)<br>[canister_project_registry](https://github.com/dragginzgame/toko/blob/development/fleets/toko/project/registry/Cargo.toml)<br>[canister_project_user](https://github.com/dragginzgame/toko/blob/development/fleets/toko/project/user/Cargo.toml)<br>[canister_user_hub](https://github.com/dragginzgame/toko/blob/development/fleets/toko/user/hub/Cargo.toml)<br>[canister_user_shard](https://github.com/dragginzgame/toko/blob/development/fleets/toko/user/shard/Cargo.toml)<br>[design](https://github.com/dragginzgame/toko/blob/development/backend/src/design/Cargo.toml)<br>[design_macros](https://github.com/dragginzgame/toko/blob/development/backend/src/design_macros/Cargo.toml)<br>[frontend](https://github.com/dragginzgame/toko/blob/development/frontend/package.json)<br>[oracle](https://github.com/dragginzgame/toko/blob/development/backend/src/oracle/Cargo.toml)<br>[schemagen](https://github.com/dragginzgame/toko/blob/development/backend/src/bin/schemagen/Cargo.toml)<br>[toko](https://github.com/dragginzgame/toko/blob/development/backend/src/toko/Cargo.toml)
 [toko-miner](https://github.com/dragginzgame/toko-miner) | [@toko-miner/frontend](https://github.com/dragginzgame/toko-miner/blob/main/frontend/package.json)<br>[canister_toko_miner_blob](https://github.com/dragginzgame/toko-miner/blob/main/apps/toko_miner/blob/Cargo.toml)<br>[canister_toko_miner_game_hub](https://github.com/dragginzgame/toko-miner/blob/main/apps/toko_miner/game_hub/Cargo.toml)<br>[canister_toko_miner_game_shard](https://github.com/dragginzgame/toko-miner/blob/main/apps/toko_miner/game_shard/Cargo.toml)<br>[canister_toko_miner_translation](https://github.com/dragginzgame/toko-miner/blob/main/apps/toko_miner/translation/Cargo.toml)<br>[canister_toko_miner_user_hub](https://github.com/dragginzgame/toko-miner/blob/main/apps/toko_miner/user_hub/Cargo.toml)<br>[canister_toko_miner_user_shard](https://github.com/dragginzgame/toko-miner/blob/main/apps/toko_miner/user_shard/Cargo.toml)<br>[toko-miner-contracts](https://github.com/dragginzgame/toko-miner/blob/main/crates/toko-miner-contracts/Cargo.toml)
@@ -452,6 +674,7 @@ ic-blob-storage-canister → ic-blob-storage | [ic-blob-storage-canister](https:
 ic-blob-storage-canister → ic-blob-storage-contracts | [ic-blob-storage-canister](https://github.com/dragginzgame/ic-blob-storage/blob/main/canisters/standalone/Cargo.toml) → `ic-blob-storage-contracts` (cargo normal)
 ic-blob-storage-canister → ic-metrics | [ic-blob-storage-canister](https://github.com/dragginzgame/ic-blob-storage/blob/main/canisters/standalone/Cargo.toml) → `ic-metrics` (cargo normal)
 ic-blob-storage-canister → ic-platform | [ic-blob-storage-canister](https://github.com/dragginzgame/ic-blob-storage/blob/main/canisters/standalone/Cargo.toml) → `ic-platform` (cargo normal)<br>[ic-blob-storage-canister](https://github.com/dragginzgame/ic-blob-storage/blob/main/canisters/standalone/Cargo.toml) → `ic-platform` (cargo normal, target-specific)
+ic-blob-storage-cli → ic-blob-storage-client | [ic-blob-storage-cli](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-cli/Cargo.toml) → `ic-blob-storage-client` (cargo normal, target-specific, native package)
 ic-blob-storage-cli → ic-blob-storage-contracts | [ic-blob-storage-cli](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-cli/Cargo.toml) → `ic-blob-storage-contracts` (cargo normal, target-specific, native package)
 ic-blob-storage-cli → ic-metrics | [ic-blob-storage-cli](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-cli/Cargo.toml) → `ic-metrics` (cargo normal, target-specific, native package)
 ic-blob-storage-cli → ic-platform | [ic-blob-storage-cli](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-cli/Cargo.toml) → `ic-platform` (cargo dev, target-specific, native package)<br>[ic-blob-storage-cli](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-cli/Cargo.toml) → `ic-platform` (cargo normal, target-specific, native package)
@@ -462,6 +685,8 @@ ic-blob-storage-cli → ic-host-http | [ic-blob-storage-cli](https://github.com/
 ic-blob-storage-cli → ic-host-process | [ic-blob-storage-cli](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-cli/Cargo.toml) → `ic-host-process` (cargo dev, target-specific, native package)<br>[ic-blob-storage-cli](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-cli/Cargo.toml) → `ic-host-process` (cargo normal, target-specific, native package)
 ic-blob-storage-client → ic-blob-storage-contracts | [ic-blob-storage-client](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-client/Cargo.toml) → `ic-blob-storage-contracts` (cargo normal)
 ic-blob-storage-client → ic-platform | [ic-blob-storage-client](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-client/Cargo.toml) → `ic-platform` (cargo normal)
+ic-blob-storage-client → ic-host-fs | [ic-blob-storage-client](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-client/Cargo.toml) → `ic-host-fs` (cargo dev, target-specific)<br>[ic-blob-storage-client](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-client/Cargo.toml) → `ic-host-fs` (cargo normal, optional, target-specific)
+ic-blob-storage-client → ic-host-process | [ic-blob-storage-client](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-client/Cargo.toml) → `ic-host-process` (cargo dev, target-specific)
 ic-blob-storage-contracts → ic-metrics | [ic-blob-storage-contracts](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-contracts/Cargo.toml) → `ic-metrics` (cargo normal)
 ic-blob-storage-contracts → ic-platform | [ic-blob-storage-contracts](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-contracts/Cargo.toml) → `ic-platform` (cargo dev)<br>[ic-blob-storage-contracts](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-contracts/Cargo.toml) → `ic-platform` (cargo dev, target-specific)<br>[ic-blob-storage-contracts](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-contracts/Cargo.toml) → `ic-platform` (cargo normal)
 ic-blob-storage-contracts → ic-host-artifacts | [ic-blob-storage-contracts](https://github.com/dragginzgame/ic-blob-storage/blob/main/crates/ic-blob-storage-contracts/Cargo.toml) → `ic-host-artifacts` (cargo dev, target-specific)
@@ -488,8 +713,12 @@ ic-storage → ic-memory | [ic-storage](https://github.com/dragginzgame/ic-persi
 ic-storage → ic-platform | [ic-storage](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-storage/Cargo.toml) → `ic-platform` (cargo normal)
 ic-storage → ic-wire | [ic-storage](https://github.com/dragginzgame/ic-persistence/blob/main/crates/ic-storage/Cargo.toml) → `ic-wire` (cargo dev)
 ic-platform → ic-platform-macros | [ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform/Cargo.toml) → `ic-platform-macros` (cargo normal, optional)
-ic-platform → ic-platform-runtime-guard | [ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform/Cargo.toml) → `ic-platform-runtime-guard` (cargo normal, optional)
+ic-platform → ic-platform-pocket-ic | [ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform/Cargo.toml) → `ic-platform-pocket-ic` (cargo normal, optional, target-specific)
+ic-platform → ic-platform-runtime | [ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform/Cargo.toml) → `ic-platform-runtime` (cargo normal, optional)
 ic-platform → ic-platform-types | [ic-platform](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform/Cargo.toml) → `ic-platform-types` (cargo normal, optional)
+ic-platform-runtime → ic-platform-macros | [ic-platform-runtime](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform-runtime/Cargo.toml) → `ic-platform-macros` (cargo normal, optional)
+ic-platform-runtime → ic-platform-runtime-guard | [ic-platform-runtime](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform-runtime/Cargo.toml) → `ic-platform-runtime-guard` (cargo normal, optional)
+ic-platform-runtime → ic-platform-types | [ic-platform-runtime](https://github.com/dragginzgame/ic-platform/blob/main/crates/ic-platform-runtime/Cargo.toml) → `ic-platform-types` (cargo normal, optional)
 ic-system-profiler → ic-metrics | [ic-system-profiler](https://github.com/dragginzgame/ic-profiler/blob/main/profiler/system/Cargo.toml) → `ic-metrics` (cargo normal)
 ic-system-profiler → ic-host-artifacts | [ic-system-profiler](https://github.com/dragginzgame/ic-profiler/blob/main/profiler/system/Cargo.toml) → `ic-host-artifacts` (cargo normal)
 ic-system-profiler → ic-host-process | [ic-system-profiler](https://github.com/dragginzgame/ic-profiler/blob/main/profiler/system/Cargo.toml) → `ic-host-process` (cargo normal)
@@ -552,6 +781,9 @@ ic-testkit-dev → ic-wire | [ic-testkit-dev](https://github.com/dragginzgame/ic
 ic-testkit-native → ic-platform | [ic-testkit-native](https://github.com/dragginzgame/ic-tooling/blob/main/crates/ic-testkit-native/Cargo.toml) → `ic-platform` (cargo normal, optional, target-specific, native package)
 ic-wire → ic-platform-types | [ic-wire](https://github.com/dragginzgame/ic-wire/blob/main/crates/ic-wire/Cargo.toml) → `ic-platform-types` (cargo normal, optional)
 ic-wire → ic-wire-derive | [ic-wire](https://github.com/dragginzgame/ic-wire/blob/main/crates/ic-wire/Cargo.toml) → `ic-wire-derive` (cargo normal)
+ic-wire-endpoint → ic-platform | [ic-wire-endpoint](https://github.com/dragginzgame/ic-wire/blob/main/crates/ic-wire-endpoint/Cargo.toml) → `ic-platform` (cargo normal)
+ic-wire-endpoint → ic-wire | [ic-wire-endpoint](https://github.com/dragginzgame/ic-wire/blob/main/crates/ic-wire-endpoint/Cargo.toml) → `ic-wire` (cargo normal)
+ic-wire-endpoint → ic-wire-derive | [ic-wire-endpoint](https://github.com/dragginzgame/ic-wire/blob/main/crates/ic-wire-endpoint/Cargo.toml) → `ic-wire-derive` (cargo normal)
 icydb → ic-memory | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-memory` (cargo dev)<br>[icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-memory` (cargo normal)
 icydb → ic-platform | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-platform` (cargo dev)<br>[icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-platform` (cargo normal)
 icydb → ic-wire | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-wire` (cargo normal)<br>[icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-wire` (cargo normal, target-specific)
@@ -704,5 +936,5 @@ toko → icydb | [toko](https://github.com/dragginzgame/toko/blob/development/ba
 toko → icydb-model | [toko](https://github.com/dragginzgame/toko/blob/development/backend/src/toko/Cargo.toml) → `icydb-model` (cargo normal)
 toko → design | [toko](https://github.com/dragginzgame/toko/blob/development/backend/src/toko/Cargo.toml) → `design` (cargo normal)
 
-Selected packages without a normal-dependency path from the application roots: `canic-auth`, `canic-cli`, `canic-host`, `ic-auth-tooling`, `ic-auth-wire`, `ic-backup`, `ic-backup-agent`, `ic-blob-storage-canister`, `ic-blob-storage-cli`, `ic-blob-storage-client`, `ic-logging-stable`, `ic-system-profiler`, `ic-query`, `ic-query-cli`, `ic-relay`, `ic-jobs`, `ic-build`, `ic-host-http`, `ic-host-text`, `ic-host-tools`, `ic-host-wasm-inspect`, `ic-testkit-dev`, `ic-testkit-native`, `icydb-cli`.
+Selected packages without a normal-dependency path from the application roots: `canic-auth`, `canic-cli`, `canic-host`, `ic-auth-tooling`, `ic-auth-wire`, `ic-backup`, `ic-backup-agent`, `ic-blob-storage-canister`, `ic-blob-storage-cli`, `ic-blob-storage-client`, `ic-logging-stable`, `ic-system-profiler`, `ic-query`, `ic-query-cli`, `ic-relay`, `ic-jobs`, `ic-build`, `ic-host-http`, `ic-host-text`, `ic-host-tools`, `ic-host-wasm-inspect`, `ic-testkit-dev`, `ic-testkit-native`, `ic-wire-endpoint`, `icydb-cli`.
 <!-- stack-graph:end -->
