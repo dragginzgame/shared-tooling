@@ -1100,14 +1100,15 @@ for scenario in reuse changed-compiler changed-source redirected-source; do
     touch "$fixture/hold-install"
     bash "$installer" --consumer "$fixture/$scenario-owner" "${contention_args[@]}" \
         > "$fixture/owner.out" 2> "$fixture/owner.err" & owner_setup=$!
-    for ((poll=0; poll<200; poll++)); do
+    # Source preparation may contend with other fixtures on busy CI hosts.
+    for ((poll=0; poll<1200; poll++)); do
         [[ ! -s "$fixture/install-held" ]] || break
         sleep 0.05
     done
     [[ -s "$fixture/install-held" ]] || { cat "$fixture/owner.err"; exit 1; }
     SHARED_TOOLING_SETUP_WAIT_SECONDS=20 bash "$installer" --consumer "$fixture/$scenario-waiter" \
         "${contention_args[@]}" > "$fixture/waiter.out" 2> "$fixture/waiter.err" & waiter_setup=$!
-    for ((poll=0; poll<200; poll++)); do
+    for ((poll=0; poll<1200; poll++)); do
         if grep -qF 'Waiting for tool installation slot:' "$fixture/waiter.err"; then break; fi
         sleep 0.05
     done
