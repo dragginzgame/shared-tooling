@@ -1,5 +1,5 @@
 # Local developer setup
-<!-- Shared companions: scripts/ci/report-tool-versions.sh -->
+<!-- Shared companions: scripts/ci/report-tool-versions.sh docs/tool-store-maintenance.md -->
 
 ## Tool selection and diagnostics
 

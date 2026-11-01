@@ -1,4 +1,5 @@
 # Tool store retention and maintenance
+<!-- Shared companions: scripts/dev/tool-store-maintenance.pl -->
 
 Shared owns the existing tool store and its exported setup helpers. Rust setup
 now discards successful `build/` and private `home/` scratch after executable and

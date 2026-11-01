@@ -1,4 +1,5 @@
 # Engineering contracts by task
+<!-- Shared companions: docs/tool-store-maintenance.md -->
 
 These contracts supplement the [engineering baseline](../DRAGGINZGAME.md).
 Read the applicable sections when the task touches their subject. This file is
