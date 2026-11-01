@@ -4,6 +4,11 @@
 
 ### ➕ Added
 
+- Admit the Platform-owned PocketIC implementation as a narrow external-IC
+  boundary owner for its three native SDK dependencies. Preserve normal-only
+  target admission, reject portable/Wasm/build/dev declarations and other IC
+  dependencies, and retain consumer restrictions.
+
 - Automatically prepare the canonical `VERSION` file alongside pending changelog
   notes during meaningful work. Shared's `make prepare-work` creates or reuses
   the pending entry, promotes it when needed and preserves its notes; CI rejects
