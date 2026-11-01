@@ -88,6 +88,7 @@ VALIDATION_LOG_DIR="$FIXTURE/runner-parent/logs" \
     VALIDATION_FAILURE_LOG_DIR="$FIXTURE/runner-parent/failures" \
     GITHUB_STEP_SUMMARY="$FIXTURE/runner-parent/summary.md" \
     run_fixture test-validation-target-runner.sh bash "$ROOT/scripts/ci/test-validation-target-runner.sh"
+run_fixture test-validation-stage.sh bash "$ROOT/scripts/ci/test-validation-stage.sh"
 for destination in logs/sentinel failures/sentinel summary.md; do
     cmp "$FIXTURE/runner-parent/expected" "$FIXTURE/runner-parent/$destination"
 done
