@@ -1104,3 +1104,28 @@ Host's adoption retains its original validation receipt format and reconstructio
 of expected release bytes from the selected source. Testkit and Backup have
 additional metadata contracts; they must qualify their own callbacks and recovery
 fixtures before replacing their local preparation mechanics.
+
+### Read-only grouped bootstrap observation
+
+`bash scripts/ci/observe-cargo-release-bootstrap.sh policy` returns the complete
+source-only policy after common shape, path and unique-membership admission.
+It does not run Cargo or establish filesystem/graph ownership. Native consumers
+can project it instead of maintaining a parallel policy validator.
+
+The `observe` operation additionally uses offline Cargo `metadata --no-deps` for
+workspace/member discovery and the prepared yq TOML parser for the root catalog
+and lock. It accepts a virtual workspace with literal package versions, including
+partially changed member manifests and coherent per-group local lock versions.
+It reports each group's member paths and declared/locked versions, target directory
+a derived `coherent` flag and group-editor inputs for a scratch root catalog.
+Full local alias requirements are admitted as observations, not transitions. Missing, duplicate or foreign local lock identities,
+unsupported policy, parser failure and outside-root members refuse. Workspace
+inheritance mode is outside this bootstrap-only contract.
+
+Consumers own exact input custody, byte-drift checks, tool/compiler selection,
+allowed previous/candidate projections and scratch preparation. Re-observe after
+helpers or effects; neither output is a cached proof. This helper does not fetch,
+render, repair source, create recovery artifacts, or authorize release effects.
+Normal group plans still require successful full locked metadata and unchanged
+version/catalog admission. Qualify a consumer's actual scratch recovery before
+retiring its existing bootstrap code. See Shared issue #333.

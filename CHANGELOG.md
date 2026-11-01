@@ -2,6 +2,13 @@
 
 ## [0.27.24] - Unreleased
 
+### ➕ Added
+
+- Expose read-only release-group policy and grouped Cargo bootstrap observations
+  through `observe-cargo-release-bootstrap.sh`. Share policy shape admission
+  with resolved group plans; incoherent manifests/locks remain observations,
+  never release authority. Consumers retain scratch recovery and full gates.
+
 ### 🔧 Changed
 
 - Require Wasm size comparisons to report total uncompressed module bytes and
