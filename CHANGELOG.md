@@ -43,7 +43,40 @@
 
 ## [0.27.24] - Unreleased
 
+### ➕ Added
+
+- Add opt-in `run-validation-stage.pl` proofs with immutable execution provenance
+  and separate current-group admission. Re-observe input inventories, tools,
+  configuration and the bounded environment around execution and reuse; retain
+  failures and execute normally for stale or unknown evidence. Existing complete
+  release gates and receipts retain their current meaning.
+  [#334 — Review content-bound validation proof reuse across independent release groups](https://github.com/dragginzgame/shared-tooling/issues/334).
+
+- Admit selected destination graphs before planning dependency release cascades.
+  Explicit normal-edge checks keep runtime singleton contracts separate from
+  independent host/build graphs; conflicts report a path for every rendered
+  identity. Preserve locked inputs and distinguish required alignments from
+  optional refreshes before downstream bump/publication decisions.
+  [#335 — Check the destination dependency graph before planning downstream release cascades](https://github.com/dragginzgame/shared-tooling/issues/335).
+
+- Expose read-only release-group policy and grouped Cargo bootstrap observations
+  through `observe-cargo-release-bootstrap.sh`. Share policy shape admission
+  with resolved group plans; incoherent manifests/locks remain observations,
+  never release authority. Consumers retain scratch recovery and full gates.
+  [#333 — Review a shared read-only observation boundary for grouped Cargo bootstrap](https://github.com/dragginzgame/shared-tooling/issues/333).
+
+- Admit the Platform-owned PocketIC implementation as a narrow external-IC
+  boundary owner for its three native SDK dependencies. Preserve normal-only
+  target admission and existing consumer restrictions.
+
 ### 🔧 Changed
+
+- Keep grouped-release fixtures entirely local so their offline admission does
+  not depend on an incidental registry cache populated by tool installation.
+- Build the snapshot selection fixture from declared script companions so the
+  grouped release runner includes its metadata helper closure.
+- Give tool-contention fixtures up to 60 seconds to observe installer startup
+  on busy hosts, while retaining the same synchronization and refusal assertions.
 
 - Require Wasm size comparisons to report total uncompressed module bytes and
   code-section bytes separately. Omit gzip sizes unless transport/compression
