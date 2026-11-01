@@ -314,7 +314,27 @@ product, release and recovery obligations remain binding when applicable.
   runtime instruction or cycle budgets, and the priority among them. A setting
   called `z`, `Oz` or `O3` is not proof of an optimum. Prefer a reproducible,
   qualified choice; do not silently search for and change the recipe on each
-  release. Gzip size is a separate transport measurement.
+  release.
+- Wasm footprint comparisons, benchmark summaries and optimization acceptance
+  report two separate metrics from the same final uncompressed module: total
+  module bytes (all sections) and code-section bytes. Show absolute before/after
+  values and byte deltas for both; percentages may supplement them. Label units
+  explicitly, using bytes and optionally MiB (1 MiB = 1,048,576 bytes). If either
+  measurement is unavailable, say so; do not substitute compressed size or infer
+  code-section size from total size. State the code-section measurement method
+  when reporting headroom against the IC admission limit.
+- The IC [resource limits](https://docs.internetcomputer.org/references/resource-limits/)
+  currently list a 12 MiB (12,582,912-byte) code-section limit per canister
+  (checked 2026-11-01). This is distinct from total module size. Verify the target
+  network/runtime limit when making admission claims; compression cannot reduce
+  the code-section size checked by the runtime.
+- Do not use gzip, zip or other compressed byte counts to rank Wasm footprint,
+  claim Wasm size savings or establish code-section headroom. Omit compressed
+  sizes from Wasm comparison tables, progress updates and final summaries unless
+  transport/compression measurement is explicitly requested. A requested transport
+  comparison must be labelled separately and cannot replace either raw metric.
+  This reporting rule does not remove compression or required upload admission
+  checks from deployment tooling.
 - Treat compiler optimization and post-link `wasm-opt` as separate stages of
   one recipe. Record compiler/target and optimizer identities, Cargo profile,
   LTO/codegen settings, ordered optimizer arguments, features and input identity.

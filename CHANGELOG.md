@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.27.24] - Unreleased
+
+### 🔧 Changed
+
+- Require Wasm size comparisons to report total uncompressed module bytes and
+  code-section bytes separately. Omit gzip sizes unless transport/compression
+  measurement is explicitly requested; compressed savings do not establish
+  Wasm footprint improvements or IC code-section headroom.
+
 ## [0.27.23] - Unreleased
 
 ### ➕ Added

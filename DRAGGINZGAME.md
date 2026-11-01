@@ -158,8 +158,12 @@ and [RPC budgets](rules/rpc-budgets.md) for codecs, bindings or protocol changes
 Shared Tooling owns optimization selection and evidence rules; IC Tooling's
 `ic-build` owns reusable build/optimizer mechanics, recommended recipes and their
 qualification evidence. Consumers select qualified recipes against their product
-budgets. Read the [Wasm optimization contract](rules/engineering-details.md#wasm-optimization)
-before changing deployment profiles, optimizer settings or performance matrices.
+budgets. Wasm size comparisons report both the complete uncompressed module and
+its code-section size. Gzip/compressed size is not a Wasm size metric and must not
+appear in those summaries unless transport/compression measurement is explicitly
+requested. Read the [Wasm optimization contract](rules/engineering-details.md#wasm-optimization)
+before comparing Wasm sizes or changing deployment profiles, optimizer settings
+or performance matrices.
 
 ## Gzip encoding
 
