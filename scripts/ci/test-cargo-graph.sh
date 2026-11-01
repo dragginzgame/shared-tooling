@@ -98,6 +98,9 @@ done
 if "${checker[@]}" --forbid substrate --require substrate=0 > "$fixture/policy.log" 2>&1; then exit 1; fi
 if "${checker[@]}" --require substrate=1 --require substrate=1 > "$fixture/policy.log" 2>&1; then exit 1; fi
 if "${checker[@]}" --forbid absent --features a --all-features > "$fixture/policy.log" 2>&1; then exit 1; fi
+for edges in dev all build normal,dev; do
+ if "${checker[@]}" --forbid absent --edges "$edges" > "$fixture/policy.log" 2>&1; then exit 1; fi
+done
 if "${checker[@]}" --forbid-pattern '[' > "$fixture/pattern.log" 2>&1; then exit 1; fi
 if "${checker[@]}" --max-count substrate=1 --require substrate=1 > "$fixture/policy.log" 2>&1; then exit 1; fi
 if "${checker[@]}" --max-count substrate=1 --forbid substrate > "$fixture/policy.log" 2>&1; then exit 1; fi
@@ -190,5 +193,42 @@ jq -e '[.observations[] | select(.name == "bridge")][0] | (.identity | startswit
 "${overlapping[@]}" --all-features --forbid-feature bridge/other --observations --explain --json > "$fixture/overlapping.json"
 jq -e '[.observations[] | select(.name == "bridge")][0].features == ["danger", "default"]' "$fixture/overlapping.json" > /dev/null
 cmp "$fixture/lock.before" "$actual/Cargo.lock"
+"${checker[@]}" --target "$native" --features runtime --edges normal --require substrate=1 --forbid build-only --forbid dev-only --forbid-feature bridge/other
+# Two independently versioned source suppliers may coexist in host/runtime
+# graphs. Only the caller's selected runtime contract must be a singleton.
+mkdir -p "$fixture/unpublished supplier/src"
+printf '[workspace]\n[package]\nname="substrate"\nversion="0.2.0"\nedition="2021"\n' > "$fixture/unpublished supplier/Cargo.toml"
+: > "$fixture/unpublished supplier/src/lib.rs"
+printf '\n[dependencies]\nsubstrate={path="../../unpublished supplier"}\n' >> "$actual/build-only/Cargo.toml"
+(cd "$actual"; cargo generate-lockfile --offline)
+cp "$actual/Cargo.lock" "$fixture/destination.lock"
+"${checker[@]}" --target "$native" --features runtime --edges normal --require substrate=1 --explain --json > "$fixture/runtime.json"
+jq -e '.passed and .edges == "normal"' "$fixture/runtime.json" > /dev/null
+status=0
+"${checker[@]}" --target "$native" --features runtime --require substrate=1 --explain --json > "$fixture/host-union.json" || status=$?
+[[ "$status" == 1 ]]
+jq -e '.violations[0].identity_paths | length == 2 and
+    all(.[]; .identity == .path[-1] and (.path[0] | startswith("consumer ")))' "$fixture/host-union.json" > /dev/null
+# A real runtime conflict reports both introducing paths, even though the
+# candidate provider has never been published. Graph admission is source-only.
+printf '\n[dependencies.new-substrate]\npackage="substrate"\npath="../../unpublished supplier"\n' >> "$actual/bridge/Cargo.toml"
+(cd "$actual"; cargo generate-lockfile --offline)
+cp "$actual/Cargo.lock" "$fixture/destination.lock"
+status=0
+"${checker[@]}" --target "$native" --features runtime --edges normal --require substrate=1 --explain --json > "$fixture/runtime-conflict.json" || status=$?
+[[ "$status" == 1 ]]
+jq -e '.violations[0].identity_paths | length == 2 and
+    all(.[]; any(.path[]; startswith("bridge ")))' "$fixture/runtime-conflict.json" > /dev/null
+# Independent locks must each be admitted; plausible partial observations from
+# failed commands were covered above. A stale real lock remains byte-identical.
+printf '[package]\nname="stale-lock-member"\nversion="0.1.0"\nedition="2021"\n' > "$actual/dev-only/Cargo.toml"
+if "${checker[@]}" --target "$native" --edges normal --forbid absent --json > "$fixture/stale.json" 2> "$fixture/stale.log"; then exit 1; fi
+[[ ! -s "$fixture/stale.json" ]]
+cmp "$fixture/destination.lock" "$actual/Cargo.lock"
+# Optional refreshes stay excluded and the compatible consumer keeps its version.
+sed -i.bak 's/name="stale-lock-member"/name="dev-only"/' "$actual/dev-only/Cargo.toml"
+(cd "$actual"; cargo metadata --locked --offline --no-deps --format-version 1) > "$fixture/destination-metadata.json"
+jq -e '.packages[] | select(.name == "consumer") | .version == "0.1.0"' "$fixture/destination-metadata.json" > /dev/null
+"${checker[@]}" --target "$native" --edges normal --require bridge=0 --require substrate=0 --forbid build-only
 fixture_complete=true
 echo 'Locked graph selection, identity counts, aliases, failed observations and offline Cargo checks passed'

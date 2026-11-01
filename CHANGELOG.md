@@ -11,6 +11,13 @@
   release gates and receipts retain their current meaning.
   [#334 — Review content-bound validation proof reuse across independent release groups](https://github.com/dragginzgame/shared-tooling/issues/334).
 
+- Admit selected destination graphs before planning dependency release cascades.
+  Explicit normal-edge checks keep runtime singleton contracts separate from
+  independent host/build graphs; conflicts report a path for every rendered
+  identity. Preserve locked inputs and distinguish required alignments from
+  optional refreshes before downstream bump/publication decisions.
+  [#335 — Check the destination dependency graph before planning downstream release cascades](https://github.com/dragginzgame/shared-tooling/issues/335).
+
 - Expose read-only release-group policy and grouped Cargo bootstrap observations
   through `observe-cargo-release-bootstrap.sh`. Share policy shape admission
   with resolved group plans; incoherent manifests/locks remain observations,
