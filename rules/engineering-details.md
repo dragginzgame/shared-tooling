@@ -567,6 +567,22 @@ contracts; ordinary development does not require rereading these mechanics.
   on success, failure and retry. Never append cargo clean or equivalent cleanup.
   Cleanup requires explicit scope and authority. Tools may clean temporary files
   they own; they must not erase consumer artifacts or the only retained evidence.
+- Managed tool setup retains current declared requirements across consumers,
+  selected deliverables, small provenance receipts and explicitly needed recovery
+  evidence. Successful builds discard their private compiler scratch after byte
+  admission, while installation custody is still held. Historical selectors and
+  automatic previous-version fallbacks are not permanent liveness roots. Use the
+  producer's [store maintenance contract](../docs/tool-store-maintenance.md),
+  including expiring failed attempts, recovery pins, preview, physical-byte
+  accounting and explicit quiescence where executable users cannot be leased.
+  Updating one consumer must not upgrade or reclaim another consumer's selection.
+- Product owners declare native cache roots and age/size budgets, separate final
+  deliverables and receipts from incremental/compiler output, and enforce those
+  budgets at a serialized maintenance boundary. An active build or recovery pin
+  prevents reclamation, not an unlimited retention exemption after work finishes.
+  Adopt shared mechanics rather than adding consumer-specific deletion scripts.
+  Legacy stores, unknown ownership and unrelated files require explicit migration;
+  a policy update alone does not authorize a one-off machine cleanup.
 - Explicit workspace cleanup is the disk-reclamation boundary. With no operator
   overrides or package/profile/target selection, `cargo clean` must remove the
   owning workspace's entire `target/`, including nested compiler outputs, generated
@@ -581,7 +597,22 @@ contracts; ordinary development does not require rereading these mechanics.
   Clearly named selective cleanup commands may keep their documented scope.
   Operator-selected Cargo environment variables and CLI filters retain their
   normal meanings; do not override the user's Cargo installation or global config.
-- Retention prohibits automatic cleanup, not user-requested cleanup. Do not run
+- Workspace-owned scratch belongs beneath the owning workspace's `target/`,
+  normally `target/tmp/`, including generated fixture projects, temporary build
+  trees and intermediate downloads. Create unique per-run directories there so
+  explicit workspace cleanup reclaims them along with compiler outputs. Do not
+  default to repository `.tmp/`, `tmp/` or system `/tmp` merely for convenience.
+- Use outside-target scratch only when the operation needs it, such as an atomic
+  replacement on the destination filesystem, a fixture that removes `target/`
+  itself, or evidence explicitly required to survive cleanup. Document the reason,
+  ownership and cleanup/retention boundary alongside the caller. A `.tmp` filename
+  used for an atomic write is not a general scratch directory. Keep overrides
+  local to the command; do not globally change `TMPDIR` or another workspace's
+  output location. Repositories without Cargo use their documented artifact root.
+  Existing outside-target artifacts still require scoped cleanup authority;
+  adopting this rule does not authorize deleting or relocating retained evidence.
+- Consumer artifact preservation does not prohibit user-requested cleanup or the
+  admitted managed-cache lifecycle above. Do not run
   cleanup concurrently with builds. Evidence that must survive an explicit clean
   belongs outside `target/`; document any separate tool stores or caches rather
   than implying Cargo cleans them. Qualify cleanup changes with disposable
