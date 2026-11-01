@@ -19,6 +19,11 @@
   compiler and byte admission, and explain changed build inputs during setup.
   [#340 — Avoid rebuilding Cargo tools after unrelated OS package changes](https://github.com/dragginzgame/shared-tooling/issues/340).
 
+### 🩹 Fixed
+
+- Honor caller-selected scratch directories in Rust-tool fixtures, keeping
+  retention probes and CI evidence within their assigned cleanup boundary.
+
 ## [0.27.25] - Unreleased
 
 ### 🔧 Changed
