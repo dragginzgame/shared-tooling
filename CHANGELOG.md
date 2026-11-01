@@ -4,6 +4,13 @@
 
 ### ➕ Added
 
+- Add opt-in `run-validation-stage.pl` proofs with immutable execution provenance
+  and separate current-group admission. Re-observe input inventories, tools,
+  configuration and the bounded environment around execution and reuse; retain
+  failures and execute normally for stale or unknown evidence. Existing complete
+  release gates and receipts retain their current meaning.
+  [#334 — Review content-bound validation proof reuse across independent release groups](https://github.com/dragginzgame/shared-tooling/issues/334).
+
 - Admit selected destination graphs before planning dependency release cascades.
   Explicit normal-edge checks keep runtime singleton contracts separate from
   independent host/build graphs; conflicts report a path for every rendered
