@@ -4,11 +4,19 @@
 
 ### ➕ Added
 
+- Admit selected destination graphs before planning dependency release cascades.
+  Explicit normal-edge checks keep runtime singleton contracts separate from
+  independent host/build graphs; conflicts report a path for every rendered
+  identity. Preserve locked inputs and distinguish required alignments from
+  optional refreshes before downstream bump/publication decisions.
+  [#335 — Check the destination dependency graph before planning downstream release cascades](https://github.com/dragginzgame/shared-tooling/issues/335).
+
 - Expose read-only release-group policy and grouped Cargo bootstrap observations
   through `observe-cargo-release-bootstrap.sh`. Share policy shape admission
   with resolved group plans; incoherent manifests/locks remain observations,
   never release authority. Consumers retain scratch recovery and full gates.
   [#333 — Review a shared read-only observation boundary for grouped Cargo bootstrap](https://github.com/dragginzgame/shared-tooling/issues/333).
+
 - Admit the Platform-owned PocketIC implementation as a narrow external-IC
   boundary owner for its three native SDK dependencies. Preserve normal-only
   target admission and existing consumer restrictions.
