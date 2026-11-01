@@ -144,6 +144,10 @@ for version in 1 2 3; do
     [[ -z "$baseline" || "$baseline" == "$bytes" ]]
     baseline="$bytes"
 done
+# A corrupt truthy string must not bypass the failed-attempt recovery window.
+printf '{"schema":1,"complete":"false"}\n' > "$slot/set.unknown/managed.json"
+if run apply --quiescent > "$fixture/corrupt-marker.log" 2>&1; then exit 1; fi
+[[ -d "$slot/set.unknown" ]]
 if run apply > "$fixture/no-custody.log" 2>&1; then exit 1; fi
 fixture_complete=true
 echo 'Tool maintenance protects peers, active work, unknown and redirected trees; retires obsolete generations'
