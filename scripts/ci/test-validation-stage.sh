@@ -24,7 +24,10 @@ if [[ -f drift-admission && "$phase" == 2 ]]; then printf 'drift\n' >> inputs/so
 if [[ -f corrupt-proof && "$phase" == 2 ]]; then printf '\n' >> "$(cat corrupt-proof)"; fi
 jq -cnS --argjson files "$(printf '%s\n' inputs/* command.sh configuration.json | jq -Rsc 'split("\n")[:-1]')" \
     --slurpfile config configuration.json '{schema:1,files:$files,configuration:$config[0]}'
-[[ ! -f fail-observation ]] || exit 29
+if [[ -f fail-observation ]]; then
+    if [[ -f oversized-diagnostic ]]; then perl -e 'print "x" x 33554433' >&2; fi
+    exit 29
+fi
 SH
 cat > command.sh <<'SH'
 #!/usr/bin/env bash
@@ -94,6 +97,11 @@ touch fail-observation
 status=0
 run_stage > "$fixture/observation-failed.log" 2>&1 || status=$?
 [[ "$status" == 29 && "$(admission_count)" == "$before" ]]
+touch oversized-diagnostic
+status=0
+run_stage > "$fixture/oversized-observation-failure.log" 2>&1 || status=$?
+[[ "$status" == 29 && "$(admission_count)" == "$before" ]]
+mv oversized-diagnostic "$fixture/oversized-diagnostic.retained"
 mv fail-observation "$fixture/fail-observation.retained"
 # A successful child that mutates declared inputs cannot create a stage proof.
 printf '\nprintf "drift\\n" >> inputs/source\n' >> command.sh
@@ -156,6 +164,12 @@ run_stage > "$fixture/resumed.log" 2>&1
 ln -s "$state" "$fixture/unsafe-state"
 state="$fixture/unsafe-state"
 refuse
+for child in proofs attempts; do
+    state="$fixture/unsafe-$child"
+    mkdir "$state"
+    ln -s "$fixture" "$state/$child"
+    refuse
+done
 # A retention failure cannot hide the failed child's primary status. Its raw
 # logs and earlier receipts remain available for explicit recovery.
 state="$fixture/retention-state"
