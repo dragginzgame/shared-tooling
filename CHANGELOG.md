@@ -10,6 +10,11 @@
 
 ### 🔧 Changed
 
+- Build the snapshot selection fixture from declared script companions so the
+  grouped release runner includes its metadata helper closure.
+- Give tool-contention fixtures up to 60 seconds to observe installer startup
+  on busy hosts, while retaining the same synchronization and refusal assertions.
+
 - Require Wasm size comparisons to report total uncompressed module bytes and
   code-section bytes separately. Omit gzip sizes unless transport/compression
   measurement is explicitly requested; compressed savings do not establish
