@@ -2,6 +2,7 @@
 set -euo pipefail
 root="$(cd "$(dirname "$0")/../.." && pwd -P)"
 fixture="$(mktemp -d "${TMPDIR:-/tmp}/compiler-cache.XXXXXX")"
+fixture="$(cd "$fixture" && pwd -P)"
 trap 'printf "Compiler cache evidence: %s\n" "$fixture"' EXIT
 mkdir "$fixture/consumer" "$fixture/consumer/target" "$fixture/evidence"
 printf '%s\n' "$$" > "$fixture/assembly.lock"
