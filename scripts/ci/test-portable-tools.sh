@@ -55,6 +55,7 @@ run_fixture test-fixture-allocation.sh bash "$ROOT/scripts/ci/test-fixture-alloc
 run_fixture test-tool-store-wait.sh bash "$ROOT/scripts/ci/test-tool-store-wait.sh"
 run_fixture test-native-package-inputs.sh bash "$ROOT/scripts/ci/test-native-package-inputs.sh"
 run_fixture test-tool-store-maintenance.sh bash "$ROOT/scripts/ci/test-tool-store-maintenance.sh"
+run_fixture test-compiler-cache-maintenance.sh bash "$ROOT/scripts/ci/test-compiler-cache-maintenance.sh"
 run_fixture test-cargo-formatting-fixture.sh bash "$ROOT/scripts/ci/test-cargo-formatting-fixture.sh"
 run_fixture test-cargo-release-preflight.sh bash "$ROOT/scripts/ci/test-cargo-release-preflight.sh"
 run_fixture test-cargo-package-provenance.sh bash "$ROOT/scripts/ci/test-cargo-package-provenance.sh"
