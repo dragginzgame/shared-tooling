@@ -692,7 +692,8 @@ for attempt in first retry; do
     if [[ "$attempt" == first ]]; then cp "$selection_consumer/config/selection" "$FIXTURE/selection-after"; fi
 done
 cmp "$FIXTURE/selection-after" "$selection_consumer/config/selection"
-[[ "$(awk '$1 == "file" { n++ } END { print n }' "$selection_consumer/config/selection")" == 5 ]] || exit 1
+[[ "$(awk '$1 == "file" { n++ } END { print n }' "$selection_consumer/config/selection")" == 6 ]] || exit 1
+cmp "$ROOT/scripts/ci/release-validation-plan.pl" "$selection_consumer/scripts/ci/release-validation-plan.pl"
 [[ "$(cat "$selection_consumer/local.txt")" == 'unrelated input' ]] || exit 1
 bash "$selection_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
     --consumer "$selection_consumer" --manifest config/selection >/dev/null
@@ -949,13 +950,16 @@ git -C "$publication_source" commit -qm 'Declare publication guide companion'
 bash "$ROOT/scripts/distribution/refresh-consumer.sh" \
     --preview --source "$publication_source" --consumer "$publication_consumer" > "$FIXTURE/publication-preview.log"
 grep -F "$(printf 'ADD\trequired\tdocs/cargo-publication.md')" "$FIXTURE/publication-preview.log" >/dev/null
+grep -F "$(printf 'ADD\trequired\tdocs/validation-runner.md')" "$FIXTURE/publication-preview.log" >/dev/null
 [[ ! -e "$publication_consumer/docs/cargo-publication.md" ]] || exit 1
 bash "$ROOT/scripts/distribution/refresh-consumer.sh" \
     --source "$publication_source" --consumer "$publication_consumer" > "$FIXTURE/publication-refresh.log"
 cmp "$ROOT/docs/cargo-publication.md" "$publication_consumer/docs/cargo-publication.md"
+cmp "$ROOT/docs/validation-runner.md" "$publication_consumer/docs/validation-runner.md"
 [[ ! -e "$publication_consumer/scripts/ci/run-cargo-publication.sh" ]] || exit 1
 perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$publication_consumer" \
-    docs/releases.md docs/cargo-publication.md > "$FIXTURE/publication-links.log"
+    docs/releases.md docs/cargo-publication.md docs/release-group-validation.md \
+    docs/validation-runner.md > "$FIXTURE/publication-links.log"
 bash "$publication_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
     --consumer "$publication_consumer" >/dev/null
 

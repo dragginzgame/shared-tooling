@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.27.28] - Unreleased
+
+### 🩹 Fixed
+
+- Include the validation-runner guide when exporting release-group validation
+  documentation. Existing consumer selections gain the linked guide on refresh
+  without a manual extra entrypoint; export fixtures check the resulting links.
+  [#345 — Release-group-scoped validation](https://github.com/dragginzgame/shared-tooling/issues/345).
+
 ## [0.27.27] - Unreleased
 
 ### ➕ Added
