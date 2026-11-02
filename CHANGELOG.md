@@ -4,6 +4,10 @@
 
 ### 🔧 Changed
 
+- Add a compiler-cache maintenance primitive for product-owned assembly locks,
+  sharing owned-tree safeguards with tool retention. Keep executable artifacts
+  and immutable receipts outside bounded scratch; refuse unowned/redirected roots.
+  Supports [Platform #132](https://github.com/dragginzgame/ic-platform/issues/132).
 - Default workspace build/test scratch to `target/` so explicit `cargo clean`
   reclaims it. Require a documented technical need and cleanup boundary for
   `.tmp/` or other outside-target scratch, preserving atomic-write and retained
