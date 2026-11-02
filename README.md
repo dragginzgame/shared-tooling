@@ -2,8 +2,9 @@
 
 Common engineering rules, development tools and CI building blocks for
 `dragginzgame` repositories. Shared Tooling has no Cargo workspace or canister
-runtime dependency. Consumers retain their product architecture, compiler
-policy, deployment identity and validation gates.
+runtime dependency. Consumers retain their product architecture, deployment
+identity and validation gates, and implement the shared
+[Rust compiler policy](rules/cargo-dependencies.md#minimum-supported-rust-version-msrv).
 
 ## Start here
 
@@ -39,46 +40,50 @@ flowchart TD
         p_canic_7ccargo_3acanic["canic"]
     end
     subgraph p_repo_3aic_2dauth["ic-auth"]
-        p_ic_2dauth_7ccargo_3aic_2dauth["ic-auth"]
+        subgraph p_group_3aic_2dauth_7cengine["engine · 0.30.0"]
+            p_ic_2dauth_7ccargo_3aic_2dauth["ic-auth"]
+        end
     end
     subgraph p_repo_3aic_2dblob_2dstorage["ic-blob-storage"]
-        p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage["ic-blob-storage"]
+        subgraph p_group_3aic_2dblob_2dstorage_7cengine["engine · 0.66.0"]
+            p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage["ic-blob-storage"]
+        end
     end
     subgraph p_repo_3aic_2dobservability["ic-observability"]
-        subgraph p_group_3aic_2dobservability_7clogging["logging · 0.23.6"]
+        subgraph p_group_3aic_2dobservability_7clogging["logging · 0.23.7"]
             p_ic_2dobservability_7ccargo_3aic_2dlogging["ic-logging"]
         end
-        subgraph p_group_3aic_2dobservability_7cmetrics["metrics · 0.24.5"]
+        subgraph p_group_3aic_2dobservability_7cmetrics["metrics · 0.25.1"]
             p_ic_2dobservability_7ccargo_3aic_2dmetrics["ic-metrics"]
         end
     end
     subgraph p_repo_3aic_2dpersistence["ic-persistence"]
-        subgraph p_group_3aic_2dpersistence_7cmetrics_2dstable["metrics-stable · 0.61.5"]
+        subgraph p_group_3aic_2dpersistence_7cmetrics_2dstable["metrics-stable · 0.64.0"]
             p_ic_2dpersistence_7ccargo_3aic_2dmetrics_2dstable["ic-metrics-stable"]
         end
-        subgraph p_group_3aic_2dpersistence_7cpersistence["persistence · 0.60.7"]
+        subgraph p_group_3aic_2dpersistence_7cpersistence["persistence · 0.62.1"]
             p_ic_2dpersistence_7ccargo_3aic_2dmemory["ic-memory"]
             p_ic_2dpersistence_7ccargo_3aic_2dstorage["ic-storage"]
         end
     end
     subgraph p_repo_3aic_2dplatform["ic-platform"]
-        subgraph p_group_3aic_2dplatform_7cplatform["platform · 0.16.0"]
+        subgraph p_group_3aic_2dplatform_7cplatform["platform · 0.17.0"]
             p_ic_2dplatform_7ccargo_3aic_2dplatform["ic-platform"]
         end
-        subgraph p_group_3aic_2dplatform_7cruntime["runtime · 0.17.0"]
+        subgraph p_group_3aic_2dplatform_7cruntime["runtime · 0.17.1"]
             p_ic_2dplatform_7ccargo_3aic_2dplatform_2druntime["ic-platform-runtime"]
         end
-        subgraph p_group_3aic_2dplatform_7ctypes["types · 0.15.1"]
+        subgraph p_group_3aic_2dplatform_7ctypes["types · 0.16.0"]
             p_ic_2dplatform_7ccargo_3aic_2dplatform_2dtypes["ic-platform-types"]
         end
     end
     subgraph p_repo_3aic_2dscheduling["ic-scheduling"]
-        subgraph p_group_3aic_2dscheduling_7ctimers["timers · 0.35.4"]
+        subgraph p_group_3aic_2dscheduling_7ctimers["timers · 0.36.0"]
             p_ic_2dscheduling_7ccargo_3aic_2dtimers["ic-timers"]
         end
     end
     subgraph p_repo_3aic_2dwire["ic-wire"]
-        subgraph p_group_3aic_2dwire_7ccore["core · 0.13.4"]
+        subgraph p_group_3aic_2dwire_7ccore["core · 0.14.2"]
             p_ic_2dwire_7ccargo_3aic_2dwire["ic-wire"]
         end
     end
@@ -107,7 +112,7 @@ flowchart TD
     p_ic_2dplatform_7ccargo_3aic_2dplatform --> p_ic_2dplatform_7ccargo_3aic_2dplatform_2druntime
     p_ic_2dplatform_7ccargo_3aic_2dplatform_2druntime --> p_ic_2dplatform_7ccargo_3aic_2dplatform_2dtypes
     p_ic_2dscheduling_7ccargo_3aic_2dtimers --> p_ic_2dobservability_7ccargo_3aic_2dmetrics
-    p_ic_2dscheduling_7ccargo_3aic_2dtimers --> p_ic_2dplatform_7ccargo_3aic_2dplatform
+    p_ic_2dscheduling_7ccargo_3aic_2dtimers --> p_ic_2dplatform_7ccargo_3aic_2dplatform_2druntime
     p_ic_2dwire_7ccargo_3aic_2dwire --> p_ic_2dplatform_7ccargo_3aic_2dplatform_2dtypes
     p_icydb_7ccargo_3aicydb --> p_ic_2dobservability_7ccargo_3aic_2dmetrics
     p_icydb_7ccargo_3aicydb --> p_ic_2dpersistence_7ccargo_3aic_2dstorage

@@ -232,14 +232,12 @@ jobs:
         run: |
           test "$(npm --version)" = "$(jq -er '.engines.npm' ci/frontend/package.json)"
           npm ci --prefix ci/frontend
-      - name: Prepare the runtime scanner qualification compiler
-        if: needs.change-scope.outputs.scope != 'docs'
-        id: runtime-scanner-compiler
-        run: bash scripts/dev/prepare-rust-toolchain.sh 1.88.0 --component rustfmt,clippy
       - name: Qualify native runtime scanner compilation and semantics
         if: needs.change-scope.outputs.scope != 'docs'
         id: runtime-scanner
-        run: bash scripts/ci/qualify-runtime-panics.sh 1.88.0 "$RUNNER_TEMP/portable-fixtures/runtime-scanner"
+        run: |
+          compiler="$(yq -r '.toolchain.channel' rust-toolchain.toml)"
+          bash scripts/ci/qualify-runtime-panics.sh "$compiler" "$RUNNER_TEMP/portable-fixtures/runtime-scanner"
       - name: Run portable regression set with prepared tools
         id: portable-tests
         if: needs.change-scope.outputs.scope != 'docs'

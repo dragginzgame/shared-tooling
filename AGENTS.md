@@ -14,8 +14,9 @@ This is ordinary local preparation, not staging, committing or releasing.
 
 Shared's own compiler is pinned in `rust-toolchain.toml`. Prepare it explicitly
 as described in [local setup](docs/local-setup.md#shared-toolings-own-compiler)
-before installing Cargo tools. Consumer compiler policy remains locally owned;
-the runtime scanner's separate minimum-compiler qualification is unchanged.
+before installing Cargo tools. The runtime scanner uses that same prepared
+compiler. Consumers implement the baseline's Rust 1.99.1 support policy with
+their own target, feature and host qualification.
 
 The baseline's [validation and evidence policy](DRAGGINZGAME.md#validation-and-evidence)
 owns when to run checks. This overlay identifies the local checks only.
@@ -42,7 +43,7 @@ delivery workflow under [delegated delivery](rules/contributions.md#delegated-de
 including routine release choices and necessary Git effects without per-step
 confirmation. An authorized PR alone includes its branch, commits and branch
 push, but not its merge or release. Never use blanket staging or bypass protections.
-Relevant contributions to other `dragginzgame` repositories use the standing
-[isolated PR workflow](rules/contributions.md#cross-repository-pull-requests)
-without per-PR approval. Leave sibling working checkouts untouched and respect
-the workflow's repository exclusions.
+Cross-repository contributions require explicit scope under the
+[isolated PR workflow](rules/contributions.md#cross-repository-pull-requests).
+Do not open unsolicited adoption PRs or start sibling release procedures.
+Leave sibling working checkouts untouched and respect repository exclusions.

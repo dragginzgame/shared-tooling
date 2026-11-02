@@ -10,6 +10,11 @@ source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture="$(fixture_create "${TMPDIR:-/tmp}/runtime-qualification.XXXXXX")"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Runtime qualification fixture retained"' EXIT
+compiler="$(yq -r '.toolchain.channel' "$ROOT/rust-toolchain.toml")"
+[[ "$(yq -p toml -o yaml -r '.workspace.package."rust-version"' "$ROOT/ci/runtime-panics/workspace.toml.in")" == "$compiler" ]] || {
+    echo 'Runtime scanner floor must match the selected compiler' >&2
+    exit 1
+}
 mkdir "$fixture/bin"
 cat > "$fixture/bin/rustup" <<'RUSTUP'
 #!/usr/bin/env bash
@@ -82,7 +87,7 @@ status=0
 (cd "$ROOT" && QUALIFICATION_CASE=unprepared RUNNER_TEMP="$fixture/runner" \
     "$BASH" --noprofile --norc -e -o pipefail "$fixture/caller.sh") > "$fixture/caller.log" 2>&1 || status=$?
 [[ "$status" == 37 && ! -e "$fixture/runner/portable-fixtures/runtime-scanner" ]] || exit 1
-printf 'run 1.88.0 cargo --version\n' > "$fixture/expected-events"
+printf 'run %s cargo --version\n' "$compiler" > "$fixture/expected-events"
 cmp "$fixture/expected-events" "$QUALIFICATION_EVENTS"
 fixture_complete=true
 echo 'Native scanner caller admission, retained failures and refusal-before-effects passed'
