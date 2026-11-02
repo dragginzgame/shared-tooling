@@ -2,8 +2,25 @@
 
 ## [0.27.26] - Unreleased
 
+### 🥾 Governance
+
+- Adopt Rust 1.99.1 as the minimum and pinned development/release compiler.
+  Retire older-compiler support and consolidate duplicate compiler qualification
+  while preserving distinct host, target, feature and consumer checks. Shared's
+  runtime scanner now reuses its prepared compiler instead of installing 1.88.
+- Select Platform's independent Types, Runtime and facade owners by capability.
+  Document explicit Principal conversions and qualify a consumer declaration
+  policy without widening the external SDK boundary.
+  [#342 — Document direct Types and Runtime ownership in Cargo dependency guidance](https://github.com/dragginzgame/shared-tooling/issues/342).
+- Keep adoption and deployment with each repository's owner. Remove standing
+  authority for unsolicited sibling PRs, require explicit cross-repository scope,
+  and prevent dependency blockers from starting another repository's release
+  procedures. Check active owner work before proposing duplicate adoption changes.
+
 ### 🔧 Changed
 
+- Refresh the stack diagram for the current dependency selections and the new
+  Auth, Blob and Query release groups.
 - Add a compiler-cache maintenance primitive for product-owned assembly locks,
   sharing owned-tree safeguards with tool retention. Keep executable artifacts
   and immutable receipts outside bounded scratch; refuse unowned/redirected roots.
@@ -25,25 +42,12 @@
 
 ### 🩹 Fixed
 
+- Include the extracted owned-tree module when exporting either maintenance
+  helper, with isolated companion-loading coverage.
 - Honor caller-selected scratch directories in Rust-tool fixtures, keeping
   retention probes and CI evidence within their assigned cleanup boundary.
 
 ## [0.27.25] - Unreleased
-
-### 🥾 Governance
-
-- Adopt Rust 1.99.1 as the minimum and pinned development/release compiler.
-  Retire older-compiler support and consolidate duplicate compiler qualification
-  while preserving distinct host, target, feature and consumer checks. Shared's
-  runtime scanner now reuses its prepared compiler instead of installing 1.88.
-- Select Platform's independent Types, Runtime and facade owners by capability.
-  Document explicit Principal conversions and qualify a consumer declaration
-  policy without widening the external SDK boundary.
-  [#342 — Document direct Types and Runtime ownership in Cargo dependency guidance](https://github.com/dragginzgame/shared-tooling/issues/342).
-- Keep adoption and deployment with each repository's owner. Remove standing
-  authority for unsolicited sibling PRs, require explicit cross-repository scope,
-  and prevent dependency blockers from starting another repository's release
-  procedures. Check active owner work before proposing duplicate adoption changes.
 
 ### 🔧 Changed
 
