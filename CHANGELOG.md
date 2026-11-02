@@ -10,6 +10,11 @@
 
 ### 🩹 Fixed
 
+- Refuse incomplete owned-tree inventories after traversal errors. Compiler-cache
+  operations fail without changing age records, and tool-store maintenance keeps
+  unreadable generations protected; permission and missing-tree regressions cover
+  the shared helper and both maintenance callers.
+
 - Allow path-only catalog entries for private release-group members. Keep them
   in group ownership and package-version updates without adding registry
   requirements for private development helpers to published archives. Reject
