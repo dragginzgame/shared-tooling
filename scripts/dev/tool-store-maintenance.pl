@@ -1,11 +1,11 @@
 #!/usr/bin/env perl
+# Shared companions: scripts/dev/OwnedTree.pm
 use strict;
 use warnings;
 use Digest::SHA qw(sha256_hex);
 use FindBin;
 use lib $FindBin::Bin;
 use OwnedTree qw(directory route inventory remove_owned);
-# Shared companions: scripts/dev/OwnedTree.pm
 use Fcntl qw(:DEFAULT :mode);
 use JSON::PP;
 
