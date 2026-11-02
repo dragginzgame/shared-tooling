@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/dev/tool-store-maintenance.pl scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/dev/tool-store-maintenance.pl scripts/dev/compiler-cache-maintenance.pl scripts/ci/fixture-lifecycle.sh scripts/ci/shared-companions.sh
 set -euo pipefail
 umask 077
 root="$(cd -P "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
@@ -9,6 +9,21 @@ mkdir -p "$root/target/tmp"
 fixture="$(fixture_create "$root/target/tmp/tool-maintenance.XXXXXX")"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Tool maintenance fixture retained"' EXIT
+# The snapshot reader must discover the extracted module from either public
+# helper. Compile copied entrypoints with only their declared companions.
+# shellcheck source=scripts/ci/shared-companions.sh
+source "$root/scripts/ci/shared-companions.sh"
+for helper in tool-store-maintenance.pl compiler-cache-maintenance.pl; do
+    exported="$fixture/export-$helper"
+    mkdir -p "$exported/scripts/dev"
+    cp "$root/scripts/dev/$helper" "$exported/scripts/dev/$helper"
+    read_shared_companions "$root/scripts/dev/$helper" "scripts/dev/$helper"
+    for companion in "${shared_companions[@]}"; do
+        mkdir -p "$exported/${companion%/*}"
+        cp "$root/$companion" "$exported/$companion"
+    done
+    perl -c "$exported/scripts/dev/$helper"
+done
 mkdir -p "$fixture/store with spaces" "$fixture/a" "$fixture/b"
 store="$fixture/store with spaces"
 slot="$store/rust-$(printf '%064d' 1)"
