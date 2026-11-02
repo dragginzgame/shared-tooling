@@ -82,10 +82,9 @@ cp "$fixture/manifest" Cargo.toml
 # Unused private members still need a valid catalog entry. Cargo accepts these
 # malformed/absent unused declarations; admission must check them across groups.
 printf 'publish = false\n' >> derive/Cargo.toml
-for fault in missing-entry missing-version missing-path wrong-path; do
+for fault in missing-entry missing-path wrong-path; do
     case "$fault" in
         missing-entry) sed '/^derive = /d' "$fixture/manifest" > Cargo.toml ;;
-        missing-version) sed 's/derive = .*/derive = { path = "derive" }/' "$fixture/manifest" > Cargo.toml ;;
         missing-path) sed 's/derive = .*/derive = { version = "0.11.0" }/' "$fixture/manifest" > Cargo.toml ;;
         wrong-path) sed 's/derive = .*/derive = { path = "codec", version = "0.11.0" }/' "$fixture/manifest" > Cargo.toml ;;
     esac
@@ -95,7 +94,6 @@ for fault in missing-entry missing-version missing-path wrong-path; do
     cmp docs/endpoint.md "$fixture/changelog"
 done
 grep -F 'root dependency catalog must include every workspace member' "$fixture/catalog-missing-entry.log"
-grep -F 'root dependency derive requires a local path and full version' "$fixture/catalog-missing-version.log"
 grep -F 'root dependency derive requires a local path and full version' "$fixture/catalog-missing-path.log"
 grep -F 'root dependency path for derive is not its owned member' "$fixture/catalog-wrong-path.log"
 cp "$fixture/manifest" Cargo.toml
@@ -388,5 +386,71 @@ RELEASE_GROUP=root RELEASE_PREVIOUS=0.1.0 RELEASE_VERSION=0.2.0 RELEASE_DATE=202
     bash "$helper" prepare root > "$fixture/root-package.log" 2>&1
 yq -p toml -o json '.' Cargo.toml | jq -e '.package.version == "0.2.0" and .workspace.package.version == "0.11.0" and
     .workspace.dependencies.root.version == "0.2.0" and .workspace.dependencies.other.version == "0.11.0"' > /dev/null
+# A private renamed helper remains a group member, but its path-only dev edge
+# must disappear from the actual distributable archive rather than hit crates.io.
+mkdir -p "$fixture/private-helper/public/src" "$fixture/private-helper/helper/src" "$fixture/private-helper/ci"
+cd "$fixture/private-helper"
+cat > Cargo.toml <<'TOML'
+[workspace]
+members = ["public", "helper"]
+resolver = "3"
+[workspace.dependencies]
+public = { path = "public", version = "0.1.0" }
+test_helper = { package = "private-helper", path = "helper" }
+TOML
+cat > public/Cargo.toml <<'TOML'
+[package]
+name = "public"
+version = "0.1.0"
+edition = "2024"
+[dev-dependencies]
+test_helper.workspace = true
+TOML
+cat > helper/Cargo.toml <<'TOML'
+[package]
+name = "private-helper"
+version = "0.1.0"
+edition = "2024"
+publish = false
+TOML
+printf 'pub fn fixture() {}\n' > public/src/lib.rs
+cp public/src/lib.rs helper/src/lib.rs
+cat > ci/cargo-release-groups.json <<'JSON'
+{"schema":1,"groups":[{"name":"public","primary":"public","version":"package","members":["public","private-helper"],"changelog":"CHANGELOG.md","dependencies":["public","test_helper"]}]}
+JSON
+cp "$fixture/changelog" CHANGELOG.md
+cargo generate-lockfile --offline > /dev/null
+bash "$group_helper" plan public | jq -e '
+    (.members | index("private-helper") != null) and
+    (.dependencies | map(.alias)) == ["public"]' > /dev/null
+cp Cargo.toml "$fixture/private-catalog"
+sed '/^publish = false$/d' helper/Cargo.toml > "$fixture/publishable-helper"
+cp helper/Cargo.toml "$fixture/private-helper-manifest"
+cp "$fixture/publishable-helper" helper/Cargo.toml
+refuse bash "$group_helper" check-graph public > "$fixture/public-path-only.log" 2>&1
+cp "$fixture/private-helper-manifest" helper/Cargo.toml
+# Even a current private version would become an unavailable registry edge.
+sed 's/path = "helper"/path = "helper", version = "0.1.0"/' "$fixture/private-catalog" > Cargo.toml
+refuse bash "$group_helper" check-graph public > "$fixture/private-registry-edge.log" 2>&1
+grep -F 'publishable members may use private members only through path-only dev-dependencies' "$fixture/private-registry-edge.log"
+sed 's/path = "helper"/path = "helper", version = "0.1"/' "$fixture/private-catalog" > Cargo.toml
+refuse bash "$group_helper" check-graph public > "$fixture/private-stale-version.log" 2>&1
+cp "$fixture/private-catalog" Cargo.toml
+cp public/Cargo.toml "$fixture/public-member"
+for section in dependencies build-dependencies; do
+    sed "s/dev-dependencies/$section/" "$fixture/public-member" > public/Cargo.toml
+    refuse bash "$group_helper" check-graph public > "$fixture/private-$section.log" 2>&1
+done
+cp "$fixture/public-member" public/Cargo.toml
+RELEASE_GROUP=public RELEASE_PREVIOUS=0.1.0 RELEASE_VERSION=0.2.0 RELEASE_DATE=2026-10-31 \
+    bash "$helper" prepare public > "$fixture/private-prepare.log" 2>&1
+yq -p toml -o json '.' Cargo.toml | jq -e '
+    .workspace.dependencies.public.version == "0.2.0" and
+    (.workspace.dependencies.test_helper | has("version") | not)' > /dev/null
+yq -p toml -o json '.' helper/Cargo.toml | jq -e '.package.version == "0.2.0" and .package.publish == false' > /dev/null
+cargo package --locked --offline --allow-dirty -p public > "$fixture/private-package.log" 2>&1
+tar -xOf target/package/public-0.2.0.crate public-0.2.0/Cargo.toml > "$fixture/packaged.toml"
+yq -p toml -o json '.' "$fixture/packaged.toml" | jq -e '
+    (."dev-dependencies" // {} | has("test_helper") | not)' > /dev/null
 fixture_complete=true
 printf 'Cargo release-group fixtures passed\n'

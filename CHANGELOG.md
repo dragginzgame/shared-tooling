@@ -2,7 +2,18 @@
 
 ## [0.27.28] - Unreleased
 
+### 🥾 Governance
+
+- Allow narrowly owned benchmark statistics without a Metrics dependency while
+  retaining canonical Metrics and Logging instrumentation and recording engines.
+  [#347 — Benchmark arithmetic ownership](https://github.com/dragginzgame/shared-tooling/issues/347).
+
 ### 🩹 Fixed
+
+- Allow path-only catalog entries for private release-group members. Keep them
+  in group ownership and package-version updates without adding registry
+  requirements for private development helpers to published archives. Reject
+  private dependencies that cannot be packaged before release preparation.
 
 - Include the validation-runner guide when exporting release-group validation
   documentation. Existing consumer selections gain the linked guide on refresh
