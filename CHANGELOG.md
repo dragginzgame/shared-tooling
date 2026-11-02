@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.27.26] - Unreleased
+
+### 🔧 Changed
+
+- Default workspace build/test scratch to `target/` so explicit `cargo clean`
+  reclaims it. Require a documented technical need and cleanup boundary for
+  `.tmp/` or other outside-target scratch, preserving atomic-write and retained
+  evidence requirements.
+- Discard successful Cargo-tool compilation scratch after admission, track each
+  checkout's current tool requirements, and provide previewed reclamation for
+  obsolete Rust generations. Preserve shared consumers, active installation,
+  bounded failed attempts and recovery pins; legacy generations need explicit
+  migration and executable reclamation requires quiescence.
+  [#339 — Stop unbounded retention of obsolete tool versions and build caches](https://github.com/dragginzgame/shared-tooling/issues/339).
+- Keep Cargo tools reusable after unrelated Linux application updates by tracking
+  packages that supply native build tools, headers and libraries. Preserve source,
+  compiler and byte admission, and explain changed build inputs during setup.
+  [#340 — Avoid rebuilding Cargo tools after unrelated OS package changes](https://github.com/dragginzgame/shared-tooling/issues/340).
+
+### 🩹 Fixed
+
+- Honor caller-selected scratch directories in Rust-tool fixtures, keeping
+  retention probes and CI evidence within their assigned cleanup boundary.
+
 ## [0.27.25] - Unreleased
 
 ### 🥾 Governance

@@ -9,7 +9,8 @@ ROOT="${BASH_SOURCE[0]}"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"; ROOT="${ROOT%/.}"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
-fixture="$(fixture_create "${TMPDIR:-/tmp}/rust-tools-test.XXXXXX")"
+mkdir -p "${TMPDIR:-$ROOT/target/tmp}"
+fixture="$(fixture_create "${TMPDIR:-$ROOT/target/tmp}/rust-tools-test.XXXXXX")"
 export TMPDIR="${fixture%/*}"
 fixture_complete=false
 owner_setup='' waiter_setup=''
