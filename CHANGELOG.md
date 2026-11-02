@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.27.27] - Unreleased
+
+### ➕ Added
+
+- Add opt-in, source-bound release-group validation plans to the existing target
+  runner. Require a decision for every declared stage, retain exclusion reasons
+  and stop on stale plans or changed inputs. Existing full gates remain the
+  default until each consumer qualifies its mapping and evidence integration.
+  [#345 — Release-group-scoped validation](https://github.com/dragginzgame/shared-tooling/issues/345).
+
+### 📚 Documentation
+
+- Define group qualification and the Platform pilot, preserving affected consumer,
+  native and installed checks, independent release metadata and full repository CI.
+
 ## [0.27.26] - Unreleased
 
 ### 🥾 Governance

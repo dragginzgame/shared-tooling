@@ -10,8 +10,14 @@ prefix, retains complete and condensed failure logs, and writes a GitHub step
 summary when one is available. Pass `--fail-fast` to stop after the first
 failed target.
 
+The opt-in `--plan FILE` mode admits a source/group-bound, exhaustive consumer
+stage selection and always fails fast. See [release group validation](release-group-validation.md)
+for its policy, retained evidence and adoption requirements. Positional targets
+retain their existing behavior.
+
 Vendor `scripts/ci/check-make-execution.sh`, `scripts/ci/verify-file-checksum.sh`
-and [the input-checkpoint companion](../scripts/ci/validation-input-checkpoint.pl)
+and [the input-checkpoint companion](../scripts/ci/validation-input-checkpoint.pl),
+plus [plan admission](../scripts/ci/release-validation-plan.pl),
 alongside the runner through its declared companion closure. The runner captures
 that companion with its own source before dispatch, so a gate replacing the
 original checkout cannot change the active invocation's input admission.
