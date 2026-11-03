@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.28.4] - Unreleased
+## [0.29.1] - Unreleased
 
 ### 🥾 Governance
 
@@ -31,9 +31,27 @@
   explicit location approval for additional clones, worktrees or contribution
   directories, preserving other sessions' work and avoiding checkout sprawl.
 
-## [0.28.3] - Unreleased
+## [0.29.0] - 2026-11-03
+
+### ⚠️ Breaking
+
+- Move the native PocketIC dependency exception from the retired Platform client
+  package to Testkit, admitting only its four native SDK dependencies. Keep
+  portable, Wasm, build/dev, unrelated IC inputs and tighter consumer policies
+  refused. Old client packages must migrate to Testkit before adopting this rule
+  ([Tooling #324](https://github.com/dragginzgame/ic-tooling/issues/324)).
+
+### 🧪 Testing
+
+- Expose a focused native-client boundary fixture covering the transferred owner,
+  renamed dependencies, retired owners and consumer restrictions.
 
 ### 🩹 Fixed
+
+- Refuse grouped release metadata when Cargo's manifest-order check fails on
+  Bash 3.2, preserving the sorter's exit status before graph admission or writes.
+  Add a focused ordering fixture covering plain/grouped flags and selected-commit
+  checks without requiring the compiled release editor.
 
 - Verify runner text records as UTF-8 so non-ASCII selection reasons and source
   paths do not falsely reject successful execution evidence. Preserve raw-byte
