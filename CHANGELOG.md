@@ -4,6 +4,11 @@
 
 ### 🩹 Fixed
 
+- Refuse grouped release metadata when Cargo's manifest-order check fails on
+  Bash 3.2, preserving the sorter's exit status before graph admission or writes.
+  Add a focused ordering fixture covering plain/grouped flags and selected-commit
+  checks without requiring the compiled release editor.
+
 - Verify runner text records as UTF-8 so non-ASCII selection reasons and source
   paths do not falsely reject successful execution evidence. Preserve raw-byte
   hashes and reject malformed text or changed evidence. Add a focused regression
