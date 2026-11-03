@@ -230,5 +230,7 @@ refuse verify
 cp "$fixture/full-events.saved" "$run/plan-events.tsv"
 verify > recovered.json
 cmp full-proof.json recovered.json
+# Keep the narrow regression in complete producer qualification as well.
+bash "$root/scripts/ci/test-validation-evidence.sh" --case utf8
 fixture_complete=true
 printf 'Validation evidence, roster, baseline and shell/native caller fixtures passed\n'
