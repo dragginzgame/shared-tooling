@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.28.4] - Unreleased
+
+### 🥾 Governance
+
+- Require a direct link for every fixed issue in root `CHANGELOG.md` before
+  handoff, including fixes documented in detailed or release-group notes.
+  Remove the exception allowing issue coverage only in linked detail files.
+
+- Consolidate repeated implementation, PR and delivery instructions under the
+  contribution rules. Align manifest ordering and maintenance authority, keep
+  issue acceptance scoped to its required checks, and correct retired Memory
+  ownership guidance to the current Storage boundary.
+
+- Prefer direct edits in the normal authorized checkout over optional PR work.
+  Ordinary fixes finish with reviewable local changes; PRs are used when requested
+  or required by the authorized delivery workflow or branch protections.
+
+- Keep local release-group blocks first in root `[workspace.dependencies]`,
+  including private members, ahead of external production, mixed-use and
+  test/tooling dependencies. Preserve that order during formatting and releases.
+
+- Treat an unqualified deploy as delivery of all changed eligible local Dragginzgame
+  repositories to their established main branches and publication of affected
+  publishable crate groups to crates.io. Announce the plan without repeated
+  push/publication approvals; preserve explicit scope limits, required checks,
+  active-session coordination and approval for additional checkout locations.
+
+- Keep requested or required PR branches in the normal checkout. Require
+  explicit location approval for additional clones, worktrees or contribution
+  directories, preserving other sessions' work and avoiding checkout sprawl.
+
 ## [0.28.3] - Unreleased
 
 ### 🩹 Fixed
