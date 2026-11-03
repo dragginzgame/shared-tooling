@@ -42,6 +42,32 @@ mv "$cache/owner.json" "$fixture/owner.json"
 if maintain finish 1 > "$fixture/unowned.log" 2>&1; then exit 1; fi
 test -f "$cache/build/object"
 mv "$fixture/owner.json" "$cache/owner.json"
+# A traversal error must refuse both reporting and removal, without replacing
+# age evidence or admitting only the readable portion of the compiler tree.
+mkdir "$cache/build/unreadable"
+printf 'retained hidden output\n' > "$cache/build/unreadable/object"
+cp "$cache/state.json" "$fixture/state-before-refusal.json"
+chmod 000 "$cache/build/unreadable"
+preview_status=0
+finish_status=0
+if [[ ! -r "$cache/build/unreadable" ]]; then
+    maintain preview > "$fixture/unreadable-preview.json" 2> "$fixture/unreadable-preview.log" || preview_status=$?
+    maintain finish 1 > "$fixture/unreadable-finish.json" 2> "$fixture/unreadable-finish.log" || finish_status=$?
+    chmod 700 "$cache/build/unreadable"
+    [[ "$preview_status" != 0 && "$finish_status" != 0 ]]
+    [[ ! -s "$fixture/unreadable-preview.json" && ! -s "$fixture/unreadable-finish.json" ]]
+    cmp "$cache/state.json" "$fixture/state-before-refusal.json"
+    [[ "$(cat "$cache/build/unreadable/object")" == 'retained hidden output' ]]
+else
+    chmod 700 "$cache/build/unreadable"
+    echo 'Unreadable-tree probe unavailable: runner bypasses directory permissions'
+fi
+# Missing required inputs also make File::Find warn rather than call wanted.
+if perl -I "$root/scripts/dev" -MOwnedTree=inventory -e 'inventory($ARGV[0])' \
+    "$fixture/missing-tree" > "$fixture/missing-tree.json" 2> "$fixture/missing-tree.log"; then
+    exit 1
+fi
+[[ ! -s "$fixture/missing-tree.json" ]]
 # Scratch symlinks may be unlinked, but never traverse into retained artifacts.
 ln -s "$fixture/evidence" "$cache/build/link"
 maintain finish 1 > "$fixture/scratch-links.json"

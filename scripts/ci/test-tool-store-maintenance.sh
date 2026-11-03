@@ -139,6 +139,26 @@ ln -s "$fixture" "$slot/set.new/foreign"
 run apply --quiescent > "$fixture/redirect.json"
 [[ -L "$slot/set.new/foreign" && -d "$fixture/a" ]]
 rm "$slot/set.new/foreign"
+# A readable generation root does not establish custody of an unreadable child.
+# Preview and apply must protect it rather than accept a partial inventory.
+mkdir "$slot/set.new/unreadable"
+printf 'keep original payload\n' > "$slot/set.new/unreadable/payload"
+chmod 000 "$slot/set.new/unreadable"
+if [[ ! -r "$slot/set.new/unreadable" ]]; then
+    run preview > "$fixture/unreadable-preview.json"
+    run apply --quiescent > "$fixture/unreadable-applied.json"
+    chmod 700 "$slot/set.new/unreadable"
+    for observed in unreadable-preview unreadable-applied; do
+        jq -e --arg path "$slot/set.new" '
+            .entries[] | select(.path==$path)
+            | .status=="protected" and .reason=="unsafe-or-changing-tree"
+        ' "$fixture/$observed.json" >/dev/null
+    done
+    [[ "$(cat "$slot/set.new/unreadable/payload")" == 'keep original payload' ]]
+else
+    chmod 700 "$slot/set.new/unreadable"
+    echo 'Unreadable-generation probe unavailable: runner bypasses directory permissions'
+fi
 run apply --quiescent > "$fixture/final.json"
 [[ ! -e "$slot/set.new" && -d "$slot/set.unknown" ]]
 run manage "$slot/set.unknown" --quiescent
