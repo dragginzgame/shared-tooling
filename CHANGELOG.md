@@ -1,6 +1,21 @@
 # Changelog
 
-## [0.27.28] - Unreleased
+## [0.27.29] - Unreleased
+
+### 🥾 Governance
+
+- Require explicit authorization for direct integration-branch pushes and alternate
+  delivery checkouts, with local and remote effects disclosed before execution.
+  Keep lasting edits in the requested checkout or an authorized durable contribution;
+  never leave unique implementation in temporary storage or an undisclosed patch.
+
+### 📊 Audit
+
+- Reassess sibling crate dependencies and release boundaries after the recent
+  cleanup. Remaining follow-ups concern private dev-helper packaging, scoped
+  release validation and generated dependency paths; sibling code is unchanged.
+
+## [0.27.28]
 
 ### 🥾 Governance
 
