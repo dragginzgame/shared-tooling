@@ -1,6 +1,19 @@
 # Changelog
 
-## [0.28.3] - Unreleased
+## [0.29.0] - Unreleased
+
+### ⚠️ Breaking
+
+- Move the native PocketIC dependency exception from the retired Platform client
+  package to Testkit, admitting only its four native SDK dependencies. Keep
+  portable, Wasm, build/dev, unrelated IC inputs and tighter consumer policies
+  refused. Old client packages must migrate to Testkit before adopting this rule
+  ([Tooling #324](https://github.com/dragginzgame/ic-tooling/issues/324)).
+
+### 🧪 Testing
+
+- Expose a focused native-client boundary fixture covering the transferred owner,
+  renamed dependencies, retired owners and consumer restrictions.
 
 ### 🩹 Fixed
 
