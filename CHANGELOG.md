@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.28.3] - Unreleased
+
+### 🩹 Fixed
+
+- Verify runner text records as UTF-8 so non-ASCII selection reasons and source
+  paths do not falsely reject successful execution evidence. Preserve raw-byte
+  hashes and reject malformed text or changed evidence. Add a focused regression
+  entrypoint for this boundary.
+
 ## [0.28.2] - 2026-11-03
 
 ### 🩹 Fixed
