@@ -546,6 +546,15 @@ contracts; ordinary development does not require rereading these mechanics.
   unknown scope refuses or uses the existing full gate. Keep full repository CI,
   source/archive admission and recovery intact. Group selection alone grants no
   omission; qualify the mapping before enabling it in a release adapter.
+- Keep group validation modular under the
+  [shared-mechanics boundary](../docs/release-group-validation.md#shared-mechanics-and-local-policy).
+  Consumers own product mappings and one full-stage roster; Shared owns reusable
+  dispatch, checkpoint and evidence mechanics. Raise missing shared capabilities
+  at their owner instead of multiplying local frameworks. Full CI must not loop
+  over group gates and repeat common checks; full-versus-selected qualification
+  comparisons must have an explicit lifecycle rather than run indefinitely on
+  every ordinary change. Preserve distinct host/feature obligations and existing
+  admission until an equivalent replacement is qualified.
 - Standard release entrypoints must select their required prepared executables
   through the consumer's offline admission interface; do not require maintainers
   to export tool paths in each shell. Fresh preflight prepares missing selections

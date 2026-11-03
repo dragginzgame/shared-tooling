@@ -4,6 +4,13 @@
 
 ### 🥾 Governance
 
+- Define the shared/local boundary for group validation: one full-stage roster,
+  product-owned selection and centralized execution/evidence mechanics. Require
+  an explicit lifecycle for full-versus-selected qualification so routine CI
+  does not permanently repeat every group gate. Track duplicated consumer
+  evidence parsing for extraction in
+  [#349](https://github.com/dragginzgame/shared-tooling/issues/349).
+
 - Report pending sibling releases, publication and deployment directly to the
   user instead of creating release-request or waiting issues. Keep engineering
   issues for actual defects, missing capabilities and substantive migrations;
