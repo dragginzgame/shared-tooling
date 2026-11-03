@@ -2,6 +2,11 @@
 
 ## [0.28.2] - Unreleased
 
+### 🩹 Fixed
+
+- Isolate the runner regression fixture's nesting depth from its enclosing
+  release gate so summary checks behave consistently in standalone and nested runs.
+
 ### 🥾 Governance
 
 - Make focused development completion explicit: inspect nested fixture work,
