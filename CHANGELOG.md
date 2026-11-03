@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.28.1] - Unreleased
+
+### ➕ Added
+
+- Centralize group-validation evidence admission, stage roster consistency and
+  conservative Git baseline observation for consumer adapters. Keep product
+  selection and release authority local, with one shared machine-readable proof
+  interface instead of per-repository event and log parsers.
+  [#349](https://github.com/dragginzgame/shared-tooling/issues/349).
+
 ## [0.28.0] - Unreleased
 
 ### 🥾 Governance

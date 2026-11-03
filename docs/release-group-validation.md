@@ -1,5 +1,5 @@
 # Release group validation
-<!-- Shared companions: scripts/ci/run-validation-targets.sh docs/validation-runner.md -->
+<!-- Shared companions: scripts/ci/run-validation-targets.sh docs/validation-runner.md docs/group-validation-adoption.md -->
 
 Independent versions should not force unrelated release checks. A consumer may
 qualify a complete gate for one release group, including its affected integration
@@ -49,10 +49,10 @@ admission; do not fork the dispatcher or copy its generic regression suite.
 | Generic event/timing/log validation and reusable roster/baseline mechanics | Shared capability owner; consolidate duplicated implementations through the extraction below. |
 | Trusted baseline, qualified hosts, product environment, source/index custody, archive/publication and recovery authority | Existing consumer adapter; a generic evidence result cannot grant release authority. |
 
-The current runner emits evidence but does not expose a complete reusable
-run-evidence verifier. [Shared #349](https://github.com/dragginzgame/shared-tooling/issues/349)
-owns extracting that machinery from existing consumers. Until an equivalent
-shared implementation is qualified and adopted, retain the existing admission
+The [shared adoption interfaces](group-validation-adoption.md) provide run-evidence
+verification, roster consistency and conservative baseline observation under
+[Shared #349](https://github.com/dragginzgame/shared-tooling/issues/349).
+Until the shared implementation is qualified and adopted in a consumer, retain its existing admission
 checks and full-gate fallback. Do not delete checks merely to reduce local code,
 or start another general evidence parser to work around the missing capability.
 Record new reusable requirements at Shared; keep consumer work confined to its
