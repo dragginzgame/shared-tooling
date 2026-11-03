@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # Shared companions: scripts/ci/cargo-release-metadata.sh scripts/ci/check-dependency-pins.sh scripts/ci/run-release.sh scripts/ci/release-receipts.sh scripts/ci/fixture-lifecycle.sh scripts/ci/cargo-publication-selection.pl
 set -euo pipefail
+ordering_only=false
+if [[ $# != 0 ]]; then
+    [[ $# == 2 && "$1" == --case && "$2" == ordering ]] || { echo 'usage: test-cargo-release-groups.sh [--case ordering]' >&2; exit 2; }
+    ordering_only=true
+fi
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_NAMESPACE
 export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
@@ -10,7 +15,9 @@ source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture="$(fixture_create "${TMPDIR:-/tmp}/cargo-release-groups-test.XXXXXX")"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Release-group fixtures retained"' EXIT
-export CARGO_RELEASE_METADATA_EDITOR="${CARGO_RELEASE_METADATA_EDITOR:?select group-capable compiled IC Build editor}"
+if [[ "$ordering_only" == false ]]; then
+    export CARGO_RELEASE_METADATA_EDITOR="${CARGO_RELEASE_METADATA_EDITOR:?select group-capable compiled IC Build editor}"
+fi
 export CARGO_RELEASE_METADATA_MAX_BYTES=8388608
 export RELEASE_GROUP=endpoint RELEASE_PREVIOUS=0.1.0 RELEASE_VERSION=0.2.0 RELEASE_DATE=2026-10-31
 unset RELEASE_COMMIT
@@ -64,6 +71,68 @@ cp docs/endpoint.md "$fixture/changelog"
 cp codec/Cargo.toml "$fixture/codec"
 cp ci/endpoint-pin.json "$fixture/endpoint-pin"
 refuse() { if "$@"; then echo 'unexpected release-group admission' >&2; exit 1; fi; }
+
+check_manifest_ordering() {
+    local mode status source_commit
+    ORDER_REAL_CARGO="$(command -v cargo)" || return
+    export ORDER_REAL_CARGO ORDER_EVENTS="$fixture/order-events" ORDER_MANIFEST="$fixture/order-manifest"
+    mkdir "$fixture/order-bin" || return
+    cat > "$fixture/order-bin/cargo" <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+case "$1" in
+    sort)
+        printf '%s\n' "$*" >> "$ORDER_EVENTS" || exit "$?"
+        cp Cargo.toml "$ORDER_MANIFEST" || exit "$?"
+        exit "${ORDER_STATUS:-0}"
+        ;;
+    metadata) printf '%s\n' metadata >> "$ORDER_EVENTS" || exit "$?" ;;
+esac
+exec "$ORDER_REAL_CARGO" "$@"
+SH
+    chmod +x "$fixture/order-bin/cargo" || return
+    source_commit="$(git rev-parse HEAD)" || return
+    for mode in --manifest-order --manifest-order-grouped; do
+        : > "$ORDER_EVENTS"
+        status=0
+        PATH="$fixture/order-bin:$PATH" ORDER_STATUS=24 RELEASE_VERSION=0.1.0 RELEASE_DATE=2026-10-30 \
+    \
+        bash "$helper" check endpoint "$mode" > "$fixture/order-${mode#--}.log" 2>&1 || status=$?
+        [[ "$status" == 24 ]] || { echo "ordering failure was not propagated: $mode ($status)" >&2; return 1; }
+        if [[ "$mode" == --manifest-order-grouped ]]; then
+            printf '%s\n' 'sort --workspace --check --grouped' > "$fixture/order-expected"
+        else
+            printf '%s\n' 'sort --workspace --check' > "$fixture/order-expected"
+        fi
+        # A failed sort must stop before Cargo metadata or any release writes.
+        cmp "$ORDER_EVENTS" "$fixture/order-expected" || return
+        cmp Cargo.toml "$fixture/manifest" || return
+        cmp Cargo.lock "$fixture/lock" || return
+        cmp docs/endpoint.md "$fixture/changelog" || return
+        PATH="$fixture/order-bin:$PATH" RELEASE_VERSION=0.1.0 RELEASE_DATE=2026-10-30 \
+    \
+        bash "$helper" check endpoint "$mode" > "$fixture/order-current-${mode#--}.log" 2>&1 || return
+    done
+    printf '\n# Unrelated live draft\n' >> Cargo.toml
+    cp Cargo.toml "$fixture/order-live" || return
+    # Both sort and graph admission must read the selected commit's manifest.
+    PATH="$fixture/order-bin:$PATH" RELEASE_VERSION=0.1.0 RELEASE_DATE=2026-10-30 RELEASE_COMMIT="$source_commit" \
+        bash "$helper" check endpoint --manifest-order-grouped > "$fixture/order-committed.log" 2>&1 || return
+    cmp "$ORDER_MANIFEST" "$fixture/manifest" || return
+    cmp Cargo.toml "$fixture/order-live" || return
+    status=0
+    PATH="$fixture/order-bin:$PATH" ORDER_STATUS=24 RELEASE_VERSION=0.1.0 RELEASE_DATE=2026-10-30 RELEASE_COMMIT="$source_commit" \
+        bash "$helper" check endpoint --manifest-order-grouped > "$fixture/order-committed-failure.log" 2>&1 || status=$?
+    [[ "$status" == 24 ]] || return 1
+    cmp Cargo.toml "$fixture/order-live" || return
+    cp "$fixture/manifest" Cargo.toml || return
+}
+check_manifest_ordering || exit "$?"
+if [[ "$ordering_only" == true ]]; then
+    fixture_complete=true
+    printf 'Cargo release-group ordering fixtures passed\n'
+    exit 0
+fi
 for selected in codec endpoint; do
     bash "$group_helper" plan "$selected" | jq -e '
         [.files[] | select(. == "ci/qualification.lock")] | length == 1' > /dev/null
