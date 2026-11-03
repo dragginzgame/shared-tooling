@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.29.2] - Unreleased
+
+### ➕ Added
+
+- Export an available full commit with `refresh-consumer.sh --revision` while
+  preserving dirty source work. Bind payloads and modes to committed objects,
+  admit exporter/helper execution independently and retain consumer ownership
+  and concurrency checks. Add focused revision and transaction fixtures.
+  [#353](https://github.com/dragginzgame/shared-tooling/issues/353).
+
 ## [0.29.1] - Unreleased
 
 ### 🥾 Governance
