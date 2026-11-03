@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.28.2] - Unreleased
+
+### 🥾 Governance
+
+- Make focused development completion explicit: inspect nested fixture work,
+  select affected cases once and keep release/native qualification separate.
+  Expose narrower case selections when oversized fixtures are changed.
+
+- Defer and batch optional dependency and snapshot refreshes. Adopt for needed
+  fixes, capabilities or explicit maintenance; newer supplier versions alone do
+  not trigger fleet updates, raised minimum requirements or consumer releases.
+
 ## [0.28.1] - Unreleased
 
 ### ➕ Added

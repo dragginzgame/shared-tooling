@@ -29,6 +29,10 @@ owns when to run checks. This overlay identifies the local checks only.
 - Shared helper, installer, release-tooling, snapshot/export, hook and CI edits
   need their affected consumer/contract fixtures, not an automatic full suite.
   Multiple changed files or tools do not by themselves justify the full gate.
+  Inspect nested fixture dispatch before choosing it. Expose independently
+  selectable cases for oversized fixtures as they are touched; keep the existing
+  full entrypoint for release qualification. A documentation or policy edit does
+  not require rerunning installer/export fixtures merely because it is shared.
 - Full local checks are `make ci`, `bash scripts/ci/test-portable-tools.sh`
   and blanket ShellCheck over `scripts/ci/*.sh`, `scripts/dev/*.sh` and
   `scripts/distribution/*.sh`; run them only under the baseline's release or
