@@ -1,8 +1,13 @@
 # Changelog
 
-## [0.27.29] - Unreleased
+## [0.28.0] - Unreleased
 
 ### 🥾 Governance
+
+- Report pending sibling releases, publication and deployment directly to the
+  user instead of creating release-request or waiting issues. Keep engineering
+  issues for actual defects, missing capabilities and substantive migrations;
+  retire coordination-only trackers without claiming delivery is complete.
 
 - Require explicit authorization for direct integration-branch pushes and alternate
   delivery checkouts, with local and remote effects disclosed before execution.

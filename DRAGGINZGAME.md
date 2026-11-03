@@ -55,6 +55,11 @@ same approach: mandatory local constraints first, task-specific references after
   authorization; DFINITY contributions remain excluded. Merges, integration-branch
   pushes, history rewrites, releases, publication, deployment and paid effects
   require delivery or specific action authority and retain enforced protections.
+- Do not file issues merely to request or wait for a sibling release, publication
+  or deployment. Tell the user which supplier/group and version or commit is
+  needed, what is available, and what remains blocked; the user coordinates
+  delivery. Track actual defects, missing capabilities and substantive consumer
+  code changes under the [dependency finding rules](rules/engineering-details.md#shared-dependency-findings).
 - Carry established authorization forward. Do not ask again for necessary
   substeps or stop an accepted coherent batch after each small slice. Inspection
   alone does not authorize repair. Resolve actual scope or effect ambiguity,

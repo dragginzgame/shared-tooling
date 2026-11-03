@@ -909,6 +909,22 @@ contracts; ordinary development does not require rereading these mechanics.
 
 ### Shared dependency findings
 
+- A pending sibling release, registry publication, tag or deployment is a user
+  coordination matter, not a new engineering issue. Do not create or reopen
+  supplier, consumer or Shared issues, or post repeated release requests, solely
+  because a needed version is not yet available. This includes "publish the fix",
+  "release group X" and "blocked until sibling Y deploys" trackers, even when
+  the dependency genuinely blocks the current task.
+- Report that blocker directly to the user: name the repository and release
+  group/package, the needed version or source commit, observed delivery state,
+  and the affected work. Distinguish committed code, pushed tags, registry
+  availability and deployed applications. Do not invent an unpublished version
+  or start sibling delivery. Continue independent authorized work where possible.
+- Actual source defects, missing APIs and substantive consumer migrations still
+  belong in their owning issues. A code fix's existing implementation and required
+  acceptance criteria remain valid; this rule does not close unfinished fixes or
+  waive qualification. Routine version/lock/snapshot updates and publication
+  requests alone do not justify another issue.
 - Keep **one active remediation issue per shared dependency root cause**, at the
   repository that owns the supplying dependency or capability. A matching
   advisory or inherited defect in multiple consumer graphs does not create
