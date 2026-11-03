@@ -9,6 +9,12 @@
   hashes and reject malformed text or changed evidence. Add a focused regression
   entrypoint for this boundary.
 
+### 🥾 Governance
+
+- Prefer topic branches and authorized PRs in the normal checkout. Require
+  explicit location approval for additional clones, worktrees or contribution
+  directories, preserving other sessions' work and avoiding checkout sprawl.
+
 ## [0.28.2] - 2026-11-03
 
 ### 🩹 Fixed

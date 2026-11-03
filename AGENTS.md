@@ -48,6 +48,8 @@ including routine release choices and necessary Git effects without per-step
 confirmation. An authorized PR alone includes its branch, commits and branch
 push, but not its merge or release. Never use blanket staging or bypass protections.
 Cross-repository contributions require explicit scope under the
-[isolated PR workflow](rules/contributions.md#cross-repository-pull-requests).
+[PR workflow](rules/contributions.md#cross-repository-pull-requests). Prefer topic
+branches in the agreed normal checkout; additional checkout locations require
+explicit approval under the shared checkout contract.
 Do not open unsolicited adoption PRs or start sibling release procedures.
 Leave sibling working checkouts untouched and respect repository exclusions.
