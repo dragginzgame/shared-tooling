@@ -77,11 +77,14 @@ cat >"$FIXTURE/crates/beta/src/lib.rs" <<'RUST'
 async fn async_test() {}
 RUST
 
-output="$(bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")"
+output="$(bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")"
 
 alpha_row="$(printf '%s\n' "$output" | awk '$1 == "alpha" { print $0 }')"
 beta_row="$(printf '%s\n' "$output" | awk '$1 == "beta" { print $0 }')"
 total_row="$(printf '%s\n' "$output" | awk '$1 == "TOTAL" { print $0 }')"
+summary="$(bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")"
+[[ "$(printf '%s\n' "$summary" | tail -1)" == "$total_row" ]] || exit 1
+[[ "$(printf '%s\n' "$summary" | wc -l | tr -d ' ')" == 4 ]] || exit 1
 
 read -r _ _ alpha_test_loc _ alpha_test_fns alpha_inline_fns <<<"$alpha_row"
 read -r _ _ _ _ beta_test_fns beta_inline_fns <<<"$beta_row"
@@ -92,7 +95,7 @@ read -r _ _ _ _ total_test_fns total_inline_fns <<<"$total_row"
 [[ "$beta_test_fns" -eq 1 && "$beta_inline_fns" -eq 1 ]] || exit 1
 [[ "$total_test_fns" -eq 3 && "$total_inline_fns" -eq 2 ]] || exit 1
 # JSON exposes the same numeric counts without display padding or percent signs.
-bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" > "$FIXTURE/report.json"
+bash "$ROOT/scripts/dev/cloc.sh" --subcrates --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" > "$FIXTURE/report.json"
 read -r _ runtime tests pct fns inline <<< "$total_row"
 jq -e --argjson runtime "$runtime" --argjson tests "$tests" --argjson pct "${pct%%%}" \
     --argjson fns "$fns" --argjson inline "$inline" '
@@ -112,14 +115,14 @@ generated_rust() {
     printf '#[test]\nfn generated_integration_test() {}\n' > "$1/tests/generated.rs"
 }
 generated_rust "$FIXTURE/target"
-[[ "$(bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$output" ]] || exit 1
+[[ "$(bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$output" ]] || exit 1
 custom_target="$FIXTURE/crates/alpha/build [generated]*?"
 generated_rust "$custom_target"
-[[ "$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$output" ]] || exit 1
+[[ "$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$output" ]] || exit 1
 # This source directory matches the unescaped target glob and must be counted.
 mkdir -p "$FIXTURE/crates/alpha/build generated-copy"
 printf 'pub fn maintained() {}\n' > "$FIXTURE/crates/alpha/build generated-copy/lib.rs"
-custom_output="$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")"
+custom_output="$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")"
 read -r _ before_runtime _ _ _ _ <<<"$alpha_row"
 read -r _ after_runtime _ _ after_tests _ <<<"$(printf '%s\n' "$custom_output" | awk '$1 == "alpha"')"
 [[ "$after_runtime" == "$((before_runtime + 1))" && "$after_tests" == 2 ]] || exit 1
@@ -145,7 +148,7 @@ cat >"$FIXTURE/tests/root.rs" <<'RUST'
 fn root_integration_test() {}
 RUST
 
-nested_output="$(bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")"
+nested_output="$(bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")"
 root_row="$(printf '%s\n' "$nested_output" | awk '$1 == "root_package" { print $0 }')"
 total_row="$(printf '%s\n' "$nested_output" | awk '$1 == "TOTAL" { print $0 }')"
 read -r _ root_runtime_loc root_test_loc _ root_test_fns root_inline_fns <<<"$root_row"
@@ -156,19 +159,19 @@ read -r _ total_runtime_loc total_test_loc _ total_test_fns total_inline_fns <<<
 [[ "$total_test_loc" -eq $((member_test_loc + 2)) ]] || exit 1
 [[ "$total_test_fns" -eq 5 && "$total_inline_fns" -eq 3 ]] || exit 1
 generated_rust "$FIXTURE/target"
-[[ "$(bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$nested_output" ]] || exit 1
+[[ "$(bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$nested_output" ]] || exit 1
 custom_target="$FIXTURE/build [generated]*?"
 # Move only fixture-owned output out of the default target before changing its
 # configured identity; Cargo reports one selected target directory at a time.
 mv "$FIXTURE/target" "$custom_target"
-[[ "$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$nested_output" ]] || exit 1
+[[ "$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$nested_output" ]] || exit 1
 # Existing output selected through a directory alias still has one physical
 # identity. Both direct and ancestor symlinks must exclude those same bytes.
 ln -s "$custom_target" "$FIXTURE/output-link"
-[[ "$(CARGO_TARGET_DIR="$FIXTURE/output-link" bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$nested_output" ]] || exit 1
+[[ "$(CARGO_TARGET_DIR="$FIXTURE/output-link" bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$nested_output" ]] || exit 1
 rm "$FIXTURE/output-link"
 ln -s "$FIXTURE" "$FIXTURE/parent-link"
-[[ "$(CARGO_TARGET_DIR="$FIXTURE/parent-link/${custom_target##*/}" bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$nested_output" ]] || exit 1
+[[ "$(CARGO_TARGET_DIR="$FIXTURE/parent-link/${custom_target##*/}" bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$nested_output" ]] || exit 1
 rm "$FIXTURE/parent-link"
 rm -r "$custom_target"
 
@@ -180,7 +183,7 @@ cp "$FIXTURE/Cargo.toml" "$relocated/"
 cp -R "$FIXTURE/src" "$FIXTURE/crates" "$FIXTURE/.cargo" "$relocated/"
 mkdir -p "$relocated/tests"
 cp "$FIXTURE/tests/root.rs" "$relocated/tests/"
-relocated_output="$(bash "$ROOT/scripts/dev/cloc.sh" --manifest "$relocated/Cargo.toml" "$relocated")"
+relocated_output="$(bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$relocated/Cargo.toml" "$relocated")"
 [[ "$relocated_output" == "$nested_output" ]] || exit 1
 
 # Explicit independent-workspace selection keeps graphs and build output separate.
@@ -201,24 +204,24 @@ printf 'pub fn probe() {}\n' > "$independent/crates/probe/src/lib.rs"
 printf '[build]\ntarget-dir = "crates/probe/output"\n' > "$independent/.cargo/config.toml"
 git init -q "$FIXTURE"
 (cd "$independent" && cargo generate-lockfile --offline)
-selected_before="$(bash "$ROOT/scripts/dev/cloc.sh" --manifest "$independent/Cargo.toml" "$FIXTURE")"
+selected_before="$(bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$independent/Cargo.toml" "$FIXTURE")"
 generated_rust "$independent/crates/probe/output"
-selected_after="$(bash "$ROOT/scripts/dev/cloc.sh" --manifest "$independent/Cargo.toml" "$FIXTURE")"
+selected_after="$(bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$independent/Cargo.toml" "$FIXTURE")"
 [[ "$selected_before" == "$selected_after" ]] || exit 1
 [[ "$(printf '%s\n' "$selected_after" | awk '$1 == "independent-probe" { print $2,$3,$5,$6 }')" == '1 0 0 0' ]] || exit 1
 [[ "$(printf '%s\n' "$selected_after" | awk '$1 == "alpha" { print }')" == '' ]] || exit 1
-bash "$ROOT/scripts/dev/cloc.sh" --manifest "$independent/Cargo.toml" --json "$FIXTURE" > "$FIXTURE/independent.json"
+bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$independent/Cargo.toml" --json "$FIXTURE" > "$FIXTURE/independent.json"
 jq -e --arg manifest "$independent/Cargo.toml" '
     .manifest == $manifest and (.crates | map(.crate)) == ["independent-probe"] and
     .totals == {runtime_loc:1,test_loc:0,test_pct:0,test_fns:0,inline_fns:0}
 ' "$FIXTURE/independent.json" >/dev/null
 
 # Identical files still represent distinct selected runtime and test paths.
-bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" > "$FIXTURE/before-duplicates.json"
+bash "$ROOT/scripts/dev/cloc.sh" --subcrates --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" > "$FIXTURE/before-duplicates.json"
 printf 'pub fn duplicated() {}\n' > "$FIXTURE/crates/alpha/src/duplicate.rs"
 cp "$FIXTURE/crates/alpha/src/duplicate.rs" "$FIXTURE/crates/alpha/src/second.rs"
 cp "$FIXTURE/crates/alpha/src/duplicate.rs" "$FIXTURE/crates/alpha/tests/duplicate.rs"
-bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" > "$FIXTURE/with-duplicates.json"
+bash "$ROOT/scripts/dev/cloc.sh" --subcrates --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" > "$FIXTURE/with-duplicates.json"
 jq -e --slurpfile before "$FIXTURE/before-duplicates.json" '
     .totals.runtime_loc == $before[0].totals.runtime_loc + 2 and
     .totals.test_loc == $before[0].totals.test_loc + 1 and
@@ -237,7 +240,7 @@ STUB
 chmod +x "$FIXTURE/failing-bin/cloc"
 status=0
 CLOC_SOURCE_FILE="$FIXTURE/crates/alpha/src/lib.rs" CLOC_FAILURE_MARKER="$FIXTURE/count-started" PATH="$FIXTURE/failing-bin:$PATH" \
-    bash "$FIXTURE/reporter/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" \
+    bash "$FIXTURE/reporter/scripts/dev/cloc.sh" --subcrates --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" \
     > "$FIXTURE/failed.json" 2> "$FIXTURE/failed.err" || status=$?
 [[ "$status" == 23 && -e "$FIXTURE/count-started" && ! -s "$FIXTURE/failed.json" ]] || exit 1
 echo 'cloc tests, including independent workspace selection, passed'

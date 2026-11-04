@@ -3,7 +3,7 @@
 export RELEASE_DELIVERY ?= direct
 WORK_VERSION_KIND ?= patch
 SHELLCHECK ?= shellcheck
-CLOC_REPORT := $(CURDIR)/scripts/dev/cloc-siblings.sh
+CLOC_REPORT := $(CURDIR)/scripts/dev/cloc.sh
 CLOC_ROOT = $(CLOC_PARENT)
 CLOC_PARENT ?= $(CURDIR)/..
 STACK_PARENT ?= $(CURDIR)/..

@@ -823,7 +823,6 @@ scripts/ci/test-make-consumer.sh make/consumer.mk
 make/execution.mk scripts/ci/check-make-execution.sh
 make/tools.mk make/execution.mk
 scripts/ci/test-make-format.sh make/tools.mk
-scripts/dev/cloc-siblings.sh scripts/dev/cloc.sh
 COMPANIONS
 printf 'Snapshot companion cases: %s optional entries absent\n' "$omitted_pairs"
 

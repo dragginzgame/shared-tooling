@@ -16,12 +16,14 @@ For one row per sibling root workspace:
 ```bash
 make cloc
 make cloc CLOC_PARENT=/path/to/projects
+make cloc CLOC_ROOT=/path/to/repository CLOC_SUBCRATES=1
 ```
 
 For a single checkout or an independent workspace:
 
 ```bash
 bash scripts/dev/cloc.sh /path/to/repository
+bash scripts/dev/cloc.sh --subcrates /path/to/projects
 bash scripts/dev/cloc.sh --manifest testing/Cargo.toml /path/to/repository
 bash scripts/dev/cloc.sh --json /path/to/repository
 bash scripts/dev/cloc.sh --check-tools
@@ -39,10 +41,16 @@ JSON contains the selected `manifest`, `crates` and `totals`, with numeric
 `crate`. Percentages use the table's one-decimal rounding. A failed report exits
 nonzero without emitting a partial JSON document.
 
-The sibling report, [cloc-siblings.sh](../scripts/dev/cloc-siblings.sh), visits
+The unified [cloc.sh](../scripts/dev/cloc.sh) reports workspace summaries by
+default; `--subcrates` adds individual crate rows without changing totals.
+The target defaults to the current directory. A parent directory selects its
+immediate repositories; a checkout selects its root workspace. `--json` selects
+one workspace and always includes its crate rows.
+
+The parent-directory report visits
 immediate Git checkouts in name order, including linked worktrees and hidden
-directories, skipping symlink aliases and non-repositories. Its default parent
-belongs to the script's checkout. It checks prerequisites once before reporting
+directories, skipping symlink aliases and non-repositories.
+It checks prerequisites once before reporting
 Cargo workspaces. A repository without a root manifest shows `N/A`; a failed
 count shows `ERROR`, retains other rows and makes the command fail. Totals sum
 successful workspaces and recompute their combined test percentage; failures

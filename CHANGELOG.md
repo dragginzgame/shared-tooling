@@ -4,6 +4,12 @@
 
 ### 🩹 Fixed
 
+- Unify Rust LOC reports under `cloc.sh [directory]`: summarize one workspace
+  or immediate sibling repositories, with `--subcrates` (`CLOC_SUBCRATES=1`
+  through Make) for crate detail. Remove the redundant `cloc-siblings.sh`
+  entrypoint and align all rows using the longest displayed name. Counting and
+  JSON workspace data remain unchanged.
+
 - Admit resolved local dependencies outside Cargo workspace membership without
   assigning them to a release group. Preserve exact local lock identities and
   workspace ownership checks; excluded development helpers retain their versions.
@@ -11,6 +17,10 @@
 ## [0.29.4] - Unreleased
 
 ### 🩹 Fixed
+
+- Correct the stack catalog and ownership documentation for Storage's current
+  crate names and Wire's endpoint macro owner; regenerate both stack diagrams
+  and their release-group and dependency inventories from current checkouts.
 
 - Guard retained release state before work and around adapter steps. Refuse
   oversized or stale bulk evidence and nested build/cache trees without deleting

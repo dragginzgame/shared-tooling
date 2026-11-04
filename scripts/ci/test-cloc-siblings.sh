@@ -71,7 +71,7 @@ TOML
 mkdir -p "$zeta/src" "$zeta/scripts/dev" "$zeta/.cargo"
 printf '[build]\ntarget-dir = "target"\n' > "$zeta/.cargo/config.toml"
 printf '#[test]\nfn another_test() {}\n' >"$zeta/src/lib.rs"
-cp "$ROOT/scripts/dev/cloc.sh" "$ROOT/scripts/dev/cloc-siblings.sh" "$zeta/scripts/dev/"
+cp "$ROOT/scripts/dev/cloc.sh" "$zeta/scripts/dev/"
 
 # Reject line breaks before they can select the ordinary parent as a decoy.
 for suffix in $'\n' $'\r'; do
@@ -80,13 +80,11 @@ for suffix in $'\n' $'\r'; do
     printf '[workspace]\n' > "$invalid_parent/Cargo.toml"
     ln -s "$invalid_parent" "$FIXTURE/invalid-alias"
     for selected in "$invalid_parent" "$FIXTURE/invalid-alias"; do
-        for script in cloc-siblings.sh cloc.sh; do
-            if bash "$ROOT/scripts/dev/$script" "$selected" > "$FIXTURE/path.out" 2> "$FIXTURE/path.err"; then
-                echo 'line-break directory was accepted' >&2; exit 1
-            fi
-            [[ ! -s "$FIXTURE/path.out" ]] || exit 1
-            grep -F 'line breaks' "$FIXTURE/path.err" >/dev/null
-        done
+        if bash "$ROOT/scripts/dev/cloc.sh" "$selected" > "$FIXTURE/path.out" 2> "$FIXTURE/path.err"; then
+            echo 'line-break directory was accepted' >&2; exit 1
+        fi
+        [[ ! -s "$FIXTURE/path.out" ]] || exit 1
+        grep -F 'line breaks' "$FIXTURE/path.err" >/dev/null
         if bash "$ROOT/scripts/dev/cloc.sh" --manifest "$selected/Cargo.toml" \
             > "$FIXTURE/path.out" 2> "$FIXTURE/path.err"; then exit 1; fi
         [[ ! -s "$FIXTURE/path.out" ]] || exit 1
@@ -95,12 +93,34 @@ for suffix in $'\n' $'\r'; do
     rm "$FIXTURE/invalid-alias"
 done
 
-output="$(bash "$ROOT/scripts/dev/cloc-siblings.sh" "$parent")"
+output="$(bash "$ROOT/scripts/dev/cloc.sh" "$parent")"
+[[ "$(bash "$ROOT/scripts/dev/cloc.sh" "$parent")" == "$output" ]] || exit 1
+expanded="$(bash "$ROOT/scripts/dev/cloc.sh" --subcrates "$parent")"
+[[ "$(printf '%s\n' "$expanded" | awk '$1 == "library" { print $2 }')" == 3 ]] || exit 1
+[[ "$(printf '%s\n' "$expanded" | tail -1)" == "$(printf '%s\n' "$output" | tail -1)" ]] || exit 1
+make_output="$(make --no-print-directory -s -f "$ROOT/make/tools.mk" cloc \
+    SHARED_TOOLING_ROOT="$ROOT" CLOC_ROOT="$parent" CLOC_SUBCRATES=1)"
+[[ "$make_output" == "$expanded" ]] || exit 1
+# A long crate in the later repository must widen every row, including earlier
+# workspace summaries, N/A rows, headers and totals, without changing counts.
+long_name=icydb-testing-audit-default-empty-fixtures
+sed "s/name = \"zeta\"/name = \"$long_name\"/" "$zeta/Cargo.toml" > "$FIXTURE/long.toml"
+cp "$zeta/Cargo.toml" "$FIXTURE/zeta.toml"
+cp "$FIXTURE/long.toml" "$zeta/Cargo.toml"
+wide="$(bash "$ROOT/scripts/dev/cloc.sh" --subcrates "$parent")"
+printf '%s\n' "$wide" | awk -v width="$((${#long_name} + 2))" '
+    NR == 1 { expected = length($0) }
+    length($0) != expected { exit 1 }
+    substr($0, width + 1, 1) != " " { exit 1 }
+    END { if (expected != width + 58) exit 1 }
+' || exit 1
+[[ "$(printf '%s\n' "$wide" | awk 'END { print $1,$2,$3,$4,$5,$6 }')" == 'TOTAL 6 2 25.0% 3 2' ]] || exit 1
+cp "$FIXTURE/zeta.toml" "$zeta/Cargo.toml"
 # Absolute operands prevent CDPATH output from becoming part of the parent.
-relative_output="$(cd "$FIXTURE" && CDPATH="$FIXTURE" bash "$ROOT/scripts/dev/cloc-siblings.sh" 'parent [projects]')"
+relative_output="$(cd "$FIXTURE" && CDPATH="$FIXTURE" bash "$ROOT/scripts/dev/cloc.sh" 'parent [projects]')"
 [[ "$relative_output" == "$output" ]] || exit 1
 ln -s "$parent" "$FIXTURE/valid-alias"
-alias_output="$(bash "$ROOT/scripts/dev/cloc-siblings.sh" "$FIXTURE/valid-alias")"
+alias_output="$(bash "$ROOT/scripts/dev/cloc.sh" "$FIXTURE/valid-alias")"
 [[ "$alias_output" == "$output" ]] || exit 1
 [[ "$(printf '%s\n' "$output" | wc -l | tr -d ' ')" == 7 ]] || exit 1
 [[ "$(printf '%s\n' "$output" | awk 'NR == 3 { print $1, $2, $3, $4, $5, $6 }')" == '.notes N/A N/A N/A N/A N/A' ]] || exit 1
@@ -111,8 +131,8 @@ alias_output="$(bash "$ROOT/scripts/dev/cloc-siblings.sh" "$FIXTURE/valid-alias"
 [[ -f "$zeta/.git" && ! -e "$zeta/Cargo.lock" ]] || exit 1
 cmp "$alpha/Cargo.lock" "$FIXTURE/alpha.lock"
 
-# The default parent follows the installed script, not the caller's directory.
-default_output="$(cd "$FIXTURE/elsewhere" && bash "$zeta/scripts/dev/cloc-siblings.sh")"
+# The default target is the caller's current directory.
+default_output="$(cd "$parent" && bash "$zeta/scripts/dev/cloc.sh")"
 [[ "$default_output" == "$output" ]] || exit 1
 
 # A missing shared prerequisite fails once, before printing a misleading table.
@@ -121,7 +141,7 @@ mkdir "$FIXTURE/no-cloc"
 for tool in bash dirname git cargo jq; do
     ln -s "$(command -v "$tool")" "$FIXTURE/no-cloc/$tool"
 done
-if PATH="$FIXTURE/no-cloc" "$BASH" "$zeta/scripts/dev/cloc-siblings.sh" "$parent" \
+if PATH="$FIXTURE/no-cloc" "$BASH" "$zeta/scripts/dev/cloc.sh" "$parent" \
     >"$FIXTURE/missing.out" 2>"$FIXTURE/missing.err"; then
     echo 'missing cloc was accepted' >&2
     exit 1
@@ -136,7 +156,7 @@ PATH="$FIXTURE/no-cloc" "$BASH" "$zeta/scripts/dev/cloc.sh" --check-tools
 # A broken workspace reports failure without hiding later successful rows.
 git init -q "$parent/middle-broken"
 printf '[workspace\n' >"$parent/middle-broken/Cargo.toml"
-if bash "$ROOT/scripts/dev/cloc-siblings.sh" "$parent" >"$FIXTURE/failed.out" 2>"$FIXTURE/failed.err"; then
+if bash "$ROOT/scripts/dev/cloc.sh" "$parent" >"$FIXTURE/failed.out" 2>"$FIXTURE/failed.err"; then
     echo 'broken Cargo workspace was reported as successful' >&2
     exit 1
 fi
@@ -149,46 +169,19 @@ cmp "$alpha/Cargo.lock" "$FIXTURE/alpha.lock"
 # No measured workspace remains distinct from a measured empty Rust package.
 mkdir "$FIXTURE/no-rust"
 git init -q "$FIXTURE/no-rust/notes"
-output="$(bash "$ROOT/scripts/dev/cloc-siblings.sh" "$FIXTURE/no-rust")"
+output="$(bash "$ROOT/scripts/dev/cloc.sh" "$FIXTURE/no-rust")"
 [[ "$(printf '%s\n' "$output" | awk 'END { print $0 }')" =~ TOTAL[[:space:]]+N/A[[:space:]]+N/A[[:space:]]+N/A[[:space:]]+N/A[[:space:]]+N/A$ ]] || exit 1
 mkdir -p "$FIXTURE/empty-rust/empty/src"
 git init -q "$FIXTURE/empty-rust/empty"
 cp "$zeta/Cargo.toml" "$FIXTURE/empty-rust/empty/Cargo.toml"
 cp -R "$zeta/.cargo" "$FIXTURE/empty-rust/empty/"
 : > "$FIXTURE/empty-rust/empty/src/lib.rs"
-output="$(bash "$ROOT/scripts/dev/cloc-siblings.sh" "$FIXTURE/empty-rust")"
+output="$(bash "$ROOT/scripts/dev/cloc.sh" "$FIXTURE/empty-rust")"
 [[ "$(printf '%s\n' "$output" | awk 'END { print $1, $2, $3, $4, $5, $6 }')" == 'TOTAL 0 0 0.0% 0 0' ]] || exit 1
 
-# Use a substitute report to prove the aggregation boundary accepts structured
-# counts and rejects malformed totals while continuing with later repositories.
-cat > "$zeta/scripts/dev/cloc.sh" <<'STUB'
-#!/usr/bin/env bash
-set -eu
-[[ "$1" != --check-tools ]] || exit 0
-[[ "$1" == --json ]] || exit 90
-if [[ "${PWD##*/}" != zeta ]]; then
-    case "$CLOC_JSON_CASE" in
-        malformed) echo 'not JSON' ;;
-        multiple) echo '{"totals":{}} {"totals":{}}' ;;
-        missing) echo '{"totals":{"runtime_loc":0}}' ;;
-        negative) echo '{"totals":{"runtime_loc":-1,"test_loc":0,"test_fns":0,"inline_fns":0}}' ;;
-        string) echo '{"totals":{"runtime_loc":"1","test_loc":0,"test_fns":0,"inline_fns":0}}' ;;
-        fractional) echo '{"totals":{"runtime_loc":1.5,"test_loc":0,"test_fns":0,"inline_fns":0}}' ;;
-    esac
-else
-    printf '{"totals": {\n "inline_fns": 1, "test_fns": 1, "test_loc": 0, "runtime_loc": 2\n}}\n'
-fi
-STUB
-for malformed in malformed multiple missing negative string fractional; do
-    if CLOC_JSON_CASE="$malformed" bash "$zeta/scripts/dev/cloc-siblings.sh" "$parent" \
-        > "$FIXTURE/invalid-json.out" 2> "$FIXTURE/invalid-json.err"; then exit 1; fi
-    [[ "$(awk 'END { print $1,$2,$3,$4,$5,$6,$7 }' "$FIXTURE/invalid-json.out")" == 'TOTAL (partial) 2 0 0.0% 1 1' ]] || exit 1
-    grep -F 'invalid workspace totals' "$FIXTURE/invalid-json.err" >/dev/null
-done
-
-bash "$ROOT/scripts/dev/cloc-siblings.sh" --help >/dev/null
+bash "$ROOT/scripts/dev/cloc.sh" --help >/dev/null
 for path in "$FIXTURE/absent" "$FIXTURE/elsewhere"; do
-    if bash "$ROOT/scripts/dev/cloc-siblings.sh" "$path" >"$FIXTURE/invalid.out" 2>"$FIXTURE/invalid.err"; then
+    if bash "$ROOT/scripts/dev/cloc.sh" "$path" >"$FIXTURE/invalid.out" 2>"$FIXTURE/invalid.err"; then
         echo 'invalid or empty parent was accepted' >&2
         exit 1
     fi
