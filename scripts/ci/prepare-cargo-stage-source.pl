@@ -12,9 +12,9 @@ use JSON::PP;
 
 # Qualification source only. Never prepare a live release, rebind an old gate,
 # project old executable evidence, or change the caller's files/index/versions.
-my ($root,$state,$source,$editor);
-GetOptions('root=s'=>\$root,'state=s'=>\$state,'source=s'=>\$source,'editor=s'=>\$editor)
-    && !@ARGV && !grep { !defined($_) || !length($_) } ($root,$state,$source,$editor)
+my ($root,$state,$source,$editor,$verify_projection);
+GetOptions('root=s'=>\$root,'state=s'=>\$state,'source=s'=>\$source,'editor=s'=>\$editor,'verify-projection=s'=>\$verify_projection)
+    && !@ARGV && (defined($verify_projection) || !grep { !defined($_) || !length($_) } ($root,$state,$source,$editor))
     or die "usage: prepare-cargo-stage-source.pl --root DIR --state DIR --source COMMIT --editor ABSOLUTE\n";
 my $json = JSON::PP->new->canonical->utf8;
 sub regular {
@@ -61,6 +61,37 @@ sub run {
     }
     waitpid($pid,0)==$pid or die $!;
     $? == 0 or die "candidate preparation failed; retained log: $log\n";
+}
+# Read-only admission of already-qualified candidate source. This checks the
+# sealed inventory, not today's toolchain; callers still own publication source,
+# receipt and exact primary-closure admission. No rendering/setup/execution.
+if (defined $verify_projection) {
+    !grep {defined $_} ($root,$state,$source,$editor) or die "projection verification has no preparation options\n";
+    regular($verify_projection);
+    my $raw=bytes($verify_projection); my $projection=$json->decode($raw);
+    $raw eq $json->encode($projection)."\n"
+        && ($projection->{schema}//0)==1 && ($projection->{kind}//'') eq 'cargo-final-candidate-source'
+        && ($projection->{source}//'') =~ /\A(?:[0-9a-f]{40}|[0-9a-f]{64})\z/
+        && ($projection->{identity}//'') =~ /\A[0-9a-f]{64}\z/
+        or die "invalid retained candidate projection\n";
+    my $directory=$projection->{directory}; regular($directory);
+    chdir $directory or die "missing retained candidate\n";
+    observe('git','status','--porcelain=v1','--untracked-files=all') eq ''
+        or die "retained candidate source is dirty\n";
+    my (%files,%modes);
+    for my $entry (split /\0/,observe('git','ls-tree','-rz','--full-tree','HEAD')) {
+        $entry =~ /\A(100644|100755) blob [0-9a-f]{40,64}\t([^\x00\r\n]+)\z/
+            or die "retained candidate needs regular tracked files\n";
+        my ($mode,$path)=($1,$2); regular("$directory/$path");
+        $files{$path}=sha256_hex(bytes("$directory/$path"));
+        (((stat "$directory/$path")[2] & 0111) != 0) == ($mode eq '100755')
+            or die "retained candidate mode drift\n";
+        $modes{$path}=$mode;
+    }
+    keys(%files) && sha256_hex($json->encode({files=>\%files,modes=>\%modes})) eq $projection->{identity}
+        or die "retained candidate inventory drift\n";
+    print "Retained candidate inventory matches qualified identity: $projection->{identity}\n";
+    exit;
 }
 $root=abs_path($root)//die "missing source root\n";
 regular($root);

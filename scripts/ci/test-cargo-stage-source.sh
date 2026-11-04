@@ -49,6 +49,7 @@ prepare() {
 }
 prepare first
 candidate=$(jq -er .directory "$fixture/first.json")
+perl "$root/scripts/ci/prepare-cargo-stage-source.pl" --verify-projection "$fixture/first.json" > "$fixture/verify-source.log"
 # Exercise actual Cargo through the shared exact-input runner. Later group
 # renders must admit the same original execution, with fresh source/group IDs.
 mkdir -p "$fixture/stage-tmp"
@@ -99,6 +100,9 @@ git -c commit.gpgsign=false commit -qm 'Changed implementation'
 prepare changed
 [[ $(jq -r .identity "$fixture/changed.json") != "$(jq -r .identity "$fixture/first.json")" ]]
 printf '\n// Damaged retained source\n' >> "$candidate/crates/api/src/lib.rs"
+if perl "$root/scripts/ci/prepare-cargo-stage-source.pl" --verify-projection "$fixture/first.json" > "$fixture/verify-drift.log" 2>&1; then
+    echo 'damaged qualified inventory unexpectedly admitted' >&2; exit 1
+fi
 # The corresponding original source still exists in history. A cache mutation
 # must never become new qualified source, and the failed attempt is retained.
 if perl "$root/scripts/ci/prepare-cargo-stage-source.pl" --root "$PWD" --state target/stage-sources \

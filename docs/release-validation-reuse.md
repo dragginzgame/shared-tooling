@@ -275,3 +275,13 @@ feature or mismatched primary refuses equivalence; use ordinary current-source
 lint. The consumer must qualify its lint command's coverage of that primary.
 Actual archive creation/verification, upload admission and registry provenance
 never become cached stages.
+
+Publication may consume an existing completed lint qualification without treating
+it as a new execution on today's host. Verify its original proof/log custody and
+run `prepare-cargo-stage-source.pl --verify-projection ABSOLUTE_JSON` to recheck
+the retained candidate's complete file inventory, modes and clean state without
+rendering or tool setup. The projection must come from the admitted source-bound
+receipt, never an untrusted lookup. Re-admit the actual release source and exact
+primary closure as above; missing/damaged local evidence requires ordinary lint.
+This does not create a new generic exact-input admission, change the original
+qualification host or cache archive/registry checks.
