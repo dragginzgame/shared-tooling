@@ -28,6 +28,9 @@ The [contribution rules](rules/contributions.md) own detailed action authority;
 local overlays must not duplicate it or add routine permission gates.
 
 - Prefer direct edits in the normal authorized checkout when a PR is optional.
+  Use branches there when needed; coordinate or wait when another session owns
+  the inputs. Separate checkouts are explicit exceptions, not the default for
+  isolation, PRs or deployment.
   Ordinary fixes include focused checks and pending notes, not staging, commits
   or delivery. Shared alone also prepares its pending `VERSION`.
 - A PR request includes its topic branch, scoped commits, branch push and PR.
@@ -42,8 +45,11 @@ local overlays must not duplicate it or add routine permission gates.
 - Preserve unrelated dirty work and reread files before editing. Sibling inspection
   is read-only; source contributions need scoped authority. Coordinate active
   sessions before changing their inputs or preparing an authorized fleet release.
-- Additional checkouts require approval of their location. Never leave the only
-  copy of lasting work in `/tmp`, `target/`, caches or a disposable patch.
+- Do not create new directories directly under `~/projects`; only an explicit
+  user exception for that exact directory permits it. Ordinary fix, PR and deploy
+  authority does not. Additional checkouts require approval of their location.
+  Never leave the only copy of lasting work in `/tmp`, `target/`, caches or a
+  disposable patch.
   Follow the [checkout contract](rules/contributions.md#durable-work-and-checkout-location).
 - Carry authorization forward without repeated approval. Inspection and readiness
   questions alone do not authorize repair or delivery. Ask only for a genuinely

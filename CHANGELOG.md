@@ -10,6 +10,13 @@
 
 ### 🥾 Governance
 
+- Prohibit new directories directly under the main projects directory without
+  an explicit exception for the exact path. Fix, PR and deploy authority does
+  not authorize sibling clones, contribution containers or release copies.
+  Prefer the existing checkout and branches; coordinate or wait for active
+  owners. Any exception request must explicitly disclose new directory creation,
+  its path and cleanup ownership rather than asking vaguely for isolation.
+
 - Prefer `tests.rs` or `tests/` for Rust test bodies and test-only helpers so
   file-based LOC reports can separate tests from production source. Preserve
   ordinary module discovery and document necessary inline exceptions.

@@ -58,14 +58,44 @@ obtain authority for the specific recovery.
 
 ## Durable work and checkout location
 
-Use the normal authorized checkout. A topic branch does not isolate sessions
-sharing that checkout: coordinate with its active owner before changing branches
-or shared inputs. A dirty checkout or failed preflight does not authorize moving
-implementation or delivery elsewhere.
+**The existing checkout is the default for implementation and delivery.**
+Use this order when choosing where and how to work:
 
-- Additional clones, worktrees and contribution directories require approval of
-  their exact location, including for an authorized PR. Do not create sibling
-  `*-contributions` directories by default.
+1. Edit the normal authorized checkout directly.
+2. Use a branch there when the task needs one. Coordinate with active sessions
+   before switching branches or shared inputs; branches share a working tree.
+3. Record deferred work in an owning issue. Use a PR for requested or required
+   review, with its branch in the normal checkout. Neither requires a new directory.
+4. If another session occupies the checkout, coordinate a handoff or wait for it
+   to become available. Continue independent authorized work where possible.
+5. Consider another checkout only when the user explicitly grants a location
+   exception. Isolation convenience, parallel throughput, dirty state and release
+   preflight failures are not sufficient reasons to create one automatically.
+
+Do not routinely propose an extra checkout as the preferred solution to session
+contention. PRs and deployments do not inherently require separate checkouts.
+An exception request must plainly say **“create a new directory”**, give its exact
+absolute path, explain why the existing-checkout options are insufficient, and
+state who will preserve any unique work and remove the directory when finished.
+Do not disguise directory creation as “isolated work”, “safe delivery” or ordinary
+PR approval. Approval of those phrases alone is not a location exception.
+
+- **Do not create new directories directly under the main projects directory
+  (`~/projects`, currently `/home/adam/projects`).** This includes clones,
+  worktrees, contribution containers, release copies, scratch and evidence
+  directories, regardless of their name.
+- Additional checkout locations anywhere require explicit approval of the exact
+  absolute path. A new top-level projects directory additionally requires the
+  user to explicitly authorize that directory creation as an exception to this
+  rule. Generic fix, PR, release, ship, deploy, continuation or isolation authority
+  does not supply that exception. A busy/dirty checkout or failed preflight is
+  not permission to create a sibling clone. Coordinate or report the blocker.
+  Previous approval for one path does not authorize another or a new container.
+- Keep disposable validation artifacts under the owning repository's `target/`
+  according to the scratch rules; never move unique lasting work there or into
+  `/tmp`. Existing auxiliary checkouts are not precedent for creating more.
+  Before proposing retirement, account for unique commits, dirty/untracked work,
+  active users and retained release evidence; this rule does not authorize deletion.
 - Keep lasting changes in the normal checkout or an explicitly approved durable
   checkout outside `/tmp`, `target/` and caches. Disposable validation copies
   and patches must not become the sole copy of unfinished work. An issue records
