@@ -22,7 +22,7 @@ run('git','init','-q'); run('git','config','commit.gpgsign','false');
 write_file('policy.txt',"guide.md\nother.md\nspace name.md\n");
 write_file('guide.md',"guide\n"); write_file('code.rs',"code\n");
 my $base=commit();
-sub scope {my ($b,$h,$event,$ref)=@_; return capture($^X,$script,'--base',$b,'--head',$h,'--event',$event//'push','--ref',$ref//'refs/heads/main','--policy','policy.txt');}
+sub scope {my ($b,$h,$event,$ref,@options)=@_; return capture($^X,$script,'--base',$b,'--head',$h,'--event',$event//'push','--ref',$ref//'refs/heads/main','--policy','policy.txt',@options);}
 sub restore_base {run('git','reset','--hard','-q',$base); run('git','clean','-fdq');}
 write_file('guide.md',"updated\n"); my $docs=commit();
 is(scope($base,$docs),'docs','prose change');
@@ -83,6 +83,60 @@ mkdir 'scripts' or die $!;
 mkdir 'scripts/distribution' or die $!;
 write_file('scripts/distribution/governance-files.txt', "rules/rpc-budgets.md\n");
 is(scope($reviewed_base,commit()),'full','RPC guide plus snapshot catalog keeps full qualification');
+
+restore_base();
+write_file('policy.txt', "guide.md\nCHANGELOG.md\n");
+write_file('VERSION', "0.1.0\n");
+write_file('CHANGELOG.md', "# Changes\n\n## [0.1.0] - 2026-11-01\n\nInitial release.\n");
+my $version_base=commit();
+sub restore_version_base {run('git','reset','--hard','-q',$version_base); run('git','clean','-fdq');}
+sub version_scope {my ($b,$h,$event,$ref)=@_; return scope($b,$h,$event,$ref,'--allow-version-bump');}
+my $version_notes="# Changes\n\n## [0.1.1] - Unreleased\n\nClarified rules.\n\n## [0.1.0] - 2026-11-01\n\nInitial release.\n";
+sub bump {
+    write_file('VERSION', "0.1.1\n");
+    write_file('CHANGELOG.md', $version_notes);
+    write_file('guide.md', "Clarified guide\n");
+}
+bump(); my $version_head=commit();
+is(scope($version_base,$version_head),'full','version exception requires opt-in');
+is(version_scope($version_base,$version_head),'docs','valid prose and version bump');
+is(version_scope($version_base,$version_head,'pull_request'),'docs','valid PR version bump');
+is(version_scope($version_base,$version_head,'push','refs/tags/v0.1.1'),'full','version opt-in does not admit tags');
+write_file('VERSION', "broken working tree\n");
+is(version_scope($version_base,$version_head),'docs','classification reads committed metadata');
+restore_version_base(); bump(); write_file('code.rs', "changed\n");
+is(version_scope($version_base,commit()),'full','code plus valid bump remains full');
+restore_version_base(); bump(); write_file('unknown.md', "unreviewed\n");
+is(version_scope($version_base,commit()),'full','unknown prose plus bump remains full');
+for my $bad_version ("garbage\n", "0.01.1\n", "0.1.1-beta.1\n", "0.1.1\nextra\n", "0.1.2\n") {
+    restore_version_base(); bump(); write_file('VERSION', $bad_version);
+    is(version_scope($version_base,commit()),'full',"invalid or mismatched version: $bad_version");
+}
+restore_version_base(); bump(); write_file('VERSION', "0.0.9\n");
+write_file('CHANGELOG.md', "# Changes\n\n## [0.0.9]\n\nRollback\n");
+is(version_scope($version_base,commit()),'full','matching version rollback remains full');
+restore_version_base(); write_file('VERSION', "0.1.1\n");
+is(version_scope($version_base,commit()),'full','version-only change remains full');
+restore_version_base(); bump(); unlink 'VERSION' or die $!;
+is(version_scope($version_base,commit()),'full','deleted version remains full');
+restore_version_base(); bump(); chmod 0755, 'VERSION' or die $!;
+is(version_scope($version_base,commit()),'full','executable version remains full');
+restore_version_base(); bump(); unlink 'VERSION' or die $!; symlink 'guide.md', 'VERSION' or die $!;
+is(version_scope($version_base,commit()),'full','symlink version remains full');
+restore_version_base(); bump(); unlink 'CHANGELOG.md' or die $!;
+is(version_scope($version_base,commit()),'full','deleted changelog remains full');
+restore_version_base(); bump();
+write_file('CHANGELOG.md', "## [0.1.1] - Unreleased\n");
+is(version_scope($version_base,commit()),'full','pending version without history remains full');
+restore_version_base(); bump();
+write_file('CHANGELOG.md', $version_notes . "\n## [0.1.1]\nDuplicate\n");
+is(version_scope($version_base,commit()),'full','duplicate top version remains full');
+restore_version_base(); write_file('VERSION', "invalid\n"); my $invalid_base=commit();
+bump(); is(version_scope($invalid_base,commit()),'full','repair of invalid base requires full CI');
+restore_version_base(); unlink 'VERSION' or die $!; my $absent_base=commit();
+bump(); is(version_scope($absent_base,commit()),'full','introducing VERSION requires full CI');
+restore_version_base(); bump();
+is(version_scope($version_base,commit()),'docs','valid input recovers after rejected cases');
 done_testing();
 # Retain failures; remove only this fixture after a successful assertion set.
 if (Test::More->builder->is_passing) { chdir '/'; require File::Path; File::Path::remove_tree($fixture); }

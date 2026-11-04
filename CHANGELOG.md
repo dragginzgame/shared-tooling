@@ -2,6 +2,12 @@
 
 ## [0.29.3] - Unreleased
 
+### 🩹 Fixed
+
+- Keep documentation changes with a validated root version/changelog bump on
+  reduced push/PR CI. Invalid metadata and any code, workflow or unknown-path
+  change retain full native qualification; release gates remain unchanged.
+
 ### 🥾 Governance
 
 - Prefer `tests.rs` or `tests/` for Rust test bodies and test-only helpers so

@@ -38,7 +38,8 @@ jobs:
           CHANGE_HEAD: ${{ github.sha }}
         run: |
           scope="$(perl scripts/ci/classify-ci-change.pl --event "$CHANGE_EVENT" --ref "$CHANGE_REF" \
-            --base "$CHANGE_BASE" --head "$CHANGE_HEAD" --policy ci/docs-only-paths.txt)"
+            --base "$CHANGE_BASE" --head "$CHANGE_HEAD" --policy ci/docs-only-paths.txt \
+            --allow-version-bump)"
           case "$scope" in docs|full) ;; *) exit 1 ;; esac
           if [[ "$scope" == docs ]]; then
             git diff --check "$CHANGE_BASE...$CHANGE_HEAD" --
