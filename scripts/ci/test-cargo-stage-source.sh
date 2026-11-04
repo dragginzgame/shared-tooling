@@ -103,6 +103,11 @@ printf '\n// Damaged retained source\n' >> "$candidate/crates/api/src/lib.rs"
 if perl "$root/scripts/ci/prepare-cargo-stage-source.pl" --verify-projection "$fixture/first.json" > "$fixture/verify-drift.log" 2>&1; then
     echo 'damaged qualified inventory unexpectedly admitted' >&2; exit 1
 fi
+if (cd "$candidate"; CARGO_STAGE_TOOLS="$fixture/tools.json" CARGO_STAGE_IDENTITY="$(jq -er .identity "$fixture/first.json")" \
+    perl "$root/scripts/ci/observe-cargo-stage.pl") > "$fixture/observe-drift.log" 2>&1; then
+    echo 'stale source identity unexpectedly observed' >&2; exit 1
+fi
+grep -q 'clean qualified source' "$fixture/observe-drift.log"
 # The corresponding original source still exists in history. A cache mutation
 # must never become new qualified source, and the failed attempt is retained.
 if perl "$root/scripts/ci/prepare-cargo-stage-source.pl" --root "$PWD" --state target/stage-sources \

@@ -4,6 +4,7 @@ use strict;
 use warnings;
 use Cwd qw(abs_path getcwd);
 use File::Find;
+use Digest::SHA qw(sha256_hex);
 use JSON::PP;
 
 # Exact prepared-candidate stage inventory. No version filtering occurs here:
@@ -21,7 +22,23 @@ my $root=getcwd();
 my $tools=$ENV{CARGO_STAGE_TOOLS}//die "select bounded tool inputs\n";
 my $identity=$ENV{CARGO_STAGE_IDENTITY}//die "select final candidate identity\n";
 $identity =~ /\A[0-9a-f]{64}\z/ or die "invalid candidate identity\n";
-my %files=map {$_=>1} split /\0/,command('git','ls-files','-z');
+# A stale projection label must not bless source modified between leaf stages.
+command('git','status','--porcelain=v1','--untracked-files=all') eq ''
+    or die "candidate observation requires clean qualified source\n";
+my (%source_files,%source_modes);
+for my $entry (split /\0/,command('git','ls-tree','-rz','--full-tree','HEAD')) {
+    $entry =~ /\A(100644|100755) blob [0-9a-f]{40,64}\t([^\x00\r\n]+)\z/
+        or die "candidate observation needs regular tracked files\n";
+    my ($mode,$path)=($1,$2);
+    -f $path && !-l $path && -s $path <= 8388608 or die "invalid candidate source file\n";
+    open my $in,'<:raw',$path or die $!; my $digest=Digest::SHA->new(256);
+    $digest->addfile($in); close $in or die $!;
+    (((stat $path)[2] & 0111) != 0) == ($mode eq '100755') or die "candidate mode drift\n";
+    $source_files{$path}=$digest->hexdigest; $source_modes{$path}=$mode;
+}
+sha256_hex($json->encode({files=>\%source_files,modes=>\%source_modes})) eq $identity
+    or die "candidate content no longer matches qualified identity\n";
+my %files=map {$_=>1} keys %source_files;
 $files{$tools}=1;
 for my $path (@{document($tools)->{files}}) { $files{$path}=1; }
 my (%trees,%links);
