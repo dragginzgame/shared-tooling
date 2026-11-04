@@ -14,9 +14,25 @@ sub graph {
     open my $in,'-|','cargo','metadata','--offline','--locked','--all-features','--format-version','1' or die $!;
     local $/; my $raw=<$in>; close $in or die "closure metadata failed\n";
     chdir $original or die $!;
-    # Physical roots differ; Cargo package/feature/dependency identities may not.
-    $raw =~ s/\Q$root\E/<source>/g;
+    # Rebase only Cargo-owned path/ID fields. Do not normalize arbitrary package
+    # metadata strings, requirements or application configuration.
+    my $encoded=$root; $encoded =~ s{([^A-Za-z0-9._~/-])}{sprintf('%%%02X',ord($1))}ge;
+    my $id=sub { my ($value)=@_; $value =~ s{\Apath\+file://\Q$encoded\E/}{path+file://<source>/}; return $value; };
+    my $path=sub { my ($value)=@_; $value =~ s{\A\Q$root\E/}{<source>/}; return $value; };
     my $meta=$json->decode($raw);
+    for my $package (@{$meta->{packages}}) {
+        $package->{id}=$id->($package->{id});
+        $package->{manifest_path}=$path->($package->{manifest_path});
+        $_->{src_path}=$path->($_->{src_path}) for @{$package->{targets}};
+        for my $dependency (@{$package->{dependencies}}) {
+            $dependency->{path}=$path->($dependency->{path}) if defined $dependency->{path};
+        }
+    }
+    for my $node (@{$meta->{resolve}{nodes}}) {
+        $node->{id}=$id->($node->{id});
+        $node->{dependencies}=[map {$id->($_)} @{$node->{dependencies}}];
+        $_->{pkg}=$id->($_->{pkg}) for @{$node->{deps}};
+    }
     my %packages=map {$_->{id}=>$_} @{$meta->{packages}};
     my %nodes=map {$_->{id}=>$_} @{$meta->{resolve}{nodes}};
     my @roots=grep {$_->{name} eq $primary && !defined($_->{source})} values %packages;

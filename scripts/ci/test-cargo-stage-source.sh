@@ -6,8 +6,8 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 mkdir -p "$root/target"
 fixture=$(mktemp -d "$root/target/cargo-stage-source.XXXXXX")
 echo "Cargo candidate qualification retained: $fixture"
-mkdir -p "$fixture/source/crates/api/src" "$fixture/source/crates/engine/src" "$fixture/source/ci"
-cd "$fixture/source"
+mkdir -p "$fixture/source with spaces/crates/api/src" "$fixture/source with spaces/crates/engine/src" "$fixture/source with spaces/ci"
+cd "$fixture/source with spaces"
 cat > Cargo.toml <<'TOML'
 [workspace]
 members = ["crates/api", "crates/engine"]
