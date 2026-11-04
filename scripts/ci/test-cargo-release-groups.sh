@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Shared companions: scripts/ci/cargo-release-metadata.sh scripts/ci/check-dependency-pins.sh scripts/ci/run-release.sh scripts/ci/release-receipts.sh scripts/ci/fixture-lifecycle.sh scripts/ci/cargo-publication-selection.pl
 set -euo pipefail
-ordering_only=false
+selection=all
 if [[ $# != 0 ]]; then
-    [[ $# == 2 && "$1" == --case && "$2" == ordering ]] || { echo 'usage: test-cargo-release-groups.sh [--case ordering]' >&2; exit 2; }
-    ordering_only=true
+    [[ $# == 2 && "$1" == --case && ( "$2" == ordering || "$2" == admission ) ]] || { echo 'usage: test-cargo-release-groups.sh [--case ordering|admission]' >&2; exit 2; }
+    selection=$2
 fi
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_NAMESPACE
@@ -15,7 +15,7 @@ source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture="$(fixture_create "${TMPDIR:-/tmp}/cargo-release-groups-test.XXXXXX")"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Release-group fixtures retained"' EXIT
-if [[ "$ordering_only" == false ]]; then
+if [[ "$selection" == all ]]; then
     export CARGO_RELEASE_METADATA_EDITOR="${CARGO_RELEASE_METADATA_EDITOR:?select group-capable compiled IC Build editor}"
 fi
 export CARGO_RELEASE_METADATA_MAX_BYTES=8388608
@@ -71,6 +71,56 @@ cp docs/endpoint.md "$fixture/changelog"
 cp codec/Cargo.toml "$fixture/codec"
 cp ci/endpoint-pin.json "$fixture/endpoint-pin"
 refuse() { if "$@"; then echo 'unexpected release-group admission' >&2; exit 1; fi; }
+
+check_batched_admission() {
+    local selected status
+    GROUP_REAL_YQ=$(command -v "${YQ:-yq}") || return
+    GROUP_REAL_CARGO=$(command -v cargo) || return
+    export GROUP_REAL_YQ GROUP_REAL_CARGO GROUP_PARSE_EVENTS="$fixture/parse-events"
+    mkdir "$fixture/parse-bin" || return
+    cat > "$fixture/parse-bin/yq" <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ ${!#} == */codec/Cargo.toml || ${!#} == */derive/Cargo.toml || ${!#} == */endpoint/Cargo.toml ]]; then
+    printf 'members\n' >> "$GROUP_PARSE_EVENTS"
+    if [[ ${GROUP_PARSE_FAULT:-} == short && ${!#} == */codec/Cargo.toml ]]; then exit 0; fi
+    if [[ ${GROUP_PARSE_FAULT:-} == failed ]]; then "$GROUP_REAL_YQ" "$@"; exit 37; fi
+fi
+exec "$GROUP_REAL_YQ" "$@"
+SH
+    cat > "$fixture/parse-bin/cargo" <<'SH'
+#!/usr/bin/env bash
+set -euo pipefail
+[[ $1 != metadata ]] || printf 'metadata\n' >> "$GROUP_PARSE_EVENTS"
+exec "$GROUP_REAL_CARGO" "$@"
+SH
+    chmod +x "$fixture/parse-bin/yq" "$fixture/parse-bin/cargo" || return
+    : > "$GROUP_PARSE_EVENTS"
+    for selected in codec endpoint; do
+        PATH="$fixture/parse-bin:$PATH" YQ="$fixture/parse-bin/yq" bash "$group_helper" plan "$selected" \
+            > "$fixture/$selected.plan" || return
+        jq -e --arg selected "$selected" '.group == $selected and (.members | length > 0)' \
+            "$fixture/$selected.plan" > /dev/null || return
+    done
+    printf 'metadata\nmembers\nmembers\nmembers\nmetadata\nmembers\nmembers\nmembers\n' > "$fixture/parse-expected"
+    cmp "$GROUP_PARSE_EVENTS" "$fixture/parse-expected" || return
+    for GROUP_PARSE_FAULT in failed short; do
+        export GROUP_PARSE_FAULT
+        status=0
+        PATH="$fixture/parse-bin:$PATH" YQ="$fixture/parse-bin/yq" bash "$group_helper" plan endpoint \
+            > "$fixture/parse-$GROUP_PARSE_FAULT.log" 2>&1 || status=$?
+        [[ $status != 0 ]] || return 1
+        [[ $GROUP_PARSE_FAULT != failed || $status == 37 ]] || return 1
+        git diff --exit-code -- > /dev/null || return
+    done
+    unset GROUP_PARSE_FAULT
+}
+if [[ $selection != ordering ]]; then check_batched_admission || exit "$?"; fi
+if [[ $selection == admission ]]; then
+    fixture_complete=true
+    printf 'Batched Cargo admission preserves fresh graphs and refuses partial/failed parser output\n'
+    exit 0
+fi
 
 check_manifest_ordering() {
     local mode status source_commit
@@ -128,7 +178,7 @@ SH
     cp "$fixture/manifest" Cargo.toml || return
 }
 check_manifest_ordering || exit "$?"
-if [[ "$ordering_only" == true ]]; then
+if [[ "$selection" == ordering ]]; then
     fixture_complete=true
     printf 'Cargo release-group ordering fixtures passed\n'
     exit 0

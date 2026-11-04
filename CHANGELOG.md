@@ -12,6 +12,12 @@
 
 ### 🩹 Fixed
 
+- Assemble admitted Cargo member manifests once and join dependency paths in one
+  query, avoiding repeated growing JSON rewrites and per-dependency lookups.
+  Retain fresh locked metadata and path checks for every operation/candidate,
+  original parser failure status, and refusal of incomplete parser output.
+  [#354](https://github.com/dragginzgame/shared-tooling/issues/354)
+
 - Preserve executable invocation names while hashing resolved stage programs, so
   Cargo's rustup proxy remains Cargo and alias retargeting invalidates admission.
 
