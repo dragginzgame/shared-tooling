@@ -2,6 +2,19 @@
 
 ## [0.29.6] - Unreleased
 
+### 🔧 Changed
+
+- Add opt-in, isolated final-candidate Cargo sources rendered through the canonical
+  metadata editor. Qualify actual final versions once, with immutable stage proofs
+  and fresh source/group admissions; retain fresh real release metadata, archives
+  and publication-closure checks. Keep unqualified hosts/configuration on ordinary
+  execution. Provide compact stage custody and structured admission output.
+
+### 🩹 Fixed
+
+- Preserve executable invocation names while hashing resolved stage programs, so
+  Cargo's rustup proxy remains Cargo and alias retargeting invalidates admission.
+
 ### 🥾 Governance
 
 - Require group scope to reach actual validation commands, avoid nested repeated

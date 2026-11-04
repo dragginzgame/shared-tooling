@@ -8,6 +8,7 @@ use Digest::SHA qw(sha256_hex);
 use DynaLoader ();
 use File::Path qw(make_path);
 use File::Temp qw(tempdir);
+use File::Spec;
 use Fcntl qw(O_RDONLY O_NONBLOCK O_WRONLY O_CREAT O_EXCL S_ISREG);
 use Getopt::Long qw(GetOptions);
 use JSON::PP;
@@ -77,6 +78,10 @@ sub publish {
     print {$out} $json->encode($value),"\n" or die "write stage evidence: $!\n";
     close $out or die "close stage evidence: $!\n";
 }
+if (defined $admission_output) {
+    safe_route($admission_output);
+    !-e $admission_output && !-l $admission_output or die "occupied stage admission output\n";
+}
 safe_route($state);
 safe_route("$state/proofs");
 safe_route("$state/attempts");
@@ -92,12 +97,12 @@ safe_route($observer);
 $observer = abs_path($observer) // die "missing stage observer\n";
 -x $observer or die "stage observer is not executable\n";
 my @command = @ARGV;
-my $program;
+my ($program,$selected_program);
 for my $candidate ($command[0] =~ m{/} ? $command[0] : map { "$_/$command[0]" } split /:/,$env->{PATH}) {
-    if (-f $candidate && -x $candidate) { $program = abs_path($candidate); last; }
+    if (-f $candidate && -x $candidate) { $program = abs_path($candidate); $selected_program = File::Spec->rel2abs($candidate); last; }
 }
 defined($program) or die "stage executable absent from bounded environment\n";
-$command[0] = $program;
+$command[0] = $selected_program; # Preserve argv[0] for dispatchers such as rustup's cargo proxy.
 my $start = clock_gettime(CLOCK_MONOTONIC);
 my $runner_digest = sha256_hex(bytes(abs_path($0)));
 
@@ -127,7 +132,7 @@ sub observe {
     }
     $observer_digest eq sha256_hex(bytes($observer)) && $runner_digest eq sha256_hex(bytes(abs_path($0)))
         or die "stage observer/runner changed during observation\n";
-    -x $program && -x $observer or die "stage executable admission changed during observation\n";
+    -x $selected_program && abs_path($selected_program) eq $program && -x $observer or die "stage executable admission changed during observation\n";
     my $observation = canonical_record("$attempt/$phase-observation.json");
     exact_keys($observation,qw(schema files configuration));
     $json->encode($observation->{schema}) eq '1' && ref($observation->{files}) eq 'ARRAY' && @{$observation->{files}}

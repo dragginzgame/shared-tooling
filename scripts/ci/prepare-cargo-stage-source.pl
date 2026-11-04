@@ -164,8 +164,13 @@ if (-e $destination) {
 chdir $root or die $!;
 observe('git','rev-parse','HEAD') eq "$source\n" && observe('git','status','--porcelain=v1','--untracked-files=all') eq ''
     or die "candidate source/index drifted during rendering\n";
+my %metadata=map {$_=>1} grep {m{(?:\A|/)Cargo\.(?:toml|lock)\z}} @paths;
+for my $group (@{$policy->{groups}}) {
+    $metadata{$group->{changelog}}=1; $metadata{$_}=1 for @{$group->{metadata_files}//[]};
+}
 my $result={schema=>1,kind=>'cargo-final-candidate-source',source=>$source,root=>$root,
-    directory=>$destination,identity=>$identity,versions=>\%versions,original=>\%original,projected=>\%projected,
+    directory=>$destination,identity=>$identity,versions=>\%versions,original=>{map {$_=>$original{$_}} sort keys %metadata},
+    projected=>{map {$_=>$projected{$_}} sort keys %metadata},
     editor=>{path=>$editor,sha256=>tool_digest($editor)}};
 write_file("$attempt/projection.json",$json->encode($result)."\n");
 print $json->encode($result),"\n";
