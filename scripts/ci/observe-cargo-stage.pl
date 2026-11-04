@@ -19,6 +19,7 @@ sub document {
     return $json->decode($raw);
 }
 my $root=getcwd();
+!-e "$root/.tools" && !-l "$root/.tools" or die "candidate tool roots must stay caller-owned\n";
 my $tools=$ENV{CARGO_STAGE_TOOLS}//die "select bounded tool inputs\n";
 my $identity=$ENV{CARGO_STAGE_IDENTITY}//die "select final candidate identity\n";
 $identity =~ /\A[0-9a-f]{64}\z/ or die "invalid candidate identity\n";

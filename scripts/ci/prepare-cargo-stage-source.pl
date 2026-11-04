@@ -75,6 +75,7 @@ if (defined $verify_projection) {
         && ($projection->{identity}//'') =~ /\A[0-9a-f]{64}\z/
         or die "invalid retained candidate projection\n";
     my $directory=$projection->{directory}; regular($directory);
+    !-e "$directory/.tools" && !-l "$directory/.tools" or die "candidate tool roots must stay caller-owned\n";
     chdir $directory or die "missing retained candidate\n";
     observe('git','status','--porcelain=v1','--untracked-files=all') eq ''
         or die "retained candidate source is dirty\n";

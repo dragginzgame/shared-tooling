@@ -50,6 +50,12 @@ prepare() {
 prepare first
 candidate=$(jq -er .directory "$fixture/first.json")
 perl "$root/scripts/ci/prepare-cargo-stage-source.pl" --verify-projection "$fixture/first.json" > "$fixture/verify-source.log"
+mkdir "$candidate/.tools"
+if perl "$root/scripts/ci/prepare-cargo-stage-source.pl" --verify-projection "$fixture/first.json" > "$fixture/tools-root-refusal.log" 2>&1; then
+    echo 'candidate-local tool root unexpectedly admitted' >&2; exit 1
+fi
+grep -q 'caller-owned' "$fixture/tools-root-refusal.log"
+rmdir "$candidate/.tools"
 # Exercise actual Cargo through the shared exact-input runner. Later group
 # renders must admit the same original execution, with fresh source/group IDs.
 mkdir -p "$fixture/stage-tmp"
