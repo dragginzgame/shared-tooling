@@ -521,5 +521,22 @@ cargo package --locked --offline --allow-dirty -p public > "$fixture/private-pac
 tar -xOf target/package/public-0.2.0.crate public-0.2.0/Cargo.toml > "$fixture/packaged.toml"
 yq -p toml -o json '.' "$fixture/packaged.toml" | jq -e '
     (."dev-dependencies" // {} | has("test_helper") | not)' > /dev/null
+# An upstream-owned dev helper stays outside workspace release membership.
+sed 's/members = \["public", "helper"\]/members = ["public"]\nexclude = ["helper"]/' Cargo.toml > "$fixture/excluded-catalog"
+cp "$fixture/excluded-catalog" Cargo.toml
+printf '\n[workspace]\n' >> helper/Cargo.toml
+jq '.groups[0].members=["public"] | .groups[0].dependencies=["public"]' \
+    ci/cargo-release-groups.json > "$fixture/excluded-policy"
+cp "$fixture/excluded-policy" ci/cargo-release-groups.json
+cargo metadata --locked --offline --format-version 1 > "$fixture/excluded-metadata.json"
+jq -e '.workspace_members | length == 1' "$fixture/excluded-metadata.json" > /dev/null
+bash "$group_helper" plan public | jq -e '.members == ["public"]' > /dev/null
+cp helper/Cargo.toml "$fixture/excluded-helper"
+RELEASE_GROUP=public RELEASE_PREVIOUS=0.2.0 RELEASE_VERSION=0.3.0 RELEASE_DATE=2026-11-04 \
+    bash "$helper" prepare public > "$fixture/excluded-prepare.log" 2>&1
+cmp helper/Cargo.toml "$fixture/excluded-helper"
+yq -p toml -o json '.' Cargo.lock | jq -e \
+    '[.package[] | select(.name == "private-helper") | .version] == ["0.2.0"]' > /dev/null
+
 fixture_complete=true
 printf 'Cargo release-group fixtures passed\n'

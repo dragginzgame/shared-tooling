@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.29.5] - 2026-11-04
+
+### 🩹 Fixed
+
+- Admit resolved local dependencies outside Cargo workspace membership without
+  assigning them to a release group. Preserve exact local lock identities and
+  workspace ownership checks; excluded development helpers retain their versions.
+
 ## [0.29.4] - Unreleased
 
 ### 🩹 Fixed
