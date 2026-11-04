@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.29.4] - Unreleased
+
+### 🩹 Fixed
+
+- Guard retained release state before work and around adapter steps. Refuse
+  oversized or stale bulk evidence and nested build/cache trees without deleting
+  recovery files; preserve the adapter's original failure status.
+
+### 🥾 Governance
+
+- Keep Git administrative directories free of build trees and bulk retired-
+  checkout archives. Require bounded, visible retention for tool-owned recovery
+  state; distinguish compact evidence from reproducible compiler output.
+
+- Align overlapping rules on group changelog links, Metrics scope and optional
+  PR branches. Distinguish disposable Git test fixtures from extra working
+  checkouts, and clarify pending-version preparation and directory exceptions.
+
 ## [0.29.3] - Unreleased
 
 ### 🩹 Fixed
