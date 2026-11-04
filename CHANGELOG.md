@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.29.3] - Unreleased
+
+### 🥾 Governance
+
+- Prefer `tests.rs` or `tests/` for Rust test bodies and test-only helpers so
+  file-based LOC reports can separate tests from production source. Preserve
+  ordinary module discovery and document necessary inline exceptions.
+
+- Restrict Metrics to application-tree instrumentation reported through Canic's
+  shared metrics adapter. Prohibit general math, validation and unrelated report
+  dependencies or helper re-exports; keep transport projection in the adapter.
+
+- Clarify fixed-issue coverage: use root `CHANGELOG.md` for workspaces without
+  independent release groups, or the owning group's changelog when groups exist.
+  Grouped workspaces keep a root navigation index without duplicate issue entries.
+  This supersedes the earlier requirement for a root fixed-issue index.
+
 ## [0.29.2] - Unreleased
 
 ### ➕ Added
