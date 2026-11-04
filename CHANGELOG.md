@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.29.6] - Unreleased
+
+### 🥾 Governance
+
+- Require group scope to reach actual validation commands, avoid nested repeated
+  lint/setup and unconditional tooling self-tests, and use qualified stage
+  evidence for unchanged work across group releases and publication steps.
+
 ## [0.29.5] - 2026-11-04
 
 ### 🩹 Fixed

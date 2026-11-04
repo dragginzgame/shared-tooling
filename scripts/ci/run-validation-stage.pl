@@ -15,9 +15,10 @@ use POSIX qw(uname);
 use Time::HiRes qw(clock_gettime CLOCK_MONOTONIC);
 
 Getopt::Long::Configure(qw(no_auto_abbrev no_ignore_case require_order));
-my ($state, $stage, $contract, $source, $group, $observer, $environment, $limit);
+my ($state, $stage, $contract, $source, $group, $observer, $environment, $limit, $admission_output);
 GetOptions('state=s'=>\$state, 'stage=s'=>\$stage, 'contract=s'=>\$contract,
     'source=s'=>\$source, 'group=s'=>\$group, 'observe=s'=>\$observer,
+    'admission-output=s'=>\$admission_output,
     'environment=s'=>\$environment, 'max-bytes=s'=>\$limit)
     && @ARGV && !grep { !defined($_) || !length($_) } ($state,$stage,$contract,$source,$group,$observer,$environment,$limit)
     or die "usage: run-validation-stage.pl --state DIR --stage NAME --contract REV --source ID --group NAME --observe EXECUTABLE --environment JSON --max-bytes N -- COMMAND [ARG...]\n";
@@ -220,8 +221,10 @@ my $final = observe('admission');
 $json->encode($context) eq $json->encode($final) or die "stage inputs drifted before admission\n";
 sha256_hex(bytes($proof_path)) eq $proof_digest or die "stage execution proof changed before admission\n";
 check_logs($proof);
-publish("$attempt/admission.json",{schema=>1,kind=>'release-stage-admission',mode=>$mode,
+my $admission = {schema=>1,kind=>'release-stage-admission',mode=>$mode,
     source=>$source,group=>$group,stage=>$stage,contract=>$contract,context_sha256=>$key,
     execution_proof=>$proof_path,execution_proof_sha256=>$proof_digest,
-    elapsed_seconds=>clock_gettime(CLOCK_MONOTONIC)-$start});
+    elapsed_seconds=>clock_gettime(CLOCK_MONOTONIC)-$start};
+publish("$attempt/admission.json",$admission);
+if (defined $admission_output) { safe_route($admission_output); publish($admission_output,$admission); }
 print "Validation stage $stage: $mode; admission $attempt/admission.json\n";
