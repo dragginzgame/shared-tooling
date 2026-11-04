@@ -158,8 +158,8 @@ if (-e $destination) {
     run("$attempt/preparation.log",'git','config','core.hooksPath','/dev/null');
     run("$attempt/preparation.log",'git','add','--',@paths);
     run("$attempt/preparation.log",'git','-c','commit.gpgsign=false','commit','-qm','Frozen final candidate qualification source');
-    # Managed tool selections remain caller-owned; no tool installation or copy.
-    symlink "$root/.tools","$destination/.tools" or die "select prepared tools: $!\n" if -d "$root/.tools";
+    # Managed tool selections remain caller-owned. Consumers pass an explicit
+    # read-only tools root; physical activation roots are never redirected.
 }
 chdir $root or die $!;
 observe('git','rev-parse','HEAD') eq "$source\n" && observe('git','status','--porcelain=v1','--untracked-files=all') eq ''

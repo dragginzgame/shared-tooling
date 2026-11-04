@@ -246,7 +246,8 @@ Rendering changes no parent source/index. A retained candidate is checked for
 source/mode drift and dirty state before use; it is never silently repaired.
 Source, failed preparations and execution logs remain under the declared target
 state. This is reproducible validation scratch, not an additional implementation
-or delivery checkout. Managed tool selection stays with the caller.
+or delivery checkout. Managed tool selection stays with the caller through an explicit read-only
+tools root. The producer creates no tool-root symlink and performs no setup.
 
 `observe-cargo-stage.pl` inventories exact candidate files, expanded dependency
 sources, native compiler tools/headers and Rust toolchain payloads. It runs in an
