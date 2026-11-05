@@ -29,7 +29,8 @@ if (($ARGV[0] // '') eq '--table') {
             push @rows, map {['  '.safe_label($_->{crate}),$_->{counts}]} @{$w->{report}{crates}} if $expand eq '--subcrates';
         } else { push @rows, [safe_label($w->{name}), {map {$_=>$w->{status}} (@categories,'total')}]; }
     }
-    push @rows, [$r->{partial} ? 'TOTAL (partial)' : 'TOTAL', $r->{totals}];
+    my $aggregate=exists $r->{workspaces};
+    push @rows, [$r->{partial} ? 'TOTAL (partial)' : 'TOTAL', $r->{totals}] if $aggregate;
     my @keys=(@categories,'total');
     my @titles=('app/lib','tests','examples','bench','tooling','unclassified','total');
     my @widths=map {length($_)} @titles;
@@ -46,7 +47,7 @@ if (($ARGV[0] // '') eq '--table') {
     printf '  %*s', $widths[$_],$titles[$_] for 0..$#keys;
     print "\n",$separator;
     for my $i (0..$#rows) {
-        print $separator if $i==$#rows;
+        print $separator if $aggregate && $i==$#rows;
         printf '%-*s', $width,$rows[$i][0];
         for my $j (0..$#keys) {printf '  %*s', $widths[$j],$rows[$i][1]{$keys[$j]} // 'N/A';}
         print "\n";

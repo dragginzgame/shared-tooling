@@ -5,7 +5,8 @@
 ### 🔧 Changed
 
 - Show the workspace directory name instead of the full Cargo manifest path in
-  single-workspace LOC tables; retain the full manifest path in JSON.
+  single-workspace LOC tables and omit their duplicate TOTAL row, including with
+  `--subcrates`. Keep sibling aggregate totals and the full manifest path in JSON.
 
 - Prohibit embedded Rust source injection and generated-entrypoint patch/build/
   restore flows, including test canisters. Require explicit modules or fixture
