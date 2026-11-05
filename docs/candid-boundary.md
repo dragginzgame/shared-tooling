@@ -33,11 +33,14 @@ external DTO, record its exact declaration prefix:
 ```
 
 Prefixes compare Rust tokens, ignoring comments and whitespace. They must name a
-struct, enum, union, trait, type, function, or trait implementation, contain no
-body/braces/semicolon, and match exactly once in the selected file. Use the
+struct, enum, union, trait, type, function, or named trait/inherent implementation.
+They contain no body/braces/semicolon and match exactly once in the selected file. Use the
 shortest unambiguous prefix covering the Candid reference. For example,
 `impl CandidType for HttpResponse` or `fn decode<T: CandidType>` admits that
-specific external implementation/helper. Conditional derives must include their
+specific external implementation/helper. An inherent implementation must include
+its complete named header through any where-clause, immediately before its body
+brace; for example `impl<T: CandidType> QueryArchiveFn<T>`. A partial trait-name
+prefix cannot admit a trait implementation. Conditional derives must include their
 attribute and the following named declaration. Every admitted trait reference
 must be covered once. Missing, stale, ambiguous, overlapping and unused entries
 fail. Directory globs and whole-module allowances are not supported. Adding a

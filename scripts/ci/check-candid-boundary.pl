@@ -76,12 +76,16 @@ for my $entry (@{$policy->{allowances}}) {
     my ($tokens) = lex($entry->{declaration});
     my $signature = join ' ', @$tokens;
     # Review a declaration prefix, never an entire module/body or bare trait name.
+    # An inherent implementation must include its complete named header; matching
+    # also requires the opening body brace, so a trait-name prefix cannot admit it.
+    my $inherent = $signature =~ /\bimpl (?:<.+> )?(?:r#)?[_\p{XID_Start}][\p{XID_Continue}]*/
+        && $signature !~ /\bfor\b/;
     @$tokens <= 256 && $signature !~ /[{};]/ &&
         ($signature =~ /\b(?:struct|enum|union|trait|type|fn) (?:r#)?[_\p{XID_Start}][\p{XID_Continue}]*/ ||
-         $signature =~ /\bimpl\b.+\bfor (?:r#)?[_\p{XID_Start}][\p{XID_Continue}]*/) &&
+         $signature =~ /\bimpl\b.+\bfor (?:r#)?[_\p{XID_Start}][\p{XID_Continue}]*/ || $inherent) &&
         $signature !~ /\b(?:mod|macro_rules)\b/
         or die "allowance must be a bounded declaration prefix without a body\n";
-    push @{$allow{$entry->{path}}}, [$tokens, $entry];
+    push @{$allow{$entry->{path}}}, [$tokens, $entry, $inherent];
 }
 my @errors;
 for my $file (sort keys %files) {
@@ -115,11 +119,12 @@ for my $file (sort keys %files) {
     }
     my %covered;
     for my $allowance (@{$allow{$file}//[]}) {
-        my ($needle,$entry)=@$allowance;
+        my ($needle,$entry,$inherent)=@$allowance;
         my @matches;
         for (my $i=0; $i+@$needle<=@$t; $i++) {
             my $same=1;
             for my $j (0..$#$needle) { if ($t->[$i+$j] ne $needle->[$j]) { $same=0; last; } }
+            next if $inherent && ($t->[$i+@$needle]//'') ne '{';
             push @matches,$i if $same;
         }
         @matches == 1 or die "$file: stale or ambiguous declaration allowance: $entry->{declaration}\n";

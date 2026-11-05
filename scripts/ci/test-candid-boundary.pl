@@ -63,6 +63,15 @@ check("$declaration { status: u16 } #[derive(CandidType)] struct Application;",[
 check("// noise\n#[derive( /* comment */ CandidType)]\npub struct HttpResponse {status:u16}",[allow($declaration)],0,undef);
 check('impl CandidType for HttpResponse {}',[allow('impl CandidType for HttpResponse')],0,undef);
 check('fn decode<T: CandidType>(v:T) {}',[allow('fn decode<T: CandidType>')],0,undef);
+my $callback='impl<Input: CandidType, Output: CandidType> QueryArchiveFn<Input, Output>';
+check("$callback { fn new() {} }",[allow($callback,protocol=>'ICRC archive callback')],0,undef);
+check("$callback where Input: Clone {}",[allow($callback)],1,qr/stale/);
+check("$callback {} impl<T: CandidType> Other<T> {}",[allow($callback)],1,qr/outside a reviewed/);
+check('impl<T> QueryArchiveFn<T> where T: CandidType {}',
+    [allow('impl<T> QueryArchiveFn<T> where T: CandidType')],0,undef);
+check('impl CandidType for HttpResponse {}',[allow('impl CandidType')],1,qr/stale/);
+check("$callback {}",[allow('impl<Input: CandidType, Output: CandidType>')],1,qr/bounded declaration/);
+
 check('use x::CandidType as External; #[derive(External)] struct Request;',[allow('#[derive(External)] struct Request')],0,undef);
 check('#[derive(CandidType)] struct Comparison;',[allow('#[derive(CandidType)] struct Comparison',kind=>'codec-comparison',protocol=>'Wire/Candid benchmark',reason=>'Explicit competitor fixture')],0,undef);
 for my $entry (

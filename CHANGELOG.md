@@ -4,6 +4,10 @@
 
 ### 🔧 Changed
 
+- Admit exact complete generic inherent implementation headers in the Candid
+  source checker, including external ICRC archive callbacks. Reject partial
+  trait-name prefixes and changed or unreviewed implementation bounds.
+
 - Bound tracked experimental evidence to compact topic summaries and selected
   results; keep raw logs, bulk tables and archives under `target/evidence/`.
   Define explicit retention exceptions and historical cleanup without requiring
