@@ -23,7 +23,7 @@ sub safe_label { my $s=shift; $s =~ s/([\x00-\x1f\x7f])/sprintf('\\x%02x',ord($1
 if (($ARGV[0] // '') eq '--table') {
     shift; my $r=$json->decode(read_file(shift)); my $expand=shift // '';
     my @rows;
-    for my $w (@{$r->{workspaces} // [{name=>$r->{manifest},report=>$r}]}) {
+    for my $w (@{$r->{workspaces} // [{name=>basename(dirname($r->{manifest})),report=>$r}]}) {
         if ($w->{report}) {
             push @rows, [safe_label($w->{name}), $w->{report}{totals}];
             push @rows, map {['  '.safe_label($_->{crate}),$_->{counts}]} @{$w->{report}{crates}} if $expand eq '--subcrates';

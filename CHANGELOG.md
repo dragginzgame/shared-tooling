@@ -4,6 +4,9 @@
 
 ### 🔧 Changed
 
+- Show the workspace directory name instead of the full Cargo manifest path in
+  single-workspace LOC tables; retain the full manifest path in JSON.
+
 - Prohibit embedded Rust source injection and generated-entrypoint patch/build/
   restore flows, including test canisters. Require explicit modules or fixture
   crates; retain legitimate data fixtures, compiler/parser inputs and normal
