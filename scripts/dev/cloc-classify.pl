@@ -32,24 +32,25 @@ if (($ARGV[0] // '') eq '--table') {
     my $aggregate=exists $r->{workspaces};
     push @rows, [$r->{partial} ? 'TOTAL (partial)' : 'TOTAL', $r->{totals}] if $aggregate;
     my @keys=(@categories,'total');
-    my @titles=('app/lib','tests','examples','bench','tooling','unclassified','total');
+    my @titles=('app/lib','tests','examples','bench','tooling','???','total');
+    my @gaps=('     ',map {'  '} 1..$#keys);
     my @widths=map {length($_)} @titles;
     my $width=length('workspace/crate');
     for my $row (@rows) {
         $width=length($row->[0]) if length($row->[0])>$width;
         for my $i (0..$#keys) {
-            my $n=length($row->[1]{$keys[$i]} // 'N/A');
+            my $n=length($row->[1]{$keys[$i]} // 'n/a');
             $widths[$i]=$n if $n>$widths[$i];
         }
     }
-    my $separator=('-' x $width).join('',map {'  '.('-' x $_)} @widths)."\n";
+    my $separator=('-' x $width).join('',map {$gaps[$_].('-' x $widths[$_])} 0..$#keys)."\n";
     printf '%-*s', $width, 'workspace/crate';
-    printf '  %*s', $widths[$_],$titles[$_] for 0..$#keys;
+    printf '%s%*s', $gaps[$_],$widths[$_],$titles[$_] for 0..$#keys;
     print "\n",$separator;
     for my $i (0..$#rows) {
         print $separator if $aggregate && $i==$#rows;
         printf '%-*s', $width,$rows[$i][0];
-        for my $j (0..$#keys) {printf '  %*s', $widths[$j],$rows[$i][1]{$keys[$j]} // 'N/A';}
+        for my $j (0..$#keys) {printf '%s%*s', $gaps[$j],$widths[$j],$rows[$i][1]{$keys[$j]} // 'n/a';}
         print "\n";
     }
     exit;

@@ -32,10 +32,10 @@ report "$parent" > "$FIXTURE/summary"
 report --subcrates "$parent" > "$FIXTURE/expanded"
 [[ "$(awk 'END {print $2,$3,$4,$5,$6,$7,$8}' "$FIXTURE/summary")" == '2 4 0 0 0 0 6' ]]
 [[ "$(awk 'END {print $2,$3,$4,$5,$6,$7,$8}' "$FIXTURE/expanded")" == '2 4 0 0 0 0 6' ]]
-awk -v width="$((${#long_name}+2))" 'NR==1 {n=length($0)} length($0)!=n {exit 1} END {if(n!=width+63)exit 1}' "$FIXTURE/expanded"
+awk -v width="$((${#long_name}+2))" 'NR==1 {n=length($0)} length($0)!=n {exit 1} END {if(n!=width+57)exit 1}' "$FIXTURE/expanded"
 [[ "$(wc -l < "$FIXTURE/summary" | tr -d ' ')" == 7 ]]
 [[ "$(wc -l < "$FIXTURE/expanded" | tr -d ' ')" == 9 ]]
-[[ "$(head -1 "$FIXTURE/summary" | xargs)" == 'workspace/crate app/lib tests examples bench tooling unclassified total' ]]
+[[ "$(head -1 "$FIXTURE/summary" | xargs)" == 'workspace/crate app/lib tests examples bench tooling ??? total' ]]
 [[ "$(grep -Ec '^[- ]+$' "$FIXTURE/summary")" == 2 ]]
 (cd "$parent" && report) > "$FIXTURE/default"
 cmp "$FIXTURE/summary" "$FIXTURE/default"
@@ -64,7 +64,7 @@ done
 mkdir "$FIXTURE/no-rust"
 git init -q "$FIXTURE/no-rust/notes"
 report "$FIXTURE/no-rust" > "$FIXTURE/no-rust.out"
-grep -E '^TOTAL +N/A' "$FIXTURE/no-rust.out" >/dev/null
+grep -E '^TOTAL +n/a' "$FIXTURE/no-rust.out" >/dev/null
 if report --json "$parent" > "$FIXTURE/rejected.json" 2>/dev/null; then exit 1; fi
 [[ ! -s "$FIXTURE/rejected.json" ]]
 echo 'Sibling category totals, alignment, Make wiring and partial failure passed'

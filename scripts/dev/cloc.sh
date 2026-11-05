@@ -12,6 +12,7 @@ usage() {
     cat <<'EOF'
 Usage: cloc.sh [--subcrates] [--json] [--manifest PATH] [directory]
        cloc.sh --check-tools
+       cloc.sh --help
 
 Report Rust library/app, tests, examples, benchmarks, build/tooling,
 unclassified and all-source LOC per workspace. Inline test code is separated.
@@ -25,6 +26,13 @@ configuration and target directory apply. The default is the Git root workspace.
 Prepared host tools beside this script's checkout take precedence over PATH.
 --check-tools checks prerequisites without inspecting a workspace or installing.
 --json emits one complete document with crate rows and totals on success.
+The ??? column is unclassified LOC. For classification notes, file paths and
+reasons, run --json for the individual workspace and inspect diagnostics.
+Examples:
+  cloc.sh                         Workspace summary
+  cloc.sh --subcrates              Summary with member crates
+  cloc.sh ..                       Sibling workspace summaries
+  cloc.sh --json | jq .diagnostics Classification notes
 Each selected source path counts once, including files with identical contents.
 EOF
 }
@@ -55,7 +63,7 @@ report_repositories() (
         count=$((count + 1))
         name="${repo##*/}"
         case "$name" in *$'\n'*|*$'\r'*|*$'\t'*) echo 'error: repository name contains line breaks or tabs' >&2; exit 1 ;; esac
-        result=N/A
+        result=n/a
         if ! git_root="$(git -C "$repo" rev-parse --show-toplevel 2>/dev/null)" || [[ "$git_root" != "$repo" ]]; then
             result=ERROR
         elif [[ -f "$repo/Cargo.toml" ]]; then
@@ -75,14 +83,10 @@ report_repositories() (
         {workspaces:.,partial:($partial != 0),totals:
           (reduce .[] as $w ({library_app:0,tests:0,examples:0,benchmarks:0,build_tooling:0,unclassified:0,total:0};
             if $w.report then . as $sum | with_entries(.value += $w.report.totals[.key]) else . end))}
-        | if all(.workspaces[]; .report == null) then .totals |= with_entries(.value="N/A") else . end
+        | if all(.workspaces[]; .report == null) then .totals |= with_entries(.value="n/a") else . end
     ' "$report_dir/rows" > "$report_dir/report.json"
     flags=(); if [[ "$subcrates" == true ]]; then flags+=(--subcrates); fi
     perl "$ROOT/scripts/dev/cloc-classify.pl" --table "$report_dir/report.json" "${flags[@]}"
-    diagnostic_count="$(jq '[.workspaces[].report.diagnostics // [] | length] | add' "$report_dir/report.json")"
-    if [[ "$diagnostic_count" != 0 ]]; then
-        printf 'Classification notes: %s (use --json for each workspace for paths and reasons)\n' "$diagnostic_count" >&2
-    fi
     exit "$status"
 )
 
@@ -190,8 +194,4 @@ if [[ "$json" == true ]]; then
 else
     flags=(); if [[ "$subcrates" == true ]]; then flags+=(--subcrates); fi
     perl "$ROOT/scripts/dev/cloc-classify.pl" --table "$FILE_LIST_DIR/report.json" "${flags[@]}"
-    diagnostic_count="$(jq '.diagnostics | length' "$FILE_LIST_DIR/report.json")"
-    if [[ "$diagnostic_count" != 0 ]]; then
-        printf 'Classification notes: %s (use --json for paths and reasons)\n' "$diagnostic_count" >&2
-    fi
 fi

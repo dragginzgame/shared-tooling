@@ -7,6 +7,9 @@
 - Show the workspace directory name instead of the full Cargo manifest path in
   single-workspace LOC tables and omit their duplicate TOTAL row, including with
   `--subcrates`. Keep sibling aggregate totals and the full manifest path in JSON.
+- Label unclassified LOC as `???`, widen the name-to-count gap by three spaces,
+  use lowercase `n/a`, and move classification-note guidance from default output
+  to `--help`.
 
 - Prohibit embedded Rust source injection and generated-entrypoint patch/build/
   restore flows, including test canisters. Require explicit modules or fixture

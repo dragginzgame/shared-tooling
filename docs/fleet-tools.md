@@ -119,7 +119,8 @@ category keys above plus `total`. File records retain category, counts, target
 categories, `source_sha256`, `shared` and `generated` flags. Category counts sum exactly to the
 all-source total. Schema 1's `runtime_loc`, percentages and test-function counts
 are removed; update consumers rather than retaining aliases. Failure emits no
-partial workspace JSON. Text output announces the number of diagnostic notes.
+partial workspace JSON. Text uses `???` for unclassified LOC; diagnostic notes
+remain in JSON. Use `cloc.sh --help` for commands and diagnostic guidance.
 
 ## Tooling adoption audit
 
