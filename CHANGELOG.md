@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.30.3] - Unreleased
+
+### 🔧 Changed
+
+- Add a lightweight shared Candid source-boundary check with exact declaration
+  allowances for external protocols and codec comparisons. Detect conditional
+  derives, implementations, generic bounds and same-file aliases without Cargo;
+  document macro/type-resolution limits and consumer integration.
+  [#358](https://github.com/dragginzgame/shared-tooling/issues/358).
+
 ## [0.30.2] - Unreleased
 
 ### 🩹 Fixed

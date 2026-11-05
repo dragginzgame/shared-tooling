@@ -1,5 +1,5 @@
 # Engineering contracts by task
-<!-- Shared companions: docs/principles/rust-code-hygiene.md docs/tool-store-maintenance.md rules/agent-maintenance.md rules/change-reporting.md rules/contributions.md rules/rust-workspaces.md tasks/README.md tasks/cargo-tool-versions.md -->
+<!-- Shared companions: docs/candid-boundary.md docs/principles/rust-code-hygiene.md docs/tool-store-maintenance.md rules/agent-maintenance.md rules/change-reporting.md rules/contributions.md rules/rust-workspaces.md tasks/README.md tasks/cargo-tool-versions.md -->
 
 These contracts supplement the [engineering baseline](../DRAGGINZGAME.md).
 Read the applicable sections when the task touches their subject. This file is
@@ -211,6 +211,10 @@ an unqualified deploy has the defined fleet scope.
 
 ## IC application encoding
 
+- Enforce the lexical application-type boundary with the shared
+  [Candid source check](../docs/candid-boundary.md), using reviewed declaration
+  allowances for named external protocols and codec comparisons. Review macro
+  expansion and cross-module aliases separately; the check is not type resolution.
 - **Use `ic-wire` for all application endpoints we own**, including public
   endpoints called by third parties, owned canister RPC and frontend/client
   payloads. Caller location or endpoint visibility does not select the codec.
