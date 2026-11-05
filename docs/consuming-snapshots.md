@@ -1011,7 +1011,7 @@ recipes only after testing their actual callers and hook, following the
 Rust toolchain. Shared Tooling itself selects `CLOC_REPORT` and `CLOC_ROOT` before
 the include to summarize sibling workspaces; consumers normally use the defaults.
 Installing the raw cloc executable alone does not add these Make commands.
-Use the [tooling audit tasks](fleet-tools.md#tooling-adoption-audit) for snapshot
+Use the [tooling audit tasks](https://github.com/dragginzgame/shared-tooling/blob/08cd17240fd60dfd309e35eb131e73323e883e6f/docs/fleet-tools.md#tooling-adoption-audit) for snapshot
 integrity, applicable upstream changes and actual consumer wiring. The former
 `cloc-tooling` command is retired; Rust LOC remains available through `cloc.sh`.
 

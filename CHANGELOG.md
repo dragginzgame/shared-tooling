@@ -35,6 +35,12 @@
 
 ### 🩹 Fixed
 
+- Keep exported LOC and audit guidance self-contained by linking central fleet
+  documentation at its reviewed commit, without requiring consumer copies of
+  fleet inventories. Qualify the affected documents in a canonical governance
+  export and retain missing-target refusal.
+  [#355 — Complete exported documentation closure for LOC classification and audit guidance](https://github.com/dragginzgame/shared-tooling/issues/355).
+
 - Avoid repeated source copies and test-range searches in the LOC classifier;
   report workspace progress on stderr while assembling sibling totals.
 - Compact LOC table headings and size columns to their contents; restore dashed

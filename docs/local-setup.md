@@ -177,7 +177,7 @@ installation authority to an inspection command or change the setup order.
 
 The installed `cloc` executable and local workspace `make cloc` are common setup.
 The consumer include exports workspace LOC. Tooling adoption is reviewed through
-the [agent audit tasks](fleet-tools.md#tooling-adoption-audit); consumers need no
+the [agent audit tasks](https://github.com/dragginzgame/shared-tooling/blob/08cd17240fd60dfd309e35eb131e73323e883e6f/docs/fleet-tools.md#tooling-adoption-audit); consumers need no
 fleet reporter or its regression suites.
 
 ## Catalog selection

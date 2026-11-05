@@ -127,6 +127,7 @@ run_fixture test-cargo-publication-attempt.sh bash "$ROOT/scripts/ci/test-cargo-
 run_fixture test-cargo-publication-adapter.sh bash "$ROOT/scripts/ci/test-cargo-publication-adapter.sh"
 run_fixture test-tool-catalogs.pl perl "$ROOT/scripts/ci/test-tool-catalogs.pl"
 run_fixture test-documentation-links.pl perl "$ROOT/scripts/ci/test-documentation-links.pl"
+run_fixture test-exported-doc-links.sh bash "$ROOT/scripts/ci/test-exported-doc-links.sh"
 run_fixture test-license.pl perl "$ROOT/scripts/ci/test-license.pl"
 run_fixture test-crates-io-version.sh bash "$ROOT/scripts/ci/test-crates-io-version.sh"
 run_fixture test-cargo-tool-versions.sh bash "$ROOT/scripts/ci/test-cargo-tool-versions.sh"
