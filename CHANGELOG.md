@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.30.2] - Unreleased
+
+### 🩹 Fixed
+
+- Support empty LOC table options under macOS Bash 3.2, and update the failure
+  retention fixture to copy the reporter's complete helper closure and check
+  its current fixture layout. Follow-up qualification for
+  [#356](https://github.com/dragginzgame/shared-tooling/issues/356).
+
 ## [0.30.1] - Unreleased
 
 ### 🩹 Fixed

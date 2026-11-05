@@ -382,15 +382,14 @@ SCRIPT
 chmod +x "$fixture/bin/"*
 # Isolate the report from this checkout's prepared host set so the failing
 # cloc substitute exercises retention even when local tools take precedence.
-mkdir -p "$fixture/source/scripts/ci" "$fixture/source/scripts/dev"
-cp "$ROOT/scripts/ci/test-cloc.sh" "$ROOT/scripts/ci/fixture-lifecycle.sh" "$fixture/source/scripts/ci/"
-cp "$ROOT/scripts/dev/cloc.sh" "$fixture/source/scripts/dev/"
+mkdir -p "$fixture/source"
+"$BASH" "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$fixture/source" scripts/ci/test-cloc.sh
 status=0
 TMPDIR="$fixture/cloc" PATH="$fixture/bin:$PATH" CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0 \
     "$BASH" "$fixture/source/scripts/ci/test-cloc.sh" > "$fixture/cloc.log" 2>&1 || status=$?
 [[ "$status" == 23 ]] || exit 1
-set -- "$fixture/cloc"/shared-tooling-cloc-test.*
-[[ $# == 1 && -f "$1/Cargo.toml" && -f "$1/crates/alpha/src/lib.rs" ]] || exit 1
+set -- "$fixture/cloc"/shared-cloc-test.*
+[[ $# == 1 && -f "$1/Cargo.toml" && -f "$1/crates/app/src/lib.rs" ]] || exit 1
 
 status=0
 printf '#!/bin/sh\nexit 99\n' > "$fixture/portable/editor"
