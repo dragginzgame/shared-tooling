@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.30.4] - Unreleased
+
+### 🔧 Changed
+
+- Bound tracked experimental evidence to compact topic summaries and selected
+  results; keep raw logs, bulk tables and archives under `target/evidence/`.
+  Define explicit retention exceptions and historical cleanup without requiring
+  another permanent archive for every superseded experiment.
+
 ## [0.30.3] - Unreleased
 
 ### 🔧 Changed
