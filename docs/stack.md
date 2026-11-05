@@ -164,21 +164,21 @@ adoption does not install or enable this timer for consumers.
 ```mermaid
 flowchart TD
     subgraph p_repo_3acanic["canic"]
-        subgraph p_group_3acanic_7cblob_2dservice["blob-service · 0.114.0"]
+        subgraph p_group_3acanic_7cblob_2dservice["blob-service · 0.115.0"]
             p_canic_7ccargo_3acanic_2dblob_2dservice["canic-blob-service"]
         end
-        subgraph p_group_3acanic_7cframework["framework · 0.114.0"]
+        subgraph p_group_3acanic_7cframework["framework · 0.115.0"]
             p_canic_7ccargo_3acanic["canic"]
             p_canic_7ccargo_3acanic_2dcontracts["canic-contracts"]
             p_canic_7ccargo_3acanic_2dcontrol_2dplane["canic-control-plane"]
             p_canic_7ccargo_3acanic_2dcore["canic-core"]
             p_canic_7ccargo_3acanic_2dmacros["canic-macros"]
         end
-        subgraph p_group_3acanic_7chost["host · 0.114.0"]
+        subgraph p_group_3acanic_7chost["host · 0.115.0"]
             p_canic_7ccargo_3acanic_2dcli["canic-cli"]
             p_canic_7ccargo_3acanic_2dhost["canic-host"]
         end
-        subgraph p_group_3acanic_7cicydb["icydb · 0.114.0"]
+        subgraph p_group_3acanic_7cicydb["icydb · 0.115.0"]
             p_canic_7ccargo_3acanic_2dicydb["canic-icydb"]
         end
     end
@@ -197,14 +197,14 @@ flowchart TD
         p_ic_2dbackup_7ccargo_3aic_2dbackup_2dagent["ic-backup-agent"]
     end
     subgraph p_repo_3aic_2dblob_2dstorage["ic-blob-storage"]
-        subgraph p_group_3aic_2dblob_2dstorage_7cclient["client · 0.71.1"]
+        subgraph p_group_3aic_2dblob_2dstorage_7cclient["client · 0.72.0"]
             p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcli["ic-blob-storage-cli"]
             p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dclient["ic-blob-storage-client"]
         end
-        subgraph p_group_3aic_2dblob_2dstorage_7ccontracts["contracts · 0.71.1"]
+        subgraph p_group_3aic_2dblob_2dstorage_7ccontracts["contracts · 0.72.0"]
             p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcontracts["ic-blob-storage-contracts"]
         end
-        subgraph p_group_3aic_2dblob_2dstorage_7cengine["engine · 0.71.1"]
+        subgraph p_group_3aic_2dblob_2dstorage_7cengine["engine · 0.72.1"]
             p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage["ic-blob-storage"]
             p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage_2dcanister["ic-blob-storage-canister"]
         end
@@ -235,7 +235,7 @@ flowchart TD
         p_ic_2dprofiler_7ccargo_3aic_2dsystem_2dprofiler["ic-system-profiler"]
     end
     subgraph p_repo_3aic_2dquery["ic-query"]
-        subgraph p_group_3aic_2dquery_7ccli["cli · 0.89.0"]
+        subgraph p_group_3aic_2dquery_7ccli["cli · 0.90.0"]
             p_ic_2dquery_7ccargo_3aic_2dquery_2dcli["ic-query-cli"]
             p_ic_2dquery_7ccargo_3aic_2dquery_2dtext["ic-query-text"]
         end
@@ -250,7 +250,7 @@ flowchart TD
         subgraph p_group_3aic_2dscheduling_7cjobs["jobs · 0.34.3"]
             p_ic_2dscheduling_7ccargo_3aic_2djobs["ic-jobs"]
         end
-        subgraph p_group_3aic_2dscheduling_7ctimers["timers · 0.40.3"]
+        subgraph p_group_3aic_2dscheduling_7ctimers["timers · 0.40.4"]
             p_ic_2dscheduling_7ccargo_3aic_2dtimers["ic-timers"]
         end
     end
@@ -261,7 +261,7 @@ flowchart TD
         subgraph p_group_3aic_2dstorage_7cmetrics_2dstorage["metrics-storage · 0.68.0"]
             p_ic_2dstorage_7ccargo_3aic_2dmetrics_2dstorage["ic-metrics-storage"]
         end
-        subgraph p_group_3aic_2dstorage_7cstorage["storage · 0.66.2"]
+        subgraph p_group_3aic_2dstorage_7cstorage["storage · 0.67.0"]
             p_ic_2dstorage_7ccargo_3aic_2dstorage["ic-storage"]
         end
     end
@@ -279,7 +279,7 @@ flowchart TD
         subgraph p_group_3aic_2dtooling_7cnative["native · 0.80.0"]
             p_ic_2dtooling_7ccargo_3aic_2dtestkit_2dnative["ic-testkit-native"]
         end
-        subgraph p_group_3aic_2dtooling_7ctestkit["testkit · 0.85.1"]
+        subgraph p_group_3aic_2dtooling_7ctestkit["testkit · 0.86.0"]
             p_ic_2dtooling_7ccargo_3aic_2dtestkit["ic-testkit"]
             p_ic_2dtooling_7ccargo_3aic_2dtestkit_2ddev["ic-testkit-dev"]
             p_ic_2dtooling_7ccargo_3aic_2dtestkit_2dperf_2dprobe["ic-testkit-perf-probe"]
@@ -292,11 +292,11 @@ flowchart TD
         end
     end
     subgraph p_repo_3aic_2dwire["ic-wire"]
-        subgraph p_group_3aic_2dwire_7ccore["core · 0.17.0"]
+        subgraph p_group_3aic_2dwire_7ccore["core · 0.17.1"]
             p_ic_2dwire_7ccargo_3aic_2dwire["ic-wire"]
             p_ic_2dwire_7ccargo_3aic_2dwire_2dderive["ic-wire-derive"]
         end
-        subgraph p_group_3aic_2dwire_7cendpoint["endpoint · 0.6.1"]
+        subgraph p_group_3aic_2dwire_7cendpoint["endpoint · 0.7.0"]
             p_ic_2dwire_7ccargo_3aic_2dwire_2dendpoint["ic-wire-endpoint"]
             p_ic_2dwire_7ccargo_3aic_2dwire_2dendpoint_2dmacros["ic-wire-endpoint-macros"]
         end
@@ -480,6 +480,7 @@ flowchart TD
     p_ic_2dwire_7ccargo_3aic_2dwire_2dendpoint --> p_ic_2dplatform_7ccargo_3aic_2dplatform_2druntime
     p_ic_2dwire_7ccargo_3aic_2dwire_2dendpoint --> p_ic_2dwire_7ccargo_3aic_2dwire
     p_ic_2dwire_7ccargo_3aic_2dwire_2dendpoint --> p_ic_2dwire_7ccargo_3aic_2dwire_2dendpoint_2dmacros
+    p_icydb_7ccargo_3aicydb -.-> p_ic_2dtooling_7ccargo_3aic_2dtestkit
     p_icydb_7ccargo_3aicydb --> p_icydb_7ccargo_3aicydb_2dcore
     p_icydb_7ccargo_3aicydb --> p_icydb_7ccargo_3aicydb_2dmodel
     p_icydb_7ccargo_3aicydb_2dcli -.-> p_ic_2dtooling_7ccargo_3aic_2dhost_2dartifacts
@@ -572,35 +573,35 @@ Local policy and manifest versions; not registry publication or downstream adopt
 
 Workspace / group | Version | Members | Changelog
 --- | --- | --- | ---
-[canic / blob-service](https://github.com/dragginzgame/canic/blob/main/ci/cargo-release-groups.json) | 0.114.0 | `canic-blob-service` | [Changelog](https://github.com/dragginzgame/canic/blob/main/releases/blob-service/CHANGELOG.md)
-[canic / framework](https://github.com/dragginzgame/canic/blob/main/ci/cargo-release-groups.json) | 0.114.0 | `canic`, `canic-contracts`, `canic-control-plane`, `canic-core`, `canic-macros`, `canic-tests`, `canister_app`, `canister_index_child`, `canister_index_hub`, `canister_minimal`, `canister_minimal_metrics`, `canister_sandbox_blank`, `canister_scale`, `canister_scale_hub`, `canister_test`, `canister_user_hub`, `canister_user_shard`, `cycles_ledger_stub`, `delegation_issuer_stub`, `delegation_root_stub`, `demo_fleet_app`, `demo_fleet_user_hub`, `demo_fleet_user_shard`, `icp_refill_stub`, `intent_authority`, `leaf_probe`, `local_authorization_probe`, `managed_lifecycle_probe`, `payload_limit_probe`, `root_funding_probe`, `root_probe`, `runtime_probe`, `scaling_probe`, `sharding_root_stub` | [Changelog](https://github.com/dragginzgame/canic/blob/main/releases/framework/CHANGELOG.md)
-[canic / host](https://github.com/dragginzgame/canic/blob/main/ci/cargo-release-groups.json) | 0.114.0 | `canic-cli`, `canic-host` | [Changelog](https://github.com/dragginzgame/canic/blob/main/releases/host/CHANGELOG.md)
-[canic / icydb](https://github.com/dragginzgame/canic/blob/main/ci/cargo-release-groups.json) | 0.114.0 | `canic-icydb` | [Changelog](https://github.com/dragginzgame/canic/blob/main/releases/icydb/CHANGELOG.md)
+[canic / blob-service](https://github.com/dragginzgame/canic/blob/main/ci/cargo-release-groups.json) | 0.115.0 | `canic-blob-service` | [Changelog](https://github.com/dragginzgame/canic/blob/main/releases/blob-service/CHANGELOG.md)
+[canic / framework](https://github.com/dragginzgame/canic/blob/main/ci/cargo-release-groups.json) | 0.115.0 | `canic`, `canic-contracts`, `canic-control-plane`, `canic-core`, `canic-macros`, `canic-tests`, `canister_app`, `canister_index_child`, `canister_index_hub`, `canister_minimal`, `canister_minimal_metrics`, `canister_sandbox_blank`, `canister_scale`, `canister_scale_hub`, `canister_test`, `canister_user_hub`, `canister_user_shard`, `cycles_ledger_stub`, `delegation_issuer_stub`, `delegation_root_stub`, `demo_fleet_app`, `demo_fleet_user_hub`, `demo_fleet_user_shard`, `icp_refill_stub`, `intent_authority`, `leaf_probe`, `local_authorization_probe`, `managed_lifecycle_probe`, `payload_limit_probe`, `root_funding_probe`, `root_probe`, `runtime_probe`, `scaling_probe`, `sharding_root_stub` | [Changelog](https://github.com/dragginzgame/canic/blob/main/releases/framework/CHANGELOG.md)
+[canic / host](https://github.com/dragginzgame/canic/blob/main/ci/cargo-release-groups.json) | 0.115.0 | `canic-cli`, `canic-host` | [Changelog](https://github.com/dragginzgame/canic/blob/main/releases/host/CHANGELOG.md)
+[canic / icydb](https://github.com/dragginzgame/canic/blob/main/ci/cargo-release-groups.json) | 0.115.0 | `canic-icydb` | [Changelog](https://github.com/dragginzgame/canic/blob/main/releases/icydb/CHANGELOG.md)
 [ic-auth / engine](https://github.com/dragginzgame/ic-auth/blob/main/ci/cargo-release-groups.json) | 0.33.2 | `ic-auth`, `ic-auth-backend-conformance`, `ic-auth-feature-unification`, `ic-auth-qualification`, `ic-auth-qualification-canister`, `ic-auth-qualification-contracts`, `ic-auth-qualification-fixtures`, `ic-auth-tooling` | [Changelog](https://github.com/dragginzgame/ic-auth/blob/main/releases/engine/CHANGELOG.md)
 [ic-auth / protocol](https://github.com/dragginzgame/ic-auth/blob/main/ci/cargo-release-groups.json) | 0.33.1 | `ic-auth-protocol-types`, `ic-auth-wire` | [Changelog](https://github.com/dragginzgame/ic-auth/blob/main/releases/protocol/CHANGELOG.md)
-[ic-blob-storage / client](https://github.com/dragginzgame/ic-blob-storage/blob/main/ci/cargo-release-groups.json) | 0.71.1 | `ic-blob-storage-cli`, `ic-blob-storage-client` | [Changelog](https://github.com/dragginzgame/ic-blob-storage/blob/main/releases/client/CHANGELOG.md)
-[ic-blob-storage / contracts](https://github.com/dragginzgame/ic-blob-storage/blob/main/ci/cargo-release-groups.json) | 0.71.1 | `ic-blob-storage-contracts` | [Changelog](https://github.com/dragginzgame/ic-blob-storage/blob/main/releases/contracts/CHANGELOG.md)
-[ic-blob-storage / engine](https://github.com/dragginzgame/ic-blob-storage/blob/main/ci/cargo-release-groups.json) | 0.71.1 | `blob-admission-probe`, `blob-authority-probe`, `blob-consumer-probe`, `blob-funding-probe`, `blob-gateway-source`, `blob-storage-probe`, `blob-test-protocol`, `ic-blob-storage`, `ic-blob-storage-canister`, `ic-blob-storage-pocketic-tests` | [Changelog](https://github.com/dragginzgame/ic-blob-storage/blob/main/releases/engine/CHANGELOG.md)
+[ic-blob-storage / client](https://github.com/dragginzgame/ic-blob-storage/blob/main/ci/cargo-release-groups.json) | 0.72.0 | `ic-blob-storage-cli`, `ic-blob-storage-client` | [Changelog](https://github.com/dragginzgame/ic-blob-storage/blob/main/releases/client/CHANGELOG.md)
+[ic-blob-storage / contracts](https://github.com/dragginzgame/ic-blob-storage/blob/main/ci/cargo-release-groups.json) | 0.72.0 | `ic-blob-storage-contracts` | [Changelog](https://github.com/dragginzgame/ic-blob-storage/blob/main/releases/contracts/CHANGELOG.md)
+[ic-blob-storage / engine](https://github.com/dragginzgame/ic-blob-storage/blob/main/ci/cargo-release-groups.json) | 0.72.1 | `blob-admission-probe`, `blob-authority-probe`, `blob-consumer-probe`, `blob-funding-probe`, `blob-gateway-source`, `blob-storage-probe`, `blob-test-protocol`, `ic-blob-storage`, `ic-blob-storage-canister`, `ic-blob-storage-pocketic-tests` | [Changelog](https://github.com/dragginzgame/ic-blob-storage/blob/main/releases/engine/CHANGELOG.md)
 [ic-observability / logging](https://github.com/dragginzgame/ic-observability/blob/main/ci/cargo-release-groups.json) | 0.24.6 | `ic-logging` | [Changelog](https://github.com/dragginzgame/ic-observability/blob/main/releases/logging/CHANGELOG.md)
 [ic-observability / metrics](https://github.com/dragginzgame/ic-observability/blob/main/ci/cargo-release-groups.json) | 0.29.1 | `ic-metrics` | [Changelog](https://github.com/dragginzgame/ic-observability/blob/main/releases/metrics/CHANGELOG.md)
 [ic-platform / platform](https://github.com/dragginzgame/ic-platform/blob/main/ci/cargo-release-groups.json) | 0.22.0 | `ic-platform` | [Changelog](https://github.com/dragginzgame/ic-platform/blob/main/releases/platform/CHANGELOG.md)
 [ic-platform / runtime](https://github.com/dragginzgame/ic-platform/blob/main/ci/cargo-release-groups.json) | 0.19.1 | `ic-platform-macros`, `ic-platform-runtime`, `ic-platform-runtime-guard` | [Changelog](https://github.com/dragginzgame/ic-platform/blob/main/releases/runtime/CHANGELOG.md)
 [ic-platform / types](https://github.com/dragginzgame/ic-platform/blob/main/ci/cargo-release-groups.json) | 0.18.1 | `ic-platform-types` | [Changelog](https://github.com/dragginzgame/ic-platform/blob/main/releases/types/CHANGELOG.md)
-[ic-query / cli](https://github.com/dragginzgame/ic-query/blob/main/ci/cargo-release-groups.json) | 0.89.0 | `ic-query-cli`, `ic-query-text` | [Changelog](https://github.com/dragginzgame/ic-query/blob/main/releases/cli/CHANGELOG.md)
+[ic-query / cli](https://github.com/dragginzgame/ic-query/blob/main/ci/cargo-release-groups.json) | 0.90.0 | `ic-query-cli`, `ic-query-text` | [Changelog](https://github.com/dragginzgame/ic-query/blob/main/releases/cli/CHANGELOG.md)
 [ic-query / query](https://github.com/dragginzgame/ic-query/blob/main/ci/cargo-release-groups.json) | 0.90.0 | `ic-query`, `ic-query-testkit` | [Changelog](https://github.com/dragginzgame/ic-query/blob/main/releases/query/CHANGELOG.md)
 [ic-scheduling / jobs](https://github.com/dragginzgame/ic-scheduling/blob/main/ci/cargo-release-groups.json) | 0.34.3 | `ic-jobs`, `ic-jobs-canister-tests`, `ic-jobs-test-consumer` | [Changelog](https://github.com/dragginzgame/ic-scheduling/blob/main/releases/jobs/CHANGELOG.md)
-[ic-scheduling / timers](https://github.com/dragginzgame/ic-scheduling/blob/main/ci/cargo-release-groups.json) | 0.40.3 | `ic-timers`, `ic-timers-pocketic`, `ic-timers-runtime-probe`, `ic-timers-size-probe`, `ic-timers-test-protocol` | [Changelog](https://github.com/dragginzgame/ic-scheduling/blob/main/releases/timers/CHANGELOG.md)
+[ic-scheduling / timers](https://github.com/dragginzgame/ic-scheduling/blob/main/ci/cargo-release-groups.json) | 0.40.4 | `ic-timers`, `ic-timers-pocketic`, `ic-timers-runtime-probe`, `ic-timers-size-probe`, `ic-timers-test-protocol` | [Changelog](https://github.com/dragginzgame/ic-scheduling/blob/main/releases/timers/CHANGELOG.md)
 [ic-storage / logging-storage](https://github.com/dragginzgame/ic-storage/blob/main/ci/cargo-release-groups.json) | 0.64.1 | `ic-logging-storage` | [Changelog](https://github.com/dragginzgame/ic-storage/blob/main/releases/logging-storage/CHANGELOG.md)
 [ic-storage / metrics-storage](https://github.com/dragginzgame/ic-storage/blob/main/ci/cargo-release-groups.json) | 0.68.0 | `ic-metrics-storage` | [Changelog](https://github.com/dragginzgame/ic-storage/blob/main/releases/metrics-storage/CHANGELOG.md)
-[ic-storage / storage](https://github.com/dragginzgame/ic-storage/blob/main/ci/cargo-release-groups.json) | 0.66.2 | `ic-storage` | [Changelog](https://github.com/dragginzgame/ic-storage/blob/main/releases/storage/CHANGELOG.md)
+[ic-storage / storage](https://github.com/dragginzgame/ic-storage/blob/main/ci/cargo-release-groups.json) | 0.67.0 | `ic-storage` | [Changelog](https://github.com/dragginzgame/ic-storage/blob/main/releases/storage/CHANGELOG.md)
 [ic-tooling / build](https://github.com/dragginzgame/ic-tooling/blob/main/ci/cargo-release-groups.json) | 0.74.3 | `ic-build` | [Changelog](https://github.com/dragginzgame/ic-tooling/blob/main/releases/build/CHANGELOG.md)
 [ic-tooling / foundation](https://github.com/dragginzgame/ic-tooling/blob/main/ci/cargo-release-groups.json) | 0.74.3 | `ic-host-artifacts`, `ic-host-fs`, `ic-host-http`, `ic-host-process`, `ic-host-wasm-inspect` | [Changelog](https://github.com/dragginzgame/ic-tooling/blob/main/releases/foundation/CHANGELOG.md)
 [ic-tooling / native](https://github.com/dragginzgame/ic-tooling/blob/main/ci/cargo-release-groups.json) | 0.80.0 | `ic-testkit-native` | [Changelog](https://github.com/dragginzgame/ic-tooling/blob/main/releases/native/CHANGELOG.md)
-[ic-tooling / testkit](https://github.com/dragginzgame/ic-tooling/blob/main/ci/cargo-release-groups.json) | 0.85.1 | `ic-testkit`, `ic-testkit-dev`, `ic-testkit-perf-probe` | [Changelog](https://github.com/dragginzgame/ic-tooling/blob/main/releases/testkit/CHANGELOG.md)
+[ic-tooling / testkit](https://github.com/dragginzgame/ic-tooling/blob/main/ci/cargo-release-groups.json) | 0.86.0 | `ic-testkit`, `ic-testkit-dev`, `ic-testkit-perf-probe` | [Changelog](https://github.com/dragginzgame/ic-tooling/blob/main/releases/testkit/CHANGELOG.md)
 [ic-tooling / text](https://github.com/dragginzgame/ic-tooling/blob/main/ci/cargo-release-groups.json) | 0.74.2 | `ic-host-text` | [Changelog](https://github.com/dragginzgame/ic-tooling/blob/main/releases/text/CHANGELOG.md)
 [ic-tooling / tools](https://github.com/dragginzgame/ic-tooling/blob/main/ci/cargo-release-groups.json) | 0.82.0 | `ic-host-tools` | [Changelog](https://github.com/dragginzgame/ic-tooling/blob/main/releases/tools/CHANGELOG.md)
-[ic-wire / core](https://github.com/dragginzgame/ic-wire/blob/main/ci/cargo-release-groups.json) | 0.17.0 | `ic-wire`, `ic-wire-benchmarks`, `ic-wire-derive`, `ic-wire-endpoint-fixture`, `ic-wire-qualification` | [Changelog](https://github.com/dragginzgame/ic-wire/blob/main/releases/core/CHANGELOG.md)
-[ic-wire / endpoint](https://github.com/dragginzgame/ic-wire/blob/main/ci/cargo-release-groups.json) | 0.6.1 | `ic-wire-endpoint`, `ic-wire-endpoint-macros` | [Changelog](https://github.com/dragginzgame/ic-wire/blob/main/releases/endpoint/CHANGELOG.md)
+[ic-wire / core](https://github.com/dragginzgame/ic-wire/blob/main/ci/cargo-release-groups.json) | 0.17.1 | `ic-wire`, `ic-wire-benchmarks`, `ic-wire-derive`, `ic-wire-endpoint-fixture`, `ic-wire-qualification` | [Changelog](https://github.com/dragginzgame/ic-wire/blob/main/releases/core/CHANGELOG.md)
+[ic-wire / endpoint](https://github.com/dragginzgame/ic-wire/blob/main/ci/cargo-release-groups.json) | 0.7.0 | `ic-wire-endpoint`, `ic-wire-endpoint-macros` | [Changelog](https://github.com/dragginzgame/ic-wire/blob/main/releases/endpoint/CHANGELOG.md)
 [icydb / cli](https://github.com/dragginzgame/icydb/blob/main/ci/cargo-release-groups.json) | 0.295.2 | `icydb-cli` | [Changelog](https://github.com/dragginzgame/icydb/blob/main/releases/cli/CHANGELOG.md)
 [icydb / database](https://github.com/dragginzgame/icydb/blob/main/ci/cargo-release-groups.json) | 0.297.0 | `icydb`, `icydb-core`, `icydb-diagnostic-code`, `icydb-model`, `icydb-model-macros`, `icydb-schema`, `icydb-testing-audit-default-empty-fixtures`, `icydb-testing-audit-group-path-fixtures`, `icydb-testing-audit-one-simple-fixtures`, `icydb-testing-audit-sql-perf-fixtures`, `icydb-testing-audit-ten-simple-fixtures`, `icydb-testing-build`, `icydb-testing-codec-query`, `icydb-testing-demo-rpg-fixtures`, `icydb-testing-model-schema-only`, `icydb-testing-model-typed-adapter`, `icydb-testing-source-checks`, `icydb-testing-sql-generator`, `icydb-testing-sqlite-reference`, `icydb-testing-test-fixtures`, `icydb-testing-test-sql-fixtures`, `icydb-testing-wasm-helpers` | [Changelog](https://github.com/dragginzgame/icydb/blob/main/releases/database/CHANGELOG.md)
 
@@ -836,6 +837,7 @@ ic-wire-endpoint → ic-wire-endpoint-macros | [ic-wire-endpoint](https://github
 icydb → ic-platform-runtime | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-platform-runtime` (cargo normal)
 icydb → ic-platform-types | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-platform-types` (cargo dev)<br>[icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-platform-types` (cargo normal)
 icydb → ic-storage | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-storage` (cargo dev)<br>[icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-storage` (cargo normal)
+icydb → ic-testkit | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-testkit` (cargo normal, optional, target-specific)
 icydb → ic-wire | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `ic-wire` (cargo normal)
 icydb → icydb-core | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `icydb-core` (cargo normal)
 icydb → icydb-diagnostic-code | [icydb](https://github.com/dragginzgame/icydb/blob/main/crates/icydb/Cargo.toml) → `icydb-diagnostic-code` (cargo normal)

@@ -4,6 +4,12 @@ Read and apply [the Dragginzgame engineering baseline](DRAGGINZGAME.md) first.
 Shared Tooling owns that canonical baseline; this file contains only its local
 overlay. Consumers adopt the baseline and keep their own `AGENTS.md`.
 
+For sibling tooling audits, use [snapshot-drift](tasks/snapshot-drift.md) for
+integrity and applicable updates, then [tooling-duplication](tasks/tooling-duplication.md)
+for actual caller wiring and missed shared capabilities. An older version or
+LOC count alone is not an adoption defect. Run on request, not as background
+monitoring or an added release gate.
+
 ## Validation in Shared Tooling
 
 For meaningful new work, run `make prepare-work` and add the batch's notes to

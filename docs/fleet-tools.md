@@ -30,16 +30,10 @@ bash scripts/dev/cloc.sh --check-tools
 ```
 
 The workspace report discovers members through locked, offline Cargo metadata.
-It counts runtime-named and test-named Rust files, test attributes and inline
-test functions. `tests/` paths and filenames ending in `tests.rs` classify test
-files; inline tests remain in runtime-file LOC. Nested members and Cargo's
-selected target directory are excluded from their containing package's counts.
-Each admitted path counts once, including separate copies with identical bytes.
-
-JSON contains the selected `manifest`, `crates` and `totals`, with numeric
-`runtime_loc`, `test_loc`, `test_pct`, `test_fns` and `inline_fns`; crate rows add
-`crate`. Percentages use the table's one-decimal rounding. A failed report exits
-nonzero without emitting a partial JSON document.
+It shows Library/app, Tests, Examples, Benchmarks, Build/tooling, Unclassified
+and Total columns. Nested members, `target/`, Git internals and Cargo's configured
+output directory are excluded from their containing package's counts. Each
+admitted Rust source path counts once, including copies with identical bytes.
 
 The unified [cloc.sh](../scripts/dev/cloc.sh) reports workspace summaries by
 default; `--subcrates` adds individual crate rows without changing totals.
@@ -50,54 +44,91 @@ one workspace and always includes its crate rows.
 The parent-directory report visits
 immediate Git checkouts in name order, including linked worktrees and hidden
 directories, skipping symlink aliases and non-repositories.
-It checks prerequisites once before reporting
-Cargo workspaces. A repository without a root manifest shows `N/A`; a failed
+Each workspace checks its prerequisites. A repository without a root manifest shows `N/A`; a failed
 count shows `ERROR`, retains other rows and makes the command fail. Totals sum
-successful workspaces and recompute their combined test percentage; failures
+successful workspaces; failures
 label the sum `TOTAL (partial)`. Independent excluded workspaces are not silently
 combined with root counts. Select them explicitly with `--manifest` or the
 consumer Make interface's `CLOC_MANIFEST` input.
 
-## CI and tooling inventory
+### Source classification
 
-```bash
-make cloc-tooling
-make cloc-tooling CLOC_PARENT=/path/to/projects
-perl scripts/dev/cloc-tooling.pl --json /path/to/projects > tooling-inventory.json
+Cargo target kinds identify library/executable, test, example, benchmark and
+build-script roots. Static Rust token inspection follows ordinary module files
+and separates test-only items, including inline `#[cfg(test)]` modules and test
+functions. Nested comments and quoted/raw strings are opaque. `cfg(all(test,
+...))` is test-only; `cfg(any(test, ...))` is not assumed test-only. This is a
+source inventory, not compilation, macro expansion or a shipped-Wasm measurement.
+Predicates disabled in both test and non-test modes are not evidence of tests.
+Inner attributes and raw module identifiers participate in module discovery.
+
+Supporting `tests/`, `tests.rs` and `*_tests.rs` paths identify test code.
+Legacy `test/` and `test.rs` are counted as tests with hard-cut rename diagnostics.
+Examples, benches and tooling paths supply corresponding categories when target
+and module usage is unavailable. Actual usage takes precedence over a misleading
+filename, with a diagnostic for conflicting conventions. Source not
+reachable from a target and without a declared or conventional role remains
+Unclassified; it is never silently counted as library code. No production
+visibility change or broad source relocation is needed merely to count lines.
+
+Declare exceptional roles in the owning package manifest, for example:
+
+```toml
+[package.metadata.shared-tooling.loc]
+category = "tests" # Whole fixture-only package, including its helper source.
+generated = ["src/generated"] # Existing file or directory, independent of role.
+
+[package.metadata.shared-tooling.loc.paths]
+"build.rs" = "build_tooling"
+"examples" = "examples"
 ```
 
-This separates CI code (`.github/`, `scripts/ci/`, `ci/`) from other tooling:
-scripts, `bin/`, hooks, Make files, `.cargo/`, `tools/`, `xtask/` and Cargo package
-`build.rs` files. It captures tracked and nonignored untracked working files,
-counts every copy with cloc and does not run Cargo or consumer commands.
-Documentation, product source, caches, generated build output and symlinks are
-outside the inventory. Product functions named `build.rs` are not Cargo build
-scripts. Supporting JSON, patches and CSV/TSV are physical `data_lines`, separate
-from executable/configuration LOC; blank lines and comments are excluded from
-the latter.
+Accepted categories are `library_app`, `tests`, `examples`, `benchmarks`,
+`build_tooling` and `unclassified`. Rules name package-relative files or
+directories, not globs, and must match Rust source. Longest path rule wins over
+the package role; declarations override path/target inference. Inline test-only
+items still count as tests. Generated markers (`@generated` or `DO NOT EDIT`
+near the file start) and declared generated paths set a separate flag; generated
+source under Cargo output remains excluded.
 
-`total_loc` is CI plus other tooling code. `shared_loc` matches both SHA-256 and
-executable mode against `.shared-tooling*.snapshot`; unrecorded or changed files
-remain `local_loc`. Records normally resolve from the Git checkout root, even
-for manifests under `config/`. A default `.shared-tooling.snapshot` beside the
-canonical verifier identifies a nested bundle root. Other explicit mappings use
-repeated `--snapshot-root MANIFEST CONSUMER_ROOT` options; selected roots must
-remain in the checkout, and manifests must be tracked or nonignored. Selection
-never tries alternative roots until hashes happen to match.
+Shared target source is counted once and flagged with all observed target
+categories. Without an override or conventional path, the accounting owner is
+the first applicable category in the table's order. That choice does not claim
+exclusive use. A physical line containing both test and enclosing code is counted
+once in the enclosing category and flagged. Inline partitions must reconcile with
+cloc's original file total; otherwise the file remains Unclassified with a
+diagnostic. Macro bodies are counted where written; unresolved module/include
+paths and conditional attributes require review. Rust in documentation comments
+is excluded by cloc, including doctests. Non-Rust assets are outside this report.
+Malformed tokens in compile-fail fixtures retain their declared/path category
+and a diagnostic; without that role they remain Unclassified. Input/read/tool
+failures still fail the report rather than silently skipping files.
 
-`shared_snapshot` shows recorded version and abbreviated revision, retaining
-separate selections. Missing versions remain `unrecorded`; no nearby checkout
-or tag supplies a guess. `integrity` is `OK`, `DRIFT`, `NONE` or `ERROR`.
-Integrity includes every declared file, even documents outside LOC scope;
-drifted files are reported while other counts continue. Malformed/unreadable
-inputs produce partial totals and a failing status, preserving captured inputs.
+The inventory includes Cargo targets outside their member directory and their
+resolved modules. Canonical paths are counted once; a source shared by packages
+is attributed to the first admitting package in name order. Unreferenced source
+outside member directories is not an automatic repository-wide Rust inventory.
+Counts use copies of the exact bytes inspected, with `source_sha256` in each
+file record. This prevents edits during cloc from changing classified counts;
+it is not an atomic snapshot of a concurrently edited workspace. A nonempty
+file omitted by cloc fails the report instead of silently contributing zero.
 
-JSON includes full source revisions, dirty state, snapshot observations, per-file
-hashes/counts and skipped files. Unborn checkouts have `head: null` and
-`unborn: true`; a broken existing HEAD is an error. High local LOC and matching
-hashes identify review candidates, not proof of removable duplication or
-interchangeable contracts. The [initial inventory](reports/audits/2026/10/07/sibling-tooling/01/report.md)
-is historical evidence, not a current fleet measurement.
+JSON schema **2** contains `manifest`, `crates`, `totals`, `files` and
+`diagnostics`. Crate rows have `crate` and `counts`; each count object has the six
+category keys above plus `total`. File records retain category, counts, target
+categories, `source_sha256`, `shared` and `generated` flags. Category counts sum exactly to the
+all-source total. Schema 1's `runtime_loc`, percentages and test-function counts
+are removed; update consumers rather than retaining aliases. Failure emits no
+partial workspace JSON. Text output announces the number of diagnostic notes.
+
+## Tooling adoption audit
+
+Ask an agent to run [snapshot-drift](../tasks/snapshot-drift.md) for the selected
+repositories, then [tooling-duplication](../tasks/tooling-duplication.md) for
+local mechanisms and missed shared capabilities. These tasks combine deterministic
+snapshot verification with caller, CI and release-policy review. LOC and version
+numbers alone cannot establish adoption quality. Run on request; this does not
+enable background monitoring or add deployment gates.
 
 ## Sibling GitHub dashboard
 

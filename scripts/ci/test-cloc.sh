@@ -1,247 +1,253 @@
 #!/usr/bin/env bash
 # Shared companions: scripts/dev/cloc.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
-
-ROOT="$0"
-[[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
-ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
-ROOT="${ROOT%/.}"
-# The independent fixture owns its default output selection. Individual cases
-# below still select explicit targets; an enclosing consumer must not select it.
+ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
+export PATH="$ROOT/.tools/host/bin:$PATH"
 unset CARGO_TARGET_DIR
-FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-cloc-test.XXXXXX")"
-FIXTURE="$(CDPATH="" cd -P -- "$FIXTURE" && printf '%s/.' "$PWD")"
-FIXTURE="${FIXTURE%/.}"
+FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-cloc-test.XXXXXX")"
+FIXTURE="$(cd "$FIXTURE" && pwd -P)"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture_complete=false
-trap 'fixture_finish "$?" "$FIXTURE" "Failed cloc fixture retained"' EXIT
-
-for command in cargo cloc jq; do
-    command -v "$command" >/dev/null 2>&1 || {
-        echo "cloc test requires $command" >&2
-        exit 1
-    }
-done
-
-mkdir -p \
-    "$FIXTURE/.cargo" \
-    "$FIXTURE/crates/alpha/src" \
-    "$FIXTURE/crates/alpha/tests" \
-    "$FIXTURE/crates/beta/src"
-# Cargo also reads ancestor configuration, independently of Git discovery.
-printf '[build]\ntarget-dir = "target"\n' > "$FIXTURE/.cargo/config.toml"
-
-cat >"$FIXTURE/Cargo.toml" <<'TOML'
+trap 'fixture_finish "$?" "$FIXTURE" "Failed LOC fixture retained"' EXIT
+mkdir -p "$FIXTURE/crates/app/src/tests" "$FIXTURE/crates/app/examples" "$FIXTURE/crates/app/benches" \
+    "$FIXTURE/crates/app/tests" "$FIXTURE/crates/fixture/src" "$FIXTURE/.cargo"
+cat > "$FIXTURE/Cargo.toml" <<'TOML'
 [workspace]
-members = ["crates/alpha", "crates/beta"]
+members = ["crates/*"]
 resolver = "2"
 TOML
-
-cat >"$FIXTURE/crates/alpha/Cargo.toml" <<'TOML'
+printf '[build]\ntarget-dir="crates/app/output"\n' > "$FIXTURE/.cargo/config.toml"
+cat > "$FIXTURE/crates/app/Cargo.toml" <<'TOML'
 [package]
-name = "alpha"
+name = "app"
 version = "0.1.0"
 edition = "2021"
+[package.metadata.shared-tooling.loc]
+generated = ["src/generated.rs"]
+[package.metadata.shared-tooling.loc.paths]
+"generator.rs" = "build_tooling"
+[[example]]
+name = "same_source"
+path = "src/shared.rs"
+[[bench]]
+name = "measure"
+harness = false
 TOML
-
-cat >"$FIXTURE/crates/alpha/src/lib.rs" <<'RUST'
-pub fn value() -> u8 {
-    1
-}
-
+cat > "$FIXTURE/crates/fixture/Cargo.toml" <<'TOML'
+[package]
+name = "opaque-name"
+version = "0.1.0"
+edition = "2021"
+publish = false
+[package.metadata.shared-tooling.loc]
+category = "tests"
+TOML
+printf 'pub fn fixture() {}\n' > "$FIXTURE/crates/fixture/src/lib.rs"
+cat > "$FIXTURE/crates/app/src/lib.rs" <<'RUST'
+pub mod shared;
+mod generated;
 #[cfg(test)]
-mod tests {
+mod tests;
+pub fn app() {}
+// #[cfg(test)] mod fake { }
+/* nested /* #[cfg(test)] mod fake2 {} */ comment */
+pub const RAW: &str = r###"#[cfg(test)] mod imaginary { }"###;
+#[cfg(test)]
+mod inline {
+    // Test comment is not LOC.
     #[test]
-    fn inline_test() {}
-
-    #[testing]
-    fn similarly_named_non_test_attribute() {}
+    fn unit() {
+        assert_eq!("}", "}");
+    }
+}
+#[cfg(any(test, feature = "public"))]
+mod public {
+    pub fn still_library() {}
+}
+#[cfg(all(test, feature = "fixture"))]
+mod conditional {
+    pub fn helper() {}
 }
 RUST
-
-cat >"$FIXTURE/crates/alpha/tests/public.rs" <<'RUST'
-#[test]
-fn integration_test() {}
-RUST
-
-cat >"$FIXTURE/crates/beta/Cargo.toml" <<'TOML'
-[package]
-name = "beta"
-version = "0.1.0"
-edition = "2021"
-TOML
-
-cat >"$FIXTURE/crates/beta/src/lib.rs" <<'RUST'
-#[tokio::test(flavor = "current_thread")]
-async fn async_test() {}
-RUST
-
-output="$(bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")"
-
-alpha_row="$(printf '%s\n' "$output" | awk '$1 == "alpha" { print $0 }')"
-beta_row="$(printf '%s\n' "$output" | awk '$1 == "beta" { print $0 }')"
-total_row="$(printf '%s\n' "$output" | awk '$1 == "TOTAL" { print $0 }')"
-summary="$(bash "$ROOT/scripts/dev/cloc.sh" --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")"
-[[ "$(printf '%s\n' "$summary" | tail -1)" == "$total_row" ]] || exit 1
-[[ "$(printf '%s\n' "$summary" | wc -l | tr -d ' ')" == 4 ]] || exit 1
-
-read -r _ _ alpha_test_loc _ alpha_test_fns alpha_inline_fns <<<"$alpha_row"
-read -r _ _ _ _ beta_test_fns beta_inline_fns <<<"$beta_row"
-read -r _ _ _ _ total_test_fns total_inline_fns <<<"$total_row"
-
-[[ "$alpha_test_loc" -gt 0 ]] || exit 1
-[[ "$alpha_test_fns" -eq 2 && "$alpha_inline_fns" -eq 1 ]] || exit 1
-[[ "$beta_test_fns" -eq 1 && "$beta_inline_fns" -eq 1 ]] || exit 1
-[[ "$total_test_fns" -eq 3 && "$total_inline_fns" -eq 2 ]] || exit 1
-# JSON exposes the same numeric counts without display padding or percent signs.
-bash "$ROOT/scripts/dev/cloc.sh" --subcrates --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" > "$FIXTURE/report.json"
-read -r _ runtime tests pct fns inline <<< "$total_row"
-jq -e --argjson runtime "$runtime" --argjson tests "$tests" --argjson pct "${pct%%%}" \
-    --argjson fns "$fns" --argjson inline "$inline" '
-    (.crates | map(.crate)) == ["alpha", "beta"] and
-    .totals == {runtime_loc:$runtime,test_loc:$tests,test_pct:$pct,test_fns:$fns,inline_fns:$inline} and
-    ([.crates[].runtime_loc] | add) == .totals.runtime_loc and
-    ([.crates[].test_loc] | add) == .totals.test_loc and
-    ([.crates[].test_fns] | add) == .totals.test_fns and
-    ([.crates[].inline_fns] | add) == .totals.inline_fns
+printf 'pub fn shared() {}\n' > "$FIXTURE/crates/app/src/shared.rs"
+printf 'pub fn generated() {}\n' > "$FIXTURE/crates/app/src/generated.rs"
+printf '#[test]\nfn external_unit() {}\n' > "$FIXTURE/crates/app/src/tests/mod.rs"
+printf 'fn main() {}\n' > "$FIXTURE/crates/app/examples/demo.rs"
+printf 'fn main() {}\n' > "$FIXTURE/crates/app/benches/measure.rs"
+printf 'fn main() {}\n' > "$FIXTURE/crates/app/build.rs"
+printf 'pub fn generator() {}\n' > "$FIXTURE/crates/app/generator.rs"
+printf 'pub fn orphan() {}\n' > "$FIXTURE/crates/app/src/orphan.rs"
+printf '#[test]\nfn integration() {}\n' > "$FIXTURE/crates/app/tests/integration.rs"
+(cd "$FIXTURE" && cargo generate-lockfile --offline)
+cp "$FIXTURE/Cargo.lock" "$FIXTURE/original.lock"
+report() { bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE"; }
+report > "$FIXTURE/report.json"
+jq -e '
+  .schema == 2 and
+  .totals.examples == 1 and .totals.benchmarks == 1 and .totals.build_tooling == 2 and
+  .totals.unclassified == 1 and .totals.tests > 10 and .totals.library_app > 0 and
+  (.totals.total == (.totals | del(.total) | add)) and
+  ([.files[].counts.total] | add) == .totals.total and
+  ([.files[] | select(.path | endswith("/src/shared.rs"))][0] | .shared and .counts.total == 1 and .counts.library_app == 1) and
+  ([.files[] | select(.path | endswith("/src/generated.rs"))][0].generated) and
+  ([.crates[] | select(.crate=="opaque-name")][0].counts.tests == 1) and
+  ([.files[] | select(.path | endswith("/src/lib.rs")) | select(.crate=="app")][0].counts.tests > 5)
 ' "$FIXTURE/report.json" >/dev/null
-
-# Build outputs never become maintained source, including a configured target
-# inside a member. Literal metacharacters must not prune a similarly named path.
-generated_rust() {
-    mkdir -p "$1/debug/build/example/out" "$1/tests"
-    printf 'pub fn generated() {}\n#[test]\nfn generated_test() {}\n' > "$1/debug/build/example/out/generated.rs"
-    printf '#[test]\nfn generated_integration_test() {}\n' > "$1/tests/generated.rs"
+# The category partition must exactly preserve independent cloc's source total.
+find "$FIXTURE/crates" -name '*.rs' -type f > "$FIXTURE/source-list"
+cloc --list-file="$FIXTURE/source-list" --skip-uniqueness --json > "$FIXTURE/original.json"
+[[ "$(jq '.SUM.code' "$FIXTURE/original.json")" == "$(jq '.totals.total' "$FIXTURE/report.json")" ]]
+# Generated Cargo output, duplicate bytes and nested members retain path identity.
+mkdir -p "$FIXTURE/crates/app/output/tests"
+printf 'pub fn never_count() {}\n' > "$FIXTURE/crates/app/output/tests/generated.rs"
+report > "$FIXTURE/after.json"
+cmp "$FIXTURE/report.json" "$FIXTURE/after.json"
+cp "$FIXTURE/crates/app/tests/integration.rs" "$FIXTURE/crates/app/tests/duplicate.rs"
+report > "$FIXTURE/duplicates.json"
+jq -e --slurpfile before "$FIXTURE/report.json" '.totals.tests == $before[0].totals.tests + 2 and .totals.total == $before[0].totals.total + 2' "$FIXTURE/duplicates.json" >/dev/null
+# Legacy paths are measured as tests but flagged for the hard cut.
+mkdir "$FIXTURE/crates/app/test"
+printf 'pub fn helper() {}\n' > "$FIXTURE/crates/app/test/helper.rs"
+report > "$FIXTURE/legacy.json"
+jq -e '[.diagnostics[] | select(.reason | startswith("legacy"))] | length == 1' "$FIXTURE/legacy.json" >/dev/null
+# Compile-fail fixtures may deliberately contain unbalanced tokens. Preserve
+# their footprint and role, while unclassified malformed source stays visible.
+printf 'pub fn broken( {\n' > "$FIXTURE/crates/app/src/broken.rs"
+cp "$FIXTURE/crates/app/src/broken.rs" "$FIXTURE/crates/app/tests/broken.rs"
+report > "$FIXTURE/malformed.json"
+jq -e '[.files[] | select(.path | endswith("/src/broken.rs"))][0].counts.unclassified == 1 and
+  ([.files[] | select(.path | endswith("/tests/broken.rs"))][0].counts.tests == 1) and
+  ([.diagnostics[] | select(.reason | startswith("Rust token classification unavailable"))] | length == 2)' "$FIXTURE/malformed.json" >/dev/null
+rm "$FIXTURE/crates/app/src/broken.rs"
+rm "$FIXTURE/crates/app/tests/broken.rs"
+# Single physical mixed-category lines count once and carry an explicit warning.
+printf 'pub fn live() {} #[cfg(test)] mod tests { fn helper() {} }\n' > "$FIXTURE/crates/app/src/mixed.rs"
+report > "$FIXTURE/mixed.json"
+jq -e '[.diagnostics[] | select(.reason | startswith("mixed-category"))] | length == 1' "$FIXTURE/mixed.json" >/dev/null
+# No compilation, lock changes or source rewrites.
+cmp "$FIXTURE/Cargo.lock" "$FIXTURE/original.lock"
+[[ ! -e "$FIXTURE/crates/app/output/debug" ]]
+# Read-only reporting honors independently selected workspace target directories.
+mkdir -p "$FIXTURE/independent/src" "$FIXTURE/independent/.cargo"
+printf '[package]\nname="independent"\nversion="0.1.0"\n[workspace]\n' > "$FIXTURE/independent/Cargo.toml"
+printf 'pub fn independent() {}\n' > "$FIXTURE/independent/src/lib.rs"
+printf '[build]\ntarget-dir="output"\n' > "$FIXTURE/independent/.cargo/config.toml"
+mkdir "$FIXTURE/independent/output"
+printf 'pub fn ignored() {}\n' > "$FIXTURE/independent/output/ignored.rs"
+bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/independent/Cargo.toml" "$FIXTURE" > "$FIXTURE/independent.json"
+jq -e '.totals.total == 1 and .crates[0].crate == "independent"' "$FIXTURE/independent.json" >/dev/null
+# A source module named target is not a Cargo output directory.
+mkdir -p "$FIXTURE/independent/src/target" "$FIXTURE/independent/target"
+printf 'pub mod target;\n' > "$FIXTURE/independent/src/lib.rs"
+printf 'pub fn code() {}\n' > "$FIXTURE/independent/src/target/mod.rs"
+printf 'pub fn artifact() {}\n' > "$FIXTURE/independent/target/generated.rs"
+bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/independent/Cargo.toml" "$FIXTURE" > "$FIXTURE/source-target.json"
+jq -e '.totals.library_app == 2 and .totals.total == 2' "$FIXTURE/source-target.json" >/dev/null
+rm "$FIXTURE/independent/src/target/mod.rs"
+# Exact expected counts: inner attributes must not swallow the next test item.
+cat > "$FIXTURE/independent/src/lib.rs" <<'RUST'
+#![deny(unsafe_code)]
+#[cfg(test)]
+fn unit() {}
+pub fn live() {}
+RUST
+bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/independent/Cargo.toml" "$FIXTURE" > "$FIXTURE/inner.json"
+jq -e '.totals.library_app == 2 and .totals.tests == 2 and .totals.total == 4' "$FIXTURE/inner.json" >/dev/null
+# Braced use/const items include their semicolon in the test-only item range.
+cat > "$FIXTURE/independent/src/lib.rs" <<'RUST'
+#[cfg(test)]
+use std::{
+    fmt::Debug,
+};
+#[cfg(test)]
+const VALUE: usize = {
+    1
+};
+pub fn live() {}
+RUST
+bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/independent/Cargo.toml" "$FIXTURE" > "$FIXTURE/braces.json"
+jq -e '.totals.library_app == 1 and .totals.tests == 8 and .totals.total == 9' "$FIXTURE/braces.json" >/dev/null
+# Disabled in both modes is not test-only. Nested predicates must retain meaning.
+cat > "$FIXTURE/independent/src/lib.rs" <<'RUST'
+#[cfg(any())]
+fn dead() {}
+#[cfg(all(test, any()))]
+fn also_dead() {}
+#[cfg(all(test, feature = "fixture"))]
+fn helper() {}
+#[cfg(not(not(test)))]
+fn double_negative() {}
+#[cfg(any(test, feature = "public"))]
+fn public() {}
+RUST
+bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/independent/Cargo.toml" "$FIXTURE" > "$FIXTURE/cfg.json"
+jq -e '.totals.library_app == 6 and .totals.tests == 4 and .totals.total == 10' "$FIXTURE/cfg.json" >/dev/null
+# Cargo/module usage wins over a misleading conventional path; raw identifiers
+# still resolve, and an inner test gate propagates to external helper modules.
+cat > "$FIXTURE/independent/src/lib.rs" <<'RUST'
+pub mod tests;
+mod r#type;
+mod support {
+    #![cfg(test)]
+    mod helper;
 }
-generated_rust "$FIXTURE/target"
-[[ "$(bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$output" ]] || exit 1
-custom_target="$FIXTURE/crates/alpha/build [generated]*?"
-generated_rust "$custom_target"
-[[ "$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$output" ]] || exit 1
-# This source directory matches the unescaped target glob and must be counted.
-mkdir -p "$FIXTURE/crates/alpha/build generated-copy"
-printf 'pub fn maintained() {}\n' > "$FIXTURE/crates/alpha/build generated-copy/lib.rs"
-custom_output="$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")"
-read -r _ before_runtime _ _ _ _ <<<"$alpha_row"
-read -r _ after_runtime _ _ after_tests _ <<<"$(printf '%s\n' "$custom_output" | awk '$1 == "alpha"')"
-[[ "$after_runtime" == "$((before_runtime + 1))" && "$after_tests" == 2 ]] || exit 1
-rm -r "$custom_target" "$FIXTURE/crates/alpha/build generated-copy"
-
-# A workspace root can also be a package, with other members below it.
-read -r _ member_runtime_loc member_test_loc _ _ _ <<<"$total_row"
-cat >>"$FIXTURE/Cargo.toml" <<'TOML'
-
-[package]
-name = "root_package"
-version = "0.1.0"
-edition = "2021"
-TOML
-mkdir -p "$FIXTURE/src" "$FIXTURE/tests"
-cat >"$FIXTURE/src/lib.rs" <<'RUST'
-pub fn root_value() -> u8 { 3 }
-#[test]
-fn root_inline_test() {}
 RUST
-cat >"$FIXTURE/tests/root.rs" <<'RUST'
-#[test]
-fn root_integration_test() {}
-RUST
-
-nested_output="$(bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")"
-root_row="$(printf '%s\n' "$nested_output" | awk '$1 == "root_package" { print $0 }')"
-total_row="$(printf '%s\n' "$nested_output" | awk '$1 == "TOTAL" { print $0 }')"
-read -r _ root_runtime_loc root_test_loc _ root_test_fns root_inline_fns <<<"$root_row"
-read -r _ total_runtime_loc total_test_loc _ total_test_fns total_inline_fns <<<"$total_row"
-[[ "$root_runtime_loc" -eq 3 && "$root_test_loc" -eq 2 ]] || exit 1
-[[ "$root_test_fns" -eq 2 && "$root_inline_fns" -eq 1 ]] || exit 1
-[[ "$total_runtime_loc" -eq $((member_runtime_loc + 3)) ]] || exit 1
-[[ "$total_test_loc" -eq $((member_test_loc + 2)) ]] || exit 1
-[[ "$total_test_fns" -eq 5 && "$total_inline_fns" -eq 3 ]] || exit 1
-generated_rust "$FIXTURE/target"
-[[ "$(bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$nested_output" ]] || exit 1
-custom_target="$FIXTURE/build [generated]*?"
-# Move only fixture-owned output out of the default target before changing its
-# configured identity; Cargo reports one selected target directory at a time.
-mv "$FIXTURE/target" "$custom_target"
-[[ "$(CARGO_TARGET_DIR="$custom_target" bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$nested_output" ]] || exit 1
-# Existing output selected through a directory alias still has one physical
-# identity. Both direct and ancestor symlinks must exclude those same bytes.
-ln -s "$custom_target" "$FIXTURE/output-link"
-[[ "$(CARGO_TARGET_DIR="$FIXTURE/output-link" bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$nested_output" ]] || exit 1
-rm "$FIXTURE/output-link"
-ln -s "$FIXTURE" "$FIXTURE/parent-link"
-[[ "$(CARGO_TARGET_DIR="$FIXTURE/parent-link/${custom_target##*/}" bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$FIXTURE/Cargo.toml" "$FIXTURE")" == "$nested_output" ]] || exit 1
-rm "$FIXTURE/parent-link"
-rm -r "$custom_target"
-
-# Checkout ancestors must not affect runtime/test classification. Spaces and
-# glob characters in paths must remain literal when excluding nested members.
-relocated="$FIXTURE/tests/checkout [copy]"
-mkdir -p "$relocated"
-cp "$FIXTURE/Cargo.toml" "$relocated/"
-cp -R "$FIXTURE/src" "$FIXTURE/crates" "$FIXTURE/.cargo" "$relocated/"
-mkdir -p "$relocated/tests"
-cp "$FIXTURE/tests/root.rs" "$relocated/tests/"
-relocated_output="$(bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$relocated/Cargo.toml" "$relocated")"
-[[ "$relocated_output" == "$nested_output" ]] || exit 1
-
-# Explicit independent-workspace selection keeps graphs and build output separate.
-independent="$FIXTURE/independent"
-mkdir -p "$independent/.cargo" "$independent/crates/probe/src"
-cat > "$independent/Cargo.toml" <<'TOML'
-[workspace]
-members = ["crates/probe"]
-resolver = "2"
-TOML
-cat > "$independent/crates/probe/Cargo.toml" <<'TOML'
-[package]
-name = "independent-probe"
-version = "0.1.0"
-edition = "2021"
-TOML
-printf 'pub fn probe() {}\n' > "$independent/crates/probe/src/lib.rs"
-printf '[build]\ntarget-dir = "crates/probe/output"\n' > "$independent/.cargo/config.toml"
-git init -q "$FIXTURE"
-(cd "$independent" && cargo generate-lockfile --offline)
-selected_before="$(bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$independent/Cargo.toml" "$FIXTURE")"
-generated_rust "$independent/crates/probe/output"
-selected_after="$(bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$independent/Cargo.toml" "$FIXTURE")"
-[[ "$selected_before" == "$selected_after" ]] || exit 1
-[[ "$(printf '%s\n' "$selected_after" | awk '$1 == "independent-probe" { print $2,$3,$5,$6 }')" == '1 0 0 0' ]] || exit 1
-[[ "$(printf '%s\n' "$selected_after" | awk '$1 == "alpha" { print }')" == '' ]] || exit 1
-bash "$ROOT/scripts/dev/cloc.sh" --subcrates --manifest "$independent/Cargo.toml" --json "$FIXTURE" > "$FIXTURE/independent.json"
-jq -e --arg manifest "$independent/Cargo.toml" '
-    .manifest == $manifest and (.crates | map(.crate)) == ["independent-probe"] and
-    .totals == {runtime_loc:1,test_loc:0,test_pct:0,test_fns:0,inline_fns:0}
-' "$FIXTURE/independent.json" >/dev/null
-
-# Identical files still represent distinct selected runtime and test paths.
-bash "$ROOT/scripts/dev/cloc.sh" --subcrates --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" > "$FIXTURE/before-duplicates.json"
-printf 'pub fn duplicated() {}\n' > "$FIXTURE/crates/alpha/src/duplicate.rs"
-cp "$FIXTURE/crates/alpha/src/duplicate.rs" "$FIXTURE/crates/alpha/src/second.rs"
-cp "$FIXTURE/crates/alpha/src/duplicate.rs" "$FIXTURE/crates/alpha/tests/duplicate.rs"
-bash "$ROOT/scripts/dev/cloc.sh" --subcrates --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" > "$FIXTURE/with-duplicates.json"
-jq -e --slurpfile before "$FIXTURE/before-duplicates.json" '
-    .totals.runtime_loc == $before[0].totals.runtime_loc + 2 and
-    .totals.test_loc == $before[0].totals.test_loc + 1 and
-    .totals.test_fns == $before[0].totals.test_fns
-' "$FIXTURE/with-duplicates.json" >/dev/null
-
-# A later count failure preserves its status and cannot emit a partial JSON report.
-mkdir -p "$FIXTURE/reporter/scripts/dev" "$FIXTURE/failing-bin"
-cp "$ROOT/scripts/dev/cloc.sh" "$FIXTURE/reporter/scripts/dev/"
-cat > "$FIXTURE/failing-bin/cloc" <<'STUB'
-#!/usr/bin/env bash
-if [[ -e "$CLOC_FAILURE_MARKER" ]]; then exit 23; fi
-touch "$CLOC_FAILURE_MARKER"
-printf '{"%s":{"language":"Rust","code":1}}\n' "$CLOC_SOURCE_FILE"
-STUB
-chmod +x "$FIXTURE/failing-bin/cloc"
+printf 'pub fn shipped() {}\n' > "$FIXTURE/independent/src/tests.rs"
+printf 'pub fn identifier() {}\n' > "$FIXTURE/independent/src/type.rs"
+mkdir "$FIXTURE/independent/src/support"
+printf 'pub fn fixture() {}\n' > "$FIXTURE/independent/src/support/helper.rs"
+bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/independent/Cargo.toml" "$FIXTURE" > "$FIXTURE/usage.json"
+jq -e '
+  ([.files[] | select(.path | endswith("/src/tests.rs"))][0].counts.library_app == 1) and
+  ([.files[] | select(.path | endswith("/src/type.rs"))][0].counts.library_app == 1) and
+  ([.files[] | select(.path | endswith("/support/helper.rs"))][0].counts.tests == 1) and
+  (.totals.unclassified == 0) and
+  ([.files[].source_sha256 | test("^[0-9a-f]{64}$")] | all)
+' "$FIXTURE/usage.json" >/dev/null
+rm "$FIXTURE/independent/src/tests.rs" "$FIXTURE/independent/src/type.rs" "$FIXTURE/independent/src/support/helper.rs"
+# A Cargo target outside its package is counted once even through ../ aliases.
+printf '\n[[bin]]\nname="external"\npath="../external.rs"\n' >> "$FIXTURE/independent/Cargo.toml"
+printf '\n[[bin]]\nname="external-alias"\npath=".././external.rs"\n' >> "$FIXTURE/independent/Cargo.toml"
+printf 'mod external_support;\nfn main() {}\n' > "$FIXTURE/external.rs"
+printf 'pub fn support() {}\n' > "$FIXTURE/external_support.rs"
+printf 'pub fn library() {}\n' > "$FIXTURE/independent/src/lib.rs"
+bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/independent/Cargo.toml" "$FIXTURE" > "$FIXTURE/external.json"
+jq -e '.totals.library_app == 4 and .totals.total == 4 and
+  ([.files[] | select(.path | endswith("/external.rs"))] | length == 1)' "$FIXTURE/external.json" >/dev/null
+rm "$FIXTURE/external.rs" "$FIXTURE/external_support.rs"
+perl -0pi -e 's/\n\[\[bin\]\]\nname="external"\n.*\z//s' "$FIXTURE/independent/Cargo.toml"
+# A large file with many nested test ranges exercises the scanner hot paths.
+perl -e 'for (1..5000) { print "pub fn live_$_() {}\n#[cfg(test)]\nmod test_$_ {\n #[test]\n fn case() {}\n}\n"; }' > "$FIXTURE/independent/src/lib.rs"
+bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/independent/Cargo.toml" "$FIXTURE" > "$FIXTURE/large.json"
+jq -e '.totals.library_app == 5000 and .totals.tests == 25000 and .totals.total == 30000 and .totals.unclassified == 0' "$FIXTURE/large.json" >/dev/null
+# cloc failure status is retained and no partial document escapes.
+mkdir -p "$FIXTURE/reporter/scripts/dev" "$FIXTURE/bin"
+cp "$ROOT/scripts/dev/cloc.sh" "$ROOT/scripts/dev/cloc-classify.pl" "$FIXTURE/reporter/scripts/dev/"
+# Concurrent edits between classification and cloc must not change counted bytes.
+report > "$FIXTURE/pre-mutation.json"
+cp "$FIXTURE/crates/app/src/lib.rs" "$FIXTURE/saved-lib.rs"
+export MUTATION_FILE="$FIXTURE/crates/app/src/lib.rs"
+export REAL_CLOC
+REAL_CLOC="$(command -v cloc)"
+cat > "$FIXTURE/bin/cloc" <<'SH'
+#!/bin/sh
+printf 'pub fn changed_during_scan() {}\n' > "$MUTATION_FILE"
+exec "$REAL_CLOC" "$@"
+SH
+chmod +x "$FIXTURE/bin/cloc"
+PATH="$FIXTURE/bin:$PATH" bash "$FIXTURE/reporter/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" > "$FIXTURE/mutation.json"
+cmp "$FIXTURE/pre-mutation.json" "$FIXTURE/mutation.json"
+cp "$FIXTURE/saved-lib.rs" "$FIXTURE/crates/app/src/lib.rs"
+printf '#!/bin/sh\nexit 23\n' > "$FIXTURE/bin/cloc"
+chmod +x "$FIXTURE/bin/cloc"
 status=0
-CLOC_SOURCE_FILE="$FIXTURE/crates/alpha/src/lib.rs" CLOC_FAILURE_MARKER="$FIXTURE/count-started" PATH="$FIXTURE/failing-bin:$PATH" \
-    bash "$FIXTURE/reporter/scripts/dev/cloc.sh" --subcrates --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" \
-    > "$FIXTURE/failed.json" 2> "$FIXTURE/failed.err" || status=$?
-[[ "$status" == 23 && -e "$FIXTURE/count-started" && ! -s "$FIXTURE/failed.json" ]] || exit 1
-echo 'cloc tests, including independent workspace selection, passed'
+PATH="$FIXTURE/bin:$PATH" bash "$FIXTURE/reporter/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" > "$FIXTURE/failed.json" || status=$?
+[[ "$status" == 23 && ! -s "$FIXTURE/failed.json" ]]
+# Successful cloc exit with missing nonempty file counts must not yield zeros.
+printf '#!/bin/sh\nprintf "{}\\n"\n' > "$FIXTURE/bin/cloc"
+if PATH="$FIXTURE/bin:$PATH" bash "$FIXTURE/reporter/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" > "$FIXTURE/omitted.json" 2> "$FIXTURE/omitted.err"; then exit 1; fi
+grep -F 'cloc omitted a nonempty source file' "$FIXTURE/omitted.err" >/dev/null
+[[ ! -s "$FIXTURE/omitted.json" ]]
+echo 'LOC classification and source-total fixtures passed'
 fixture_complete=true

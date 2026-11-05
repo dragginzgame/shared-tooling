@@ -1,8 +1,27 @@
 # Changelog
 
-## [0.29.6] - Unreleased
+## [0.30.0] - Unreleased
 
 ### 🔧 Changed
+
+- Prohibit embedded Rust source injection and generated-entrypoint patch/build/
+  restore flows, including test canisters. Require explicit modules or fixture
+  crates; retain legitimate data fixtures, compiler/parser inputs and normal
+  code generation.
+
+- **Breaking LOC report:** replace runtime/test totals with Library/app, Tests,
+  Examples, Benchmarks, Build/tooling, Unclassified and all-source totals.
+  Classify Cargo targets and Rust module/test syntax, count shared source once,
+  and expose generated/shared flags and unresolved-source diagnostics in JSON
+  schema 2. Update consumers of the removed schema-1 fields.
+- Adopt the Rust source layout as a hard cut: use `tests/`, `tests.rs` or
+  `*_tests.rs`, standard examples/benches/build paths and explicit fixture/tooling
+  package metadata. Rename legacy paths and references together in each owning
+  workspace; this batch changes Shared Tooling only.
+
+- Retire the unused tooling LOC reporter, Make target and dedicated fixtures.
+  Agent-led tooling audits now combine snapshot verification, relevant update
+  review and actual CI/release caller tracing through the existing task catalog.
 
 - Add opt-in, isolated final-candidate Cargo sources rendered through the canonical
   metadata editor. Qualify actual final versions once, with immutable stage proofs
@@ -11,6 +30,16 @@
   execution. Provide compact stage custody and structured admission output.
 
 ### 🩹 Fixed
+
+- Avoid repeated source copies and test-range searches in the LOC classifier;
+  report workspace progress on stderr while assembling sibling totals.
+- Compact LOC table headings and size columns to their contents; restore dashed
+  separators below the headings and above totals.
+- Audit LOC classification with fixed-source reconciliation and exact-count
+  regressions. Handle inner attributes, raw module names and braced test items;
+  distinguish disabled code from test-only code and prefer actual module usage
+  over filenames. Include external Cargo target sources once, count captured
+  bytes with content hashes, and reject missing nonempty cloc results.
 
 - Assemble admitted Cargo member manifests once and join dependency paths in one
   query, avoiding repeated growing JSON rewrites and per-dependency lookups.

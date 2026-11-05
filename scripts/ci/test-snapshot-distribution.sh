@@ -802,7 +802,7 @@ scripts/dev/check-cargo-tool-versions.pl ci/tool-versions.env
 scripts/dev/install-rust-tools.sh scripts/dev/cargo-tool-build.sh
 scripts/ci/test-cargo-metadata.sh scripts/ci/read-cargo-workspace-version.sh
 scripts/ci/test-cloc.sh scripts/dev/cloc.sh
-scripts/ci/test-cloc-tooling.sh scripts/dev/cloc-tooling.pl
+scripts/dev/cloc.sh scripts/dev/cloc-classify.pl
 scripts/ci/test-crates-io-version.sh scripts/ci/check-crates-io-version.sh
 scripts/ci/test-dependency-pins.sh scripts/ci/check-dependency-pins.sh
 scripts/ci/test-cargo-dependency-boundaries.sh scripts/ci/check-cargo-dependency-boundaries.sh
@@ -835,7 +835,6 @@ PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consum
 printf 'include make/consumer.mk\n' > "$minimal_consumer/Makefile"
 cmp "$ROOT/ci/tool-versions.env" "$minimal_consumer/ci/tool-versions.env"
 cmp "$ROOT/ci/ic-tools.tsv" "$minimal_consumer/ci/ic-tools.tsv"
-[[ ! -e "$minimal_consumer/scripts/dev/cloc-tooling.pl" ]]
 for target in host-tools-check ic-tools-check rust-tools-check cloc; do
     status=0
     SHARED_TOOLING_STORE="$FIXTURE/minimal-store" make -s -C "$minimal_consumer" IC_TOOLS=wasm-opt "$target" \

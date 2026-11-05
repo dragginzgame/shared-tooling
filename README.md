@@ -37,7 +37,7 @@ flowchart TD
     p_app_3atoko(["toko"])
     p_app_3atoko_2dminer(["toko-miner"])
     subgraph p_repo_3acanic["canic"]
-        subgraph p_group_3acanic_7cframework["framework · 0.114.0"]
+        subgraph p_group_3acanic_7cframework["framework · 0.115.0"]
             p_canic_7ccargo_3acanic["canic"]
         end
     end
@@ -47,7 +47,7 @@ flowchart TD
         end
     end
     subgraph p_repo_3aic_2dblob_2dstorage["ic-blob-storage"]
-        subgraph p_group_3aic_2dblob_2dstorage_7cengine["engine · 0.71.1"]
+        subgraph p_group_3aic_2dblob_2dstorage_7cengine["engine · 0.72.1"]
             p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage["ic-blob-storage"]
         end
     end
@@ -71,7 +71,7 @@ flowchart TD
         end
     end
     subgraph p_repo_3aic_2dscheduling["ic-scheduling"]
-        subgraph p_group_3aic_2dscheduling_7ctimers["timers · 0.40.3"]
+        subgraph p_group_3aic_2dscheduling_7ctimers["timers · 0.40.4"]
             p_ic_2dscheduling_7ccargo_3aic_2dtimers["ic-timers"]
         end
     end
@@ -79,12 +79,12 @@ flowchart TD
         subgraph p_group_3aic_2dstorage_7cmetrics_2dstorage["metrics-storage · 0.68.0"]
             p_ic_2dstorage_7ccargo_3aic_2dmetrics_2dstorage["ic-metrics-storage"]
         end
-        subgraph p_group_3aic_2dstorage_7cstorage["storage · 0.66.2"]
+        subgraph p_group_3aic_2dstorage_7cstorage["storage · 0.67.0"]
             p_ic_2dstorage_7ccargo_3aic_2dstorage["ic-storage"]
         end
     end
     subgraph p_repo_3aic_2dwire["ic-wire"]
-        subgraph p_group_3aic_2dwire_7ccore["core · 0.17.0"]
+        subgraph p_group_3aic_2dwire_7ccore["core · 0.17.1"]
             p_ic_2dwire_7ccargo_3aic_2dwire["ic-wire"]
         end
     end
@@ -181,7 +181,8 @@ consumer behavior. Applicable workflows support macOS under the
 | Install selected IC executables | `make install-ic-tools`; [IC tools and ownership](docs/ic-tools.md) |
 | Format a Rust consumer or enable its commit hook | Consumer `make fmt`, `make fmt-check`, `make install-hooks`; [formatting contract](rules/git-hooks.md) |
 | Check dependency declarations | `make check-pins`; [pinning policy](rules/dependency-pinning.md) and [helper contracts](docs/verification-helpers.md) |
-| Report sibling Rust/tooling LOC | `make cloc`, `make cloc-tooling`; [fleet reports](docs/fleet-tools.md) |
+| Report Rust LOC | `make cloc`; [workspace and sibling reports](docs/fleet-tools.md) |
+| Audit sibling tooling adoption | [Snapshot integrity and relevant updates](tasks/snapshot-drift.md), [caller wiring and consolidation](tasks/tooling-duplication.md) |
 | Inspect issues, PRs or CI runs | `scripts/dev/github-siblings.sh`, `scripts/dev/gh-ci.sh`; [usage and limits](docs/fleet-tools.md) |
 | Run selected Make checks with retained evidence | [Validation target runner](docs/validation-runner.md) |
 | Reuse checksum, source, archive and publication checks | [Verification helper contracts](docs/verification-helpers.md) |

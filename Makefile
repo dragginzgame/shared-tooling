@@ -31,7 +31,7 @@ release-patch release-minor release-major release-resume: export RELEASE_VERSION
         release-version release-preflight release-verify \
         release-prepare-version release-prepared-check release-files \
         release-commit-check release-committed-check release-tagged-check release-push-check \
-        release-merged-preflight check-cargo-tool-versions check-tool-catalogs test-licenses cloc-tooling \
+        release-merged-preflight check-cargo-tool-versions check-tool-catalogs test-licenses \
         install-release-editor release-editor-check check-no-symlinks stack-graph check-stack-graph
 
 help:
@@ -39,7 +39,6 @@ help:
 	@echo "Prepare/reuse pending notes and VERSION: make prepare-work [WORK_VERSION_KIND=patch|minor|major]"
 	@echo "Repeatable maintenance catalog: make tasks"
 	@echo "Sibling Rust LOC summaries: make cloc [CLOC_PARENT=/path/to/projects]"
-	@echo "Sibling CI/tooling inventory: make cloc-tooling [CLOC_PARENT=/path/to/projects]"
 	@echo "Toko stack README diagram: stack-graph, check-stack-graph [STACK_PARENT=/path/to/projects]"
 	@echo "Focused: affected script fixtures, check-no-symlinks, check-pins, check-doc-links, check-release-commands"
 	@echo "Local IC executables: install-ic-tools; offline verification: ic-tools-check"
@@ -62,9 +61,6 @@ stack-graph:
 
 check-stack-graph:
 	perl scripts/dev/stack-graph.pl --check --parent "$(STACK_PARENT)"
-
-cloc-tooling:
-	@perl scripts/dev/cloc-tooling.pl "$(CLOC_PARENT)"
 
 test-licenses:
 	perl scripts/ci/test-license.pl
