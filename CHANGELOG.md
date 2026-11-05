@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.30.1] - Unreleased
+
+### 🩹 Fixed
+
+- Project undated numbered release drafts through the canonical group preparer,
+  refusing invalid first headings instead of qualifying an older release.
+  [#357](https://github.com/dragginzgame/shared-tooling/issues/357).
+- Default formatting and LOC scratch to the owning target directory, retaining
+  explicit temporary-directory overrides and failed formatting evidence.
+  [#356](https://github.com/dragginzgame/shared-tooling/issues/356).
+
+- Declare setup/adoption documentation companions for partial exports and
+  qualify current working documentation through isolated canonical exports.
+- Reduce LOC scanner memory by queuing module visits and retaining only one
+  file's token tree at a time, preserving captured-byte counts and shared roles.
+- Document the migration from consumer-owned event/timing parsers to shared
+  validation proofs, including relative log paths and recovery ownership.
+  Consumer implementation remains tracked in
+  [Canic #729](https://github.com/dragginzgame/canic/issues/729) and
+  [Platform #141](https://github.com/dragginzgame/ic-platform/issues/141).
+
 ## [0.30.0] - Unreleased
 
 ### 🔧 Changed

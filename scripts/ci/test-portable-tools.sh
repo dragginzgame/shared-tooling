@@ -143,6 +143,7 @@ run_fixture test-cargo-metadata.sh bash "$ROOT/scripts/ci/test-cargo-metadata.sh
 run_fixture test-format-tools.sh bash "$ROOT/scripts/ci/test-format-tools.sh"
 run_fixture test-git-hooks.sh bash "$ROOT/scripts/ci/test-git-hooks.sh"
 run_fixture test-rust-formatting-sources.sh bash "$ROOT/scripts/ci/test-rust-formatting-sources.sh"
+run_fixture test-scratch-ownership.sh bash "$ROOT/scripts/ci/test-scratch-ownership.sh"
 run_fixture test-cloc.sh bash "$ROOT/scripts/ci/test-cloc.sh"
 run_fixture test-cloc-siblings.sh bash "$ROOT/scripts/ci/test-cloc-siblings.sh"
 run_fixture test-stack-graph.sh bash "$ROOT/scripts/ci/test-stack-graph.sh"

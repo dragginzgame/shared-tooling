@@ -44,10 +44,41 @@ prepare() {
     local before
     before=$(git rev-parse HEAD)
     perl "$root/scripts/ci/prepare-cargo-stage-source.pl" --root "$PWD" --state target/stage-sources \
-        --source "$before" --editor "$CARGO_RELEASE_METADATA_EDITOR" > "$fixture/$1.json"
+        --source "$before" --editor "$CARGO_RELEASE_METADATA_EDITOR" > "$fixture/$1.json" || return
     [[ $(git rev-parse HEAD) == "$before" && -z $(git status --porcelain=v1 --untracked-files=all) ]]
 }
 prepare first
+cp releases/api/CHANGELOG.md "$fixture/pending-notes"
+perl -pi -e 's/ - Unreleased$//' releases/api/CHANGELOG.md
+printf '\n## [1.2.0] - 2039-01-01\n\n- Historical notes.\n' >> releases/api/CHANGELOG.md
+git add releases/api/CHANGELOG.md
+git -c commit.gpgsign=false commit -qm 'Undated numbered candidate with history'
+prepare undated
+[[ $(jq -r .identity "$fixture/undated.json") == "$(jq -r .identity "$fixture/first.json")" ]]
+cp releases/api/CHANGELOG.md "$fixture/undated-notes"
+# Invalid first candidates must never qualify the older dated release below.
+for heading in '## [Draft]' '## [1.2.1] - pending' '## [1.2.0]' '## [1.1.9]' '## [01.2.1]'; do
+    printf '# Notes\n\n%s\n\n## [1.2.0] - 2039-01-01\n' "$heading" > releases/api/CHANGELOG.md
+    git add releases/api/CHANGELOG.md
+    git -c commit.gpgsign=false commit -qm 'Invalid candidate fixture'
+    if prepare rejected > "$fixture/rejected.log" 2>&1; then
+        echo "invalid candidate admitted: $heading" >&2; exit 1
+    fi
+    [[ -z $(git status --porcelain=v1 --untracked-files=all) ]]
+done
+for heading in '## [1.2.1]' '## [1.2.2] - Unreleased'; do
+    cat "$fixture/undated-notes" > releases/api/CHANGELOG.md
+    # Put the conflicting draft before the historical boundary.
+    { cat "$fixture/pending-notes"; printf '\n%s\n' "$heading"; cat "$fixture/undated-notes"; } > releases/api/CHANGELOG.md
+    git add releases/api/CHANGELOG.md
+    git -c commit.gpgsign=false commit -qm 'Conflicting candidates fixture'
+    if prepare rejected > "$fixture/rejected.log" 2>&1; then
+        echo 'conflicting candidates admitted' >&2; exit 1
+    fi
+done
+cp "$fixture/undated-notes" releases/api/CHANGELOG.md
+git add releases/api/CHANGELOG.md
+git -c commit.gpgsign=false commit -qm 'Restore undated candidate'
 candidate=$(jq -er .directory "$fixture/first.json")
 perl "$root/scripts/ci/prepare-cargo-stage-source.pl" --verify-projection "$fixture/first.json" > "$fixture/verify-source.log"
 mkdir "$candidate/.tools"
@@ -100,6 +131,16 @@ for entry in api:1.2.0:1.2.1 engine:2.3.0:2.3.1; do
     [[ $(jq -r .identity "$fixture/$group.json") == "$(jq -r .identity "$fixture/first.json")" ]]
     [[ $(jq -r .source "$fixture/$group.json") != "$(jq -r .source "$fixture/first.json")" ]]
 done
+cp releases/api/CHANGELOG.md "$fixture/finalized-notes"
+printf '\n## [1.2.2]\n\n- Misplaced draft.\n' >> releases/api/CHANGELOG.md
+git add releases/api/CHANGELOG.md
+git -c commit.gpgsign=false commit -qm 'Misplaced draft after finalized release'
+if prepare rejected > "$fixture/finalized-refusal.log" 2>&1; then
+    echo 'misplaced draft after finalized release admitted' >&2; exit 1
+fi
+cp "$fixture/finalized-notes" releases/api/CHANGELOG.md
+git add releases/api/CHANGELOG.md
+git -c commit.gpgsign=false commit -qm 'Restore finalized release'
 printf '\n// Changed implementation\n' >> crates/api/src/lib.rs
 git add crates/api/src/lib.rs
 git -c commit.gpgsign=false commit -qm 'Changed implementation'

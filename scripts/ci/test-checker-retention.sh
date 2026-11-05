@@ -76,12 +76,15 @@ CMP
             if [[ "$scenario" == assertion ]]; then [[ -f "$retained/expected" ]] || exit 1; fi
             grep -Fq CHECKER_RETENTION_FAILURE "$run/result.log" "$retained/patch-0.log"
         else
-            PATH="$run/bin:$PATH" TMPDIR="$run/tmp" \
+            expected_scratch="$run/tmp"
+            [[ "$scenario" != child ]] || expected_scratch="$consumer/target/tmp"
+            (if [[ "$scenario" == child ]]; then unset TMPDIR RUNNER_TEMP; else export TMPDIR="$run/tmp"; fi
+            PATH="$run/bin:$PATH" \
                 bash "$root/scripts/ci/check-formatting-hooks.sh" "$consumer" src/lib.rs Cargo.toml \
-                --no-dependency-tables "${inputs[@]}" Cargo.lock > "$run/result.log" 2>&1 || status=$?
+                --no-dependency-tables "${inputs[@]}" Cargo.lock) > "$run/result.log" 2>&1 || status=$?
             [[ "$status" == 43 ]] || exit 1
             retained="$(sed -n 's/^Formatting adoption evidence retained: //p' "$run/result.log")"
-            [[ "$retained" == "$run/tmp/"* && -d "$retained/base/.git" && \
+            [[ "$retained" == "$expected_scratch/"* && -d "$retained/base/.git" && \
                -f "$retained/base/Cargo.toml" && -f "$retained/baseline.log" ]] || exit 1
             if [[ "$scenario" == assertion ]]; then
                 [[ -f "$retained/sorted-manifest" && -f "$retained/refresh/src/lib.rs" && \

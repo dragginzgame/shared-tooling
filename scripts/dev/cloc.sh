@@ -7,6 +7,8 @@ ROOT="$0"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 export PATH="$ROOT/.tools/host/bin:$PATH"
+# Parent reporting enters child checkouts; preserve the caller's explicit route.
+if [[ -n "${TMPDIR:-}" && "$TMPDIR" != /* ]]; then export TMPDIR="$PWD/$TMPDIR"; fi
 
 usage() {
     cat <<'EOF'
@@ -28,6 +30,8 @@ Prepared host tools beside this script's checkout take precedence over PATH.
 --json emits one complete document with crate rows and totals on success.
 The ??? column is unclassified LOC. For classification notes, file paths and
 reasons, run --json for the individual workspace and inspect diagnostics.
+Scratch defaults to the selected Cargo target directory. Parent-report scratch
+belongs to this script's checkout (target/tmp); TMPDIR overrides either default.
 Examples:
   cloc.sh                         Workspace summary
   cloc.sh --subcrates              Summary with member crates
@@ -51,7 +55,9 @@ check_tools() {
 
 report_repositories() (
     parent_root="$1"
-    report_dir="$(mktemp -d "${TMPDIR:-/tmp}/shared-cloc-parent.XXXXXX")"
+    scratch="${TMPDIR:-$ROOT/target/tmp}"
+    mkdir -p -- "$scratch"
+    report_dir="$(mktemp -d "$scratch/shared-cloc-parent.XXXXXX")"
     trap 'rm -rf "$report_dir"' EXIT
     export LC_ALL=C
     shopt -s nullglob dotglob
@@ -185,7 +191,9 @@ if ! metadata="$(
     exit 1
 fi
 
-FILE_LIST_DIR="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-cloc.XXXXXX")"
+scratch="${TMPDIR:-$(printf '%s\n' "$metadata" | jq -er .target_directory)/tmp}"
+mkdir -p -- "$scratch"
+FILE_LIST_DIR="$(mktemp -d "$scratch/shared-tooling-cloc.XXXXXX")"
 trap 'rm -rf "$FILE_LIST_DIR"' EXIT
 printf '%s\n' "$metadata" > "$FILE_LIST_DIR/metadata.json"
 perl "$ROOT/scripts/dev/cloc-classify.pl" "$FILE_LIST_DIR/metadata.json" "$manifest_path" "$FILE_LIST_DIR" > "$FILE_LIST_DIR/report.json"

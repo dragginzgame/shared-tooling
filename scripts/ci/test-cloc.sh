@@ -83,6 +83,9 @@ printf '#[test]\nfn integration() {}\n' > "$FIXTURE/crates/app/tests/integration
 cp "$FIXTURE/Cargo.lock" "$FIXTURE/original.lock"
 report() { bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE"; }
 report > "$FIXTURE/report.json"
+(unset TMPDIR RUNNER_TEMP; report) > "$FIXTURE/default-scratch.json"
+cmp "$FIXTURE/report.json" "$FIXTURE/default-scratch.json"
+[[ -d "$FIXTURE/crates/app/output/tmp" ]]
 jq -e '
   .schema == 2 and
   .totals.examples == 1 and .totals.benchmarks == 1 and .totals.build_tooling == 2 and
@@ -221,6 +224,17 @@ perl -0pi -e 's/\n\[\[bin\]\]\nname="external"\n.*\z//s' "$FIXTURE/independent/C
 perl -e 'for (1..5000) { print "pub fn live_$_() {}\n#[cfg(test)]\nmod test_$_ {\n #[test]\n fn case() {}\n}\n"; }' > "$FIXTURE/independent/src/lib.rs"
 bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/independent/Cargo.toml" "$FIXTURE" > "$FIXTURE/large.json"
 jq -e '.totals.library_app == 5000 and .totals.tests == 25000 and .totals.total == 30000 and .totals.unclassified == 0' "$FIXTURE/large.json" >/dev/null
+# Broad module graphs must preserve every file/category when visits are queued
+# and token trees are discarded. Keep this separate from the single-file case.
+mkdir "$FIXTURE/independent/src/fanout"
+printf 'mod fanout;\n' > "$FIXTURE/independent/src/lib.rs"
+: > "$FIXTURE/independent/src/fanout/mod.rs"
+for ((part=0; part<32; part++)); do
+    printf 'pub mod part_%s;\n' "$part" >> "$FIXTURE/independent/src/fanout/mod.rs"
+    perl -e 'for (1..100) {print "pub fn live_$_() {}\n#[cfg(test)]\nfn test_$_() {}\n";}' > "$FIXTURE/independent/src/fanout/part_$part.rs"
+done
+bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/independent/Cargo.toml" "$FIXTURE" > "$FIXTURE/fanout.json"
+jq -e '.totals.library_app == 3233 and .totals.tests == 6400 and .totals.total == 9633 and .totals.unclassified == 0 and (.files|length)==34' "$FIXTURE/fanout.json" >/dev/null
 # cloc failure status is retained and no partial document escapes.
 mkdir -p "$FIXTURE/reporter/scripts/dev" "$FIXTURE/bin"
 cp "$ROOT/scripts/dev/cloc.sh" "$ROOT/scripts/dev/cloc-classify.pl" "$FIXTURE/reporter/scripts/dev/"

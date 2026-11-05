@@ -29,6 +29,13 @@ MAKE
 done
 report() { bash "$ROOT/scripts/dev/cloc.sh" "$@"; }
 report "$parent" > "$FIXTURE/summary"
+(unset TMPDIR RUNNER_TEMP; report "$parent") > "$FIXTURE/default-scratch"
+cmp "$FIXTURE/summary" "$FIXTURE/default-scratch"
+[[ -d "$ROOT/target/tmp" && ! -d "$parent/target" ]]
+[[ -d "$parent/alpha repo/output/tmp" && -d "$parent/zeta/output/tmp" ]]
+(cd "$FIXTURE"; TMPDIR='relative scratch' report "$parent") > "$FIXTURE/relative-scratch"
+cmp "$FIXTURE/summary" "$FIXTURE/relative-scratch"
+[[ -d "$FIXTURE/relative scratch" && ! -e "$parent/zeta/relative scratch" ]]
 report --subcrates "$parent" > "$FIXTURE/expanded"
 [[ "$(awk 'END {print $2,$3,$4,$5,$6,$7,$8}' "$FIXTURE/summary")" == '2 4 0 0 0 0 6' ]]
 [[ "$(awk 'END {print $2,$3,$4,$5,$6,$7,$8}' "$FIXTURE/expanded")" == '2 4 0 0 0 0 6' ]]
