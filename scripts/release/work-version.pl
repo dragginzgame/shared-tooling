@@ -37,6 +37,24 @@ my @headings = $notes =~ /^(##[ \t]+[^\n]*)/mg;
 my ($top, $suffix) = $headings[0] =~ /\A##[ \t]+\[([^]]+)\](?:[ \t]+-[ \t]+(Unreleased|[0-9]{4}-[0-9]{2}-[0-9]{2}))?[ \t]*\z/;
 defined($top) && stable($top) or die "invalid first changelog heading\n";
 my $pending = defined($suffix) && $suffix eq 'Unreleased';
+# A normal main push is Shared's delivery boundary even when historical notes
+# retain Unreleased. Read local remote-tracking evidence; never fetch implicitly.
+if ($pending && $operation ne 'check') {
+    my $ref = 'refs/remotes/origin/main';
+    my $status = system 'git', 'show-ref', '--verify', '--quiet', $ref;
+    if ($status == 0) {
+        open my $remote, '-|', 'git', 'show', "$ref:VERSION"
+            or die "read pushed VERSION: $!\n";
+        local $/;
+        my $pushed = <$remote>;
+        close $remote or die "cannot read pushed VERSION\n";
+        $pushed =~ s/\n\z//;
+        stable($pushed) or die "invalid pushed VERSION\n";
+        $pending = 0 if $pushed eq $top;
+    } elsif ($status != 256) {
+        die "cannot inspect pushed version reference\n";
+    }
+}
 my $base = $version;
 if ($pending && $top eq $version) {
     my ($previous) = ($headings[1] // '') =~ /\A##[ \t]+\[([^]]+)\]/;

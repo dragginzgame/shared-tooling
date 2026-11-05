@@ -55,6 +55,12 @@ allowance. Do not label a general application module an external adapter.
 
 ## Coverage and limitations
 
+This check covers Candid trait references only. It does not enforce CBOR dependency
+or import ownership, prove that an allowed DTO comes from Platform, or establish
+protocol byte compatibility. Apply the separate dependency/import obligations in
+the [encoding contract](../rules/engineering-details.md#ic-application-encoding)
+to Rust and browser roots; report adoption and coverage gaps explicitly.
+
 The checker detects literal `CandidType` references outside imports, including
 qualified paths, manual implementations, generic bounds and conditional derives
 in every source cfg branch. It follows explicit same-file `use ... as ...` aliases

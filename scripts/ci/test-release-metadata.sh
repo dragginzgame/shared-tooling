@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Shared companions: scripts/ci/fixture-lifecycle.sh scripts/release/metadata.sh
 set -euo pipefail
+[[ $# == 0 || ( $# == 1 && $1 == --work-version-only ) ]] || exit 2
 
 # This independent fixture owns its Make selections and logger checkout.
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
@@ -71,6 +72,35 @@ for operation in check 'prepare patch'; do
     cmp CHANGELOG.md "$FIXTURE/promoted-notes"
     [[ "$(cat VERSION)" == 0.1.0 ]]
 done
+
+# Pushing main consumes a pending version even without a tag or dated heading.
+saved_main="$(git rev-parse refs/remotes/origin/main)"
+printf '0.1.1\n' > VERSION
+printf '# Changelog\n\n## [0.1.1] - Unreleased\n\n- Delivered notes.\n\n## [0.1.0]\n' > CHANGELOG.md
+git add -- VERSION CHANGELOG.md
+pushed_tree="$(git write-tree)"
+pushed_commit="$(printf 'fixture pushed version\n' | git -c user.name=Fixture -c user.email=fixture@example.invalid commit-tree "$pushed_tree" -p HEAD)"
+# A local commit alone must not consume the pending version.
+perl "$ROOT/scripts/release/work-version.pl" prepare patch > /dev/null
+[[ "$(cat VERSION)" == 0.1.1 ]]
+git update-ref refs/remotes/origin/main "$pushed_commit"
+[[ "$(perl "$ROOT/scripts/release/work-version.pl" base)" == 0.1.1 ]]
+perl "$ROOT/scripts/release/work-version.pl" prepare patch > /dev/null
+[[ "$(cat VERSION)" == 0.1.2 ]]
+rg -Fx '## [0.1.1] - Unreleased' CHANGELOG.md > /dev/null
+rg -Fx -- '- Delivered notes.' CHANGELOG.md > /dev/null
+cp CHANGELOG.md "$FIXTURE/after-push-notes"
+perl "$ROOT/scripts/release/work-version.pl" prepare patch > /dev/null
+cmp CHANGELOG.md "$FIXTURE/after-push-notes"
+[[ "$(perl "$ROOT/scripts/release/work-version.pl" base)" == 0.1.1 ]]
+perl "$ROOT/scripts/release/work-version.pl" check
+git update-ref refs/remotes/origin/main "$saved_main"
+git read-tree HEAD
+if [[ ${1:-} == --work-version-only ]]; then
+    echo 'work-version preparation tests passed'
+    fixture_complete=true
+    exit
+fi
 
 # A prepared VERSION still needs notes finalization, including retry.
 printf '0.1.1\n' > VERSION
