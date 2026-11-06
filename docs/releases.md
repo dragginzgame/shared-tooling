@@ -1,9 +1,10 @@
 # Common release commands
 <!-- Shared companions: docs/cargo-publication.md docs/release-group-validation.md docs/release-validation-reuse.md rules/contributions.md rules/rust-workspaces.md scripts/ci/check-release-source.sh -->
 
-Grouped consumers may qualify [frozen release batches](frozen-releases.md) so
+Grouped increment commands use [frozen release batches](frozen-releases.md) by
+default: `RELEASE_GROUP=engine` captures that group automatically, so
 normal-checkout `cargo update` writes affect the next release, not active delivery.
-Select the full affected group roster once and execute release and publication
+Select a multi-group roster explicitly and execute release and publication
 from that captured source; do not mix candidate validation with live publication.
 
 Every `dragginzgame` repository, including Shared Tooling and repositories without

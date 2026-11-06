@@ -532,7 +532,9 @@ contracts; ordinary development does not require rereading these mechanics.
 
 ## Release commands
 
-- Adopt qualified frozen inputs for Cargo release and publication so concurrent
+- Grouped Cargo increment commands capture frozen inputs by default; an explicit
+  `RELEASE_GROUP` selects one group, and multiple groups require an explicit roster.
+  Keep publication on that captured source so concurrent
   normal-checkout lock updates belong to the next batch. Use Shared's
   [batch setup, recovery and custody interfaces](../docs/frozen-releases.md),
   rather than adding local orchestration wrappers. Qualify the consumer's real

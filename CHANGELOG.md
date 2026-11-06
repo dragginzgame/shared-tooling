@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.30.10] - Unreleased
+
+### 🔧 Changed
+
+- Capture explicit single-group releases automatically through the frozen runner.
+  Multi-group releases retain an explicit roster; clearing that roster cannot
+  silently return a selected group to live-checkout delivery. Ungrouped releases
+  retain their existing workflow and publication selection remains explicit.
+
 ## [0.30.9] - Unreleased
 
 ### 🔧 Changed

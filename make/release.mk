@@ -9,9 +9,9 @@ RELEASE_BRANCH ?= main
 # Optional consumer-owned verification after a successful exact-version resume.
 # This is a check, not a second delivery or publication command.
 RELEASE_RESUME_CHECK_COMMAND ?= :
-# Opt in only after qualifying consumer hooks in the independent delivery checkout.
-# The full supplier-first roster is frozen once; do not loop individual commands.
-RELEASE_FROZEN_GROUPS ?=
+# Explicit single-group releases capture automatically. Multi-group batches
+# require an explicit supplier-first roster; never infer all workspace groups.
+RELEASE_FROZEN_GROUPS ?= $(RELEASE_GROUP)
 RELEASE_FROZEN_PUBLISH_TARGET ?=
 RELEASE_FROZEN_SETUP_TARGET ?=
 RELEASE_DELIVERY_POLICY ?=
@@ -32,6 +32,13 @@ $(error Select exactly one release target)
 endif
 
 .PHONY: release-patch release-minor release-major release-resume
+ifneq ($(filter release-patch release-minor release-major,$(MAKECMDGOALS)),)
+ifneq ($(strip $(RELEASE_GROUP)),)
+ifeq ($(strip $(RELEASE_FROZEN_GROUPS)),)
+$(error A selected release group requires frozen capture; do not clear RELEASE_FROZEN_GROUPS)
+endif
+endif
+endif
 release-patch release-minor release-major:
 ifneq ($(strip $(RELEASE_FROZEN_GROUPS)),)
 ifneq ($(FROZEN_RELEASE_ACTIVE),1)

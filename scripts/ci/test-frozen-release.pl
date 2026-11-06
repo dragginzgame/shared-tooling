@@ -218,5 +218,24 @@ run('make','--no-print-directory','-C',$real,'release-batch-resume',"BATCH=$real
 is(output('git','--git-dir',"$fixture/real-remote.git",'tag','--list'),"alpha-v0.1.1\nbeta-v0.1.1",'real runner releases both groups through ordinary Make target');
 like(output('git','-C',$real,'diff','--','Cargo.lock'),qr/deferred update/,'real runner preserves concurrent normal lock edit');
 is(output('cat',$ENV{SETUP_TRACE}),"alpha prepare\nbeta prepare\nbeta check",'recovery selects offline setup admission rather than fresh preparation');
+# Exercise default dispatch without Git or registry effects. The real runner's
+# multi-group/capture behavior is qualified above; these sentinels select it.
+my $routing="$fixture/routing";make_path($routing);
+run('bash',"$RealBin/prepare-script-fixture.sh","$RealBin/../..",$routing,'make/release.mk');
+write_file("$routing/Makefile","SHARED_TOOLING_ROOT := \$(CURDIR)\ninclude make/release.mk\n");
+write_file("$routing/scripts/ci/run-frozen-release.pl",'print "frozen:@ARGV\n";');
+write_file("$routing/scripts/ci/run-release.sh",'printf "standard:%s\\n" "$*"');
+for my $kind (qw(patch minor major)) {
+    like(output('make','--no-print-directory','-C',$routing,"release-$kind",'RELEASE_GROUP=engine'),
+        qr/frozen:.*--groups engine --kind $kind /,"$kind captures selected group by default");
+}
+like(output('make','--no-print-directory','-C',$routing,'release-patch','RELEASE_FROZEN_GROUPS=types,runtime'),
+    qr/frozen:.*--groups types,runtime /,'explicit multi-group roster reaches the frozen runner');
+like(output('make','--no-print-directory','-C',$routing,'release-patch'),
+    qr/standard:patch origin main/,'ungrouped release retains ordinary runner');
+like(output('make','--no-print-directory','-C',$routing,'release-patch','RELEASE_GROUP=engine','FROZEN_RELEASE_ACTIVE=1'),
+    qr/standard:patch origin main/,'captured group invokes standard runner without recursive capture');
+ok(system('make','--no-print-directory','-C',$routing,'release-patch','RELEASE_GROUP=engine','RELEASE_FROZEN_GROUPS=')!=0,
+    'clearing roster cannot silently bypass selected-group capture');
 done_testing();
 if (Test::More->builder->is_passing) {remove_tree($fixture)} else {warn "fixture retained: $fixture\n";}

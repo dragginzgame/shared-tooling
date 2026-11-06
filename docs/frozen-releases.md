@@ -11,12 +11,26 @@ be published.
 
 ## Consumer adoption
 
-This is opt-in until a consumer qualifies its actual release and publication
-hooks in the independent checkout. After adoption, its ordinary `release-patch`,
-`release-minor` and `release-major` targets can set:
+Grouped releases capture automatically through the shared `release-patch`,
+`release-minor` and `release-major` targets. No extra flag is needed:
+
+```sh
+make release-patch RELEASE_GROUP=engine
+```
+
+`RELEASE_FROZEN_GROUPS` defaults to `RELEASE_GROUP`. Multiple groups require an
+explicit supplier-first roster, for example
+`make release-patch RELEASE_FROZEN_GROUPS=types,runtime,platform`.
+Never infer all groups from workspace membership or clear the roster to fall back
+to live delivery. Inside the captured checkout the runner invokes the existing
+group hooks without recursively capturing another batch.
+
+Consumers must qualify their actual setup, release and publication hooks when
+adopting this interface, and remove old opt-in/refusal guards and duplicate default
+selection. Ungrouped releases retain the existing standard runner. Configure
+publication and setup according to the consumer's delivery contract:
 
 ```make
-RELEASE_FROZEN_GROUPS := types,runtime,platform
 RELEASE_FROZEN_PUBLISH_TARGET := publish
 RELEASE_FROZEN_SETUP_TARGET := release-candidate-setup
 ```
