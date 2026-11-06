@@ -16,6 +16,9 @@ finish() {
 }
 trap finish EXIT
 checker="$root/scripts/ci/verify-file-checksum.sh"
+# macOS bootstrap uses system Bash 3.2 even when PATH selects a newer Bash.
+# Parse with that interpreter before exercising the selected shell below.
+/bin/bash -n "$checker"
 sha256=ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad
 sha512=ddaf35a193617abacc417349ae20413112e6fa4e89a97ea20a9eeee64b55d39a2192992a274fc1a836ba3c23a3feebbd454d4423643ce80e2a9ac94fa54ca49f
 cd "$fixture"

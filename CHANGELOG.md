@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.31.1] - Unreleased
+
+### 🩹 Fixed
+
+- Restore Bash 3.2 parsing of the checksum helper by moving its NUL reader
+  outside quoted command substitution. Preserve NUL rejection and backend
+  failure status; check system-Bash syntax in the digest fixtures.
+
 ## [0.31.0] - Unreleased
 
 ### 🩹 Fixed
