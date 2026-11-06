@@ -38,15 +38,23 @@ MODULE
 local $ENV{PERL5LIB}="$fixture/perl";
 local $ENV{PERL5OPT}='-MFrozenBatchUnderscore';
 run('git','init','--quiet','--bare',$remote);
-run('git','init','--quiet','-b','main',$root);
+run('git','init','--quiet','-b','delivery',$root);
 run('git','-C',$root,'config','user.name','Release fixture');
 run('git','-C',$root,'config','user.email','fixture@example.invalid');
-run('git','-C',$root,'remote','add','origin',$remote);
+run('git','-C',$root,'remote','add','selected',$remote);
 write_file("$root/.gitignore","/target/\n");
 write_file("$root/Cargo.lock","original-lock\n");
 write_file("$root/Makefile",<<'MAKE');
-.PHONY: release-version release-patch publish
+.PHONY: release-version release-patch publish setup-candidate
+setup-candidate:
+	@test '$(RELEASE_REMOTE)' = selected && test '$(RELEASE_BRANCH)' = delivery
+	@test '$(RELEASE_SOURCE)' = "$$(git rev-parse HEAD)"
+	@test '$(RELEASE_FROZEN_SETUP_MODE)' = prepare
+	@if [ "$${BAD_SETUP:-}" = yes ]; then printf 'bad-setup\n' >> Cargo.lock; fi
+	@mkdir -p target
+	@touch target/setup
 release-version:
+	@test -f target/setup
 	@echo 0.1.0
 release-patch:
 	@test "$$(cat Cargo.lock)" = original-lock
@@ -56,20 +64,25 @@ release-patch:
 	@git add delivered
 	@git commit -qm 'Release $(RELEASE_GROUP)'
 	@git tag -a '$(RELEASE_GROUP)-v0.1.1' -m release
-	@git push --quiet --atomic origin HEAD:refs/heads/main 'refs/tags/$(RELEASE_GROUP)-v0.1.1'
+	@git push --quiet --atomic '$(RELEASE_REMOTE)' 'HEAD:refs/heads/$(RELEASE_BRANCH)' 'refs/tags/$(RELEASE_GROUP)-v0.1.1'
 publish:
 	@test "$$(cat Cargo.lock)" = original-lock
+	@test '$(RELEASE_REMOTE)' = selected && test '$(RELEASE_BRANCH)' = delivery
+	@test '$(RELEASE_VERSION)' = 0.1.1 && test '$(RELEASE_KIND)' = patch
+	@test '$(RELEASE_COMMIT)' = "$$(git rev-parse HEAD)"
+	@test '$(RELEASE_SOURCE)' = "$$(git rev-parse HEAD^)"
 	@printf '%s\n' '$(RELEASE_GROUP)' >> "$$PUBLICATION_TRACE"
 MAKE
 run('git','-C',$root,'add','.');run('git','-C',$root,'commit','-qm','Fixture source');
-run('git','-C',$root,'push','--quiet','origin','main');
+run('git','-C',$root,'push','--quiet','selected','delivery');
 my $base=output('git','-C',$root,'rev-parse','HEAD');
 $ENV{DEVELOPMENT_ROOT}=$root; $ENV{PUBLICATION_TRACE}="$fixture/publications";
-run($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--groups','alpha,beta','--publish-target','publish');
+run($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--groups','alpha,beta','--publish-target','publish',
+    '--setup-target','setup-candidate','--remote','selected','--branch','delivery');
 is(output('git','-C',$root,'rev-parse','HEAD'),$base,'normal branch remains intact');
 open my $f,'<',"$root/Cargo.lock" or die $!;is(<$f>,"deferred-cargo-update\n",'concurrent lock edit preserved');close $f;
-is(output('git','--git-dir',$remote,'show','main:Cargo.lock'),'original-lock','delivered graph remains frozen across groups');
-is(output('git','--git-dir',$remote,'show','main:delivered'),"alpha\nbeta",'both groups delivered in order');
+is(output('git','--git-dir',$remote,'show','delivery:Cargo.lock'),'original-lock','delivered graph remains frozen across groups');
+is(output('git','--git-dir',$remote,'show','delivery:delivered'),"alpha\nbeta",'both groups delivered in order with saved publication context');
 open $f,'<',"$fixture/publications" or die $!;{local $/;is(<$f>,"alpha\nbeta\n",'both publications use the candidate');}close $f;
 my @intents=glob("$root/.git/release-state/frozen/batch-*/intent.json");is(scalar @intents,1,'one durable batch');
 open $f,'<',$intents[0] or die $!;my $record;{local $/;$record=decode_json(<$f>);}close $f;
@@ -78,7 +91,7 @@ my ($id)=$intents[0] =~ m{/(batch-[^/]+)/intent.json};
 is(index($id,'batch-_'),0,'resume fixture contains a generated underscore');
 run($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--resume',$id);
 open $f,'<',"$fixture/publications" or die $!;{local $/;is(<$f>,"alpha\nbeta\n",'complete resume never republishes');}close $f;
-my $status=system($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--groups','gamma');
+my $status=system($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--groups','gamma','--branch','delivery','--remote','selected');
 ok($status!=0,'new batch cannot silently absorb deferred uncommitted update');
 # Durable Git objects include release commits; disposable worktree loss must not
 # erase the only record of delivery.
@@ -94,6 +107,49 @@ ok(system($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--resume',$id)!=0
     'uncertain publication refuses automatic redispatch');
 run($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--resume',$id,'--publication-result','published');
 is(output('cat',"$fixture/publications"),"alpha\nbeta",'verified publication reconciliation does not upload again');
+my $completed=decode_json(output('cat',$intents[0]));
+my $bad={%$completed,index=>0};
+write_file($intents[0],encode_json($bad));
+ok(system($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--resume',$id)!=0,
+    'complete phase with unfinished groups refuses instead of looping');
+write_file($intents[0],encode_json({%$completed,phase=>'publish'}));
+ok(system($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--resume',$id)!=0,
+    'publication past final group refuses instead of silently completing');
+write_file($intents[0],encode_json($completed));
+my $before_status=output('cat',$intents[0]);
+run($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--status',$id);
+is(output('cat',$intents[0]),$before_status,'status does not rewrite recovery intent');
+ok(system($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--reconcile',$id)!=0,'dirty normal checkout refuses reconciliation');
+is(output('cat',"$root/Cargo.lock"),'deferred-cargo-update','refused reconciliation preserves deferred lock');
+# This fixture's deferred edit has been asserted; explicitly clear it so the
+# reconciliation path can be tested, never applying this to real user work.
+run('git','-C',$root,'restore','--','Cargo.lock');
+write_file("$root/Cargo.lock","committed-deferred-update\n");
+run('git','-C',$root,'add','Cargo.lock');run('git','-C',$root,'commit','-qm','Deferred update fixture');
+my $deferred=output('git','-C',$root,'rev-parse','HEAD');
+ok(system($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--reconcile',$id)!=0,'diverged normal branch refuses automatic merging');
+is(output('git','-C',$root,'rev-parse','HEAD'),$deferred,'failed reconciliation preserves deferred commit');
+run('git','-C',$root,'reset','--hard',$base);
+run($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--reconcile',$id);
+is(output('git','-C',$root,'rev-parse','HEAD'),$completed->{commit},'clean reconciliation fast-forwards to delivered source');
+my $candidate="$root/target/release-frozen/$id";
+write_file("$candidate/pending-work",'preserve');
+ok(system($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--retire',$id)!=0,'retirement refuses unique candidate work');
+ok(-f "$candidate/pending-work",'refused retirement preserves candidate work');
+unlink "$candidate/pending-work" or die $!;
+run('git','-C',$candidate,'update-ref','refs/private/keep',$completed->{commit});
+ok(system($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--retire',$id)!=0,'retirement refuses additional candidate refs');
+run('git','-C',$candidate,'update-ref','-d','refs/private/keep');
+run($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--retire',$id);
+ok(!-e $candidate && !-e "$root/.git/release-state/frozen/$id",'explicit retirement removes only completed batch storage');
+is(output('git','-C',$root,'tag','--list'),"alpha-v0.1.1\nbeta-v0.1.1",'retirement retains release tags in normal repository');
+{
+    local $ENV{BAD_SETUP}='yes';
+    ok(system($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--groups','gamma',
+        '--setup-target','setup-candidate','--remote','selected','--branch','delivery')!=0,
+        'candidate setup may prepare tools but cannot mutate lock inputs');
+}
+is(output('cat',"$root/Cargo.lock"),'original-lock','bad candidate setup cannot change the normal lock');
 
 # Exercise the actual shared Make entrypoints and Git release state machine.
 my $real="$fixture/real";
@@ -125,8 +181,14 @@ write_file("$real/ci/cargo-release-groups.json",encode_json({schema=>1,groups=>\
 write_file("$real/Makefile",<<'MAKE');
 SHARED_TOOLING_ROOT := $(CURDIR)
 RELEASE_FROZEN_GROUPS := alpha,beta
+RELEASE_FROZEN_SETUP_TARGET := setup-candidate
 include make/release.mk
+setup-candidate:
+	@mkdir -p target
+	@touch target/setup
+	@printf '%s %s\n' '$(RELEASE_GROUP)' '$(RELEASE_FROZEN_SETUP_MODE)' >> "$$SETUP_TRACE"
 release-version:
+	@test -f target/setup
 	@sed -n 's/^version = "\(.*\)"/\1/p' $(RELEASE_GROUP)/Cargo.toml
 release-verify:
 	@! grep -q deferred Cargo.lock
@@ -145,13 +207,16 @@ run('cargo','generate-lockfile','--offline','--manifest-path',"$real/Cargo.toml"
 run('git','-C',$real,'add','.');run('git','-C',$real,'commit','-qm','Real runner fixture');
 run('git','-C',$real,'push','--quiet','origin','main');
 $ENV{DEVELOPMENT_ROOT}=$real;
+$ENV{SETUP_TRACE}="$fixture/setup-trace";
 $ENV{FAIL_ONCE}="$fixture/fail-once"; write_file($ENV{FAIL_ONCE},'fail');
 ok(system('make','--no-print-directory','-C',$real,'release-patch')!=0,'real second-group gate failure stops delivery');
 is(output('git','--git-dir',"$fixture/real-remote.git",'tag','--list'),'alpha-v0.1.1','failed second group does not repeat or undo first delivery');
 my @real_intents=glob("$real/.git/release-state/frozen/batch-*/intent.json");
 my ($real_id)=$real_intents[0] =~ m{/(batch-[^/]+)/intent.json};
-run($^X,"$RealBin/run-frozen-release.pl",'--root',$real,'--resume',$real_id);
+run('make','--no-print-directory','-C',$real,'release-batch-status',"BATCH=$real_id");
+run('make','--no-print-directory','-C',$real,'release-batch-resume',"BATCH=$real_id");
 is(output('git','--git-dir',"$fixture/real-remote.git",'tag','--list'),"alpha-v0.1.1\nbeta-v0.1.1",'real runner releases both groups through ordinary Make target');
 like(output('git','-C',$real,'diff','--','Cargo.lock'),qr/deferred update/,'real runner preserves concurrent normal lock edit');
+is(output('cat',$ENV{SETUP_TRACE}),"alpha prepare\nbeta prepare\nbeta check",'recovery selects offline setup admission rather than fresh preparation');
 done_testing();
 if (Test::More->builder->is_passing) {remove_tree($fixture)} else {warn "fixture retained: $fixture\n";}

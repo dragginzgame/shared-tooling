@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.30.9] - Unreleased
+
+### 🔧 Changed
+
+- Centralize frozen candidate setup and saved release context across version,
+  release and publication hooks. Add shared batch status/resume commands, guarded
+  fast-forward reconciliation and explicit retirement preserving release refs.
+
+### 🩹 Fixed
+
+- Reject inconsistent frozen batch phases and group indexes before execution;
+  preserve selected remote/branch and delivered identity during publication.
+
 ## [0.30.8] - Unreleased
 
 ### 🩹 Fixed
