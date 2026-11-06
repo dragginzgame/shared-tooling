@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.31.0] - Unreleased
+
+### 🔧 Changed
+
+- Hard-cut release configuration to `RELEASE_GROUPS`, `RELEASE_PUBLISH_TARGET`,
+  `RELEASE_SETUP_TARGET`, `RELEASE_SETUP_MODE` and `RELEASE_BATCH_ACTIVE`.
+  Rename the runner and guide to `run-release-batch.pl` and `release-batches.md`;
+  retired settings refuse explicitly, with no aliases.
+- Require schema-2 batch journals and a recorded publication commit. Remove
+  reconstruction from current HEAD; finish pre-0.31 batches with their original
+  tooling before adoption. Recovery storage paths and source pins stay unchanged.
+
 ## [0.30.10] - Unreleased
 
 ### 🔧 Changed

@@ -1,7 +1,7 @@
 # Common release commands
 <!-- Shared companions: docs/cargo-publication.md docs/release-group-validation.md docs/release-validation-reuse.md rules/contributions.md rules/rust-workspaces.md scripts/ci/check-release-source.sh -->
 
-Grouped increment commands use [frozen release batches](frozen-releases.md) by
+Grouped increment commands use [frozen release batches](release-batches.md) by
 default: `RELEASE_GROUP=engine` captures that group automatically, so
 normal-checkout `cargo update` writes affect the next release, not active delivery.
 Select a multi-group roster explicitly and execute release and publication
