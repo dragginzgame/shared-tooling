@@ -241,6 +241,17 @@ else
     fail 'no SHA-256 implementation is available'
 fi
 checksum_pattern='^([0-9a-f]{64}) [ *]-$'
+# Command substitution drops NUL bytes, so a record with a NUL inside or around
+# a valid digest would still match. Mark rejected output independently of exit
+# status: every nonzero backend status, including 3, remains a backend failure.
+reject_nul() {
+    local record=''
+    if IFS= read -r -d '' record; then
+        while IFS= read -r -d '' record; do :; done
+        printf 'NUL'; return 0
+    fi
+    printf '%s' "$record"
+}
 for index in "${!declared_files[@]}"; do
     path="${declared_files[$index]}"
     target="$CONSUMER_ROOT/$path"
@@ -255,18 +266,26 @@ for index in "${!declared_files[@]}"; do
         "$CONSUMER_ROOT/"*) ;;
         *) fail "declared file escapes the consumer repository: $path" ;;
     esac
-    checksum_output="$(LC_ALL=C "${checksum_command[@]}" < "$target")" || fail "checksum backend failed: $path"
+    checksum_status=0
+    checksum_output="$(LC_ALL=C "${checksum_command[@]}" < "$target" | reject_nul)" || checksum_status=$?
+    [[ "$checksum_status" == 0 ]] || fail "checksum backend failed: $path"
+    [[ "$checksum_output" != NUL ]] || fail "checksum output contains a NUL byte: $path"
     [[ "$checksum_output" =~ $checksum_pattern ]] || fail "malformed checksum output: $path"
     [[ "${BASH_REMATCH[1]}" == "${declared_digests[$index]}" ]] || fail "declared file differs from the snapshot: $path"
     if [[ -n "$source_root" ]]; then
         # Literal paths and disabled replacement objects bind this observation
         # to the reviewed tree, not working files or consumer-supplied hashes.
         source_entry="$(git --no-replace-objects -C "$source_root" --literal-pathspecs ls-tree "$expected_revision" -- "$path")" || fail "cannot inspect reviewed path: $path"
+        # ls-tree succeeds with no output for a path the commit does not contain.
+        [[ -n "$source_entry" ]] || fail "reviewed source is missing: $path"
         source_mode="${source_entry%% *}"
         expected_mode=100644
         [[ "${declared_modes[$index]}" != x ]] || expected_mode=100755
         [[ "$source_mode" == "$expected_mode" ]] || fail "reviewed source mode differs: $path"
-        checksum_output="$(git --no-replace-objects -C "$source_root" show "$expected_revision:$path" | LC_ALL=C "${checksum_command[@]}")" || fail "cannot hash reviewed source: $path"
+        checksum_status=0
+        checksum_output="$(git --no-replace-objects -C "$source_root" show "$expected_revision:$path" | LC_ALL=C "${checksum_command[@]}" | reject_nul)" || checksum_status=$?
+        [[ "$checksum_status" == 0 ]] || fail "cannot hash reviewed source: $path"
+        [[ "$checksum_output" != NUL ]] || fail "source checksum output contains a NUL byte: $path"
         [[ "$checksum_output" =~ $checksum_pattern ]] || fail "malformed source checksum: $path"
         [[ "${BASH_REMATCH[1]}" == "${declared_digests[$index]}" ]] || fail "manifest payload differs from reviewed source: $path"
     fi

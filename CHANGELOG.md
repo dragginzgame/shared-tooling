@@ -2,6 +2,14 @@
 
 ## [0.31.0] - Unreleased
 
+### 🩹 Fixed
+
+- Reject NUL bytes in snapshot checksums before shell capture, report missing
+  reviewed-source files accurately, and distinguish rejected output from backend
+  failures without exit-status collisions or duplicate diagnostics.
+  [#360](https://github.com/dragginzgame/shared-tooling/issues/360),
+  [PR #361](https://github.com/dragginzgame/shared-tooling/pull/361).
+
 ### 🔧 Changed
 
 - Require aligned VERSION/changelog metadata for base lookup and npm lockfile

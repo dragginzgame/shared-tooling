@@ -71,6 +71,11 @@ env PATH="$fixture/fake" DIGEST_OUTPUT="$sha256  -" DIGEST_STATUS=9 \
     "$BASH" "$checker" --print sha256 'file with spaces' > "$fixture/output" 2> "$fixture/error" || status=$?
 [[ "$status" == 9 && ! -s "$fixture/output" && -s "$fixture/error" ]] || exit 1
 [[ "$(cat "$fixture/error")" != *'unexpected fallback'* ]] || exit 1
+status=0
+env PATH="$fixture/fake" DIGEST_OUTPUT="$sha256  -" DIGEST_STATUS=3 \
+    "$BASH" "$checker" --print sha256 'file with spaces' > "$fixture/output" 2> "$fixture/error" || status=$?
+[[ "$status" == 3 && ! -s "$fixture/output" && "$(cat "$fixture/error")" == *'backend failed'* ]] || exit 1
+[[ "$(cat "$fixture/error")" != *'NUL byte'* ]] || exit 1
 # NUL must not disappear from an otherwise valid digest/record. Exercise both
 # algorithms and the Perl selection without relying on a host's GNU binaries.
 for backend in sha256sum sha512sum shasum; do
@@ -95,6 +100,9 @@ SCRIPT
             [[ "$mode" != print ]] || arguments=(--print "$algorithm" 'file with spaces')
             expect_failure env PATH="$fixture/nul-$backend" DIGEST_BEFORE="$before" DIGEST_AFTER="$after" \
                 "$BASH" "$checker" "${arguments[@]}"
+            # Rejected output is reported once; the backend itself did not fail.
+            [[ "$(cat "$fixture/error")" == *'contains a NUL byte'* ]] || exit 1
+            [[ "$(cat "$fixture/error")" != *'backend failed'* ]] || exit 1
         done
     done
 done

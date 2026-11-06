@@ -89,6 +89,55 @@ for corruption in payload helper both; do
     cp -p "$fixture/checksum" "$consumer/scripts/ci/verify-file-checksum.sh"
     "$BASH" "$verifier" --consumer "$consumer" > "$fixture/restored.log"
 done
+# Command substitution drops NUL, so a record with a NUL beside a correct digest
+# must be rejected before capture. The fake backend reports the real digest and
+# adds a NUL on one selected call only.
+nul_backend="$fixture/nul-backend"
+mkdir "$nul_backend"
+if command -v sha256sum >/dev/null 2>&1; then
+    real_digest=("$(command -v sha256sum)")
+else
+    real_digest=("$(command -v shasum)" -a 256)
+fi
+{
+    printf '#!%s\n' "$BASH"
+    # shellcheck disable=SC2016 # The generated backend expands it.
+    printf 'record="$('
+    printf '%q ' "${real_digest[@]}"
+    printf ')"\n'
+    cat <<'SCRIPT'
+digest="${record%% *}"
+count=$(($(cat "$NUL_COUNTER") + 1))
+printf '%s\n' "$count" > "$NUL_COUNTER"
+if [[ "$count" != "$NUL_ON_CALL" ]]; then printf '%s  -\n' "$digest"; exit 0; fi
+case "$NUL_POSITION" in
+    backend-failure) printf '%s  -\n' "$digest"; exit 3 ;;
+    digest) printf '%s\0%s  -\n' "${digest:0:12}" "${digest:12}" ;;
+    marker) printf '%s\0  -\n' "$digest" ;;
+    trailing) printf '%s  -\n\0' "$digest" ;;
+esac
+SCRIPT
+} > "$nul_backend/sha256sum"
+cp -p "$nul_backend/sha256sum" "$nul_backend/shasum"
+chmod +x "$nul_backend/sha256sum" "$nul_backend/shasum"
+export NUL_COUNTER="$fixture/nul-counter"
+run_nul_backend() {
+    printf '0\n' > "$NUL_COUNTER"
+    PATH="$nul_backend:$PATH" NUL_ON_CALL="$1" NUL_POSITION="$2" "$BASH" "$verifier" "${@:3}"
+}
+run_nul_backend 0 none --consumer "$consumer" > "$fixture/nul-control.log"
+status=0
+run_nul_backend 1 backend-failure --consumer "$consumer" > "$fixture/backend-failure.log" 2>&1 || status=$?
+[[ "$status" == 1 ]] || exit 1
+grep -F 'checksum backend failed: payload.txt' "$fixture/backend-failure.log"
+if grep -F 'NUL byte' "$fixture/backend-failure.log"; then exit 1; fi
+for position in digest marker trailing; do
+    status=0
+    run_nul_backend 1 "$position" --consumer "$consumer" > "$fixture/nul-$position.log" 2>&1 || status=$?
+    [[ "$status" == 1 ]] || exit 1
+    grep -F 'checksum output contains a NUL byte: payload.txt' "$fixture/nul-$position.log"
+    if grep -F 'backend failed' "$fixture/nul-$position.log"; then exit 1; fi
+done
 # Source admission is anchored outside the consumer manifest. A rewritten
 # payload and digest pass local integrity, but must fail reviewed-source proof.
 source_root="$fixture/trusted-source"
@@ -122,6 +171,27 @@ sed $'s/\t-\tpayload.txt/\tx\tpayload.txt/' "$fixture/source-manifest" > "$consu
 if "$BASH" "$verifier" --consumer "$consumer" --source "$source_root" --revision "$revision" > "$fixture/rewritten-mode-source.log" 2>&1; then exit 1; fi
 grep -F 'reviewed source mode differs' "$fixture/rewritten-mode-source.log"
 chmod -x "$consumer/payload.txt"
+cp "$fixture/source-manifest" "$consumer/.shared-tooling.snapshot"
+# The reviewed blob is hashed through the same NUL guard. Call 2 is the first
+# reviewed-source digest, after the consumer copy of payload.txt.
+for position in digest marker trailing; do
+    status=0
+    run_nul_backend 2 "$position" --consumer "$consumer" --source "$source_root" --revision "$revision" \
+        > "$fixture/source-nul-$position.log" 2>&1 || status=$?
+    [[ "$status" == 1 ]] || exit 1
+    grep -F 'source checksum output contains a NUL byte: payload.txt' "$fixture/source-nul-$position.log"
+done
+# A declared file absent from the reviewed commit is reported as missing, not as
+# a mode difference: ls-tree succeeds with no output for an absent path.
+printf 'unreviewed extra\n' > "$consumer/extra.txt"
+{
+    cat "$fixture/source-manifest"
+    printf 'file\t%s\t-\textra.txt\n' "$("$BASH" "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$consumer/extra.txt")"
+} > "$consumer/.shared-tooling.snapshot"
+"$BASH" "$verifier" --consumer "$consumer" > "$fixture/extra-integrity.log"
+if "$BASH" "$verifier" --consumer "$consumer" --source "$source_root" --revision "$revision" > "$fixture/extra-source.log" 2>&1; then exit 1; fi
+grep -F 'reviewed source is missing: extra.txt' "$fixture/extra-source.log"
+rm "$consumer/extra.txt"
 cp "$fixture/source-manifest" "$consumer/.shared-tooling.snapshot"
 if "$BASH" "$verifier" --consumer "$consumer" --source "$source_root" > "$fixture/unpaired.log" 2>&1; then exit 1; fi
 fixture_complete=true
