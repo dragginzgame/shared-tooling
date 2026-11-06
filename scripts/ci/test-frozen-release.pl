@@ -16,6 +16,27 @@ my $remote="$fixture/remote.git";
 sub run {system @_; $?==0 or die "command failed: @_\n";}
 sub output {open my $f,'-|',@_ or die $!;local $/;my $s=<$f>//'';close $f or die "command failed: @_";$s =~ s/\n\z//;return $s;}
 sub write_file {open my $f,'>',$_[0] or die $!;print {$f} $_[1];close $f or die $!;}
+# File::Temp can generate underscores. Force one so resume qualification cannot
+# pass merely because a random batch happened to use alphanumeric characters.
+make_path("$fixture/perl");
+write_file("$fixture/perl/FrozenBatchUnderscore.pm",<<'MODULE');
+package FrozenBatchUnderscore;
+use strict;
+use warnings;
+use File::Temp ();
+my $original=\&File::Temp::tempdir;
+{
+    no warnings 'redefine';
+    *File::Temp::tempdir=sub {
+        my @args=@_;
+        $args[0]='batch-_XXXXXXX' if @args && $args[0] eq 'batch-XXXXXXXX';
+        return $original->(@args);
+    };
+}
+1;
+MODULE
+local $ENV{PERL5LIB}="$fixture/perl";
+local $ENV{PERL5OPT}='-MFrozenBatchUnderscore';
 run('git','init','--quiet','--bare',$remote);
 run('git','init','--quiet','-b','main',$root);
 run('git','-C',$root,'config','user.name','Release fixture');
@@ -54,6 +75,7 @@ my @intents=glob("$root/.git/release-state/frozen/batch-*/intent.json");is(scala
 open $f,'<',$intents[0] or die $!;my $record;{local $/;$record=decode_json(<$f>);}close $f;
 is($record->{phase},'complete','completion retained outside target');
 my ($id)=$intents[0] =~ m{/(batch-[^/]+)/intent.json};
+is(index($id,'batch-_'),0,'resume fixture contains a generated underscore');
 run($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--resume',$id);
 open $f,'<',"$fixture/publications" or die $!;{local $/;is(<$f>,"alpha\nbeta\n",'complete resume never republishes');}close $f;
 my $status=system($^X,"$RealBin/run-frozen-release.pl",'--root',$root,'--groups','gamma');

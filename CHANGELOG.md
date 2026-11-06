@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.30.8] - Unreleased
+
+### 🩹 Fixed
+
+- Resume frozen release batches whose generated IDs contain underscores, keeping
+  their original recovery paths. Force underscore generation in the regression
+  fixture so interrupted and completed resume cannot pass by chance.
+
 ## [0.30.7] - Unreleased
 
 ### 🔧 Changed
