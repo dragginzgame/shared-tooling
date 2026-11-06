@@ -134,6 +134,7 @@ run_fixture test-crates-io-version.sh bash "$ROOT/scripts/ci/test-crates-io-vers
 run_fixture test-cargo-tool-versions.sh bash "$ROOT/scripts/ci/test-cargo-tool-versions.sh"
 run_fixture test-release-commands.sh bash "$ROOT/scripts/ci/test-release-commands.sh"
 run_fixture test-release-delivery.sh bash "$ROOT/scripts/ci/test-release-delivery.sh"
+run_fixture test-frozen-release.pl perl "$ROOT/scripts/ci/test-frozen-release.pl"
 run_fixture test-checker-retention.sh bash "$ROOT/scripts/ci/test-checker-retention.sh"
 run_fixture test-cargo-dependency-boundaries.sh bash "$ROOT/scripts/ci/test-cargo-dependency-boundaries.sh"
 run_fixture test-cargo-graph.sh bash "$ROOT/scripts/ci/test-cargo-graph.sh"

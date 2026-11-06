@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.30.7] - Unreleased
+
+### 🔧 Changed
+
+- Add opt-in frozen multi-group release batches: later normal-checkout lockfile
+  updates stay deferred while release/publication hooks use captured source.
+  Keep durable recovery state and preserve pending edits; consumer hooks must
+  qualify this delivery mode before adoption.
+- Make release-efficiency requirements explicit: qualify isolated implementation
+  paths, carry scope through archive commands, explain reuse fallbacks and remove
+  duplicate check/Clippy compilation only when their obligations are equivalent.
+  Preserve distinct native, installed and archive proofs and measure actual savings.
+- Align release documentation with delegated direct-push authority; alternate
+  checkout locations still require explicit approval.
+
 ## [0.30.6] - Unreleased
 
 ### 🔧 Changed
