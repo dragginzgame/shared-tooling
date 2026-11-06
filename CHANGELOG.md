@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.30.9] - Unreleased
+
+### 🩹 Fixed
+
+- Reject a NUL byte in the snapshot verifier's checksum output, for both the
+  consumer file and the reviewed blob. Command substitution dropped it, so a
+  record with a NUL inside or beside a valid digest still verified (#360).
+- Report a declared file missing from the reviewed commit as missing instead of
+  as a mode difference; `git ls-tree` succeeds with no output for an absent path.
+- Report a NUL rejected by `verify-file-checksum.sh` once, without also claiming
+  the backend failed.
+
 ## [0.30.8] - Unreleased
 
 ### 🩹 Fixed

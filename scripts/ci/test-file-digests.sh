@@ -95,6 +95,9 @@ SCRIPT
             [[ "$mode" != print ]] || arguments=(--print "$algorithm" 'file with spaces')
             expect_failure env PATH="$fixture/nul-$backend" DIGEST_BEFORE="$before" DIGEST_AFTER="$after" \
                 "$BASH" "$checker" "${arguments[@]}"
+            # Rejected output is reported once; the backend itself did not fail.
+            [[ "$(cat "$fixture/error")" == *'contains a NUL byte'* ]] || exit 1
+            [[ "$(cat "$fixture/error")" != *'backend failed'* ]] || exit 1
         done
     done
 done

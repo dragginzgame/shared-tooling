@@ -45,12 +45,15 @@ output="$(
         record=''
         if IFS= read -r -d '' record; then
             echo "$algorithm backend output contains a NUL byte for $file" >&2
-            exit 1
+            exit 3
         fi
         printf '%s' "$record"
     }
 )" || {
-    status=$?; echo "$algorithm backend failed for $file" >&2; exit "$status";
+    # Status 3 is the NUL rejection above, already reported; the backend did not fail.
+    status=$?
+    [[ "$status" != 3 ]] || exit 1
+    echo "$algorithm backend failed for $file" >&2; exit "$status";
 }
 pattern="^([0-9a-f]{$expected_length}) [ *]-$"
 if [[ ! "$output" =~ $pattern ]]; then
