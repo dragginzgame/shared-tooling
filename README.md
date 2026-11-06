@@ -42,28 +42,28 @@ flowchart TD
         end
     end
     subgraph p_repo_3aic_2dauth["ic-auth"]
-        subgraph p_group_3aic_2dauth_7cengine["engine · 0.33.2"]
+        subgraph p_group_3aic_2dauth_7cengine["engine · 0.34.1"]
             p_ic_2dauth_7ccargo_3aic_2dauth["ic-auth"]
         end
     end
     subgraph p_repo_3aic_2dblob_2dstorage["ic-blob-storage"]
-        subgraph p_group_3aic_2dblob_2dstorage_7cengine["engine · 0.72.1"]
+        subgraph p_group_3aic_2dblob_2dstorage_7cengine["engine · 0.73.0"]
             p_ic_2dblob_2dstorage_7ccargo_3aic_2dblob_2dstorage["ic-blob-storage"]
         end
     end
     subgraph p_repo_3aic_2dobservability["ic-observability"]
-        subgraph p_group_3aic_2dobservability_7clogging["logging · 0.24.6"]
+        subgraph p_group_3aic_2dobservability_7clogging["logging · 0.24.8"]
             p_ic_2dobservability_7ccargo_3aic_2dlogging["ic-logging"]
         end
-        subgraph p_group_3aic_2dobservability_7cmetrics["metrics · 0.29.1"]
+        subgraph p_group_3aic_2dobservability_7cmetrics["metrics · 0.29.3"]
             p_ic_2dobservability_7ccargo_3aic_2dmetrics["ic-metrics"]
         end
     end
     subgraph p_repo_3aic_2dplatform["ic-platform"]
-        subgraph p_group_3aic_2dplatform_7cplatform["platform · 0.22.0"]
+        subgraph p_group_3aic_2dplatform_7cplatform["platform · 0.23.2"]
             p_ic_2dplatform_7ccargo_3aic_2dplatform["ic-platform"]
         end
-        subgraph p_group_3aic_2dplatform_7cruntime["runtime · 0.19.1"]
+        subgraph p_group_3aic_2dplatform_7cruntime["runtime · 0.19.2"]
             p_ic_2dplatform_7ccargo_3aic_2dplatform_2druntime["ic-platform-runtime"]
         end
         subgraph p_group_3aic_2dplatform_7ctypes["types · 0.18.1"]
@@ -71,25 +71,25 @@ flowchart TD
         end
     end
     subgraph p_repo_3aic_2dscheduling["ic-scheduling"]
-        subgraph p_group_3aic_2dscheduling_7ctimers["timers · 0.40.4"]
+        subgraph p_group_3aic_2dscheduling_7ctimers["timers · 0.40.7"]
             p_ic_2dscheduling_7ccargo_3aic_2dtimers["ic-timers"]
         end
     end
     subgraph p_repo_3aic_2dstorage["ic-storage"]
-        subgraph p_group_3aic_2dstorage_7cmetrics_2dstorage["metrics-storage · 0.68.0"]
+        subgraph p_group_3aic_2dstorage_7cmetrics_2dstorage["metrics-storage · 0.70.0"]
             p_ic_2dstorage_7ccargo_3aic_2dmetrics_2dstorage["ic-metrics-storage"]
         end
-        subgraph p_group_3aic_2dstorage_7cstorage["storage · 0.67.0"]
+        subgraph p_group_3aic_2dstorage_7cstorage["storage · 0.68.0"]
             p_ic_2dstorage_7ccargo_3aic_2dstorage["ic-storage"]
         end
     end
     subgraph p_repo_3aic_2dwire["ic-wire"]
-        subgraph p_group_3aic_2dwire_7ccore["core · 0.17.1"]
+        subgraph p_group_3aic_2dwire_7ccore["core · 0.17.3"]
             p_ic_2dwire_7ccargo_3aic_2dwire["ic-wire"]
         end
     end
     subgraph p_repo_3aicydb["icydb"]
-        subgraph p_group_3aicydb_7cdatabase["database · 0.297.0"]
+        subgraph p_group_3aicydb_7cdatabase["database · 0.298.0"]
             p_icydb_7ccargo_3aicydb["icydb"]
         end
     end

@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { checkIcSdkBoundary } from './check-ic-sdk-boundary.mjs';
 
-const fixture = await mkdtemp(join(tmpdir(), 'shared-sdk-boundary.'));
+const scratch = fileURLToPath(new URL('../../target/tmp/', import.meta.url));
+await mkdir(scratch, { recursive: true });
+const fixture = await mkdtemp(join(scratch, 'shared-sdk-boundary.'));
 const sdk = '@icp-sdk/core';
 const platform = '@tokostudios/ic-platform';
 let complete = false;
@@ -68,13 +69,13 @@ throw new Error('Selected source must never execute');`);
   ];
   for (const source of imports) {
     const path = await write('escape.ts', source);
-    await reject(path, /direct SDK import/);
+    await reject(path, /direct SDK\/CBOR import/);
   }
   for (const extension of ['js', 'mjs', 'cjs', 'jsx', 'ts', 'mts', 'cts', 'tsx']) {
-    await reject(await write(`escape.${extension}`, imports[0]), /:1: direct SDK import/);
+    await reject(await write(`escape.${extension}`, imports[0]), /:1: direct SDK\/CBOR import/);
   }
-  await reject(await write('escape.ts', `// first line\n\n${imports[0]}`), /:3: direct SDK import/);
-  await reject(join(fixture, 'browser/target/escape.js'), /direct SDK import/);
+  await reject(await write('escape.ts', `// first line\n\n${imports[0]}`), /:3: direct SDK\/CBOR import/);
+  await reject(join(fixture, 'browser/target/escape.js'), /direct SDK\/CBOR import/);
   assert.deepEqual(await checkIcSdkBoundary([await write('safe.mjs', `
 import '@icp-sdk/auth';
 import '@icp-sdk/ic-wasm';
@@ -84,18 +85,24 @@ const sdkName = '${sdk}';
 `)]), { manifests: 0, sources: 1 });
 
   for (const name of [sdk, '@dfinity/agent', '@dfinity/principal', '@dfinity/identity',
-    '@dfinity/identity-secp256k1', '@dfinity/candid']) {
-    await reject(await write('escape.ts', `import '${name}';`), /direct SDK import/);
+    '@dfinity/identity-secp256k1', '@dfinity/candid',
+    'cbor', 'cbor-x', 'cbor-js', 'borc', 'cborg', '@dfinity/cbor', '@ipld/dag-cbor']) {
+    await reject(await write('escape.ts', `import '${name}';`), /direct SDK\/CBOR import/);
     for (const field of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) {
       for (const [dependency, selector] of [[name, '^1.0.0'], ['renamed-sdk', `npm:${name}@^1.0.0`]]) {
         await write('browser/package.json', JSON.stringify({ ...manifest, [field]: { [dependency]: selector } }));
-        await reject(packageFile, /direct SDK dependency/);
+        await reject(packageFile, /direct SDK\/CBOR dependency/);
       }
+    }
+  }
+  for (const name of ['cbor', 'cbor-x', '@ipld/dag-cbor']) {
+    for (const source of [`export * from '${name}';`, `await import('${name}');`, `require.resolve('${name}');`]) {
+      await reject(await write('escape.ts', source), /direct SDK\/CBOR import/);
     }
   }
   for (const source of imports) {
     await write('browser/package.json', JSON.stringify({ ...manifest, scripts: { verify: `node -e "${source}"` } }));
-    await reject(packageFile, /script verify:1: direct SDK import/);
+    await reject(packageFile, /script verify:1: direct SDK\/CBOR import/);
   }
   for (const malformed of ['{invalid', 'null', '[]', '{"dependencies":[]}', '{"optionalDependencies":null}', '{"peerDependencies":{"sdk":null}}']) {
     await write('browser/package.json', malformed);
@@ -129,6 +136,17 @@ const sdkName = '${sdk}';
     assert.equal(result.stdout, '');
     assert.notEqual(result.stderr, '');
   }
+  const exported = join(fixture, 'export');
+  await mkdir(exported);
+  const preparation = spawnSync('bash', [fileURLToPath(new URL('./prepare-script-fixture.sh', import.meta.url)),
+    fileURLToPath(new URL('../../', import.meta.url)), exported, 'scripts/ci/check-ic-sdk-boundary.mjs'],
+    { encoding: 'utf8', timeout: 30_000 });
+  assert.ifError(preparation.error);
+  assert.equal(preparation.status, 0, preparation.stderr);
+  const exportedRun = spawnSync(process.execPath, [join(exported, 'scripts/ci/check-ic-sdk-boundary.mjs'), sourceFile],
+    { encoding: 'utf8', timeout: 30_000 });
+  assert.ifError(exportedRun.error);
+  assert.equal(exportedRun.status, 0, exportedRun.stderr);
   complete = true;
   console.log('SDK boundary declarations, aliases, literal imports, selected roots, path refusal and read-only checks passed.');
 } finally {

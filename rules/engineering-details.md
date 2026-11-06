@@ -278,8 +278,10 @@ an unqualified deploy has the defined fleet scope.
   Record narrow approved exceptions and reject stale allowances. Legitimate
   transitive codecs behind Platform and the specifically enumerated native
   Testkit exception remain permitted; that exception grants no direct CBOR use.
-  The Candid source checker alone does not enforce CBOR ownership, external DTO
-  provenance or byte compatibility. Passing checks and complete migration are
+  Use the shared Cargo common inventory, optional Rust `--cbor` source mode and
+  browser SDK/CBOR check together. Default Candid-only checking does not enforce
+  CBOR ownership; none of these lexical checks proves external DTO provenance or
+  byte compatibility. Passing checks and complete migration are
   separate claims; report uncovered roots and remaining source exceptions.
 - Remove Candid derives, conversions and codec helpers from internal types when
   no remaining Candid contract needs them. Do not wrap an unchanged Candid payload

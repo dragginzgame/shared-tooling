@@ -15,15 +15,17 @@ make_path("$root/src");
 my $json=JSON::PP->new->canonical;
 sub write_file {open my $f,'>',$_[0] or die $!; print {$f} $_[1]; close $f or die $!;}
 my $attempt=0;
+my $cbor_mode=0;
+my $cbor_allowances;
 sub check {
     my ($source,$allowances,$expected,$pattern,@selection)=@_;
     write_file("$root/src/lib.rs",$source);
-    write_file("$root/policy.json",$json->encode({schema=>1,allowances=>$allowances}));
+    write_file("$root/policy.json",$json->encode({schema=>1,allowances=>$allowances, (defined($cbor_allowances) ? (cbor_allowances=>$cbor_allowances) : ())}));
     my $log="$root/check-".++$attempt;
     my $pid=fork(); defined $pid or die $!;
     if (!$pid) {
         open STDOUT,'>',"$log.out" or die $!; open STDERR,'>',"$log.err" or die $!;
-        exec $^X,"$Bin/check-candid-boundary.pl",$root,'policy.json',(@selection ? @selection : 'src'); die $!;
+        exec $^X,"$Bin/check-candid-boundary.pl",($cbor_mode ? "--cbor" : ()), $root,'policy.json',(@selection ? @selection : 'src'); die $!;
     }
     waitpid($pid,0)==$pid or die $!;
     my $status=$?;
@@ -90,10 +92,34 @@ symlink 'lib.rs',"$root/src/redirect.rs" or die $!;
 check('struct Fine;',[],1,qr/symlink/);
 unlink "$root/src/redirect.rs" or die $!;
 check('/* unterminated',[],1,qr/unterminated/);
+$cbor_mode=1;
+for my $name (qw(serde_cbor ciborium ciborium_io ciborium_ll minicbor minicbor_serde cbor4ii serde_ipld_dagcbor icrc_cbor)) {
+    check("use $name as hidden; fn f() { hidden::decode(); }",[],1,qr/direct CBOR/);
+    check("pub use ${name}::*;",[],1,qr/direct CBOR/);
+    check("fn f() { r#${name}::decode(); }",[],1,qr/direct CBOR/);
+}
+check('use ic_platform::certification::cbor; fn f() { cbor::encode_certificate_untagged(); }',[],0,undef);
+check(qq{// serde_cbor::decode()\nconst NOTE: &str = "ciborium";},[],0,undef);
+$cbor_allowances=[{path=>'src/lib.rs',crate=>'serde_cbor',reason=>'Platform external certificate implementation',review=>'Owner-only fixture, review on protocol change'}];
+check('use serde_cbor as codec;',[],0,undef);
+check('struct Fine;',[],1,qr/stale CBOR/);
+my $valid_cbor=$cbor_allowances->[0];
+for my $override ({crate=>'unknown'}, {path=>'src/missing.rs'}, {reason=>''}, {review=>''}, {extra=>'no'}) {
+    $cbor_allowances=[{%$valid_cbor,%$override}];
+    check('use serde_cbor;',[],1,undef);
+}
+$cbor_allowances=[$valid_cbor,$valid_cbor];
+check('use serde_cbor;',[],1,qr/duplicate CBOR/);
+$cbor_allowances=[$valid_cbor];
+$cbor_mode=0;
+check('use serde_cbor;',[],1,qr/requires --cbor/);
+$cbor_mode=1;
+$cbor_allowances=undef;
+check('struct Fine;',[],0,undef);
 # Export closure must include the lexer; run the copied checker, not a live sibling.
 make_path("$root/export");
 system('bash',"$Bin/prepare-script-fixture.sh","$Bin/../..","$root/export",'scripts/ci/check-candid-boundary.pl')==0 or die 'export failed';
 write_file("$root/src/lib.rs",'struct Fine;');
-system($^X,"$root/export/scripts/ci/check-candid-boundary.pl",$root,'policy.json','src')==0 or die 'exported checker failed';
+system($^X,"$root/export/scripts/ci/check-candid-boundary.pl","--cbor",$root,'policy.json','src')==0 or die 'exported checker failed';
 $complete=1;
 print "Candid boundary: $attempt cases and exported lexer closure passed\n";

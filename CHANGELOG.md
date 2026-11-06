@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.30.6] - Unreleased
+
+### 🔧 Changed
+
+- Centralize CBOR package ownership in Cargo and browser boundary checks; add
+  optional Rust source enforcement with reviewed, live file/crate allowances.
+  Document independent fixture/generated-root coverage and lexical limits.
+  [#359](https://github.com/dragginzgame/shared-tooling/issues/359).
+
 ## [0.30.5] - Unreleased
 
 ### 🔧 Changed
