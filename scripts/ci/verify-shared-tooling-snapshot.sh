@@ -13,10 +13,12 @@ read_manifest=''
 verify_options=false
 source_root=''
 expected_revision=''
+require_annotations=false
 
 usage() {
     cat >&2 <<'USAGE'
 usage: verify-shared-tooling-snapshot.sh [--consumer <repository>] [--manifest <relative-path>]
+       [--require-annotations]
        [--source <trusted-checkout> --revision <reviewed-full-commit>]
        verify-shared-tooling-snapshot.sh --read-manifest <file>
 
@@ -25,6 +27,8 @@ and literal field bytes. No output is emitted on malformed input. It does not
 inspect payloads or establish integrity, ownership or source trust.
 --source and --revision additionally compare every declared payload with an
 independently selected commit. They never fetch or execute source payloads.
+--require-annotations requires version and entrypoint records for new exports.
+Without it, historical manifests remain inspectable for adoption.
 USAGE
 }
 
@@ -78,6 +82,10 @@ while [[ $# -gt 0 ]]; do
         [[ $# -ge 2 && -n "$2" && -z "$read_manifest" ]] || { usage; exit 2; }
         read_manifest="$2"
         shift 2
+        ;;
+    --require-annotations)
+        require_annotations=true
+        shift
         ;;
     --source|--revision)
         [[ $# -ge 2 && -n "$2" ]] || { usage; exit 2; }
@@ -203,6 +211,10 @@ done <<< "$manifest_contents"
 [[ "$revision_count" -eq 1 ]] || fail "manifest must contain exactly one revision record"
 [[ "$version_count" -le 1 ]] || fail "manifest has duplicate version annotations"
 [[ "$file_count" -gt 0 ]] || fail "manifest contains no files"
+if [[ "$require_annotations" == true ]]; then
+    [[ "$version_count" -eq 1 && ${#entrypoints[@]} -gt 0 ]] ||
+        fail "new snapshots require version and entrypoint annotations"
+fi
 for entrypoint in ${entrypoints[@]+"${entrypoints[@]}"}; do
     selected=false
     for path in "${declared_files[@]}"; do [[ "$path" != "$entrypoint" ]] || selected=true; done

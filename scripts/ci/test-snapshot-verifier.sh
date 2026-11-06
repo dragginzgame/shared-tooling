@@ -31,6 +31,12 @@ printf 'inert sample payload\n' > "$consumer/payload.txt"
 verifier="$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh"
 "$BASH" "$verifier" --consumer "$consumer" > "$fixture/valid.log"
 cp -p "$consumer/.shared-tooling.snapshot" "$fixture/manifest"
+if "$BASH" "$verifier" --consumer "$consumer" --require-annotations > "$fixture/annotations.log" 2>&1; then exit 1; fi
+{ printf '# version\t0.31.0\n'; cat "$fixture/manifest"; } > "$consumer/.shared-tooling.snapshot"
+"$BASH" "$verifier" --consumer "$consumer" --require-annotations > "$fixture/annotated.log"
+sed '/^# entrypoint/d' "$consumer/.shared-tooling.snapshot" > "$fixture/no-entrypoints"
+if "$BASH" "$verifier" --read-manifest "$fixture/no-entrypoints" --require-annotations > "$fixture/annotations.log" 2>&1; then exit 1; fi
+cp -p "$fixture/manifest" "$consumer/.shared-tooling.snapshot"
 # A forbidden physical root must not select its valid trimmed neighbor, even
 # when reached through a normal-looking alias or containing a valid snapshot.
 for suffix in $'\n' $'\n\n' $'\r' $'\r\n' $'\nchild'; do

@@ -4,6 +4,9 @@
 
 ### 🔧 Changed
 
+- Require aligned VERSION/changelog metadata for base lookup and npm lockfile
+  schema 3. Require version/entrypoint annotations on newly exported snapshots;
+  retain historical manifest inspection for adoption.
 - Hard-cut release configuration to `RELEASE_GROUPS`, `RELEASE_PUBLISH_TARGET`,
   `RELEASE_SETUP_TARGET`, `RELEASE_SETUP_MODE` and `RELEASE_BATCH_ACTIVE`.
   Rename the runner and guide to `run-release-batch.pl` and `release-batches.md`;

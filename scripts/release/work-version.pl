@@ -62,13 +62,11 @@ if ($pending && $top eq $version) {
         or die "pending VERSION requires an older changelog release\n";
     $base = $previous;
 }
+$top eq $version or die "VERSION $version disagrees with changelog $top\n";
 if ($operation eq 'base') {
-    # Legacy adapters may still have VERSION at the base and notes at the next
-    # candidate. Their normal preflight owns candidate admission.
     print "$base\n";
     exit;
 }
-$top eq $version or die "VERSION $version disagrees with changelog $top\n";
 # Historical headings can retain an old Unreleased suffix; the canonical base
 # bounds history just as it does in the release finalizer.
 for my $index (1 .. $#headings) {

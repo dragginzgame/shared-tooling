@@ -40,6 +40,9 @@ perl "$ROOT/scripts/release/work-version.pl" prepare patch > "$FIXTURE/work-vers
 [[ "$(cat VERSION)" == 0.1.1 && "$(cat "$FIXTURE/work-version")" == 0.1.1 ]]
 [[ "$(perl "$ROOT/scripts/release/work-version.pl" base)" == 0.1.0 ]]
 perl "$ROOT/scripts/release/work-version.pl" check
+printf '0.1.0\n' > VERSION
+if perl "$ROOT/scripts/release/work-version.pl" base > "$FIXTURE/misaligned-base.log" 2>&1; then exit 1; fi
+printf '0.1.1\n' > VERSION
 cp CHANGELOG.md "$FIXTURE/work-notes"
 perl "$ROOT/scripts/release/work-version.pl" prepare patch > /dev/null
 cmp CHANGELOG.md "$FIXTURE/work-notes"

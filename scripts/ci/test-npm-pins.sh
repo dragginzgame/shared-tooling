@@ -56,12 +56,7 @@ reset_manifest
 sync_lock
 git -C "$consumer" add -- web/package.json web/package-lock.json AGENTS.md
 pass
-for schema in 2 3; do
-    jq --argjson schema "$schema" '.lockfileVersion=$schema' "$lock" > "$fixture/edited"
-    cp "$fixture/edited" "$lock"
-    pass
-done
-for mutation in '.lockfileVersion=1' 'del(.packages)' '.packages[""]=null' '.version="2.0.0"' '.packages[""].name="other"' '.packages[""].dependencies.registry="^2.0.0"'; do
+for mutation in '.lockfileVersion=1' '.lockfileVersion=2' 'del(.packages)' '.packages[""]=null' '.version="2.0.0"' '.packages[""].name="other"' '.packages[""].dependencies.registry="^2.0.0"'; do
     sync_lock
     jq "$mutation" "$lock" > "$fixture/edited"; cp "$fixture/edited" "$lock"
     reject npm-lock
