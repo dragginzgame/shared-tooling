@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.31.5] - Unreleased
+
+### 🩹 Fixed
+
+- Use portable manifest edits in the release-batch fixture on macOS and Linux.
+- Test release-checker selection failures separately from dispatch failures,
+  preserving evidence assertions for both phases and assertion failures.
+
 ## [0.31.4] - Unreleased
 
 ### 🩹 Fixed

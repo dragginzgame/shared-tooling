@@ -46,12 +46,24 @@ git -C "$consumer" add -- .
 git -C "$consumer" -c user.name=Fixture -c user.email=fixture@example.invalid \
     -c core.hooksPath=/dev/null commit --quiet -m 'Fixture inputs'
 for kind in release formatting; do
-    for scenario in child assertion; do
+    for scenario in selection child assertion; do
+        [[ "$kind" != formatting || "$scenario" != selection ]] || continue
         run="$fixture/$kind-$scenario"
         mkdir -p "$run/bin" "$run/tmp"
         executable='make'
         [[ "$scenario" != assertion ]] || executable='cmp'
         printf '#!%s\n' "$BASH" > "$run/bin/$executable"
+        if [[ "$kind" == release && "$scenario" == child ]]; then
+            # Admit only the selection probe; inject the failure at dispatch.
+            cat >> "$run/bin/$executable" <<'MAKE'
+for argument in "$@"; do
+    if [[ "$argument" == shared-release-command-selection ]]; then
+        printf '\n\n\ndirect\n'
+        exit 0
+    fi
+done
+MAKE
+        fi
         if [[ "$scenario" == assertion ]]; then
             cat >> "$run/bin/$executable" <<'CMP'
 case "$1" in
@@ -71,6 +83,12 @@ CMP
             [[ "$scenario" != child ]] || expected=1
             [[ "$status" == "$expected" ]] || exit 1
             retained="$(sed -n 's/^Release command check failed; fixture and logs retained: //p' "$run/result.log")"
+            if [[ "$scenario" == selection ]]; then
+                [[ "$retained" == "$run/tmp/"* && -f "$retained/Makefile" &&
+                   -f "$retained/selection" && ! -e "$retained/events" ]] || exit 1
+                grep -Fq CHECKER_RETENTION_FAILURE "$run/result.log"
+                continue
+            fi
             [[ "$retained" == "$run/tmp/"* && -f "$retained/Makefile" && \
                -f "$retained/events" && -f "$retained/patch-0.log" ]] || exit 1
             if [[ "$scenario" == assertion ]]; then [[ -f "$retained/expected" ]] || exit 1; fi

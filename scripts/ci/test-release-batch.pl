@@ -204,8 +204,8 @@ release-verify:
 	@if [ "$(RELEASE_GROUP)" = alpha ]; then printf '\n# deferred update\n' >> "$$DEVELOPMENT_ROOT/Cargo.lock"; fi
 	@if [ "$(RELEASE_GROUP)" = beta ] && [ -f "$$FAIL_ONCE" ]; then rm "$$FAIL_ONCE"; exit 1; fi
 release-prepare-version:
-	@sed -i 's/0.1.0/0.1.1/g' $(RELEASE_GROUP)/Cargo.toml
-	@sed -i '/^$(RELEASE_GROUP) = /s/0.1.0/0.1.1/' Cargo.toml
+	@perl -pi -e 's/0\.1\.0/0.1.1/g' $(RELEASE_GROUP)/Cargo.toml
+	@perl -pi -e 's/0\.1\.0/0.1.1/ if /^$(RELEASE_GROUP) = /' Cargo.toml
 	@cargo generate-lockfile --offline
 release-files:
 	@bash scripts/ci/cargo-release-group.sh files $(RELEASE_GROUP)
