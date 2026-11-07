@@ -13,6 +13,7 @@ fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Formatting Make fixture retained"' EXIT
 consumer="$fixture/consumer with spaces"
 mkdir -p "$consumer/vendor/make" "$consumer/vendor/scripts/ci" "$consumer/ci" "$consumer/vendor/ci" "$consumer/.tools/rust/common/bin"
+printf '[package]\nname = "fixture"\nversion = "0.0.0"\n' > "$consumer/Cargo.toml"
 bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$consumer/vendor" make/rust-format.mk
 printf 'export SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\nSHARED_TOOLING_CARGO_SORT_DERIVES_VERSION=0.1.3\n' > "$consumer/vendor/ci/tool-versions.env"
 cat > "$consumer/Makefile" <<'MAKE'
@@ -34,6 +35,7 @@ if [[ "${JOBSERVER_TEST_REQUIRED:-0}" == 1 ]]; then
 fi
 [[ "$CARGO_NET_OFFLINE" == true && "$RUSTUP_AUTO_INSTALL" == 0 ]] || exit 1
 case "$*" in
+    metadata*) perl -MJSON::PP -MCwd=getcwd -e '$p=getcwd(); print encode_json({workspace_root=>$p,workspace_members=>["fixture"],packages=>[{id=>"fixture",name=>"fixture",manifest_path=>"$p/Cargo.toml"}]})'; exit 0 ;;
     'sort --version') echo "cargo-sort ${FORMAT_TEST_VERSION:-2.1.4}"; exit 0 ;;
     'fmt --version') exit 0 ;;
 esac
@@ -51,9 +53,9 @@ for target in fmt fmt-check; do
     : > "$FORMAT_TEST_EVENTS"
     PATH=/usr/bin:/bin make --no-print-directory -C "$consumer" "$target" > "$fixture/$target.log" 2>&1
     if [[ "$target" == fmt ]]; then
-        printf 'sort --workspace --grouped\nfmt --all\n' > "$fixture/expected"
+        printf 'sort --workspace --grouped\nfmt --package fixture\n' > "$fixture/expected"
     else
-        printf 'sort --workspace --grouped --check\nfmt --all -- --check\n' > "$fixture/expected"
+        printf 'sort --workspace --grouped --check\nfmt --package fixture -- --check\n' > "$fixture/expected"
     fi
     cmp "$fixture/expected" "$FORMAT_TEST_EVENTS"
     [[ "$(wc -l < "$fixture/$target.log")" -eq 2 ]]
@@ -77,8 +79,8 @@ for target in help fmt fmt-check; do
         fi
         case "$target" in
             help) : > "$fixture/expected" ;;
-            fmt) printf 'sort --workspace --grouped\nfmt --all\n' > "$fixture/expected" ;;
-            fmt-check) printf 'sort --workspace --grouped --check\nfmt --all -- --check\n' > "$fixture/expected" ;;
+            fmt) printf 'sort --workspace --grouped\nfmt --package fixture\n' > "$fixture/expected" ;;
+            fmt-check) printf 'sort --workspace --grouped --check\nfmt --package fixture -- --check\n' > "$fixture/expected" ;;
         esac
         cmp "$fixture/expected" "$FORMAT_TEST_EVENTS"
     done

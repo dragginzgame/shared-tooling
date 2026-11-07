@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.31.7] - Unreleased
+
+### 🩹 Fixed
+
+- Format only explicitly selected Cargo workspace members, preserving external
+  sibling path dependencies in both write and check modes. Refuse unavailable
+  member selection before writing, and scope cached evidence to owned inputs.
+  [#362](https://github.com/dragginzgame/shared-tooling/issues/362).
+- Include referenced rules in snapshot qualification fixtures so native CI can
+  reach the existing candidate-version and publication-reuse qualification.
+  [#357](https://github.com/dragginzgame/shared-tooling/issues/357).
+
+### 🔧 Changed
+
+- Separate private test/tool maintenance from public release decisions. Require
+  public package and dependency impact before selecting publication, retain
+  private-only notes for the next actual release, and preserve complete release
+  qualification when a release is selected.
+  [#363](https://github.com/dragginzgame/shared-tooling/issues/363).
+
 ## [0.31.6] - Unreleased
 
 ### 🔧 Changed

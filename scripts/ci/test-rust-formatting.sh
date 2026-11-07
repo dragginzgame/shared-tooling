@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/run-rust-formatting.pl scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/run-rust-formatting.pl scripts/ci/fixture-lifecycle.sh scripts/ci/test-rust-formatting-ownership.sh
 set -euo pipefail
 ROOT="$(CDPATH='' cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
@@ -19,7 +19,7 @@ set -euo pipefail
 case "$*" in
     metadata*)
         [[ "${FORMAT_METADATA_FAIL:-0}" == 0 ]] || exit 19
-        perl -MJSON::PP -MCwd=getcwd -e '$p=getcwd(); print encode_json({packages=>[{manifest_path=>"$p/Cargo.toml", targets=>[{src_path=>"$p/src/lib.rs"}]}],target_directory=>"$p/target"})'
+        perl -MJSON::PP -MEncode=decode -MCwd=getcwd -e '$p=decode("UTF-8",getcwd()); print encode_json({workspace_root=>$p,workspace_members=>["fixture"],packages=>[{id=>"fixture",name=>"fixture",manifest_path=>"$p/Cargo.toml", targets=>[{src_path=>"$p/src/lib.rs"}]}],target_directory=>"$p/target"})'
         exit ;;
     --version|'sort --version'|'fmt --version'|'sort-derives --version') printf 'fixture %s\n' "${FORMAT_VERSION:-1}"; exit ;;
 esac
@@ -27,7 +27,7 @@ printf '%s\t%s\n' "$PWD" "$*" >> "$FORMAT_EVENTS"
 echo 'private formatter detail'
 if [[ "$*" == "${FORMAT_FAIL:-}" ]]; then exit 23; fi
 if [[ "${FORMAT_INTERRUPT:-0}" == 1 ]]; then kill -TERM "$PPID"; exit 0; fi
-if [[ "${FORMAT_REWRITE:-0}" == 1 && "$*" == 'fmt --all' ]]; then
+if [[ "${FORMAT_REWRITE:-0}" == 1 && "$*" == 'fmt --package fixture' ]]; then
     printf 'fn rewritten() {}\n' > src/lib.rs
 fi
 CARGO
@@ -82,9 +82,8 @@ printf 'corrupt\n' > "$receipt"
 run --check
 [[ "$(wc -l < "$FORMAT_EVENTS")" -eq 2 ]]
 : > "$FORMAT_EVENTS"
-FORMAT_METADATA_FAIL=1 run --check
-[[ "$(wc -l < "$FORMAT_EVENTS")" -eq 2 ]]
-grep -F 'running without shortcut' "$fixture/output"
+if FORMAT_METADATA_FAIL=1 run --check; then exit 1; fi
+[[ ! -s "$FORMAT_EVENTS" ]]
 
 # Ordinary cfg_attr metadata does not bind unrelated later words or literals.
 # The first argument is a cfg predicate, even when its key is named path.
@@ -189,6 +188,7 @@ if run --write --extra-workspace ..; then exit 1; fi
 # Untrusted workspace labels remain visible without terminal control effects.
 control_workspace=$'control-\033-\342\200\256'
 mkdir "$control_workspace"
+cp Cargo.toml "$control_workspace/"
 run --check --no-cache --extra-workspace "$control_workspace"
 if LC_ALL=C grep -q $'\e' "$fixture/output"; then exit 1; fi
 if grep -q $'\342\200\256' "$fixture/output"; then exit 1; fi
@@ -264,3 +264,4 @@ run --check
 
 fixture_complete=true
 echo 'Rust formatting reuse, invalidation, per-pass timing and failure evidence passed'
+PATH="${PATH#"$fixture/bin:"}" bash "$ROOT/scripts/ci/test-rust-formatting-ownership.sh"

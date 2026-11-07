@@ -739,7 +739,7 @@ bash "$selection_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
     --consumer "$selection_consumer" --manifest config/selection >/dev/null
 # Resolve actual maintained companion declarations from the selected revision.
 fixture_directories=()
-for directory in scripts make ci docs .githooks .github; do
+for directory in scripts make ci docs rules audits tasks .githooks .github; do
     [[ ! -d "$ROOT/$directory" ]] || fixture_directories+=("$directory")
 done
 (cd "$ROOT" && rg --files --hidden "${fixture_directories[@]}") > "$FIXTURE/companion-sources"
