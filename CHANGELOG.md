@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.31.2] - Unreleased
+
+### 🩹 Fixed
+
+- Update the release-editor setup fixture to start from prepared pending work
+  with release history, so native CI reaches its setup, failure and recovery
+  assertions after the 0.31 metadata hard cut. This unblocks native qualification
+  for [#357](https://github.com/dragginzgame/shared-tooling/issues/357).
+
 ## [0.31.1] - Unreleased
 
 ### 🩹 Fixed

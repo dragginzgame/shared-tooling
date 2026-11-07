@@ -106,8 +106,10 @@ set -euo pipefail
 [[ "$1" != prepare ]] || exit 59
 exec bash "${BASH_SOURCE[0]%/*}/fixture-metadata.sh" "$@"
 METADATA
-printf '0.1.0\n' > "$consumer/VERSION"
-printf '# Changelog\n\n## [0.1.1]\n\n- Fixture release.\n' > "$consumer/CHANGELOG.md"
+# Start from prepared pending work, with history supplying the release base.
+# An obsolete mismatched pair refuses before the setup ordering under test.
+printf '0.1.1\n' > "$consumer/VERSION"
+printf '# Changelog\n\n## [0.1.1] - Unreleased\n\n- Fixture release.\n\n## [0.1.0] - 2026-10-18\n\n- Previous release.\n' > "$consumer/CHANGELOG.md"
 git init --quiet "$consumer"
 git -C "$consumer" symbolic-ref HEAD refs/heads/main
 git -C "$consumer" -c core.hooksPath=/dev/null add -- .
@@ -154,7 +156,7 @@ for mode in ic-preflight install check success; do
         fi
     fi
     [[ "$(git -C "$consumer" rev-parse HEAD)" == "$source_commit" &&
-       "$(cat "$consumer/VERSION")" == 0.1.0 && -z "$(git -C "$consumer" tag --list)" ]] || exit 1
+       "$(cat "$consumer/VERSION")" == 0.1.1 && -z "$(git -C "$consumer" tag --list)" ]] || exit 1
 done
 # Standalone preflight admits only; no preparation authority escapes the adapter.
 : > "$EDITOR_SETUP_EVENTS"
@@ -177,7 +179,7 @@ make --no-print-directory -C "$consumer" release-resume VERSION=0.1.1 \
     > "$fixture/prepare-retry.log" 2>&1 || status=$?
 [[ "$status" != 0 && "$(wc -l < "$EDITOR_SETUP_EVENTS")" -eq 4 ]] || exit 1
 [[ "$(git -C "$consumer" rev-parse HEAD)" == "$source_commit" &&
-   "$(cat "$consumer/VERSION")" == 0.1.0 && -z "$(git -C "$consumer" tag --list)" ]] || exit 1
+   "$(cat "$consumer/VERSION")" == 0.1.1 && -z "$(git -C "$consumer" tag --list)" ]] || exit 1
 [[ -z "$(git --git-dir="$fixture/destination.git" for-each-ref --format='%(refname)')" ]] || exit 1
 # PR qualification prepares the exact merged source before its new gate. The
 # standalone form only checks; a selected old commit must not prepare tools.
