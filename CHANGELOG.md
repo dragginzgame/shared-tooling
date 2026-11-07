@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.31.4] - Unreleased
+
+### 🩹 Fixed
+
+- Export the release-batch guide with documentation that links to it, including
+  partial snapshot adoption.
+- Isolate inherited release settings in the release-command checker and
+  substitute both runners. Qualify grouped outer dispatch and captured inner
+  dispatch, including argument forwarding and failure propagation.
+
 ## [0.31.3] - Unreleased
 
 ### 🔧 Changed

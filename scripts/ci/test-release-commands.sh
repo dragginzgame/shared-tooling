@@ -178,6 +178,26 @@ make -j2 --no-print-directory -f "$fixture/root-parent.mk" test \
     EXTERNAL_ROOT="$fixture/external" CHECKER="$root/scripts/ci/check-release-commands.sh" \
     CONSUMER="$fixture/root-consumer" > "$fixture/root-parent.log" 2>&1
 [[ ! -s "$RELEASE_TEST_EVENTS" ]] || exit 1
+# Grouped outer dispatch and captured inner dispatch both use inert runners.
+# Exercise defaults as well as an explicit group under a contaminated parent.
+cp "$fixture/root-consumer/Makefile" "$fixture/ungrouped.mk"
+for selection in default explicit; do
+    { printf 'RELEASE_GROUP ?= engine\nRELEASE_SETUP_TARGET := setup-candidate\nRELEASE_PUBLISH_TARGET := publish\n'; cat "$fixture/ungrouped.mk"; } > "$fixture/root-consumer/Makefile"
+    (
+        unset RELEASE_GROUP
+        if [[ "$selection" == explicit ]]; then export RELEASE_GROUP=types; fi
+        export RELEASE_BATCH_ACTIVE=1 RELEASE_GROUPS='' RELEASE_SOURCE=wrong
+        export RELEASE_SETUP_TARGET=wrong RELEASE_PUBLISH_TARGET=wrong RELEASE_DELIVERY=wrong
+        EXTERNAL_ROOT="$fixture/external" bash "$root/scripts/ci/check-release-commands.sh" \
+            "$fixture/root-consumer" "${make_inputs[@]}"
+    )
+done
+# A consumer routing batch requests incorrectly must still be rejected.
+printf '\nrelease-patch:\n\t@perl scripts/ci/run-release-batch.pl --groups wrong\n' >> "$fixture/root-consumer/Makefile"
+if EXTERNAL_ROOT="$fixture/external" bash "$root/scripts/ci/check-release-commands.sh" \
+    "$fixture/root-consumer" "${make_inputs[@]}" > "$fixture/broken-batch.log" 2>&1; then
+    echo 'accepted broken batch dispatch' >&2; exit 1
+fi
 cat > "$fixture/consumer/Makefile" <<'MAKE'
 include tool-versions.env
 ifneq ($(word 2,$(filter release-patch release-minor release-major release-resume,$(MAKECMDGOALS))),)
