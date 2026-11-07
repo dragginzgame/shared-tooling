@@ -83,9 +83,13 @@ printf '#[test]\nfn integration() {}\n' > "$FIXTURE/crates/app/tests/integration
 cp "$FIXTURE/Cargo.lock" "$FIXTURE/original.lock"
 report() { bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE"; }
 report > "$FIXTURE/report.json"
+# A clean checkout (or cargo clean) must not require a prior build for scratch.
+rm -rf "$FIXTURE/crates/app/output"
 (unset TMPDIR RUNNER_TEMP; report) > "$FIXTURE/default-scratch.json"
 cmp "$FIXTURE/report.json" "$FIXTURE/default-scratch.json"
 [[ -d "$FIXTURE/crates/app/output/tmp" ]]
+(TMPDIR="$FIXTURE/new scratch/child" report) > "$FIXTURE/new-scratch.json"
+cmp "$FIXTURE/report.json" "$FIXTURE/new-scratch.json"
 jq -e '
   .schema == 2 and
   .totals.examples == 1 and .totals.benchmarks == 1 and .totals.build_tooling == 2 and
@@ -263,5 +267,17 @@ printf '#!/bin/sh\nprintf "{}\\n"\n' > "$FIXTURE/bin/cloc"
 if PATH="$FIXTURE/bin:$PATH" bash "$FIXTURE/reporter/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" > "$FIXTURE/omitted.json" 2> "$FIXTURE/omitted.err"; then exit 1; fi
 grep -F 'cloc omitted a nonempty source file' "$FIXTURE/omitted.err" >/dev/null
 [[ ! -s "$FIXTURE/omitted.json" ]]
+# Cleanup during counting must refuse, not return an incomplete source total.
+cat > "$FIXTURE/bin/cloc" <<'SH'
+#!/bin/sh
+for arg do
+    case "$arg" in --list-file=*) list=${arg#--list-file=} ;; esac
+done
+rm -rf "${list%/*}"
+printf '{}\n'
+SH
+if PATH="$FIXTURE/bin:$PATH" bash "$FIXTURE/reporter/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" > "$FIXTURE/removed.json" 2> "$FIXTURE/removed.err"; then exit 1; fi
+grep -F 'LOC scratch input disappeared:' "$FIXTURE/removed.err" >/dev/null
+[[ ! -s "$FIXTURE/removed.json" ]]
 echo 'LOC classification and source-total fixtures passed'
 fixture_complete=true

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.31.3] - Unreleased
+
+### 🔧 Changed
+
+- Require output owners to create target/scratch parents on every fresh run.
+  Qualify LOC reporting with absent target and override directories, and report
+  removed active scratch clearly without emitting partial totals.
+
 ## [0.31.2] - Unreleased
 
 ### 🩹 Fixed
