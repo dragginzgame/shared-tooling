@@ -20,7 +20,12 @@ bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$snapshot" make/consu
 # Hooks retain their root-layout contract even when other tooling is nested.
 bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$consumer" \
     .githooks/pre-commit scripts/ci/verify-shared-tooling-snapshot.sh scripts/ci/verify-file-checksum.sh
-printf '[workspace]\n' > "$consumer/Cargo.toml"
+printf '[workspace]\nmembers = ["app", "helper"]\ndefault-members = ["app"]\n' > "$consumer/Cargo.toml"
+for member in app helper; do
+    mkdir -p "$consumer/$member/src"
+    printf '[package]\nname = "fixture-%s"\nversion = "0.0.0"\n' "$member" > "$consumer/$member/Cargo.toml"
+    printf 'pub fn fixture() {}\n' > "$consumer/$member/src/lib.rs"
+done
 printf 'SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\nSHARED_TOOLING_CARGO_SORT_DERIVES_VERSION=0.1.3\n' > "$snapshot/ci/tool-versions.env"
 printf 'exit 99 # obsolete consumer catalog must not execute\n' > "$consumer/ci/tool-versions.env"
 export MAKE_CONSUMER_EVENTS="$fixture/events" RUNNER_TEMP="$fixture"
@@ -43,6 +48,14 @@ cat > "$consumer/.tools/rust/common/bin/fixture-cargo" <<'CARGO'
 set -eu
 [[ "$CARGO_NET_OFFLINE" == true && "$RUSTUP_AUTO_INSTALL" == 0 ]]
 case "$*" in
+    'metadata --locked --offline --no-deps --format-version 1')
+        [[ "${FIXTURE_METADATA_EMPTY:-0}" == 0 ]] || exit 0
+        perl -MJSON::PP -MEncode=decode -MCwd=getcwd -e '
+            $p=decode("UTF-8",getcwd());
+            print encode_json({workspace_root=>$p,
+                workspace_members=>["app", "helper"], workspace_default_members=>["app"],
+                packages=>[map {{id=>$_, name=>"fixture-$_", manifest_path=>"$p/$_/Cargo.toml"}} qw(app helper)]});'
+        exit 0 ;;
     'sort --version') echo "cargo-sort ${FIXTURE_SORT_VERSION:-2.1.4}"; exit 0 ;;
     'fmt --version') exit 0 ;;
 esac
@@ -66,8 +79,15 @@ CHECK
 make -s -C "$consumer" fmt-check FORMAT_RUST_ARGS=--no-cache > "$fixture/format.log"
 grep -E '^Manifest sorting .*ok \([0-9]+\.[0-9]+s\)$' "$fixture/format.log"
 grep -E '^Rust formatting .*ok \([0-9]+\.[0-9]+s\)$' "$fixture/format.log"
-printf 'sort --workspace --grouped --check\nfmt --all -- --check\n' > "$fixture/expected"
+printf 'sort --workspace --grouped --check\nfmt --package fixture-app --package fixture-helper -- --check\n' > "$fixture/expected"
 cmp "$fixture/expected" "$MAKE_CONSUMER_EVENTS"
+
+# Mandatory owner selection must fail before any formatter runs, including when
+# the caller disables caching. Empty successful output is not usable metadata.
+: > "$MAKE_CONSUMER_EVENTS"
+if FIXTURE_METADATA_EMPTY=1 make -s -C "$consumer" fmt-check > "$fixture/metadata-refusal.log" 2>&1; then exit 1; fi
+[[ ! -s "$MAKE_CONSUMER_EVENTS" ]]
+grep -q 'malformed JSON' "$fixture/metadata-refusal.log"
 
 # Formatting follows the Rust catalog, including when the host catalog has no
 # Cargo pins. Wrong Rust selections still refuse before invoking formatters.

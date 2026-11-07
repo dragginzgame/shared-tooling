@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.31.8] - Unreleased
+
+### 🩹 Fixed
+
+- Update the consumer Make fixture for mandatory Cargo member selection,
+  covering all members rather than only defaults and refusing empty metadata
+  before formatting. This removes the next native CI qualification blocker.
+  [#357](https://github.com/dragginzgame/shared-tooling/issues/357).
+
 ## [0.31.7] - Unreleased
 
 ### 🩹 Fixed
