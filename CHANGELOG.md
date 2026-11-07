@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.31.6] - Unreleased
+
+### 🔧 Changed
+
+- Own hashing choices through a shared algorithm/purpose inventory, permitting
+  approved direct pure-hashing dependencies instead of Platform re-exports.
+  Replace the earlier Platform BLAKE3 routing recommendation with centralized
+  algorithm review; migrate imports without changing algorithms or hash outputs.
+  Extend common Cargo admission to flag known unreviewed hash/crypto packages,
+  including renamed optional, target and test dependencies; document discovery
+  limits and preserve existing format identities.
+  [#364](https://github.com/dragginzgame/shared-tooling/issues/364).
+
 ## [0.31.5] - Unreleased
 
 ### 🩹 Fixed
