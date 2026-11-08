@@ -123,17 +123,10 @@ release. An intentional older selection uses
 edit the snapshot's version annotation to disguise missing installation.
 
 Normal registry commands need no sibling checkout and never fetch GitHub source.
-An existing Git snapshot needs its historical source checkout only for the first
-migration: change the dev-dependency to the registry requirement, resolve the lock,
-then run `make shared-tooling-install SHARED_TOOLING_SOURCE=/home/adam/projects/toko-tooling`.
-The checkout proves the earlier receipt's file bytes before replacements or
-retirements; the new code still comes from the registry archive. Preserve its
-old commits until migration finishes. Subsequent updates retrieve the previous
-registry archive for the same ownership proof. The old GitHub repository name is
-accepted on historical receipts during this one-time migration.
-
-For initial adoption, run `cargo fetch --locked`, then locate the downloaded
-source bundle with `cargo metadata --locked --offline --format-version 1`:
+Initial adoption and the first migration from a Git snapshot must bootstrap the
+new installer from Cargo's downloaded package. The old installed Git-only helper
+cannot perform that migration. Resolve the registry dev-dependency into Cargo.lock,
+run `cargo fetch --locked`, then locate the source bundle:
 
 ```bash
 tooling_manifest="$(cargo metadata --locked --offline --format-version 1 | jq -er '
@@ -141,9 +134,28 @@ tooling_manifest="$(cargo metadata --locked --offline --format-version 1 | jq -e
     .source == "registry+https://github.com/rust-lang/crates.io-index")] |
   if length == 1 then .[0].manifest_path else error("expected one registry selection") end')"
 tooling_root="${tooling_manifest%/Cargo.toml}"
+```
+
+For initial adoption, select the roots explicitly:
+
+```bash
 bash "$tooling_root/scripts/dev/shared-tooling.sh" install --consumer "$PWD" \
   --entrypoint make/consumer.mk --entrypoint DRAGGINZGAME.md
 ```
+
+For an existing Git snapshot, launch that same new installer with its historical
+source checkout for one-time ownership proof; recorded entrypoints are retained:
+
+```bash
+bash "$tooling_root/scripts/dev/shared-tooling.sh" install --consumer "$PWD" \
+  --source /home/adam/projects/toko-tooling
+```
+
+The checkout proves the earlier receipt's bytes before replacements or retirements;
+the new code comes from the registry archive. Preserve its old commits until
+migration finishes. The old GitHub repository name is accepted on historical
+receipts. After this bootstrap, use the normal Make commands above. Subsequent
+registry updates retrieve the previous registry archive for ownership proof.
 
 Prepare the project's compiler/native prerequisites and host parsers first.
 If needed, prepare jq/yq from the downloaded source with

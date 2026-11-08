@@ -117,6 +117,7 @@ cp "$fixture/receipt" "$consumer/.shared-tooling.snapshot"
 # A Git receipt needs independently readable historical bytes exactly once.
 old_source="$fixture/old-source"
 cp -Rp "$fixture/input/toko-tooling-0.33.0" "$old_source"
+printf '#!/bin/sh\necho "Legacy installer accepts Git selections only" >&2\nexit 1\n' > "$old_source/scripts/dev/shared-tooling.sh"
 git -C "$old_source" init -q
 git -C "$old_source" remote add origin https://github.com/dragginzgame/shared-tooling
 git -C "$old_source" add .
@@ -126,8 +127,16 @@ mkdir "$old_consumer"; git -C "$old_consumer" init -q
 bash "$old_source/scripts/distribution/refresh-consumer.sh" --source "$old_source" --consumer "$old_consumer" \
     --entrypoint sample.sh --entrypoint scripts/dev/shared-tooling.sh > "$fixture/old-install.log"
 cp "$consumer/Cargo.lock" "$old_consumer/Cargo.lock"
+mkdir -p "$old_consumer/src" "$old_consumer/.cargo"
+cp "$consumer/Cargo.toml" "$old_consumer/Cargo.toml"
+cp "$consumer/src/lib.rs" "$old_consumer/src/lib.rs"
+cp "$consumer/.cargo/config.toml" "$old_consumer/.cargo/config.toml"
+must_fail bash "$old_consumer/scripts/dev/shared-tooling.sh" install --consumer "$old_consumer"
 must_fail bash "$ROOT/scripts/dev/shared-tooling.sh" install --consumer "$old_consumer"
-bash "$ROOT/scripts/dev/shared-tooling.sh" install --consumer "$old_consumer" --source "$old_source" > "$fixture/migrate.log"
+tooling_manifest="$(cd "$old_consumer" && cargo metadata --locked --offline --format-version 1 | jq -er '
+    [.packages[] | select(.name == "toko-tooling" and .source == "registry+https://github.com/rust-lang/crates.io-index")] |
+    if length == 1 then .[0].manifest_path else error("expected one registry selection") end')"
+bash "${tooling_manifest%/Cargo.toml}/scripts/dev/shared-tooling.sh" install --consumer "$old_consumer" --source "$old_source" > "$fixture/migrate.log"
 grep -F $'source\thttps://crates.io/crates/toko-tooling' "$old_consumer/.shared-tooling.snapshot" >/dev/null
 echo 'Registry archive authentication, real Cargo lock/update, install, downgrade, retirement, local edits, setup failure and Git migration passed'
 fixture_complete=true
