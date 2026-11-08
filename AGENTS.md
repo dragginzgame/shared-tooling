@@ -50,4 +50,4 @@ owns when to run checks. This overlay identifies the local checks only.
 
 The common [contribution rules](rules/contributions.md) apply without a local
 authority exception. Keep product-specific setup and checks here; do not repeat
-the baseline's implementation, PR, checkout or fleet-delivery rules.
+the baseline's implementation, PR, checkout or delivery rules.

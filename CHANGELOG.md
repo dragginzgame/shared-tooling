@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.35.1] - Unreleased
+
+### 🐛 Fixed
+
+- Make unqualified deploy, ship and release requests apply only to the current
+  repository. Require explicit cross-repository delivery scope; do not discover
+  sibling candidates or ask whether ordinary deployment includes them. All three
+  include GitHub delivery and crates.io publication of affected publishable crates
+  without a separate publication confirmation.
+- Exclude tool caches, scratch, build output and Git-ignored files from Rust LOC
+  discovery while retaining tracked and new untracked source. Apply admission
+  to module edges and Cargo targets too; preserve source-archive reporting.
+  Traverse nested Rust scopes iteratively to avoid deep-recursion warnings.
+
 ## [0.35.0] - 2026-11-08
 
 ### 🔧 Changed

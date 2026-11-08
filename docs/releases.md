@@ -23,6 +23,11 @@ select affected approved groups, semantic-version increments and dependency orde
 and execute necessary preparation and delivery without per-command confirmation.
 Preparing code/notes, asking how to deploy or checking readiness does not itself
 authorize execution. Preserve explicit target restrictions and required protections.
+An unqualified deploy, ship or release applies only to the current repository;
+including sibling repositories requires an explicit cross-repository request.
+All three authorize both GitHub delivery and crates.io publication of affected
+publishable groups, without a second confirmation. Complete and verify both
+steps; GitHub delivery alone completes repositories with no publishable crates.
 Before execution, disclose the working checkout and branch, remote destination
 and release effects. A scoped deploy request authorizes direct integration-branch
 pushes under the linked contribution rules; alternate checkout locations still
@@ -173,8 +178,10 @@ The default `RELEASE_DELIVERY=direct` workflow is:
 These commands finish with the branch and tag on GitHub. They do not implicitly
 publish packages, create GitHub Release objects, deploy products, bump to another
 development version or clean build/evidence directories. Those actions retain
-their own commands; a scoped ship/deploy request may already authorize publication
-or deployment, so do not request separate approval again. Cleanup and unrelated
+their own commands; a scoped release/ship/deploy request authorizes crates.io
+publication of affected publishable crates, so complete that step without
+requesting separate approval. Product deployment follows its established target.
+Cleanup and unrelated
 effects remain outside that scope. Keep the finalized release at the
 top of the changelog until subsequent work needs a new numbered, undated pending
 entry under the [automatic next-version rules](../rules/changelogs.md).
@@ -731,8 +738,9 @@ The maintainer may execute delivery or delegate its outcome to an agent under
 selects the affected groups and commands for the scoped repository and established
 destination. Naming a version, preparing notes, completing validation or asking
 for push readiness alone is not that delegation. A delivery request covers the
-documented complete gate, version preparation, release commit, tag
-and selected delivery effects. Direct delivery includes the atomic branch/tag
+documented complete gate, version preparation, release commit, tag,
+GitHub delivery and crates.io publication of affected publishable groups.
+Direct delivery includes the atomic branch/tag
 push; PR delivery includes its branch/PR, fresh validation after an authorized
 merge, and exact tag push. Permission to fix code, create a commit, open a PR,
 push a topic branch or change a version alone is not permission to run this flow.

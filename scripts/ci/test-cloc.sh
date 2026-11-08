@@ -6,6 +6,7 @@ export PATH="$ROOT/.tools/host/bin:$PATH"
 unset CARGO_TARGET_DIR
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-cloc-test.XXXXXX")"
 FIXTURE="$(cd "$FIXTURE" && pwd -P)"
+git init -q "$FIXTURE"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture_complete=false
@@ -110,6 +111,46 @@ mkdir -p "$FIXTURE/crates/app/output/tests"
 printf 'pub fn never_count() {}\n' > "$FIXTURE/crates/app/output/tests/generated.rs"
 report > "$FIXTURE/after.json"
 cmp "$FIXTURE/report.json" "$FIXTURE/after.json"
+# Root packages must not count installed tools or frontend dependency sources.
+for cache in .tools node_modules .tmp .cache build dist coverage vendor recovery-evidence; do
+    mkdir -p "$FIXTURE/crates/app/$cache/nested"
+    printf 'pub fn never_count() {}\n' > "$FIXTURE/crates/app/$cache/nested/cache.rs"
+done
+report > "$FIXTURE/caches.json"
+cmp "$FIXTURE/report.json" "$FIXTURE/caches.json"
+# Respect custom ignored output; retain tracked
+# source matched by ignore rules and ordinary new untracked source.
+printf 'old-output/\n*.retained.rs\n' > "$FIXTURE/.gitignore"
+mkdir -p "$FIXTURE/crates/app/old-output/nested/target"
+printf 'pub fn stale() {}\n' > "$FIXTURE/crates/app/old-output/nested/target/stale.rs"
+report > "$FIXTURE/ignored.json"
+cmp "$FIXTURE/report.json" "$FIXTURE/ignored.json"
+printf 'pub fn retained() {}\n' > "$FIXTURE/crates/app/src/code.retained.rs"
+git -C "$FIXTURE" add -f crates/app/src/code.retained.rs
+report > "$FIXTURE/tracked-ignored.json"
+jq -e --slurpfile before "$FIXTURE/report.json" '.totals.total == $before[0].totals.total + 1' "$FIXTURE/tracked-ignored.json" >/dev/null
+git -C "$FIXTURE" rm -q -f crates/app/src/code.retained.rs
+# Source archives beneath ignored scratch still work without a Git inventory.
+archive="$FIXTURE/archive"
+mkdir -p "$archive/src" "$archive/.tmp" "$archive/target" "$archive/build"
+printf 'archive/\n' >> "$FIXTURE/.gitignore"
+printf '[package]\nname="archive"\nversion="0.1.0"\n[workspace]\n' > "$archive/Cargo.toml"
+printf 'pub fn source() {}\n' > "$archive/src/lib.rs"
+for cache in .tmp target build; do
+    printf 'pub fn stale() {}\n' > "$archive/$cache/stale.rs"
+done
+bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$archive/Cargo.toml" "$archive" > "$FIXTURE/archive.json"
+jq -e '.totals.total == 1 and (.files | length) == 1' "$FIXTURE/archive.json" >/dev/null
+# Neither explicit module paths nor Cargo targets may re-admit excluded output.
+admission="$FIXTURE/admission"
+mkdir -p "$admission/src" "$admission/.tmp" "$admission/old-output"
+printf '[package]\nname="admission"\nversion="0.1.0"\n[workspace]\n[[bin]]\nname="stale"\npath="old-output/main.rs"\n' > "$admission/Cargo.toml"
+printf '#[path="../old-output/hidden.rs"] mod hidden;\n#[path="../.tmp/hidden.rs"] mod scratch;\n' > "$admission/src/lib.rs"
+printf 'pub fn hidden() {}\n' > "$admission/old-output/hidden.rs"
+printf 'pub fn hidden() {}\n' > "$admission/.tmp/hidden.rs"
+printf 'fn main() {}\n' > "$admission/old-output/main.rs"
+bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$admission/Cargo.toml" "$admission" > "$FIXTURE/admission.json"
+jq -e '.totals.total == 2 and (.files | length) == 1 and (.files[0].path | endswith("/src/lib.rs"))' "$FIXTURE/admission.json" >/dev/null
 cp "$FIXTURE/crates/app/tests/integration.rs" "$FIXTURE/crates/app/tests/duplicate.rs"
 report > "$FIXTURE/duplicates.json"
 jq -e --slurpfile before "$FIXTURE/report.json" '.totals.tests == $before[0].totals.tests + 2 and .totals.total == $before[0].totals.total + 2' "$FIXTURE/duplicates.json" >/dev/null
@@ -330,5 +371,13 @@ jq -e '.totals.tests == 2 and (.files | length) == 2' "$FIXTURE/selected-tests.j
 for selector in missing-crate depth-fixture::missing depth-fixture::; do
     if bash "$ROOT/scripts/dev/cloc.sh" --manifest "$depth_root/Cargo.toml" "$selector" > "$FIXTURE/bad-selection" 2>&1; then exit 1; fi
 done
+# Deep inline modules and ordinary blocks must not exhaust Perl's call stack.
+perl -e 'print "mod nested {\n" x 150; print "fn deep() {\n", "{\n" x 150;
+    print "#[cfg(test)] mod tests { #[test] fn unit() {} }\n";
+    print "}\n" x 301' > "$depth_root/src/deep.rs"
+printf 'mod deep;\n' >> "$depth_root/src/lib.rs"
+bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$depth_root/Cargo.toml" "$depth_root" > "$FIXTURE/deep.json" 2> "$FIXTURE/deep.err"
+[[ ! -s "$FIXTURE/deep.err" ]]
+jq -e '[.files[] | select(.path | endswith("/src/deep.rs"))][0].counts | .tests == 1 and .library_app == 602 and .total == 603' "$FIXTURE/deep.json" >/dev/null
 echo 'LOC classification, source totals and module depth fixtures passed'
 fixture_complete=true
