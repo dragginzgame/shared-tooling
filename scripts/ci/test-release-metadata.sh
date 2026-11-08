@@ -345,13 +345,8 @@ if RELEASE_DATE=2026-10-07 bash "$ROOT/scripts/release/metadata.sh" preflight > 
 logging_root="$FIXTURE/logging"
 mkdir -p "$logging_root/scripts/ci"
 git init -q "$logging_root"
-bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$logging_root" scripts/ci/run-validation-targets.sh
+bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$logging_root" scripts/ci/run-validation-targets.sh make/consumer.mk
 cp "$ROOT/Makefile" "$logging_root/Makefile"
-mkdir -p "$logging_root/make"
-cp "$ROOT/make/consumer.mk" "$logging_root/make/"
-cp "$ROOT/make/tools.mk" "$logging_root/make/"
-cp "$ROOT/make/release.mk" "$logging_root/make/"
-cp "$ROOT/make/execution.mk" "$logging_root/make/"
 cat >> "$logging_root/Makefile" <<'MAKE'
 ci:
 	@test "$(RELEASE_VERSION)" = 0.1.1

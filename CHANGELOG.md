@@ -8,6 +8,8 @@
   minimal archive and crate-specific README. Add `make publish-check` and
   `make publish` through the existing publication adapter. Snapshot installation
   continues to require a Git-selected revision.
+- Track the marker crate's Cargo.lock to satisfy the shared dependency-pin gate
+  and locked publication commands.
 
 ## [0.32.0] - Unreleased
 

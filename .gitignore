@@ -1,6 +1,3 @@
 /.tools/
 /target/
 /ci/frontend/node_modules/
-
-# This dependency-free marker library has no release lockfile.
-/Cargo.lock
