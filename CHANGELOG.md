@@ -11,6 +11,12 @@
 - Track the marker crate's Cargo.lock to satisfy the shared dependency-pin gate
   and locked publication commands.
 
+### 🩹 Fixed
+
+- Qualify documentation exports against the Cargo version source and include the
+  referenced crate README and download-cache action; keep release logging fixtures
+  wired to the publication adapter's declared companion files.
+
 ## [0.32.0] - Unreleased
 
 ### ➕ Added

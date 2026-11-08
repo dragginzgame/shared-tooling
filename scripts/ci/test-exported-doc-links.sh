@@ -28,7 +28,7 @@ entrypoints+=(make/consumer.mk scripts/dev/cloc.sh)
 source_fixture="$fixture/source"
 mkdir "$source_fixture"
 bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$source_fixture" \
-    VERSION scripts/distribution/refresh-consumer.sh "${entrypoints[@]}"
+    Cargo.toml scripts/distribution/refresh-consumer.sh "${entrypoints[@]}"
 git -C "$source_fixture" init -q
 git -C "$source_fixture" remote add origin https://github.com/dragginzgame/shared-tooling
 git -C "$source_fixture" -c core.hooksPath=/dev/null add .
