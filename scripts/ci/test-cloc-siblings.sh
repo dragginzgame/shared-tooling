@@ -28,7 +28,12 @@ $(error consumer Makefiles must never execute for LOC reporting)
 MAKE
 done
 report() { bash "$ROOT/scripts/dev/cloc.sh" "$@"; }
-report "$parent" > "$FIXTURE/summary"
+report "$parent" > "$FIXTURE/summary" 2> "$FIXTURE/progress"
+[[ "$(wc -l < "$FIXTURE/progress" | tr -d ' ')" == 0 ]]
+perl -0777 -e 'local $/; $_=<>; /\r +\r\z/ or exit 1' "$FIXTURE/progress"
+tr '\r' '\n' < "$FIXTURE/progress" > "$FIXTURE/progress-lines"
+grep -F 'cloc: scanning 1/3 .notes' "$FIXTURE/progress-lines" >/dev/null
+grep -F 'cloc: scanning 3/3 zeta' "$FIXTURE/progress-lines" >/dev/null
 (unset TMPDIR RUNNER_TEMP; report "$parent") > "$FIXTURE/default-scratch"
 cmp "$FIXTURE/summary" "$FIXTURE/default-scratch"
 [[ -d "$ROOT/target/tmp" && ! -d "$parent/target" ]]
@@ -38,6 +43,10 @@ cmp "$FIXTURE/summary" "$FIXTURE/relative-scratch"
 [[ -d "$FIXTURE/relative scratch" && ! -e "$parent/zeta/relative scratch" ]]
 report -d 0 "$parent" > "$FIXTURE/expanded"
 report -d 1 "$parent" > "$FIXTURE/modules"
+grep -E '^alpha repo ' "$FIXTURE/expanded" >/dev/null
+grep -E '^zeta ' "$FIXTURE/modules" >/dev/null
+if grep -F '[w]' "$FIXTURE/modules"; then exit 1; fi
+if LC_ALL=C grep -q $'\033' "$FIXTURE/modules"; then exit 1; fi
 if grep -Eq '\(root\)|\(self\)' "$FIXTURE/modules"; then exit 1; fi
 [[ "$(awk 'END {print $2,$3,$4,$5,$6,$7,$8}' "$FIXTURE/modules")" == '2 4 0 0 0 0 6' ]]
 [[ "$(awk 'END {print $2,$3,$4,$5,$6,$7,$8}' "$FIXTURE/summary")" == '2 4 0 0 0 0 6' ]]

@@ -293,6 +293,7 @@ printf '#[cfg(test)] mod tests;\n' >> "$depth_root/src/lib.rs"
 printf '#[test] fn unit() {}\n' > "$depth_root/src/tests.rs"
 for depth in 0 1 2 3 999999; do
     bash "$ROOT/scripts/dev/cloc.sh" -d "$depth" --manifest "$depth_root/Cargo.toml" "$depth_root" > "$FIXTURE/depth-$depth"
+    grep -Eq '^depth +5 +3 +0 +0 +0 +0 +8$' "$FIXTURE/depth-$depth"
     grep -Eq '^  depth-fixture +5 +3 +0 +0 +0 +0 +8$' "$FIXTURE/depth-$depth"
     if grep -Eq '\(root\)|\(self\)|\.rs |/ ' "$FIXTURE/depth-$depth"; then exit 1; fi
 done

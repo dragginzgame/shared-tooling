@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.31.12] - Unreleased
+
+### 🔧 Changed
+
+- Show sibling LOC scanning on one updating line with a repository progress
+  counter that clears before the table. Colour all workspace names (including
+  non-Cargo repositories) green, crates blue
+  and modules white in terminals, without markers. Keep redirected/NO_COLOR output
+  plain and preserve diagnostics.
+
 ## [0.31.11] - Unreleased
 
 ### 🔧 Changed
