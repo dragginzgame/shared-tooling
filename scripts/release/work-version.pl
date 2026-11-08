@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Shared companions: scripts/ci/StableVersion.pm scripts/ci/validate-release-inputs.pl
+# Shared companions: scripts/ci/shared-package-version.pl scripts/ci/StableVersion.pm scripts/ci/validate-release-inputs.pl
 use strict;
 use warnings;
 use FindBin qw($RealBin);
@@ -8,7 +8,7 @@ use StableVersion qw(stable version_cmp);
 use File::Temp qw(tempdir);
 use File::Copy qw(copy);
 
-# VERSION-backed repositories only. Cargo release groups retain their own owner.
+# Shared Tooling root package only. Consumer release groups retain their own owner.
 my ($operation, $kind) = @ARGV;
 defined($operation) && (($operation =~ /\A(?:base|check)\z/ && @ARGV == 1) ||
     ($operation eq 'prepare' && @ARGV == 2 && $kind =~ /\A(?:patch|minor|major)\z/))
@@ -28,9 +28,18 @@ sub write_file {
     print {$file} $text or die "write $path: $!\n";
     close $file or die "close $path: $!\n";
 }
-my $version = read_file('VERSION');
-$version =~ s/\n\z//;
-stable($version) or die "invalid VERSION\n";
+sub manifest_version {
+    my ($text)=@_;
+    # Delegate the exact root-manifest convention to the shared reader.
+    require IPC::Open2;
+    my $pid=IPC::Open2::open2(my $out,my $in,$^X,"$RealBin/../ci/shared-package-version.pl",'-');
+    print {$in} $text; close $in or die "write manifest reader: $!\n";
+    local $/; my $value=<$out>; close $out; waitpid($pid,0);
+    $?==0 or die "invalid package manifest\n";
+    $value =~ s/\n\z//; return $value;
+}
+my $manifest=read_file('Cargo.toml');
+my $version=manifest_version($manifest);
 my $notes = read_file('CHANGELOG.md');
 my @headings = $notes =~ /^(##[ \t]+[^\n]*)/mg;
 @headings or die "missing changelog version\n";
@@ -43,13 +52,17 @@ if ($pending && $operation ne 'check') {
     my $ref = 'refs/remotes/origin/main';
     my $status = system 'git', 'show-ref', '--verify', '--quiet', $ref;
     if ($status == 0) {
-        open my $remote, '-|', 'git', 'show', "$ref:VERSION"
-            or die "read pushed VERSION: $!\n";
+        open my $tree,'-|','git','ls-tree','--name-only',$ref,'--','Cargo.toml' or die "inspect pushed version source: $!\n";
+        my $entry=<$tree>; close $tree or die "cannot inspect pushed manifest\n";
+        my $version_path=defined($entry) ? 'Cargo.toml' : 'VERSION';
+        open my $remote, '-|', 'git', 'show', "$ref:$version_path"
+            or die "read pushed package.version: $!\n";
         local $/;
         my $pushed = <$remote>;
-        close $remote or die "cannot read pushed VERSION\n";
+        close $remote or die "cannot read pushed package.version\n";
+        $pushed = manifest_version($pushed) if $version_path eq 'Cargo.toml';
         $pushed =~ s/\n\z//;
-        stable($pushed) or die "invalid pushed VERSION\n";
+        stable($pushed) or die "invalid pushed package.version\n";
         $pending = 0 if $pushed eq $top;
     } elsif ($status != 256) {
         die "cannot inspect pushed version reference\n";
@@ -59,10 +72,10 @@ my $base = $version;
 if ($pending && $top eq $version) {
     my ($previous) = ($headings[1] // '') =~ /\A##[ \t]+\[([^]]+)\]/;
     defined($previous) && stable($previous) && version_cmp($version, $previous) > 0
-        or die "pending VERSION requires an older changelog release\n";
+        or die "pending package.version requires an older changelog release\n";
     $base = $previous;
 }
-$top eq $version or die "VERSION $version disagrees with changelog $top\n";
+$top eq $version or die "package.version $version disagrees with changelog $top\n";
 if ($operation eq 'base') {
     print "$base\n";
     exit;
@@ -102,18 +115,22 @@ $tag_status == 256 or die $tag_status == 0
     : "cannot inspect candidate tag\n";
 my $scratch = tempdir('work-version.XXXXXX', DIR => $git_dir, CLEANUP => 0);
 eval {
-    for my $path ('CHANGELOG.md', 'VERSION') {
+    for my $path ('CHANGELOG.md', 'Cargo.toml') {
         copy($path, "$scratch/original-$path") or die "save $path: $!\n";
     }
     write_file("$scratch/candidate-CHANGELOG.md", $notes);
-    write_file("$scratch/candidate-VERSION", "$candidate\n");
-    for my $path ('CHANGELOG.md', 'VERSION') {
+    my $candidate_manifest=$manifest;
+    $candidate_manifest =~ s/^(version[ \t]*=[ \t]*")\Q$version\E(")/$1$candidate$2/m
+        or die "cannot update package.version\n";
+    manifest_version($candidate_manifest) eq $candidate or die "candidate manifest disagrees\n";
+    write_file("$scratch/candidate-Cargo.toml", $candidate_manifest);
+    for my $path ('CHANGELOG.md', 'Cargo.toml') {
         copy("$scratch/candidate-$path", "$scratch/$path") or die "copy $path: $!\n";
         rename "$scratch/$path", $path or die "replace $path: $!\n";
     }
     1;
 } or die "$@Work-version evidence retained: $scratch\n";
-for my $path ('CHANGELOG.md', 'VERSION') {
+for my $path ('CHANGELOG.md', 'Cargo.toml') {
     unlink "$scratch/original-$path", "$scratch/candidate-$path";
 }
 rmdir $scratch or die "remove completed scratch $scratch: $!\n";

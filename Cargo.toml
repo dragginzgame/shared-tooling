@@ -1,0 +1,14 @@
+[package]
+name = "toko-tooling"
+version = "0.32.0"
+edition = "2024"
+rust-version = "1.99.1"
+license = "MIT"
+description = "Version marker for the Dragginzgame shared development tooling"
+repository = "https://github.com/dragginzgame/shared-tooling"
+publish = false
+
+# Cargo tracks the selected tooling revision. Installation remains explicit:
+# make shared-tooling-install refreshes scripts and prepares the pinned tools.
+[lib]
+path = "src/lib.rs"

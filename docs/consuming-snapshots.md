@@ -78,6 +78,72 @@ release checks; qualify the deployment dependency boundary and report any
 remaining enforcement gaps." Registry publication remains a separate fact;
 neither role labels nor cached build success establishes it.
 
+## Cargo selection and installation
+
+Shared Tooling's Cargo package is `toko-tooling`; its root `[package].version`
+is the sole current version source. It is a dependency-free `no_std` marker
+library with no build script. Keep it in a private tooling package's
+`[dev-dependencies]`, outside published/runtime dependency graphs:
+
+```toml
+[dev-dependencies]
+toko-tooling = { git = "https://github.com/dragginzgame/shared-tooling", branch = "main" }
+```
+
+Declaring it only in `[workspace.dependencies]` does not select it: a member must
+inherit it. Use a private tooling/qualification member so it does not become a
+public library dependency or impose a new version constraint on public releases.
+The package remains Git-distributed (`publish = false`); no crates.io publication
+or repository rename is part of this adoption.
+
+```bash
+make shared-tooling-status
+make shared-tooling-update       # cargo update -p toko-tooling, then install
+# After a separate cargo update:
+make shared-tooling-install      # install exactly the Cargo.lock selection
+```
+
+`Cargo.lock` owns the Git commit and package version; `.shared-tooling.snapshot`
+records the actually installed commit, version and file checksums. The offline
+`make shared-tooling-check` rejects disagreement and directs the caller to
+install. It never installs during a check. An intentional older selection uses
+`cargo update -p toko-tooling --precise COMMIT` followed by installation. Do not
+edit the snapshot's version annotation to disguise missing installation.
+
+Commands use the normal sibling `../shared-tooling` checkout; override with
+`SHARED_TOOLING_SOURCE=/path/to/shared-tooling`. Online status/update/install
+verify its origin, fetch `origin/main` objects/tracking and freeze the selected
+commit without switching, resetting or stashing the checkout. Status reports
+installed/latest/selected identities and local integrity; it changes no consumer
+files. “Latest pushed” does not claim hosted qualification. A network failure
+is reported rather than presenting stale information as latest.
+
+Installation uses the transactional exporter, preserves recorded entrypoints
+and consumer-owned files, and refuses local conflicts. It then runs
+`make install-tools` and `make tools-check`, reusing verified tools. If setup
+fails, the installed snapshot remains and adoption is reported incomplete.
+No command commits, publishes, deploys or runs broad product tests. Perform
+focused caller validation for relevant behavior changes.
+
+Non-Cargo consumers retain the same commands and snapshot ownership; updates
+select latest pushed main, or `SHARED_TOOLING_VERSION=X.Y.Z`. Version selection
+uses the newest first-parent main commit with that version. That override refuses
+when Cargo already owns the selection. Historical pre-0.32 source versions can
+still be read from their committed `VERSION`; current sources use `Cargo.toml`.
+
+After 0.32 is pushed, existing consumers bootstrap once from the updated normal
+Shared checkout:
+
+```bash
+bash ../shared-tooling/scripts/dev/shared-tooling.sh update --consumer "$PWD"
+```
+
+Consumers selecting `make/consumer.mk` acquire these targets via its companion
+closure. Other integrations must adopt that entrypoint or call the helper.
+First adoption without any snapshot still uses `refresh-consumer.sh` with
+explicit entrypoints. The executing exporter/helpers must be committed and
+unmodified; unrelated source work is preserved.
+
 ## Upgrade impact
 
 Adopt a snapshot for an applicable fix, a needed capability or an explicitly
@@ -99,7 +165,7 @@ required; branches, tags, abbreviated IDs and unavailable objects refuse. Git
 replacement refs cannot substitute another tree. No fetch, stash, branch switch,
 index update or source checkout is performed.
 
-The executing exporter and its three helpers must match their own committed
+The executing exporter and its version reader and integrity helpers must match their own committed
 HEAD in bytes and executable mode. Dirty execution files refuse before helpers
 run or consumer files change; unrelated dirty source files are allowed. Admitted
 helpers run from private committed copies, independently of the payload revision.
@@ -284,10 +350,10 @@ payload hashes/modes and required integrity tools, refresh proves prior ownershi
 against committed source, and fleet reporting checks source attribution and drift.
 Each caller uses its own reviewed reader, never a helper from an inspected repo.
 
-Refresh also writes a `# version<TAB>X.Y.Z` annotation from `VERSION` at that
+Refresh also writes a `# version<TAB>X.Y.Z` annotation from `[package].version` in `Cargo.toml` at that
 exact source commit. The committed file must contain a canonical stable version;
 the exporter never reads its display version from mutable working-tree bytes or
-changes the consumer's own `VERSION`. This descriptive annotation keeps the
+changes the consumer's own package version. This descriptive annotation keeps the
 existing v1 integrity records intact and is understood by the current verifier
 and fleet report. A snapshot without it displays `unrecorded`; its next refresh
 records the selected source version. Malformed or duplicate version annotations
@@ -297,8 +363,8 @@ The commit remains the exact source identity: several commits can carry the same
 version, and an annotation does not prove a release tag or publication. Local
 verification checks files against the reviewed manifest, not the truth of its
 source claims against GitHub. The annotation is not a second version selection
-to edit independently. Review the manifest with its snapshot refresh; no Cargo
-dependency or duplicate Cargo metadata is needed.
+to edit independently. Cargo selects the tooling dependency; the snapshot records
+installed bytes. The offline check requires both identities to agree.
 
 Use `--manifest <relative-path>` to choose a different manifest location. Its
 parent directories are created before consumer files are replaced. Pass the

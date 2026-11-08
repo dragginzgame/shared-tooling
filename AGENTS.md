@@ -15,7 +15,7 @@ monitoring or an added release gate.
 For meaningful new work, run `make prepare-work` and add the batch's notes to
 the selected pending entry. Use `WORK_VERSION_KIND=minor` or `major` when the
 compatibility assessment requires it. The helper reuses a pending version and
-keeps `VERSION` aligned; `make check-version` validates the pair without edits.
+keeps root `Cargo.toml` package.version aligned; `make check-version` validates the pair without edits.
 A push to `origin/main` consumes that version even if its heading still says
 `Unreleased`. The helper uses local remote-tracking evidence. When the user says
 the version was pushed, treat it as delivered; refresh stale remote evidence

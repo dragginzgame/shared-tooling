@@ -219,7 +219,7 @@ fixtures and checks; documentation-only changes use `make check-doc-links` and
 `git diff --check`. `make ci`, `make test-portable` and `make check-shell` are
 aggregate gates for releases or explicit full-check requests.
 
-`make version` reads [VERSION](VERSION); the top undated [changelog](CHANGELOG.md)
+`make version` reads package.version in [Cargo.toml](Cargo.toml); the top undated [changelog](CHANGELOG.md)
 entry describes pending work and does not prove publication. Tags establish
 release identity. Releases and recovery follow the [release contract](docs/releases.md).
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/shared-companions.sh
+# Shared companions: scripts/ci/shared-package-version.pl scripts/ci/shared-companions.sh
 set -euo pipefail
 
 SCRIPT_ROOT="${BASH_SOURCE[0]}"
@@ -271,7 +271,7 @@ if [[ -n "$requested_revision" ]]; then
     esac
     EXECUTION_DIR="$(mktemp -d "$execution_tmp/shared-tooling-execution.XXXXXX")"
     for path in scripts/distribution/refresh-consumer.sh scripts/ci/shared-companions.sh \
-        scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh; do
+        scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh scripts/ci/shared-package-version.pl; do
         execution_entry="$(git -C "$SCRIPT_ROOT" --literal-pathspecs ls-tree "$execution_revision" -- "$path")" || fail "cannot inspect execution source: $path"
         execution_mode="${execution_entry%% *}"
         [[ "$execution_mode" == 100644 || "$execution_mode" == 100755 ]] || fail "execution source must be a committed regular file: $path"
@@ -295,15 +295,20 @@ fi
 # shellcheck source=scripts/ci/shared-companions.sh
 source "$SCRIPT_ROOT/scripts/ci/shared-companions.sh"
 [[ "$source_revision" =~ ^([0-9a-f]{40}|[0-9a-f]{64})$ ]] || fail "source revision is malformed"
-# Read the display version from the same immutable source as the payload, never
-# the working tree or the consumer's own VERSION. Preserve invalid extra lines.
-committed_mode "$source_revision" VERSION >/dev/null || fail "source VERSION must be a committed regular file"
-source_version="$(git -C "$SOURCE_ROOT" cat-file blob "$source_revision:VERSION" && printf '.')" ||
-    fail "cannot read committed source VERSION"
-source_version="${source_version%.}"
-source_version="${source_version%$'\n'}"
-[[ "$source_version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] ||
-    fail "source VERSION must contain a canonical stable version"
+# Read the version from the same immutable source as the payload. VERSION is
+# accepted only when exporting historical pre-Cargo commits, never as a second
+# current version source when Cargo.toml exists.
+if git -C "$SOURCE_ROOT" cat-file -e "$source_revision:Cargo.toml" 2>/dev/null; then
+    committed_mode "$source_revision" Cargo.toml >/dev/null || fail "source Cargo.toml must be a committed regular file"
+    source_version="$(git -C "$SOURCE_ROOT" cat-file blob "$source_revision:Cargo.toml" |
+        perl "$SCRIPT_ROOT/scripts/ci/shared-package-version.pl" -)" || fail "invalid committed package.version"
+else
+    committed_mode "$source_revision" VERSION >/dev/null || fail "historical source VERSION must be a committed regular file"
+    source_version="$(git -C "$SOURCE_ROOT" cat-file blob "$source_revision:VERSION" && printf '.')" || fail "cannot read historical VERSION"
+    source_version="${source_version%.}"
+    source_version="${source_version%$'\n'}"
+fi
+[[ "$source_version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || fail "source version must be canonical stable SemVer"
 source_remote="$(git -C "$SOURCE_ROOT" remote get-url origin)" ||
     fail "source checkout has no origin remote"
 [[ -n "$source_remote" ]] || fail "source origin remote is empty"

@@ -12,7 +12,7 @@ export GIT_OPTIONAL_LOCKS=0
 source_root="$FIXTURE/source"
 consumer="$FIXTURE/consumer"
 exporter=scripts/distribution/refresh-consumer.sh
-helpers=(scripts/ci/shared-companions.sh scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh)
+helpers=(scripts/ci/shared-package-version.pl scripts/ci/shared-companions.sh scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh)
 mkdir -p "$source_root/scripts/ci" "$source_root/scripts/distribution" "$consumer"
 git init -q "$source_root"
 git -C "$source_root" config user.name 'Snapshot fixture'

@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.32.0] - Unreleased
+
+### ➕ Added
+
+- Add the dependency-free `toko-tooling` Cargo marker package. Git dev-dependencies
+  in private tooling members track the exact selected version/commit in Cargo.lock.
+- Add status/update/install commands: report installed/latest/selected identities,
+  update only toko-tooling, or install exactly the locked revision. Installation
+  preserves consumer edits and prepares/checks pinned tools; offline snapshot
+  checks reject a different Cargo selection.
+
+### 🔧 Changed
+
+- Replace root VERSION with Cargo.toml package.version as the sole current version
+  source. Work preparation, release metadata and snapshot export use the manifest;
+  historical pre-Cargo source commits remain readable for explicit old snapshots.
+- Require agents to run shared-tooling-install after Cargo updates change
+  toko-tooling. Installation remains explicit, outside builds/checks; unrelated
+  dependency updates do not trigger it. No publication or sibling migration occurs.
+
 ## [0.31.12] - Unreleased
 
 ### 🔧 Changed

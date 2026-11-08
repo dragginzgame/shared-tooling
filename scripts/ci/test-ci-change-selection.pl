@@ -137,6 +137,16 @@ restore_version_base(); unlink 'VERSION' or die $!; my $absent_base=commit();
 bump(); is(version_scope($absent_base,commit()),'full','introducing VERSION requires full CI');
 restore_version_base(); bump();
 is(version_scope($version_base,commit()),'docs','valid input recovers after rejected cases');
+# Cargo version-only edits may use the same cheap path, but other metadata may not.
+restore_version_base();
+unlink 'VERSION' or die $!;
+write_file('Cargo.toml',"[package]\nname = \"toko-tooling\"\nversion = \"0.1.0\"\n");
+my $cargo_base=commit();
+write_file('Cargo.toml',"[package]\nname = \"toko-tooling\"\nversion = \"0.1.1\"\n");
+write_file('CHANGELOG.md',"# Changelog\n\n## [0.1.1] - Unreleased\n\n## [0.1.0]\n");
+is(version_scope($cargo_base,commit()),'docs','Cargo literal version-only change');
+write_file('Cargo.toml',"[package]\nname = \"different\"\nversion = \"0.1.1\"\n");
+is(version_scope($cargo_base,commit()),'full','Cargo metadata change keeps full CI');
 done_testing();
 # Retain failures; remove only this fixture after a successful assertion set.
 if (Test::More->builder->is_passing) { chdir '/'; require File::Path; File::Path::remove_tree($fixture); }

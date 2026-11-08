@@ -108,7 +108,7 @@ exec bash "${BASH_SOURCE[0]%/*}/fixture-metadata.sh" "$@"
 METADATA
 # Start from prepared pending work, with history supplying the release base.
 # An obsolete mismatched pair refuses before the setup ordering under test.
-printf '0.1.1\n' > "$consumer/VERSION"
+printf '[package]\nname = "toko-tooling"\nversion = "0.1.1"\n' > "$consumer/Cargo.toml"
 printf '# Changelog\n\n## [0.1.1] - Unreleased\n\n- Fixture release.\n\n## [0.1.0] - 2026-10-18\n\n- Previous release.\n' > "$consumer/CHANGELOG.md"
 git init --quiet "$consumer"
 git -C "$consumer" symbolic-ref HEAD refs/heads/main
@@ -156,7 +156,7 @@ for mode in ic-preflight install check success; do
         fi
     fi
     [[ "$(git -C "$consumer" rev-parse HEAD)" == "$source_commit" &&
-       "$(cat "$consumer/VERSION")" == 0.1.1 && -z "$(git -C "$consumer" tag --list)" ]] || exit 1
+       "$(perl "$ROOT/scripts/ci/shared-package-version.pl" "$consumer/Cargo.toml")" == 0.1.1 && -z "$(git -C "$consumer" tag --list)" ]] || exit 1
 done
 # Standalone preflight admits only; no preparation authority escapes the adapter.
 : > "$EDITOR_SETUP_EVENTS"
@@ -179,13 +179,13 @@ make --no-print-directory -C "$consumer" release-resume VERSION=0.1.1 \
     > "$fixture/prepare-retry.log" 2>&1 || status=$?
 [[ "$status" != 0 && "$(wc -l < "$EDITOR_SETUP_EVENTS")" -eq 4 ]] || exit 1
 [[ "$(git -C "$consumer" rev-parse HEAD)" == "$source_commit" &&
-   "$(cat "$consumer/VERSION")" == 0.1.1 && -z "$(git -C "$consumer" tag --list)" ]] || exit 1
+   "$(perl "$ROOT/scripts/ci/shared-package-version.pl" "$consumer/Cargo.toml")" == 0.1.1 && -z "$(git -C "$consumer" tag --list)" ]] || exit 1
 [[ -z "$(git --git-dir="$fixture/destination.git" for-each-ref --format='%(refname)')" ]] || exit 1
 # PR qualification prepares the exact merged source before its new gate. The
 # standalone form only checks; a selected old commit must not prepare tools.
-printf '0.1.1\n' > "$consumer/VERSION"
+printf '[package]\nname = "toko-tooling"\nversion = "0.1.1"\n' > "$consumer/Cargo.toml"
 printf '# Changelog\n\n## [0.1.1] - 2026-10-19\n\n- Fixture release.\n' > "$consumer/CHANGELOG.md"
-git -C "$consumer" add -- VERSION CHANGELOG.md
+git -C "$consumer" add -- Cargo.toml CHANGELOG.md
 git -C "$consumer" -c user.name=Fixture -c user.email=fixture@example.invalid \
     -c core.hooksPath=/dev/null -c commit.gpgSign=false commit --quiet -m 'Fixture merged metadata'
 merged_commit="$(git -C "$consumer" rev-parse HEAD)"
@@ -206,7 +206,7 @@ SHARED_RELEASE_PREPARE_TOOLS=1 make --no-print-directory -C "$consumer" release-
 # Even without intent, finalized notes plus old VERSION indicate interrupted
 # preparation. Preserve the saved plan while qualifying that conservative check.
 mv "$consumer/.git/release-state/0.1.1.plan" "$fixture/original.plan"
-printf '0.1.0\n' > "$consumer/VERSION"
+printf '[package]\nname = "toko-tooling"\nversion = "0.1.0"\n' > "$consumer/Cargo.toml"
 : > "$EDITOR_SETUP_EVENTS"
 SHARED_RELEASE_PREPARE_TOOLS=1 make --no-print-directory -C "$consumer" release-preflight \
     RELEASE_PREVIOUS=0.1.0 RELEASE_VERSION=0.1.1 RELEASE_DATE=2026-10-19 \

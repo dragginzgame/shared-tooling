@@ -36,7 +36,7 @@ release-patch release-minor release-major release-resume: export RELEASE_VERSION
 
 help:
 	@echo "Current local version: make version"
-	@echo "Prepare/reuse pending notes and VERSION: make prepare-work [WORK_VERSION_KIND=patch|minor|major]"
+	@echo "Prepare/reuse pending notes and Cargo.toml: make prepare-work [WORK_VERSION_KIND=patch|minor|major]"
 	@echo "Repeatable maintenance catalog: make tasks"
 	@echo "Sibling Rust LOC summaries: make cloc [CLOC_PARENT=/path/to/projects]"
 	@echo "Toko stack README diagram: stack-graph, check-stack-graph [STACK_PARENT=/path/to/projects]"
@@ -131,7 +131,7 @@ release-prepared-check:
 	@bash scripts/release/metadata.sh check
 
 release-files:
-	@printf 'VERSION\0CHANGELOG.md\0'
+	@printf 'Cargo.toml\0CHANGELOG.md\0'
 
 release-commit-check:
 	@bash scripts/release/metadata.sh commit-check

@@ -33,27 +33,29 @@ chmod +x "$FIXTURE/tool-make"
 export RELEASE_MAKE="$FIXTURE/tool-make"
 export RELEASE_PREVIOUS=0.1.0 RELEASE_VERSION=0.1.1 RELEASE_DATE=2026-10-06
 export RELEASE_COMMIT=''
+set_version() { printf '[package]\nname = "toko-tooling"\nversion = "%s"\n' "$1" > Cargo.toml; }
+get_version() { perl "$ROOT/scripts/ci/shared-package-version.pl" "$1"; }
 # Ordinary work prepares both files once and carries notes when promoted.
-printf '0.1.0\n' > VERSION
+set_version 0.1.0
 printf '# Changelog\n\n## [0.1.0]\n\n- Preserved history.\n' > CHANGELOG.md
 perl "$ROOT/scripts/release/work-version.pl" prepare patch > "$FIXTURE/work-version"
-[[ "$(cat VERSION)" == 0.1.1 && "$(cat "$FIXTURE/work-version")" == 0.1.1 ]]
+[[ "$(get_version Cargo.toml)" == 0.1.1 && "$(cat "$FIXTURE/work-version")" == 0.1.1 ]]
 [[ "$(perl "$ROOT/scripts/release/work-version.pl" base)" == 0.1.0 ]]
 perl "$ROOT/scripts/release/work-version.pl" check
-printf '0.1.0\n' > VERSION
+set_version 0.1.0
 if perl "$ROOT/scripts/release/work-version.pl" base > "$FIXTURE/misaligned-base.log" 2>&1; then exit 1; fi
-printf '0.1.1\n' > VERSION
+set_version 0.1.1
 cp CHANGELOG.md "$FIXTURE/work-notes"
 perl "$ROOT/scripts/release/work-version.pl" prepare patch > /dev/null
 cmp CHANGELOG.md "$FIXTURE/work-notes"
 printf '# Changelog\n\n## [0.1.1] - Unreleased\n\n- New work.\n\n## [0.1.0]\n\n- Preserved history.\n' > CHANGELOG.md
 perl "$ROOT/scripts/release/work-version.pl" prepare minor > /dev/null
-[[ "$(cat VERSION)" == 0.2.0 ]]
+[[ "$(get_version Cargo.toml)" == 0.2.0 ]]
 rg -F -- '- New work.' CHANGELOG.md > /dev/null
 cp CHANGELOG.md "$FIXTURE/promoted-notes"
 perl "$ROOT/scripts/release/work-version.pl" prepare patch > /dev/null
 cmp CHANGELOG.md "$FIXTURE/promoted-notes"
-[[ "$(cat VERSION)" == 0.2.0 ]]
+[[ "$(get_version Cargo.toml)" == 0.2.0 ]]
 
 # A tagged candidate cannot be silently relabelled or reused as pending work.
 git -c core.hooksPath=/dev/null tag v0.2.0 HEAD
@@ -62,34 +64,34 @@ if perl "$ROOT/scripts/release/work-version.pl" prepare patch > "$FIXTURE/tagged
 fi
 rg -F 'already tagged' "$FIXTURE/tagged-work.log" > /dev/null
 cmp CHANGELOG.md "$FIXTURE/promoted-notes"
-[[ "$(cat VERSION)" == 0.2.0 ]]
+[[ "$(get_version Cargo.toml)" == 0.2.0 ]]
 git -c core.hooksPath=/dev/null tag -d v0.2.0 > /dev/null
 
 # Drift is rejected before writes; inspection never repairs it implicitly.
-printf '0.1.0\n' > VERSION
+set_version 0.1.0
 for operation in check 'prepare patch'; do
     read -r -a arguments <<< "$operation"
     if perl "$ROOT/scripts/release/work-version.pl" "${arguments[@]}" > "$FIXTURE/drift.log" 2>&1; then
         echo 'work version accepted inconsistent notes' >&2; exit 1
     fi
     cmp CHANGELOG.md "$FIXTURE/promoted-notes"
-    [[ "$(cat VERSION)" == 0.1.0 ]]
+    [[ "$(get_version Cargo.toml)" == 0.1.0 ]]
 done
 
 # Pushing main consumes a pending version even without a tag or dated heading.
 saved_main="$(git rev-parse refs/remotes/origin/main)"
-printf '0.1.1\n' > VERSION
+set_version 0.1.1
 printf '# Changelog\n\n## [0.1.1] - Unreleased\n\n- Delivered notes.\n\n## [0.1.0]\n' > CHANGELOG.md
-git add -- VERSION CHANGELOG.md
+git add -- Cargo.toml CHANGELOG.md
 pushed_tree="$(git write-tree)"
 pushed_commit="$(printf 'fixture pushed version\n' | git -c user.name=Fixture -c user.email=fixture@example.invalid commit-tree "$pushed_tree" -p HEAD)"
 # A local commit alone must not consume the pending version.
 perl "$ROOT/scripts/release/work-version.pl" prepare patch > /dev/null
-[[ "$(cat VERSION)" == 0.1.1 ]]
+[[ "$(get_version Cargo.toml)" == 0.1.1 ]]
 git update-ref refs/remotes/origin/main "$pushed_commit"
 [[ "$(perl "$ROOT/scripts/release/work-version.pl" base)" == 0.1.1 ]]
 perl "$ROOT/scripts/release/work-version.pl" prepare patch > /dev/null
-[[ "$(cat VERSION)" == 0.1.2 ]]
+[[ "$(get_version Cargo.toml)" == 0.1.2 ]]
 rg -Fx '## [0.1.1] - Unreleased' CHANGELOG.md > /dev/null
 rg -Fx -- '- Delivered notes.' CHANGELOG.md > /dev/null
 cp CHANGELOG.md "$FIXTURE/after-push-notes"
@@ -105,8 +107,8 @@ if [[ ${1:-} == --work-version-only ]]; then
     exit
 fi
 
-# A prepared VERSION still needs notes finalization, including retry.
-printf '0.1.1\n' > VERSION
+# A prepared Cargo.toml still needs notes finalization, including retry.
+set_version 0.1.1
 printf '# Changelog\n\n## [0.1.1] - Unreleased\n\n- New work.\n\n## [0.1.0]\n\n- Preserved history.\n' > CHANGELOG.md
 cp CHANGELOG.md "$FIXTURE/prepared-pending"
 bash "$ROOT/scripts/release/metadata.sh" preflight
@@ -116,10 +118,10 @@ bash "$ROOT/scripts/release/metadata.sh" check
 cp CHANGELOG.md "$FIXTURE/prepared-finalized"
 bash "$ROOT/scripts/release/metadata.sh" prepare
 cmp CHANGELOG.md "$FIXTURE/prepared-finalized"
-[[ "$(cat VERSION)" == 0.1.1 ]]
+[[ "$(get_version Cargo.toml)" == 0.1.1 ]]
 [[ "$(perl "$ROOT/scripts/release/work-version.pl" base)" == 0.1.1 ]]
 
-printf '0.1.0\n' > VERSION
+set_version 0.1.0
 cat > CHANGELOG.md <<'NOTES'
 # Changelog
 
@@ -141,37 +143,38 @@ for heading in '## [0.1.1] - Unreleased' $'##\t[0.1.1]  -\tUnreleased'; do
     cp CHANGELOG.md "$FIXTURE/unreleased-notes"
     bash "$ROOT/scripts/release/metadata.sh" preflight
     cmp CHANGELOG.md "$FIXTURE/unreleased-notes"
-    [[ "$(cat VERSION)" == 0.1.0 ]] || exit 1
+    [[ "$(get_version Cargo.toml)" == 0.1.0 ]] || exit 1
     bash "$ROOT/scripts/release/metadata.sh" prepare
     printf '# Changelog\n\n## [0.1.1] - 2026-10-06\n\n- Pending change.\n' > "$FIXTURE/dated-notes"
     cmp CHANGELOG.md "$FIXTURE/dated-notes"
-    [[ "$(cat VERSION)" == 0.1.1 ]] || exit 1
+    [[ "$(get_version Cargo.toml)" == 0.1.1 ]] || exit 1
     bash "$ROOT/scripts/release/metadata.sh" check
-    printf '0.1.0\n' > VERSION
+    set_version 0.1.0
 done
 cp "$FIXTURE/pending-notes" CHANGELOG.md
 
 # Invalid identity must stop every preparation path before changing either file.
 for bad in invalid-version 01.1.0 0.1.0-beta; do
-    printf '%s\n' "$bad" > VERSION
+    set_version "$bad"
+    cp Cargo.toml "$FIXTURE/invalid-manifest"
     for operation in preflight prepare; do
         if bash "$ROOT/scripts/release/metadata.sh" "$operation" > "$FIXTURE/invalid-$operation.log" 2>&1; then
             echo 'release metadata test failed: invalid version accepted' >&2; exit 1
         fi
-        [[ "$(cat VERSION)" == "$bad" ]] || exit 1
+        cmp Cargo.toml "$FIXTURE/invalid-manifest" || exit 1
         cmp CHANGELOG.md "$FIXTURE/pending-notes"
     done
 done
-printf '0.1.0\n' > VERSION
+set_version 0.1.0
 
 # A read failure must not turn a partial, version-shaped value into an identity.
 mkdir "$FIXTURE/read-failure-bin"
-cat > "$FIXTURE/read-failure-bin/cat" <<'STUB'
+cat > "$FIXTURE/read-failure-bin/perl" <<'STUB'
 #!/usr/bin/env bash
 printf '0.1.0\n'
 exit 9
 STUB
-chmod +x "$FIXTURE/read-failure-bin/cat"
+chmod +x "$FIXTURE/read-failure-bin/perl"
 if PATH="$FIXTURE/read-failure-bin:$PATH" bash "$ROOT/scripts/release/metadata.sh" preflight \
     > "$FIXTURE/read-failure.log" 2>&1; then
     echo 'release metadata test failed: partial version read passed preflight' >&2
@@ -228,15 +231,15 @@ METADATA_REAL_RM="$(command -v rm)"
 cat > "$FIXTURE/failure-bin/cp" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
-if [[ "$METADATA_FAILURE" == stage && "$*" == *'/candidate/VERSION '* ]]; then exit 37; fi
+if [[ "$METADATA_FAILURE" == stage && "$*" == *'/candidate/Cargo.toml '* ]]; then exit 37; fi
 exec "$METADATA_REAL_CP" "$@"
 STUB
 cat > "$FIXTURE/failure-bin/mv" <<'STUB'
 #!/usr/bin/env bash
 set -euo pipefail
 case "$METADATA_FAILURE:${!#}" in
-    notes:CHANGELOG.md|version:VERSION) exit 37 ;;
-    signal:VERSION) kill -TERM "$PPID"; exit 0 ;;
+    notes:CHANGELOG.md|version:Cargo.toml) exit 37 ;;
+    signal:Cargo.toml) kill -TERM "$PPID"; exit 0 ;;
 esac
 exec "$METADATA_REAL_MV" "$@"
 STUB
@@ -248,9 +251,9 @@ exec "$METADATA_REAL_RM" "$@"
 STUB
 chmod +x "$FIXTURE/failure-bin/"*
 for failure in stage notes version signal cleanup; do
-    printf '0.1.0\n' > VERSION
+    set_version 0.1.0
     cp "$FIXTURE/pending-notes" CHANGELOG.md
-    chmod 640 VERSION CHANGELOG.md
+    chmod 640 Cargo.toml CHANGELOG.md
     status=0
     PATH="$FIXTURE/failure-bin:$PATH" METADATA_FAILURE="$failure" \
         bash "$ROOT/scripts/release/metadata.sh" prepare > "$FIXTURE/$failure.log" 2>&1 || status=$?
@@ -260,8 +263,8 @@ for failure in stage notes version signal cleanup; do
     retained="$(sed -n 's/^Shared release metadata evidence retained: //p' "$FIXTURE/$failure.log")"
     [[ "$retained" == "$PWD/.git/release-metadata."* && -d "$retained" ]] || exit 1
     cmp "$FIXTURE/pending-notes" "$retained/original/CHANGELOG.md"
-    [[ "$(cat "$retained/original/VERSION")" == 0.1.0 &&
-       "$(cat "$retained/candidate/VERSION")" == 0.1.1 ]] || exit 1
+    [[ "$(get_version "$retained/original/Cargo.toml")" == 0.1.0 &&
+       "$(get_version "$retained/candidate/Cargo.toml")" == 0.1.1 ]] || exit 1
     rg -Fx '## [0.1.1] - 2026-10-06' "$retained/candidate/CHANGELOG.md" > /dev/null
     case "$failure" in
         stage|notes) cmp "$FIXTURE/pending-notes" CHANGELOG.md ;;
@@ -269,10 +272,10 @@ for failure in stage notes version signal cleanup; do
     esac
     live_version=0.1.0
     [[ "$failure" != cleanup ]] || live_version=0.1.1
-    [[ "$(cat VERSION)" == "$live_version" ]] || exit 1
+    [[ "$(get_version Cargo.toml)" == "$live_version" ]] || exit 1
     perl -e 'for (@ARGV) { ((stat $_)[2] & 0777) == 0640 or die "metadata mode changed: $_\n" }' \
-        VERSION CHANGELOG.md "$retained/original/VERSION" "$retained/original/CHANGELOG.md" \
-        "$retained/candidate/VERSION" "$retained/candidate/CHANGELOG.md"
+        Cargo.toml CHANGELOG.md "$retained/original/Cargo.toml" "$retained/original/CHANGELOG.md" \
+        "$retained/candidate/Cargo.toml" "$retained/candidate/CHANGELOG.md"
     cp -R "$retained" "$FIXTURE/saved-$failure"
     find .git -maxdepth 1 -name 'release-metadata.*' | LC_ALL=C sort > "$FIXTURE/before-retry"
     if [[ "$failure" != cleanup ]]; then
@@ -283,32 +286,33 @@ for failure in stage notes version signal cleanup; do
     find .git -maxdepth 1 -name 'release-metadata.*' | LC_ALL=C sort > "$FIXTURE/after-retry"
     cmp "$FIXTURE/before-retry" "$FIXTURE/after-retry"
     diff -r "$FIXTURE/saved-$failure" "$retained"
-    [[ "$(cat VERSION)" == 0.1.1 ]] || exit 1
+    [[ "$(get_version Cargo.toml)" == 0.1.1 ]] || exit 1
 done
-printf '0.1.0\n' > VERSION
+set_version 0.1.0
 cp "$FIXTURE/pending-notes" CHANGELOG.md
 bash "$ROOT/scripts/release/metadata.sh" preflight
 bash "$ROOT/scripts/release/metadata.sh" prepare
 [[ "$(bash "$ROOT/scripts/release/metadata.sh" version)" == 0.1.1 ]] || exit 1
 cp CHANGELOG.md "$FIXTURE/prepared-notes"
-# Simulate interruption after notes replacement, before VERSION replacement.
-printf '0.1.0\n' > VERSION
+# Simulate interruption after notes replacement, before Cargo.toml replacement.
+set_version 0.1.0
 bash "$ROOT/scripts/release/metadata.sh" preflight
 bash "$ROOT/scripts/release/metadata.sh" prepare
 cmp CHANGELOG.md "$FIXTURE/prepared-notes"
-[[ "$(cat VERSION)" == 0.1.1 ]] || exit 1
+[[ "$(get_version Cargo.toml)" == 0.1.1 ]] || exit 1
 rg -x '## \[0.1.0\]' CHANGELOG.md >/dev/null
-git add -- CHANGELOG.md VERSION
+git add -- CHANGELOG.md Cargo.toml
 bash "$ROOT/scripts/release/metadata.sh" commit-check
-[[ "$(git diff --cached --name-only HEAD)" == $'CHANGELOG.md\nVERSION' ]] || exit 1
+[[ "$(git diff --cached --name-only HEAD)" == $'CHANGELOG.md\nCargo.toml' ]] || exit 1
 
 # Versions must be canonical and both metadata index entries must match.
 for bad in '01.1.1' '0.1.1-beta' '0.1.2'; do
-    printf '%s\n' "$bad" > VERSION
+    set_version "$bad"
+    cp Cargo.toml "$FIXTURE/invalid-manifest"
     if bash "$ROOT/scripts/release/metadata.sh" check > "$FIXTURE/version-check.log" 2>&1; then exit 1; fi
     if bash "$ROOT/scripts/release/metadata.sh" commit-check > "$FIXTURE/version.log" 2>&1; then exit 1; fi
 done
-printf '0.1.1\n' > VERSION
+set_version 0.1.1
 
 # The final boundary must reject both unrelated index entries and stale staging.
 git update-index --cacheinfo "100644,$replacement,AGENTS.md"
@@ -321,19 +325,19 @@ if bash "$ROOT/scripts/release/metadata.sh" commit-check > "$FIXTURE/stale-index
     echo 'release metadata test failed: unstaged prepared metadata passed commit check' >&2
     exit 1
 fi
-git add -- CHANGELOG.md VERSION
+git add -- CHANGELOG.md Cargo.toml
 bash "$ROOT/scripts/release/metadata.sh" commit-check
 
 # Late checks select the saved commit's two metadata blobs, not current files.
 # Use an immutable existing Git tree as the selected object; no commit is created.
 selected_tree="$(git write-tree)"
-printf '0.1.2\n' > VERSION
+set_version 0.1.2
 printf '\nLater working notes.\n' >> CHANGELOG.md
 RELEASE_COMMIT="$selected_tree" bash "$ROOT/scripts/release/metadata.sh" check
 if RELEASE_COMMIT=HEAD bash "$ROOT/scripts/release/metadata.sh" check > "$FIXTURE/old-commit.log" 2>&1; then exit 1; fi
 
 # Already-finalized notes for a different date are an identity conflict.
-printf '0.1.0\n' > VERSION
+set_version 0.1.0
 cp "$FIXTURE/prepared-notes" CHANGELOG.md
 if RELEASE_DATE=2026-10-07 bash "$ROOT/scripts/release/metadata.sh" preflight > "$FIXTURE/date.log" 2>&1; then exit 1; fi
 
