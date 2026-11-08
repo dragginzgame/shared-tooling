@@ -474,18 +474,17 @@ in [the Cargo Book](https://doc.rust-lang.org/cargo/reference/specifying-depende
 
 ## Shared Tooling during dependency updates
 
-Shared Tooling is the `toko-tooling` Cargo marker package, owned by
-`https://github.com/dragginzgame/shared-tooling`. A Git dev-dependency in a private
-tooling/qualification member is an explicit exception to generic registry-only
-preferences for this infrastructure package. Keep it out of published/runtime
+Shared Tooling is the `toko-tooling` source bundle on crates.io, owned by
+`https://github.com/dragginzgame/toko-tooling`. Select it as a registry dev-dependency
+in a private tooling/qualification member. Keep it out of published/runtime
 closures; inheriting an unused workspace declaration does not select it.
 
 After any `cargo update` that changes `toko-tooling` in `Cargo.lock`, agents must
-run `make shared-tooling-install`. It installs that exact commit and runs
+run `make shared-tooling-install`. It authenticates and installs that exact registry archive and runs
 `make install-tools` and `make tools-check`. `make shared-tooling-update` performs
 the targeted Cargo update and installation together. Do not claim success by
 editing only Cargo metadata, a lockfile or snapshot annotation. The offline
-`shared-tooling-check` refuses mismatched selected/installed revisions. Never
+`shared-tooling-check` refuses mismatched selected/installed versions or package checksums. Never
 install through a Cargo build script or implicitly during checks.
 
 Report snapshot installation, tool admission and remaining focused caller

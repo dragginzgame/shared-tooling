@@ -1,16 +1,24 @@
 [package]
 name = "toko-tooling"
-version = "0.32.1"
+version = "0.33.0"
 edition = "2024"
 rust-version = "1.99.1"
 license = "MIT"
-description = "Version marker for the Dragginzgame shared development tooling"
-repository = "https://github.com/dragginzgame/shared-tooling"
+description = "Shared development tools, CI helpers and engineering rules for Dragginzgame"
+repository = "https://github.com/dragginzgame/toko-tooling"
 publish = ["crates-io"]
 readme = "docs/toko-tooling.md"
-include = ["/src/lib.rs", "/docs/toko-tooling.md", "/LICENSE"]
+include = [
+    "/src/**", "/scripts/**", "/make/**", "/ci/**", "/docs/**",
+    "/rules/**", "/tasks/**", "/audits/**", "/licenses/**",
+    "/.github/**", "/.githooks/**", "/Makefile", "/rust-toolchain.toml",
+    "/AGENTS.md", "/DRAGGINZGAME.md", "/CONTRIBUTING.md", "/README.md",
+    "/CHANGELOG.md", "/LICENSE", "!/ci/frontend/node_modules/**",
+    "!/docs/code-review/**",
+]
 
-# Cargo tracks the selected tooling revision. Installation remains explicit:
+# Cargo tracks the tooling source bundle and its registry checksum.
+# Installation remains explicit:
 # make shared-tooling-install refreshes scripts and prepares the pinned tools.
 [lib]
 path = "src/lib.rs"

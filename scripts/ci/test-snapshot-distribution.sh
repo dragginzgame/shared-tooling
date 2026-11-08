@@ -45,6 +45,7 @@ cp "$ROOT/scripts/ci/verify-file-checksum.sh" "$source_root/scripts/ci/"
 cp "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" "$source_root/scripts/ci/"
 cp "$ROOT/scripts/ci/shared-package-version.pl" "$source_root/scripts/ci/"
 cp "$ROOT/scripts/distribution/refresh-consumer.sh" "$source_root/scripts/distribution/"
+cp "$ROOT/scripts/distribution/registry-package.pl" "$source_root/scripts/distribution/"
 printf '#!/usr/bin/env bash\nprintf "sample tool\\n"\n' >"$source_root/scripts/ci/sample.sh"
 chmod +x "$source_root/scripts/ci/sample.sh"
 

@@ -1,22 +1,27 @@
 # toko-tooling
 
-A dependency-free, `no_std` version marker for the Dragginzgame shared
-development tooling. This crate has no runtime API or build script.
+A source distribution of the Dragginzgame shared development tooling. The crate
+contains the scripts, Make interfaces, CI actions, tool catalogs, engineering
+rules, licenses and guides used by consumers. Its Rust library is dependency-free
+and `no_std`; it has no build script and never installs anything during a build.
 
-The crates.io archive contains the marker library, this README and the MIT
-license. Adding it as a dependency does not install scripts or executables.
+Cargo downloads the tooling code from crates.io. Cargo.lock selects the exact
+release and archive checksum; installation remains an explicit command.
 
-To track an installable tooling snapshot, declare the Git dependency in a private
-tooling package:
+Declare the registry dependency in a private tooling package:
 
 ```toml
 [dev-dependencies]
-toko-tooling = { git = "https://github.com/dragginzgame/shared-tooling", branch = "main" }
+toko-tooling = "0.33"
 ```
 
-After updating Cargo.lock, run `make shared-tooling-install` in a consumer that
-has adopted the shared tooling. The installer requires the exact Git revision;
-registry dependencies cannot select installable snapshots.
+Run `make shared-tooling-update` to update this package and install its selected
+code, or `make shared-tooling-install` after a separate Cargo update. The installer
+checks the downloaded archive against Cargo.lock before executing its exporter.
+It preserves consumer edits and recorded entrypoints, retires unchanged obsolete
+files, and prepares/checks the declared tools. `make shared-tooling-check` verifies
+the installed snapshot and its registry selection offline.
 
-See the [snapshot adoption guide](https://github.com/dragginzgame/shared-tooling/blob/main/docs/consuming-snapshots.md)
-for initial setup and update commands.
+See the [snapshot adoption guide](https://github.com/dragginzgame/toko-tooling/blob/main/docs/consuming-snapshots.md#cargo-selection-and-installation)
+for initial setup and migration. Releases before 0.33 contain only a marker and
+cannot supply the tooling payload.

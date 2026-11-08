@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.33.0] - Unreleased
+
+### 🔧 Changed
+
+- Distribute the complete tooling source bundle through crates.io: scripts, Make
+  interfaces, CI actions, pin catalogs, engineering rules, licenses and guides.
+  Replace Git marker selections with ordinary `toko-tooling = "0.33"` private
+  dev-dependencies. The root package points at `dragginzgame/toko-tooling`.
+- Install and update the exact registry version and archive SHA-256 selected by
+  Cargo.lock. Authenticate and safely unpack the crate before executing its
+  exporter; preserve transactional replacement, edit refusal and retirement
+  ownership checks. Status and validation are offline and report the lock selection.
+- Existing Git snapshots require their historical checkout once to prove old-file
+  ownership during migration. Subsequent installations fetch current and prior
+  package bytes from crates.io without a sibling checkout or GitHub fetch.
+
 ## [0.32.1] - 2026-11-08
 
 ### ➕ Added

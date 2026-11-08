@@ -1,98 +1,133 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/dev/shared-tooling.sh scripts/distribution/refresh-consumer.sh scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/dev/shared-tooling.sh scripts/ci/prepare-script-fixture.sh scripts/ci/fixture-lifecycle.sh make/consumer.mk
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
+ROOT="$(cd "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
 mkdir -p "$ROOT/target/tmp"
-fixture="$(mktemp -d "$ROOT/target/tmp/shared-update.XXXXXX")"
+fixture="$(mktemp -d "$ROOT/target/tmp/registry-update.XXXXXX")"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture_complete=false
-trap 'fixture_finish "$?" "$fixture" "Shared update fixture retained"' EXIT
-source_root="$fixture/source"
-consumer="$fixture/consumer"
-mkdir -p "$source_root/scripts/dev" "$source_root/scripts/ci" "$source_root/scripts/distribution" "$consumer" "$fixture/bin"
-git init -q --bare "$fixture/remote"
-git init -q -b main "$source_root"
-git -C "$source_root" config user.name Fixture
-git -C "$source_root" config user.email fixture@example.invalid
-git -C "$source_root" config commit.gpgsign false
-git -C "$source_root" config core.hooksPath /dev/null
-git -C "$source_root" remote add origin "$fixture/remote"
-for path in scripts/ci/shared-package-version.pl scripts/dev/shared-tooling.sh scripts/distribution/refresh-consumer.sh scripts/ci/shared-companions.sh scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh; do
-    cp -p "$ROOT/$path" "$source_root/$path"
+trap 'fixture_finish "$?" "$fixture" "Registry update fixture retained"' EXIT
+unset SHARED_TOOLING_DOWNLOAD_CACHE
+export CARGO_HOME="$fixture/cargo-home" CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0
+export REGISTRY_FIXTURE="$fixture"
+real_make="$(command -v make)"
+mkdir -p "$fixture/source" "$fixture/crates" "$fixture/vendor" "$fixture/bin"
+bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$fixture/source" scripts/dev/shared-tooling.sh make/consumer.mk
+archive() {
+    local version="$1" source="$fixture/input/toko-tooling-$1" digest
+    mkdir -p "$source/src"
+    cp -Rp "$fixture/source/." "$source/"
+    printf '[package]\nname = "toko-tooling"\nversion = "%s"\nedition = "2024"\n[lib]\npath = "src/lib.rs"\n' "$version" > "$source/Cargo.toml"
+    printf '#![no_std]\n' > "$source/src/lib.rs"
+    printf '# payload %s\n' "$version" > "$source/sample.sh"
+    if [[ "$version" == 0.33.0 ]]; then
+        printf '# Shared companions: retired.txt\n' >> "$source/sample.sh"
+        printf 'owned old file\n' > "$source/retired.txt"
+    fi
+    tar -czf "$fixture/crates/$version.crate" -C "$fixture/input" "toko-tooling-$version"
+    digest="$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$fixture/crates/$version.crate")"
+    printf '%s\n' "$digest" > "$fixture/crates/$version.sha256"
+    perl "$ROOT/scripts/distribution/registry-package.pl" extract "$fixture/crates/$version.crate" "$digest" "$version" "$fixture/vendor/toko-tooling-$version"
+    jq '{files: (.files | map_values(.checksum)), package: .checksum}' \
+        "$fixture/vendor/toko-tooling-$version/.toko-tooling.files.json" > "$fixture/vendor/toko-tooling-$version/.cargo-checksum.json"
+    rm "$fixture/vendor/toko-tooling-$version/.toko-tooling.files.json"
+}
+export PATH="$ROOT/.tools/host/bin:$PATH"
+archive 0.33.0
+archive 0.33.1
+mv "$fixture/vendor/toko-tooling-0.33.1" "$fixture/newer-vendor"
+cat > "$fixture/bin/curl" <<'CURL'
+#!/usr/bin/env bash
+set -euo pipefail
+output='' url=''
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -o) output="$2"; shift 2 ;;
+        https://static.crates.io/crates/toko-tooling/toko-tooling-*.crate) url="$1"; shift ;;
+        *) shift ;;
+    esac
 done
-mkdir -p "$source_root/src"
-printf '[package]\nname = "toko-tooling"\nversion = "0.1.0"\n' > "$source_root/Cargo.toml"
-printf '#![no_std]\n' > "$source_root/src/lib.rs"
-printf 'old\n' > "$source_root/sample.txt"
-git -C "$source_root" add scripts Cargo.toml src sample.txt
-git -C "$source_root" commit -qm old
-old="$(git -C "$source_root" rev-parse HEAD)"
-git -C "$source_root" push -q origin main
-git init -q "$consumer"
-bash "$source_root/scripts/distribution/refresh-consumer.sh" --source "$source_root" --consumer "$consumer" \
-    --entrypoint sample.txt --entrypoint scripts/dev/shared-tooling.sh > "$fixture/initial.log"
-printf '[package]\nname = "toko-tooling"\nversion = "0.2.0"\n' > "$source_root/Cargo.toml"
-printf 'new\n' > "$source_root/sample.txt"
-git -C "$source_root" add Cargo.toml sample.txt
-git -C "$source_root" commit -qm new
-git -C "$source_root" push -q origin main
-new="$(git -C "$source_root" rev-parse HEAD)"
-# Dirty source payload must not change the pushed selection.
-printf 'unpublished local edit\n' > "$source_root/sample.txt"
+[[ -n "$output" && -n "$url" ]]
+version="${url##*/toko-tooling-}"; version="${version%.crate}"
+printf '%s\n' "$url" >> "$REGISTRY_FIXTURE/downloads"
+cp "$REGISTRY_FIXTURE/crates/$version.crate" "$output"
+[[ "${CORRUPT_DOWNLOAD:-0}" == 0 ]] || printf corrupt >> "$output"
+CURL
 cat > "$fixture/bin/make" <<'MAKE'
 #!/usr/bin/env bash
-printf '%s\n' "$*" >> "$UPDATE_CALLS"
+printf '%s\n' "$*" >> "$REGISTRY_FIXTURE/setup"
 [[ "${SETUP_FAIL:-0}" == 0 ]]
 MAKE
-chmod +x "$fixture/bin/make"
-real_make="$(command -v make)"
-export CARGO_HOME="$fixture/cargo-home"
-export PATH="$fixture/bin:$ROOT/.tools/host/bin:$PATH" UPDATE_CALLS="$fixture/calls"
-run() { bash "$consumer/scripts/dev/shared-tooling.sh" "$1" --consumer "$consumer" --source "$source_root" "${@:2}"; }
+chmod +x "$fixture/bin/curl" "$fixture/bin/make"
+export PATH="$fixture/bin:$PATH"
+consumer="$fixture/consumer with spaces"
+mkdir -p "$consumer/src" "$consumer/.cargo"
+git init -q "$consumer"
+printf '#![no_std]\n' > "$consumer/src/lib.rs"
+printf '[package]\nname = "consumer"\nversion = "0.1.0"\nedition = "2024"\n[dev-dependencies]\ntoko-tooling = "0.33"\n' > "$consumer/Cargo.toml"
+printf '[source.crates-io]\nreplace-with = "fixture"\n[source.fixture]\ndirectory = "%s"\n' "$fixture/vendor" > "$consumer/.cargo/config.toml"
+(cd "$consumer" && cargo generate-lockfile --offline) > "$fixture/cargo.log" 2>&1
+run() { bash "$ROOT/scripts/dev/shared-tooling.sh" "$1" --consumer "$consumer" "${@:2}"; }
+must_fail() { if "$@" > "$fixture/rejection.log" 2>&1; then echo 'registry fixture unexpectedly passed' >&2; exit 1; fi; }
+cp "$consumer/Cargo.lock" "$fixture/original.lock"
+CORRUPT_DOWNLOAD=1 must_fail run install --entrypoint sample.sh --entrypoint scripts/dev/shared-tooling.sh
+[[ ! -e "$consumer/sample.sh" && ! -e "$consumer/.shared-tooling.snapshot" && ! -e "$fixture/setup" ]]
+run install --entrypoint sample.sh --entrypoint scripts/dev/shared-tooling.sh > "$fixture/install.log"
+cmp "$consumer/Cargo.lock" "$fixture/original.lock"
+[[ -f "$consumer/retired.txt" && "$(wc -l < "$fixture/setup" | tr -d ' ')" == 2 ]]
+run check > "$fixture/check.log"
+downloads="$(wc -l < "$fixture/downloads")"
 run status > "$fixture/status.log"
-grep -F "Installed: 0.1.0 ($old)" "$fixture/status.log"
-grep -F "Latest pushed: 0.2.0 ($new)" "$fixture/status.log"
-[[ ! -e "$UPDATE_CALLS" && "$(cat "$consumer/sample.txt")" == old ]]
-printf 'consumer edit\n' > "$consumer/sample.txt"
-if run status > "$fixture/drift.log" 2>&1; then exit 1; fi
-if run update > "$fixture/conflict.log" 2>&1; then exit 1; fi
-[[ ! -e "$UPDATE_CALLS" && "$(cat "$consumer/sample.txt")" == 'consumer edit' ]]
-printf 'old\n' > "$consumer/sample.txt"
+[[ "$(wc -l < "$fixture/downloads")" == "$downloads" ]]
+printf 'local working edit\n' >> "$consumer/sample.sh"
+must_fail run check
+must_fail run install
+grep -F 'local working edit' "$consumer/sample.sh" >/dev/null
+cp "$fixture/input/toko-tooling-0.33.0/sample.sh" "$consumer/sample.sh"
+git -C "$consumer" add sample.sh
+mv "$fixture/newer-vendor" "$fixture/vendor/toko-tooling-0.33.1"
+must_fail run update
+[[ -f "$consumer/retired.txt" ]]
+git -C "$consumer" reset -q -- sample.sh
 run update > "$fixture/update.log"
-[[ "$(cat "$consumer/sample.txt")" == new ]]
-[[ "$(wc -l < "$UPDATE_CALLS" | tr -d ' ')" == 2 ]]
-grep -F 'install-tools' "$UPDATE_CALLS"
-grep -F 'tools-check' "$UPDATE_CALLS"
-run update --version 0.1.0 > "$fixture/pinned.log"
-[[ "$(cat "$consumer/sample.txt")" == old ]]
-if run update --version 9.9.9 > "$fixture/missing.log" 2>&1; then exit 1; fi
-[[ "$(cat "$consumer/sample.txt")" == old ]]
-if SETUP_FAIL=1 run update > "$fixture/setup-failure.log" 2>&1; then exit 1; fi
-grep -F 'Snapshot installed, but tool setup/admission failed' "$fixture/setup-failure.log"
-[[ "$(cat "$consumer/sample.txt")" == new && "$(cat "$source_root/sample.txt")" == 'unpublished local edit' ]]
-[[ "$(git -C "$source_root" rev-parse HEAD)" == "$new" ]]
-# The public Make interface forwards source, manifest and version without installing on status.
-"$real_make" --no-print-directory -C "$consumer" -f "$ROOT/make/consumer.mk" shared-tooling-update \
-    SHARED_TOOLING_ROOT="$ROOT" SHARED_TOOLING_SOURCE="$source_root" SHARED_TOOLING_VERSION=0.1.0 > "$fixture/make-update"
-grep -F "Selected: 0.1.0 ($old)" "$fixture/make-update"
-[[ "$(cat "$consumer/sample.txt")" == old ]]
-"$real_make" --no-print-directory -C "$consumer" -f "$ROOT/make/consumer.mk" shared-tooling-status \
-    SHARED_TOOLING_ROOT="$ROOT" SHARED_TOOLING_SOURCE="$source_root" > "$fixture/make-status"
-grep -F "Installed: 0.1.0 ($old)" "$fixture/make-status"
-# Actual Cargo resolution pins a Git commit; install must not drift to newer main.
-mkdir -p "$consumer/src"
-printf '' > "$consumer/src/lib.rs"
-printf '[package]\nname = "consumer"\nversion = "0.1.0"\n[dev-dependencies]\ntoko-tooling = { git = "file://%s", branch = "main" }\n' "$fixture/remote" > "$consumer/Cargo.toml"
-run update > "$fixture/pre-cargo-latest.log"
-(cd "$consumer" && cargo update -p toko-tooling --precise "$old") > "$fixture/cargo-update.log" 2>&1
-if run check > "$fixture/cargo-mismatch.log" 2>&1; then exit 1; fi
-run install > "$fixture/cargo-install.log"
-run check > "$fixture/cargo-match.log"
-[[ "$(cat "$consumer/sample.txt")" == old ]]
-run status > "$fixture/cargo-status.log"
-grep -F "Selected: 0.1.0 ($old)" "$fixture/cargo-status.log"
-run update > "$fixture/cargo-latest.log" 2>&1
-[[ "$(cat "$consumer/sample.txt")" == new ]]
+grep -F '0.33.1' "$consumer/sample.sh" >/dev/null
+[[ ! -e "$consumer/retired.txt" ]]
+run check > "$fixture/new-check.log"
+"$real_make" --no-print-directory -C "$consumer" -f "$ROOT/make/consumer.mk" shared-tooling-install \
+    SHARED_TOOLING_ROOT="$ROOT" > "$fixture/make-install.log"
+perl -pi -e 's/"0.33"/"=0.33.0"/' "$consumer/Cargo.toml"
+run update --version 0.33.0 > "$fixture/downgrade.log"
+[[ -f "$consumer/retired.txt" ]]
+perl -pi -e 's/"=0.33.0"/"0.33"/' "$consumer/Cargo.toml"
+SETUP_FAIL=1 must_fail run update
+grep -F 'Snapshot installed, but tool setup/admission failed' "$fixture/rejection.log" >/dev/null
+grep -F '0.33.1' "$consumer/sample.sh" >/dev/null
+run check > "$fixture/setup-failure-check.log"
+# Invalid selections and forged previous ownership never authorize replacement.
+cp "$consumer/Cargo.lock" "$fixture/current.lock"
+perl -pi -e 's{registry\+https://github.com/rust-lang/crates.io-index}{git+https://github.com/dragginzgame/toko-tooling#0123456789012345678901234567890123456789}' "$consumer/Cargo.lock"
+must_fail run install
+cp "$fixture/current.lock" "$consumer/Cargo.lock"
+cp "$consumer/.shared-tooling.snapshot" "$fixture/receipt"
+perl -pi -e 's/^(file\t)[0-9a-f]{64}(\t.\tsample.sh)$/${1}.("0" x 64).$2/e' "$consumer/.shared-tooling.snapshot"
+perl -pi -e 's/"0.33"/"=0.33.0"/' "$consumer/Cargo.toml"
+must_fail run update --version 0.33.0
+cp "$fixture/receipt" "$consumer/.shared-tooling.snapshot"
+# A Git receipt needs independently readable historical bytes exactly once.
+old_source="$fixture/old-source"
+cp -Rp "$fixture/input/toko-tooling-0.33.0" "$old_source"
+git -C "$old_source" init -q
+git -C "$old_source" remote add origin https://github.com/dragginzgame/shared-tooling
+git -C "$old_source" add .
+git -C "$old_source" -c user.name=Fixture -c user.email=fixture@example.invalid -c core.hooksPath=/dev/null commit -qm initial
+old_consumer="$fixture/old-consumer"
+mkdir "$old_consumer"; git -C "$old_consumer" init -q
+bash "$old_source/scripts/distribution/refresh-consumer.sh" --source "$old_source" --consumer "$old_consumer" \
+    --entrypoint sample.sh --entrypoint scripts/dev/shared-tooling.sh > "$fixture/old-install.log"
+cp "$consumer/Cargo.lock" "$old_consumer/Cargo.lock"
+must_fail bash "$ROOT/scripts/dev/shared-tooling.sh" install --consumer "$old_consumer"
+bash "$ROOT/scripts/dev/shared-tooling.sh" install --consumer "$old_consumer" --source "$old_source" > "$fixture/migrate.log"
+grep -F $'source\thttps://crates.io/crates/toko-tooling' "$old_consumer/.shared-tooling.snapshot" >/dev/null
+echo 'Registry archive authentication, real Cargo lock/update, install, downgrade, retirement, local edits, setup failure and Git migration passed'
 fixture_complete=true
-echo 'Shared update status, pinned selection, conflict custody, setup and failure reporting passed'

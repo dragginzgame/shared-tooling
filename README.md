@@ -6,6 +6,11 @@ runtime dependency. Consumers retain their product architecture, deployment
 identity and validation gates, and implement the shared
 [Rust compiler policy](rules/cargo-dependencies.md#minimum-supported-rust-version-msrv).
 
+The complete tooling source is distributed as the `toko-tooling` crate on
+crates.io. Private tooling members select `toko-tooling = "0.33"`; Cargo.lock
+pins the archive used by explicit `make shared-tooling-install` and update
+commands. See [registry adoption and migration](docs/consuming-snapshots.md#cargo-selection-and-installation).
+
 ## Start here
 
 | Need | Guide |

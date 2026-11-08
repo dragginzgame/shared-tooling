@@ -10,7 +10,7 @@ STACK_PARENT ?= $(CURDIR)/..
 SHARED_TOOLING_RUST := 0
 CARGO_PUBLISH_PACKAGES := toko-tooling
 CARGO_PUBLISH_REGISTRY := crates-io
-CARGO_PUBLISH_VERIFY_TARGETS := check-version
+CARGO_PUBLISH_VERIFY_TARGETS := check-version check-tooling-package
 # Shared qualifies IC executable provisioning and retained-tool integrity.
 LOCAL_TOOL_INSTALL_TARGETS += install-ic-tools install-release-editor
 LOCAL_TOOL_CHECK_TARGETS += ic-tools-check release-editor-check
@@ -29,7 +29,7 @@ include make/consumer.mk
 release-patch release-minor release-major release-resume: export SHARED_RELEASE_PREPARE_TOOLS := 1
 release-patch release-minor release-major release-resume: export RELEASE_VERSION_MODE := pending
 
-.PHONY: help tasks version check-shell check-pins check-doc-links check-release-commands test-portable ci \
+.PHONY: help tasks version check-shell check-pins check-doc-links check-release-commands check-tooling-package test-portable ci \
         prepare-work check-version release-base-version \
         release-version release-preflight release-verify \
         release-prepare-version release-prepared-check release-files \
@@ -53,7 +53,7 @@ help:
 	@echo "Caller catalog agreement (offline, opt-in): check-tool-catalogs TOOL_CATALOG_BINDINGS=path"
 	@echo "Full release/explicit-check gates: ci, test-portable, check-shell"
 	@echo "Maintainer releases: release-patch, release-minor, release-major"
-	@echo "Cargo marker publication: publish-check, then publish after the Git release"
+	@echo "Tooling source bundle publication: publish-check, then publish after the Git release"
 	@echo "Delivery: direct by default; RELEASE_DELIVERY=pr selects review then merged validation/tag"
 	@echo "Normal releases start fresh; recover a specific saved attempt with release-resume VERSION=X.Y.Z"
 
@@ -101,6 +101,9 @@ check-pins:
 
 check-doc-links:
 	perl scripts/ci/check-documentation-links.pl --root . *.md audits/*.md rules/*.md tasks/*.md docs/*.md docs/principles/*.md docs/changelog/*.md
+
+check-tooling-package:
+	@bash scripts/ci/test-tooling-package.sh
 
 check-release-commands:
 	bash scripts/ci/check-release-commands.sh . make/consumer.mk

@@ -1,5 +1,7 @@
-//! Cargo version marker for shared development tooling.
+//! Shared development tooling distributed as a Cargo source bundle.
 //!
-//! After updating this dev-dependency, run `make shared-tooling-install` in the
-//! consumer to install its selected scripts and admit its pinned tools.
+//! The crate contains the scripts, Make interfaces, CI actions and engineering
+//! documentation. After updating this dev-dependency, run
+//! `make shared-tooling-install` to install the locked registry payload and admit
+//! its pinned tools. Installation never runs implicitly during a Cargo build.
 #![no_std]
