@@ -16,6 +16,12 @@
   ownership during migration. Subsequent installations fetch current and prior
   package bytes from crates.io without a sibling checkout or GitHub fetch.
 
+### 🩹 Fixed
+
+- Clear old contention diagnostics before launching asynchronous tool-fixture
+  waiters so a previous iteration cannot masquerade as the new wait signal.
+  Expose a focused contention-only fixture selection.
+
 ## [0.32.1] - 2026-11-08
 
 ### ➕ Added

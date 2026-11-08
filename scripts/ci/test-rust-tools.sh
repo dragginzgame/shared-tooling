@@ -2,8 +2,10 @@
 # Shared companions: scripts/dev/install-rust-tools.sh scripts/dev/cargo-tool-build.sh scripts/dev/tool-store.sh scripts/ci/cargo-tool-cache-key.sh scripts/ci/select-tool-evidence.sh scripts/ci/archive-evidence.sh .githooks/pre-commit scripts/ci/prepare-script-fixture.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 path_context=false
+contention_only=false
 if [[ "${1:-}" == --path-context && $# == 1 ]]; then path_context=true;
-elif [[ $# != 0 ]]; then echo 'usage: fixture [--path-context]' >&2; exit 2; fi
+elif [[ "${1:-}" == --contention-only && $# == 1 ]]; then contention_only=true;
+elif [[ $# != 0 ]]; then echo 'usage: fixture [--path-context|--contention-only]' >&2; exit 2; fi
 ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"; ROOT="${ROOT%/.}"
@@ -204,6 +206,7 @@ consumer="$fixture/a"
 # Direct compiler identity checks must use the fixture's prepared context too.
 # The invoking consumer may select an entirely different Rust toolchain.
 cd "$consumer"
+if [[ "$contention_only" == false ]]; then
 common --preflight
 [[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
 refuse common --check
@@ -1088,6 +1091,7 @@ for invalid in -1 01 301 1.5; do
 done
 refuse bash "$installer" "${feature_args[@]}" --features cli --wait-seconds 1
 refuse bash "$installer" "${admission_args[@]}" --wait-seconds 1 --wait-seconds 1
+fi
 
 # Two real installer processes share one exact payload, with Cargo effects
 # substituted. Synchronize on the held build and the wait diagnostic, not time.
@@ -1107,6 +1111,10 @@ for scenario in reuse changed-compiler changed-source redirected-source; do
         sleep 0.05
     done
     [[ -s "$fixture/install-held" ]] || { cat "$fixture/owner.err"; exit 1; }
+    # The parent must clear stale signals before the asynchronous child's
+    # redirection runs; otherwise it can observe the previous wait diagnostic.
+    : > "$fixture/waiter.err"
+    : > "$fixture/waiter.out"
     SHARED_TOOLING_SETUP_WAIT_SECONDS=20 bash "$installer" --consumer "$fixture/$scenario-waiter" \
         "${contention_args[@]}" > "$fixture/waiter.out" 2> "$fixture/waiter.err" & waiter_setup=$!
     for ((poll=0; poll<1200; poll++)); do
@@ -1156,6 +1164,11 @@ for scenario in reuse changed-compiler changed-source redirected-source; do
         [[ -z "$(find "$fixture/$scenario-waiter/.tools/rust" -name 'selected-*')" ]]
     fi
 done
+if [[ "$contention_only" == true ]]; then
+    echo 'Cargo tool concurrent installation and invalidation checks passed'
+    fixture_complete=true
+    exit 0
+fi
 SHARED_TOOLING_SETUP_WAIT_SECONDS=invalid bash "$installer" "${feature_args[@]}" --features cli --check \
     > "$fixture/check-ignores-wait.out"
 [[ "$(cat "$fixture/check-ignores-wait.out")" == "$cli_path" ]]
