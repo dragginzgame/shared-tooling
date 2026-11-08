@@ -160,6 +160,7 @@ run_fixture test-consumer-flow-probes.sh bash "$ROOT/scripts/ci/test-consumer-fl
 run_fixture test-fixture-retention.sh bash "$ROOT/scripts/ci/test-fixture-retention.sh"
 run_fixture test-collect-tool-evidence.sh bash "$ROOT/scripts/ci/test-collect-tool-evidence.sh"
 run_fixture test-shared-tooling-update.sh bash "$ROOT/scripts/ci/test-shared-tooling-update.sh"
+run_fixture test-empty-source-dirs.sh bash "$ROOT/scripts/ci/test-empty-source-dirs.sh"
 run_fixture test-registry-package.pl perl "$ROOT/scripts/ci/test-registry-package.pl"
 run_fixture test-tooling-package.sh bash "$ROOT/scripts/ci/test-tooling-package.sh"
 run_fixture test-snapshot-distribution.sh bash "$ROOT/scripts/ci/test-snapshot-distribution.sh"

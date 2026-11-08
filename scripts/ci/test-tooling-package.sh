@@ -32,8 +32,9 @@ while IFS= read -r path; do
 done < "$fixture/package/scripts/distribution/governance-files.txt"
 bash "$fixture/package/scripts/distribution/refresh-consumer.sh" --crate "$archive" --checksum "$checksum" \
     --package-version "$version" --consumer "$consumer" "${entrypoints[@]}"
-printf 'version = 4\n[[package]]\nname = "toko-tooling"\nversion = "%s"\nsource = "registry+https://github.com/rust-lang/crates.io-index"\nchecksum = "%s"\n' \
-    "$version" "$checksum" > "$consumer/Cargo.lock"
+printf '[workspace.metadata.toko-tooling]\nversion = "%s"\n' "$version" > "$consumer/Cargo.toml"
+jq -n --arg version "$version" --arg checksum "$checksum" \
+    '{format:1,name:"toko-tooling",source:"https://crates.io/crates/toko-tooling",version:$version,checksum:$checksum}' > "$consumer/toko-tooling.lock"
 make --no-print-directory -C "$consumer" -f make/consumer.mk shared-tooling-check
 documents=()
 while IFS= read -r path; do documents+=("${path#"$consumer/"}"); done < <(find "$consumer" -type f -name '*.md' -not -path '*/.git/*' | sort)

@@ -7,9 +7,10 @@ identity and validation gates, and implement the shared
 [Rust compiler policy](rules/cargo-dependencies.md#minimum-supported-rust-version-msrv).
 
 The complete tooling source is distributed as the `toko-tooling` crate on
-crates.io. Private tooling members select `toko-tooling = "0.33"`; Cargo.lock
-pins the archive used by explicit `make shared-tooling-install` and update
-commands. See [registry adoption and migration](docs/consuming-snapshots.md#cargo-selection-and-installation).
+crates.io. Root Cargo metadata selects its exact version; `toko-tooling.lock`
+pins the archive independently of application dependencies. Explicit
+`make shared-tooling-update` and `make shared-tooling-install` install the code.
+See [registry adoption and migration](docs/consuming-snapshots.md#cargo-selection-and-installation).
 
 ## Start here
 

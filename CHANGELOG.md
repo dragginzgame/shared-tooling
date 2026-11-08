@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.34.0] - Unreleased
+
+### 🔧 Changed
+
+- Select tooling independently of application packages through root Cargo metadata
+  and `toko-tooling.lock`, binding an exact release to its crates.io checksum.
+  Replace the former Cargo dependency/selection-only packages with the root-owned
+  declaration. Application dependency updates cannot change tooling selection.
+- Admit declaration, lock and installed snapshot together before common CI/release
+  entrypoints. Resolve explicitly during tooling updates; install/check never repair
+  selection implicitly. Document removal of the previous dependency scheme.
+
+### ➕ Added
+
+- Automatically clean conventional source roots before release capture and preflight.
+  Remove only empty Git-ignored directories, preserve tracked paths and tool/build
+  artifacts, and report the deletion count.
+
 ## [0.33.0] - 2026-11-08
 
 ### 🔧 Changed
