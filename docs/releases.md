@@ -364,6 +364,33 @@ specific attempt. Explicit recovery reads only the selected plan and preserves
 its source, version, date, staged payload and destination checks. A normal
 command is not an alias for recovery, even at unchanged HEAD.
 
+### Read-only release journal query
+
+Consumer resume guards must use the runner's validated journal interface instead
+of reading positional lines:
+
+```bash
+perl scripts/ci/release-plan.pl \
+  --plan .git/release-state/engine-0.2.0.plan --group engine --version 0.2.0
+```
+
+Pass `--group ''` for an ungrouped release. The exact path may refer to a retained
+historical journal outside the active state directory. JSON includes `schema`,
+`source`, `phase`, `group`, `candidate`, `previous`, `kind`, `date`, `remote`,
+`branch`, `destination`, `tree` and `delivery`. Empty group/tree values remain
+empty strings. All four direct/PR and grouped/ungrouped version-1 journal schemas
+use the same parser as runner recovery. Early phases and completed plans are
+reported unchanged; the caller owns policy-drift decisions before resume.
+
+Unknown schemas, invalid fields, identity mismatches, extra/truncated records and
+symlinked paths fail with nonzero status and no JSON. The query reads the named
+file, validates syntax and returns saved values; it does not require the saved
+commit to remain reachable. It creates no lock, journal, ref or metadata and
+dispatches no hooks, network or delivery. It can run while a release lock exists.
+Successful projection is not authorization to resume or proof that its source
+matches current policy. `--records` is internal transport for the release runner;
+consumers use the default JSON interface.
+
 If preflight or validation fails, fix the inputs and run the normal target again.
 The complete gate runs against current HEAD, without reusing earlier validation.
 Build artifacts and logs remain attributable to the original attempts; adapters

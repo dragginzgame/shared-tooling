@@ -21,7 +21,7 @@ archive() {
     printf '[package]\nname = "toko-tooling"\nversion = "%s"\nedition = "2024"\n[lib]\npath = "src/lib.rs"\n' "$version" > "$source/Cargo.toml"
     printf '#![no_std]\n' > "$source/src/lib.rs"
     printf '# payload %s\n' "$version" > "$source/sample.sh"
-    if [[ "$version" == 0.34.0 ]]; then
+    if [[ "$version" == 0.36.0 ]]; then
         printf '# Shared companions: retired.txt\n' >> "$source/sample.sh"
         printf 'owned old file\n' > "$source/retired.txt"
     fi
@@ -34,12 +34,8 @@ archive() {
     rm "$fixture/vendor/toko-tooling-$version/.toko-tooling.files.json"
 }
 export PATH="$ROOT/.tools/host/bin:$PATH"
-archive 0.34.0
-archive 0.34.1
-for version in 0.34.0 0.34.1; do
-    jq -nc --arg version "$version" --arg checksum "$(cat "$fixture/crates/$version.sha256")" \
-        '{name:"toko-tooling",vers:$version,cksum:$checksum,yanked:false}' >> "$fixture/index.jsonl"
-done
+archive 0.36.0
+archive 0.36.1
 cat > "$fixture/bin/curl" <<'CURL'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -47,16 +43,11 @@ output='' url=''
 while [[ $# -gt 0 ]]; do
     case "$1" in
         -o) output="$2"; shift 2 ;;
-        https://index.crates.io/to/ko/toko-tooling) url="$1"; shift ;;
         https://static.crates.io/crates/toko-tooling/toko-tooling-*.crate) url="$1"; shift ;;
         *) shift ;;
     esac
 done
 [[ -n "$output" && -n "$url" ]]
-if [[ "$url" == https://index.crates.io/to/ko/toko-tooling ]]; then
-    cp "$REGISTRY_FIXTURE/index.jsonl" "$output"
-    exit 0
-fi
 version="${url##*/toko-tooling-}"; version="${version%.crate}"
 printf '%s\n' "$url" >> "$REGISTRY_FIXTURE/downloads"
 cp "$REGISTRY_FIXTURE/crates/$version.crate" "$output"
@@ -70,10 +61,16 @@ MAKE
 chmod +x "$fixture/bin/curl" "$fixture/bin/make"
 export PATH="$fixture/bin:$PATH"
 consumer="$fixture/consumer with spaces"
-mkdir -p "$consumer"
+mkdir -p "$consumer/crates/one/src" "$consumer/crates/two/src" "$consumer/.cargo"
 git init -q "$consumer"
-printf '[workspace]\nmembers = []\n[workspace.metadata.toko-tooling]\nversion = "0.34.0"\n' > "$consumer/Cargo.toml"
-printf '# Application lock must not be touched.\n' > "$consumer/Cargo.lock"
+printf '[workspace]\nmembers = ["crates/*"]\ndefault-members = ["crates/one"]\nresolver = "3"\n[workspace.dependencies]\ntoko-tooling = "=0.36.0"\n' > "$consumer/Cargo.toml"
+for name in one two; do
+    printf '[package]\nname="%s"\nversion="0.1.0"\nedition="2024"\n[dev-dependencies]\ntoko-tooling.workspace=true\n' "$name" > "$consumer/crates/$name/Cargo.toml"
+    printf 'pub fn source() {}\n' > "$consumer/crates/$name/src/lib.rs"
+done
+printf '[source.crates-io]\nreplace-with="fixture"\n[source.fixture]\ndirectory="%s"\n' "$fixture/vendor" > "$consumer/.cargo/config.toml"
+refresh_lock() { (cd "$consumer" && cargo update -p toko-tooling --offline); }
+(cd "$consumer" && cargo generate-lockfile --offline)
 run() { bash "$ROOT/scripts/dev/shared-tooling.sh" "$1" --consumer "$consumer" "${@:2}"; }
 must_fail() { if "$@" > "$fixture/rejection.log" 2>&1; then echo 'registry fixture unexpectedly passed' >&2; exit 1; fi; }
 cp "$consumer/Cargo.lock" "$fixture/original.lock"
@@ -90,42 +87,46 @@ printf 'local working edit\n' >> "$consumer/sample.sh"
 must_fail run check
 must_fail run install
 grep -F 'local working edit' "$consumer/sample.sh" >/dev/null
-cp "$fixture/input/toko-tooling-0.34.0/sample.sh" "$consumer/sample.sh"
+cp "$fixture/input/toko-tooling-0.36.0/sample.sh" "$consumer/sample.sh"
 git -C "$consumer" add sample.sh
-# Metadata drift is detected offline before any release or install.
-perl -pi -e 's/0\.34\.0/0.34.1/' "$consumer/Cargo.toml"
+# Cargo selection drift is detected offline before any release or install.
+perl -pi -e 's/0\.36\.0/0.36.1/' "$consumer/Cargo.toml"
 must_fail run check
 must_fail run install
+refresh_lock
 must_fail run update
 [[ -f "$consumer/retired.txt" ]]
 git -C "$consumer" reset -q -- sample.sh
 run update > "$fixture/update.log"
-grep -F '0.34.1' "$consumer/sample.sh" >/dev/null
+grep -F '0.36.1' "$consumer/sample.sh" >/dev/null
 [[ ! -e "$consumer/retired.txt" ]]
 run check > "$fixture/new-check.log"
 "$real_make" --no-print-directory -C "$consumer" -f "$ROOT/make/consumer.mk" shared-tooling-install \
     SHARED_TOOLING_ROOT="$ROOT" > "$fixture/make-install.log"
-perl -pi -e 's/"0.34.1"/"0.34.0"/' "$consumer/Cargo.toml"
-run update --version 0.34.0 > "$fixture/downgrade.log"
+perl -pi -e 's/0\.36\.1/0.36.0/' "$consumer/Cargo.toml"
+refresh_lock
+run update --version 0.36.0 > "$fixture/downgrade.log"
 [[ -f "$consumer/retired.txt" ]]
-perl -pi -e 's/"0.34.0"/"0.34.1"/' "$consumer/Cargo.toml"
+perl -pi -e 's/0\.36\.0/0.36.1/' "$consumer/Cargo.toml"
+refresh_lock
 SETUP_FAIL=1 must_fail run update
 grep -F 'Snapshot installed, but tool setup/admission failed' "$fixture/rejection.log" >/dev/null
-grep -F '0.34.1' "$consumer/sample.sh" >/dev/null
+grep -F '0.36.1' "$consumer/sample.sh" >/dev/null
 run check > "$fixture/setup-failure-check.log"
 # Invalid selections and forged previous ownership never authorize replacement.
-cp "$consumer/toko-tooling.lock" "$fixture/current.lock"
-perl -pi -e 's{https://crates.io/crates/toko-tooling}{git+https://github.com/dragginzgame/toko-tooling#0123456789012345678901234567890123456789}' "$consumer/toko-tooling.lock"
+cp "$consumer/Cargo.lock" "$fixture/current.lock"
+perl -pi -e 's{registry\+https://github.com/rust-lang/crates.io-index}{git+https://github.com/dragginzgame/toko-tooling#0123456789012345678901234567890123456789}' "$consumer/Cargo.lock"
 must_fail run install
-cp "$fixture/current.lock" "$consumer/toko-tooling.lock"
+cp "$fixture/current.lock" "$consumer/Cargo.lock"
 cp "$consumer/.shared-tooling.snapshot" "$fixture/receipt"
 perl -pi -e 's/^(file\t)[0-9a-f]{64}(\t.\tsample.sh)$/${1}.("0" x 64).$2/e' "$consumer/.shared-tooling.snapshot"
-perl -pi -e 's/"0.34.1"/"0.34.0"/' "$consumer/Cargo.toml"
-must_fail run update --version 0.34.0
+perl -pi -e 's/0\.36\.1/0.36.0/' "$consumer/Cargo.toml"
+refresh_lock
+must_fail run update --version 0.36.0
 cp "$fixture/receipt" "$consumer/.shared-tooling.snapshot"
 # A Git receipt needs independently readable historical bytes exactly once.
 old_source="$fixture/old-source"
-cp -Rp "$fixture/input/toko-tooling-0.34.0" "$old_source"
+cp -Rp "$fixture/input/toko-tooling-0.36.0" "$old_source"
 printf '#!/bin/sh\necho "Legacy installer accepts Git selections only" >&2\nexit 1\n' > "$old_source/scripts/dev/shared-tooling.sh"
 git -C "$old_source" init -q
 git -C "$old_source" remote add origin https://github.com/dragginzgame/shared-tooling
@@ -136,42 +137,79 @@ mkdir "$old_consumer"; git -C "$old_consumer" init -q
 bash "$old_source/scripts/distribution/refresh-consumer.sh" --source "$old_source" --consumer "$old_consumer" \
     --entrypoint sample.sh --entrypoint scripts/dev/shared-tooling.sh > "$fixture/old-install.log"
 cp "$consumer/Cargo.toml" "$old_consumer/Cargo.toml"
-cp "$consumer/toko-tooling.lock" "$old_consumer/toko-tooling.lock"
+cp "$consumer/Cargo.lock" "$old_consumer/Cargo.lock"
+cp -Rp "$consumer/crates" "$consumer/.cargo" "$old_consumer/"
 must_fail bash "$old_consumer/scripts/dev/shared-tooling.sh" install --consumer "$old_consumer"
 must_fail bash "$ROOT/scripts/dev/shared-tooling.sh" install --consumer "$old_consumer"
 bash "$ROOT/scripts/dev/shared-tooling.sh" install --consumer "$old_consumer" --source "$old_source" > "$fixture/migrate.log"
-# Application Cargo changes/removal have no influence on tooling selection.
-perl -pi -e 's/"0.34.0"/"0.34.1"/' "$consumer/Cargo.toml"
-cp "$fixture/current.lock" "$consumer/toko-tooling.lock"
-rm "$consumer/Cargo.lock"
-run check > "$fixture/no-cargo-lock.log"
-# Common CI and release hooks admit tooling without consumer configuration.
+# Every member participates, independent of default-members and package removal.
+perl -pi -e 's/0\.36\.0/0.36.1/' "$consumer/Cargo.toml"
+refresh_lock
+run check > "$fixture/restored-check.log"
 "$real_make" --no-print-directory -C "$consumer" -f "$ROOT/make/consumer.mk" ci SHARED_TOOLING_ROOT="$ROOT" > "$fixture/ci.log"
-cp "$consumer/Cargo.toml" "$fixture/metadata"
-cp "$consumer/toko-tooling.lock" "$fixture/valid-tooling.lock"
-cp "$fixture/index.jsonl" "$fixture/valid-index"
-jq -c '.yanked = true' "$fixture/valid-index" > "$fixture/index.jsonl"
-must_fail run update
-cmp "$consumer/toko-tooling.lock" "$fixture/valid-tooling.lock"
-jq -c '.cksum = "bad"' "$fixture/valid-index" > "$fixture/index.jsonl"
-must_fail run update
-cmp "$consumer/toko-tooling.lock" "$fixture/valid-tooling.lock"
-cp "$fixture/valid-index" "$fixture/index.jsonl"
-rm "$consumer/toko-tooling.lock"
+cp "$consumer/Cargo.toml" "$fixture/root-manifest"
+cp "$consumer/crates/two/Cargo.toml" "$fixture/member-manifest"
+cp "$consumer/Cargo.lock" "$fixture/valid-cargo.lock"
+perl -ni -e 'print unless /toko-tooling/' "$consumer/crates/two/Cargo.toml"
 must_fail run check
-ln -s "$fixture/valid-tooling.lock" "$consumer/toko-tooling.lock"
-must_fail run check
-must_fail run update
-rm "$consumer/toko-tooling.lock"
-cp "$fixture/valid-tooling.lock" "$consumer/toko-tooling.lock"
-perl -pi -e 's/workspace.metadata/package.metadata/' "$consumer/Cargo.toml"
-run check > "$fixture/package-metadata.log"
-printf '[workspace.metadata.toko-tooling]\nversion = "0.34.1"\n' >> "$consumer/Cargo.toml"
-must_fail run check
-printf '[workspace]\nmembers = []\n' > "$consumer/Cargo.toml"
-must_fail run check
+grep -F 'every workspace package' "$fixture/rejection.log" >/dev/null
 must_fail "$real_make" --no-print-directory -C "$consumer" -f "$ROOT/make/consumer.mk" ci SHARED_TOOLING_ROOT="$ROOT"
 must_fail "$real_make" --no-print-directory -C "$consumer" -f "$ROOT/make/consumer.mk" release-preflight SHARED_TOOLING_ROOT="$ROOT"
+cp "$fixture/member-manifest" "$consumer/crates/two/Cargo.toml"
+# A locally pinned member cannot drift from inherited selection, even at the same version.
+perl -pi -e 's/toko-tooling.workspace=true/toko-tooling="=0.36.1"/' "$consumer/crates/two/Cargo.toml"
+must_fail run check
+cp "$fixture/member-manifest" "$consumer/crates/two/Cargo.toml"
+perl -pi -e 's/dev-dependencies/dependencies/' "$consumer/crates/two/Cargo.toml"
+must_fail run check
+cp "$fixture/member-manifest" "$consumer/crates/two/Cargo.toml"
+# Removing any one package leaves the remaining packages and selected tooling intact.
+mv "$consumer/crates/two" "$fixture/removed-member"
+run check > "$fixture/removed-member.log"
+mv "$fixture/removed-member" "$consumer/crates/two"
+# Lock removal, aliases, checksum drift and source overrides refuse offline.
+rm "$consumer/Cargo.lock"
+must_fail run check
+ln -s "$fixture/valid-cargo.lock" "$consumer/Cargo.lock"
+must_fail run check
+rm "$consumer/Cargo.lock"
+cp "$fixture/valid-cargo.lock" "$consumer/Cargo.lock"
+perl -pi -e 's/checksum = "[0-9a-f]+"/checksum = "bad"/' "$consumer/Cargo.lock"
+must_fail run check
+cp "$fixture/valid-cargo.lock" "$consumer/Cargo.lock"
+perl -pi -e 's/checksum = "[0-9a-f]+"/"checksum = \"" . ("0" x 64) . "\""/e' "$consumer/Cargo.lock"
+must_fail run check
+grep -F 'Cargo.lock selects different' "$fixture/rejection.log" >/dev/null
+cp "$fixture/valid-cargo.lock" "$consumer/Cargo.lock"
+printf '\n[[package]]\nname="toko-tooling"\nversion="0.36.0"\nsource="registry+https://github.com/rust-lang/crates.io-index"\nchecksum="%s"\n' "$(cat "$fixture/crates/0.36.0.sha256")" >> "$consumer/Cargo.lock"
+must_fail run check
+cp "$fixture/valid-cargo.lock" "$consumer/Cargo.lock"
+perl -pi -e 's/=0\.36\.1/0.36.1/' "$consumer/Cargo.toml"
+must_fail run check
+cp "$fixture/root-manifest" "$consumer/Cargo.toml"
+printf '\n[patch.crates-io]\ntoko-tooling={path="../../vendor/toko-tooling-0.36.1"}\n' >> "$consumer/Cargo.toml"
+must_fail run check
+cp "$fixture/root-manifest" "$consumer/Cargo.toml"
+printf '\n[workspace.metadata.toko-tooling]\nversion="0.36.1"\n' >> "$consumer/Cargo.toml"
+must_fail run check
+cp "$fixture/root-manifest" "$consumer/Cargo.toml"
+printf '{}' > "$consumer/toko-tooling.lock"
+must_fail run check
+rm "$consumer/toko-tooling.lock"
+# Standalone root packages select directly without a synthetic workspace/helper.
+standalone="$fixture/standalone"
+mkdir -p "$standalone/src"
+printf '[package]\nname="standalone"\nversion="0.1.0"\nedition="2024"\n[dev-dependencies]\ntoko-tooling="=0.36.1"\n' > "$standalone/Cargo.toml"
+printf '' > "$standalone/src/lib.rs"
+cp -Rp "$consumer/.cargo" "$standalone/"
+(cd "$standalone" && cargo generate-lockfile --offline)
+perl "$ROOT/scripts/dev/tooling-lock.pl" "$standalone" > "$fixture/standalone.json"
+jq -e '.version == "0.36.1"' "$fixture/standalone.json" >/dev/null
+# A root package in a workspace must inherit too.
+printf '\n[workspace]\n[workspace.dependencies]\ntoko-tooling="=0.36.1"\n' >> "$standalone/Cargo.toml"
+must_fail perl "$ROOT/scripts/dev/tooling-lock.pl" "$standalone"
+perl -0pi -e 's/\[dev-dependencies\]\ntoko-tooling="=0.36.1"/[dev-dependencies]\ntoko-tooling.workspace=true/' "$standalone/Cargo.toml"
+perl "$ROOT/scripts/dev/tooling-lock.pl" "$standalone" > "$fixture/root-package.json"
 grep -F $'source\thttps://crates.io/crates/toko-tooling' "$old_consumer/.shared-tooling.snapshot" >/dev/null
-echo 'Registry archive authentication, root metadata/lock update, install, downgrade, retirement, local edits, setup failure and Git migration passed'
+echo 'Cargo-visible per-member selection, lock/snapshot drift, authenticated installation, retirement and migration passed'
 fixture_complete=true

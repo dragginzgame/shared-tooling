@@ -169,6 +169,7 @@ run_fixture test-snapshot-performance.sh bash "$ROOT/scripts/ci/test-snapshot-pe
 run_fixture test-snapshot-takeover.sh bash "$ROOT/scripts/ci/test-snapshot-takeover.sh"
 run_fixture test-snapshot-retirement.sh bash "$ROOT/scripts/ci/test-snapshot-retirement.sh"
 run_fixture test-release-runner.sh bash "$ROOT/scripts/ci/test-release-runner.sh"
+run_fixture test-release-plan.sh bash "$ROOT/scripts/ci/test-release-plan.sh"
 run_fixture test-retained-state.sh bash "$ROOT/scripts/ci/test-retained-state.sh"
 run_fixture test-release-inputs.sh bash "$ROOT/scripts/ci/test-release-inputs.sh"
 run_fixture test-release-tracking.sh bash "$ROOT/scripts/ci/test-release-tracking.sh"

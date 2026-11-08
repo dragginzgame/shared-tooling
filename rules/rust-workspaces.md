@@ -401,7 +401,7 @@ Coordinate consumer work through issues and preserve unrelated working changes.
 The narrowed Canic-fleet-only `apps/` rule requires Toko Tooling 0.35.0 or a later
 release containing this correction. Consumers must first verify that the corrected
 release is published on crates.io, then adopt its
-root metadata/lock and authenticated snapshot before moving packages. Version
+release-appropriate Cargo selection and authenticated snapshot before moving packages. Version
 0.34.0 still contains the broader application-layout wording. Do not patch
 consumer snapshot-owned rules or use unpublished producer files as adopted policy.
 In the owning repository's authorized change:

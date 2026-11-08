@@ -1,6 +1,6 @@
 [package]
 name = "toko-tooling"
-version = "0.35.1"
+version = "0.36.0"
 edition = "2024"
 rust-version = "1.99.1"
 license = "MIT"
@@ -17,7 +17,7 @@ include = [
     "!/docs/code-review/**",
 ]
 
-# Consumer root metadata and toko-tooling.lock select this source bundle.
+# Consumer dev-dependencies and Cargo.lock select this source bundle.
 # Installation remains explicit:
 # make shared-tooling-install refreshes scripts and prepares the pinned tools.
 [lib]

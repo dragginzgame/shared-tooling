@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.36.0] - Unreleased
+
+### ➕ Added
+
+- Add a read-only validated JSON release-journal query, shared with the runner's
+  recovery parser, for consumer policy guards. Preserve historical schemas and
+  phases without locks, hooks or delivery effects.
+  [#366](https://github.com/dragginzgame/toko-tooling/issues/366)
+
+### 🐛 Fixed
+
+- Refresh Tooling's active stack graph and inventory after Native retirement:
+  five groups, nine public packages and two private qualification packages.
+  Preserve the retired ledger and published history.
+  [#365](https://github.com/dragginzgame/toko-tooling/issues/365)
+
+### ⚠️ Breaking
+
+- Restore `cargo update -v` visibility through one exact root `toko-tooling`
+  dependency pin inherited as a dev-dependency by every real workspace package.
+  Standalone packages select it directly; no helper crates or Rust imports are
+  required. Cargo.lock supplies the crates.io version and archive checksum.
+- Replace the 0.34–0.35 root metadata and `toko-tooling.lock` contract. Consumers
+  must remove those selectors and any selection-only packages, add the inherited
+  declarations and cargo-machete exemptions, update Cargo.lock, and bootstrap the
+  published installer. Offline CI/release admission rejects missing member
+  declarations, source/version drift and mismatched installed bytes.
+
 ## [0.35.1] - 2026-11-08
 
 ### 🐛 Fixed

@@ -32,9 +32,15 @@ while IFS= read -r path; do
 done < "$fixture/package/scripts/distribution/governance-files.txt"
 bash "$fixture/package/scripts/distribution/refresh-consumer.sh" --crate "$archive" --checksum "$checksum" \
     --package-version "$version" --consumer "$consumer" "${entrypoints[@]}"
-printf '[workspace.metadata.toko-tooling]\nversion = "%s"\n' "$version" > "$consumer/Cargo.toml"
-jq -n --arg version "$version" --arg checksum "$checksum" \
-    '{format:1,name:"toko-tooling",source:"https://crates.io/crates/toko-tooling",version:$version,checksum:$checksum}' > "$consumer/toko-tooling.lock"
+mkdir -p "$consumer/src" "$consumer/.cargo" "$fixture/vendor/toko-tooling"
+printf '[package]\nname="fixture-consumer"\nversion="0.1.0"\nedition="2024"\n[dev-dependencies]\ntoko-tooling="=%s"\n' "$version" > "$consumer/Cargo.toml"
+printf '' > "$consumer/src/lib.rs"
+cp -Rp "$fixture/package/." "$fixture/vendor/toko-tooling/"
+jq '{files: (.files | map_values(.checksum)), package: .checksum}' \
+    "$fixture/vendor/toko-tooling/.toko-tooling.files.json" > "$fixture/vendor/toko-tooling/.cargo-checksum.json"
+rm "$fixture/vendor/toko-tooling/.toko-tooling.files.json"
+printf '[source.crates-io]\nreplace-with="fixture"\n[source.fixture]\ndirectory="%s"\n' "$fixture/vendor" > "$consumer/.cargo/config.toml"
+(cd "$consumer" && cargo generate-lockfile --offline)
 make --no-print-directory -C "$consumer" -f make/consumer.mk shared-tooling-check
 documents=()
 while IFS= read -r path; do documents+=("${path#"$consumer/"}"); done < <(find "$consumer" -type f -name '*.md' -not -path '*/.git/*' | sort)
