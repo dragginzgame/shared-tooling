@@ -1,12 +1,14 @@
 [package]
 name = "toko-tooling"
-version = "0.32.0"
+version = "0.32.1"
 edition = "2024"
 rust-version = "1.99.1"
 license = "MIT"
 description = "Version marker for the Dragginzgame shared development tooling"
 repository = "https://github.com/dragginzgame/shared-tooling"
-publish = false
+publish = ["crates-io"]
+readme = "docs/toko-tooling.md"
+include = ["/src/lib.rs", "/docs/toko-tooling.md", "/LICENSE"]
 
 # Cargo tracks the selected tooling revision. Installation remains explicit:
 # make shared-tooling-install refreshes scripts and prepares the pinned tools.

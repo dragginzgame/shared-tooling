@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.32.1] - Unreleased
+
+### ➕ Added
+
+- Publish the dependency-free `toko-tooling` version marker to crates.io with a
+  minimal archive and crate-specific README. Add `make publish-check` and
+  `make publish` through the existing publication adapter. Snapshot installation
+  continues to require a Git-selected revision.
+
 ## [0.32.0] - Unreleased
 
 ### ➕ Added

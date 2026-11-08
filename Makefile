@@ -8,6 +8,9 @@ CLOC_ROOT = $(CLOC_PARENT)
 CLOC_PARENT ?= $(CURDIR)/..
 STACK_PARENT ?= $(CURDIR)/..
 SHARED_TOOLING_RUST := 0
+CARGO_PUBLISH_PACKAGES := toko-tooling
+CARGO_PUBLISH_REGISTRY := crates-io
+CARGO_PUBLISH_VERIFY_TARGETS := check-version
 # Shared qualifies IC executable provisioning and retained-tool integrity.
 LOCAL_TOOL_INSTALL_TARGETS += install-ic-tools install-release-editor
 LOCAL_TOOL_CHECK_TARGETS += ic-tools-check release-editor-check
@@ -50,6 +53,7 @@ help:
 	@echo "Caller catalog agreement (offline, opt-in): check-tool-catalogs TOOL_CATALOG_BINDINGS=path"
 	@echo "Full release/explicit-check gates: ci, test-portable, check-shell"
 	@echo "Maintainer releases: release-patch, release-minor, release-major"
+	@echo "Cargo marker publication: publish-check, then publish after the Git release"
 	@echo "Delivery: direct by default; RELEASE_DELIVERY=pr selects review then merged validation/tag"
 	@echo "Normal releases start fresh; recover a specific saved attempt with release-resume VERSION=X.Y.Z"
 

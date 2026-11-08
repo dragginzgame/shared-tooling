@@ -93,8 +93,11 @@ toko-tooling = { git = "https://github.com/dragginzgame/shared-tooling", branch 
 Declaring it only in `[workspace.dependencies]` does not select it: a member must
 inherit it. Use a private tooling/qualification member so it does not become a
 public library dependency or impose a new version constraint on public releases.
-The package remains Git-distributed (`publish = false`); no crates.io publication
-or repository rename is part of this adoption.
+The marker is also published on crates.io. Snapshot installation still requires
+the Git dependency above: the installer resolves an exact Git commit from
+Cargo.lock and does not accept registry selections. The registry archive contains
+only the marker library, its README and license; it does not install scripts or
+tools. See the [crate README](toko-tooling.md). No repository rename is required.
 
 ```bash
 make shared-tooling-status
