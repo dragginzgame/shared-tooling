@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.35.0] - Unreleased
+
+### 🔧 Changed
+
+- Reserve `apps/` for Canic fleets and their deployed components. Ordinary Rust
+  packages, including private qualification crates, tools and native publishers,
+  belong under `crates/<package-name>/` regardless of publication eligibility.
+  Preserve explicit approved layout exceptions; consumer relocations wait for
+  publication and adoption of this corrected tooling release.
+
 ## [0.34.0] - 2026-11-08
 
 ### 🔧 Changed
