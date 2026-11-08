@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.31.10] - Unreleased
+
+### ➕ Added
+
+- Cache authenticated host/IC/CI tool downloads before hosted setup, and save
+  after setup so later test failures do not force fresh downloads. Shared CI and
+  cached common-tool preparation use the shared restore/save action.
+- Let `cloc.sh` select a workspace crate by name or a source branch with
+  `crate::module`. Depth is relative to the selection; counts reuse the existing
+  classification and unknown selectors fail explicitly.
+
+### 🔧 Changed
+
+- Standardize Gitleaks as one repository CI scan, outside host and release-group
+  matrices. Keep scanner setup and repeated scans out of deployment/publication
+  paths while preserving required checks and failure handling.
+
 ## [0.31.9] - Unreleased
 
 ### ➕ Added

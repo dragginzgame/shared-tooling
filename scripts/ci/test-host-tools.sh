@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Shared companions: scripts/ci/test-tool-evidence.sh scripts/ci/test-tool-store.sh scripts/ci/prepare-script-fixture.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
+# Installer fixtures must exercise their own transport, not a hosted warm cache.
+unset SHARED_TOOLING_DOWNLOAD_CACHE
 path_context=false
 if [[ "${1:-}" == --path-context && $# == 1 ]]; then path_context=true;
 elif [[ $# != 0 ]]; then echo 'usage: fixture [--path-context]' >&2; exit 2; fi

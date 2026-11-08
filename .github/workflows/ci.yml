@@ -59,6 +59,8 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Restore pinned tool downloads
+        uses: ./.github/actions/cache-tool-downloads
       - name: Install pinned validation tools
         shell: bash
         run: |
@@ -77,6 +79,10 @@ jobs:
             echo "SHELLCHECK_BIN=$shellcheck_bin"
             echo "GITLEAKS_BIN=$gitleaks_bin"
           } >>"$GITHUB_ENV"
+      - name: Save pinned tool downloads
+        uses: ./.github/actions/cache-tool-downloads
+        with:
+          mode: save
       - name: Check shell and workflow sources
         shell: bash
         run: |
@@ -134,6 +140,9 @@ jobs:
         shell: bash
         run: |
           echo /bin >> "$GITHUB_PATH"
+      - name: Restore pinned tool downloads
+        if: needs.change-scope.outputs.scope != 'docs'
+        uses: ./.github/actions/cache-tool-downloads
       - name: Prepare host tools and identify Cargo build cache
         if: needs.change-scope.outputs.scope != 'docs'
         id: tool-cache-key
@@ -160,6 +169,11 @@ jobs:
       - name: Prepare and check the complete common toolset
         if: needs.change-scope.outputs.scope != 'docs'
         uses: ./.github/actions/prepare-common-tools
+      - name: Save pinned tool downloads
+        if: needs.change-scope.outputs.scope != 'docs'
+        uses: ./.github/actions/cache-tool-downloads
+        with:
+          mode: save
       - name: Publish the selected IC tools on PATH
         if: needs.change-scope.outputs.scope != 'docs'
         run: echo "$GITHUB_WORKSPACE/.tools/ic/bin" >> "$GITHUB_PATH"

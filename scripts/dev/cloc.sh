@@ -12,7 +12,7 @@ if [[ -n "${TMPDIR:-}" && "$TMPDIR" != /* ]]; then export TMPDIR="$PWD/$TMPDIR";
 
 usage() {
     cat <<'EOF'
-Usage: cloc.sh [options] [directory]
+Usage: cloc.sh [options] [directory | crate[::module]]
 
 Count Rust LOC by category. Defaults to the current workspace;
 a parent directory reports its sibling repositories.
@@ -27,6 +27,7 @@ Options:
 Examples:
   cloc.sh -d 1    Top-level modules beneath each crate
   cloc.sh -d 2 .. Sibling crates with two module levels
+  cloc.sh -d 1 my-crate::parser  Drill into one module
 
 ??? = unclassified LOC. Counting details: docs/fleet-tools.md
 EOF
@@ -145,7 +146,13 @@ if [[ -n "$selected_manifest" ]]; then
     selected_directory="${selected_directory%/.}"
     selected_manifest="$selected_directory/$(basename "$selected_manifest")"
 fi
-requested_root="$(resolve_directory "${1:-${selected_directory:-$PWD}}")"
+selection=''
+requested_directory="${1:-${selected_directory:-$PWD}}"
+if [[ $# == 1 && ! -d "$1" && "$1" != */* ]]; then
+    selection="$1"
+    requested_directory="${selected_directory:-$PWD}"
+fi
+requested_root="$(resolve_directory "$requested_directory")"
 requested_root="${requested_root%/.}"
 has_checkouts=false
 for child in "$requested_root"/* "$requested_root"/.[!.]*; do
@@ -189,12 +196,26 @@ if ! metadata="$(
     exit 1
 fi
 
+if [[ -n "$selection" ]]; then
+    crate="${selection%%::*}"
+    if ! metadata="$(printf '%s\n' "$metadata" | jq -e --arg crate "$crate" '
+        .workspace_members as $members |
+        .packages |= map(select(.name == $crate and (.id as $id | $members | index($id)))) |
+        if (.packages | length) == 1 then .workspace_members = [.packages[0].id]
+        else error("unknown or ambiguous workspace crate: " + $crate) end
+    ')"; then exit 1; fi
+fi
+
 scratch="${TMPDIR:-$(printf '%s\n' "$metadata" | jq -er .target_directory)/tmp}"
 mkdir -p -- "$scratch"
 FILE_LIST_DIR="$(mktemp -d "$scratch/shared-tooling-cloc.XXXXXX")"
 trap 'rm -rf "$FILE_LIST_DIR"' EXIT
 printf '%s\n' "$metadata" > "$FILE_LIST_DIR/metadata.json"
 perl "$ROOT/scripts/dev/cloc-classify.pl" "$FILE_LIST_DIR/metadata.json" "$manifest_path" "$FILE_LIST_DIR" > "$FILE_LIST_DIR/report.json"
+if [[ -n "$selection" ]]; then
+    perl "$ROOT/scripts/dev/cloc-classify.pl" --select "$FILE_LIST_DIR/report.json" "$selection" > "$FILE_LIST_DIR/selected.json"
+    mv "$FILE_LIST_DIR/selected.json" "$FILE_LIST_DIR/report.json"
+fi
 if [[ "$json" == true ]]; then
     cat "$FILE_LIST_DIR/report.json"
 else

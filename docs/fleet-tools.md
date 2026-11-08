@@ -49,6 +49,12 @@ total; no synthetic root/self rows are printed, so visible children need not
 sum to their parent. These are
 breakdowns of the existing category counts, not additional LOC. JSON retains
 the complete file report and crate roots regardless of display depth.
+A crate name selects that Cargo workspace member: `cloc.sh -d 1 ic-platform-macros`.
+Use `crate::module::child` to select a branch of the displayed source tree; `-d`
+then expands levels below that selection. Matching source files and directories
+remain merged. Selected totals and JSON include only that crate/branch; inline
+modules still belong to their containing file. Existing directory paths take
+precedence over crate names. Unknown names fail explicitly.
 The target defaults to the current directory. A parent directory selects its
 immediate repositories; a checkout selects its root workspace. `--json` selects
 one workspace and always includes its crate rows.

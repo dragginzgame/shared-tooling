@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Shared companions: scripts/ci/fixture-timing.sh scripts/ci/test-license.pl
 set -euo pipefail
+# Installer fixtures must exercise their own transport, not a hosted warm cache.
+unset SHARED_TOOLING_DOWNLOAD_CACHE
 
 ROOT="$0"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"

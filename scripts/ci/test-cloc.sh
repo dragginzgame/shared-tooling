@@ -315,5 +315,19 @@ for invalid in -1 1.5 nope 01 1000000 ''; do
     if bash "$ROOT/scripts/dev/cloc.sh" -d "$invalid" "$depth_root" > "$FIXTURE/invalid-depth" 2>&1; then exit 1; fi
 done
 if bash "$ROOT/scripts/dev/cloc.sh" -d > "$FIXTURE/invalid-depth" 2>&1; then exit 1; fi
+# Named selection resolves Cargo members and reuses the same module tree/counts.
+bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/Cargo.toml" app > "$FIXTURE/selected-app.json"
+jq -e '(.crates | length) == 1 and .crates[0].crate == "app" and all(.files[]; .crate == "app")' "$FIXTURE/selected-app.json" >/dev/null
+bash "$ROOT/scripts/dev/cloc.sh" -d 1 --manifest "$depth_root/Cargo.toml" depth-fixture > "$FIXTURE/selected-crate"
+grep -Eq '^depth-fixture +5 +3 +0 +0 +0 +0 +8$' "$FIXTURE/selected-crate"
+grep -Eq '^  foo +3 +0 +0 +0 +0 +0 +3$' "$FIXTURE/selected-crate"
+bash "$ROOT/scripts/dev/cloc.sh" -d 1 --manifest "$depth_root/Cargo.toml" depth-fixture::foo > "$FIXTURE/selected-module"
+grep -Eq '^depth-fixture::foo +3 +0 +0 +0 +0 +0 +3$' "$FIXTURE/selected-module"
+grep -Eq '^  deep +2 +0 +0 +0 +0 +0 +2$' "$FIXTURE/selected-module"
+bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$depth_root/Cargo.toml" depth-fixture::tests > "$FIXTURE/selected-tests.json"
+jq -e '.totals.tests == 2 and (.files | length) == 2' "$FIXTURE/selected-tests.json" >/dev/null
+for selector in missing-crate depth-fixture::missing depth-fixture::; do
+    if bash "$ROOT/scripts/dev/cloc.sh" --manifest "$depth_root/Cargo.toml" "$selector" > "$FIXTURE/bad-selection" 2>&1; then exit 1; fi
+done
 echo 'LOC classification, source totals and module depth fixtures passed'
 fixture_complete=true

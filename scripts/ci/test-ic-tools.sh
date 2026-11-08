@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Shared companions: scripts/ci/test-tool-evidence.sh scripts/ci/test-tool-store.sh scripts/ci/prepare-script-fixture.sh
 set -euo pipefail
+# Installer fixtures must exercise their own transport, not a hosted warm cache.
+unset SHARED_TOOLING_DOWNLOAD_CACHE
 
 ROOT="$0"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: .github/actions/prepare-common-tools/action.yml .github/workflows/ci.yml scripts/ci/fixture-lifecycle.sh scripts/ci/extract-workflow-step.sh scripts/ci/prepare-script-fixture.sh scripts/ci/tool-catalog-records.pl ci/tool-versions.env make/tools.mk rust-toolchain.toml
+# Shared companions: .github/actions/cache-tool-downloads/action.yml .github/actions/prepare-common-tools/action.yml .github/workflows/ci.yml scripts/ci/fixture-lifecycle.sh scripts/ci/extract-workflow-step.sh scripts/ci/prepare-script-fixture.sh scripts/ci/tool-catalog-records.pl ci/tool-versions.env make/tools.mk rust-toolchain.toml
 set -euo pipefail
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 unset VALIDATION_REPOSITORY_ROOT VALIDATION_RUNNER_SNAPSHOT_PATH
@@ -16,12 +16,27 @@ yq -o json '.' "$ROOT/.github/actions/prepare-common-tools/action.yml" > "$fixtu
 jq -e '
     .runs.using == "composite" and
     ([.runs.steps[] | select(.run != null) | .shell] | all(. == "/bin/bash --noprofile --norc -e -o pipefail {0}")) and
-    (.runs.steps | map(.id)) == ["cache-options", "tool-cache-key", "tool-cache", "prepare-tools", "save-tool-cache"] and
-    (.runs.steps[2].with.key == .runs.steps[4].with.key) and
-    (.runs.steps[2].with.path == .runs.steps[4].with.path) and
-    (.runs.steps[2].with | has("restore-keys") | not) and
-    (.runs.steps[4].if | contains("github.event_name == '\''push'\''") and contains("default_branch"))
+    (.runs.steps | map(.id)) == ["cache-options", "restore-downloads", "tool-cache-key", "tool-cache", "prepare-tools", "save-downloads", "save-tool-cache"] and
+    (.runs.steps[3].with.key == .runs.steps[6].with.key) and
+    (.runs.steps[3].with.path == .runs.steps[6].with.path) and
+    (.runs.steps[3].with | has("restore-keys") | not) and
+    (.runs.steps[6].if | contains("github.event_name == '\''push'\''") and contains("default_branch"))
 ' "$fixture/prepare-action.json" > /dev/null
+# Download caching must precede bootstrap and save before product qualification.
+yq -o json '.' "$ROOT/.github/actions/cache-tool-downloads/action.yml" > "$fixture/download-action.json"
+jq -e '
+    .runs.steps[1].with.key == .runs.steps[2].with.key and
+    .runs.steps[1].with.path == .runs.steps[2].with.path and
+    .runs.steps[1]["continue-on-error"] == true and
+    .runs.steps[2]["continue-on-error"] == true and
+    (.runs.steps[2].if | contains("default_branch")) and
+    (.runs.steps[1].with.key | contains("github.sha") | not)
+' "$fixture/download-action.json" >/dev/null
+jq -r '.runs.steps[0].run' "$fixture/download-action.json" > "$fixture/download-options.sh"
+for mode in restore save; do
+    MODE="$mode" EXTRA_KEY=pins RUNNER_TEMP="$fixture" GITHUB_ENV="$fixture/download-env" bash "$fixture/download-options.sh"
+done
+if MODE=invalid EXTRA_KEY='' RUNNER_TEMP="$fixture" GITHUB_ENV="$fixture/download-env" bash "$fixture/download-options.sh"; then exit 1; fi
 jq -e '.runs.steps' "$fixture/prepare-action.json" > "$fixture/prepare-steps.json"
 bash "$ROOT/scripts/ci/extract-workflow-step.sh" "$fixture/prepare-steps.json" prepare-tools > "$fixture/prepare-action.sh"
 bash "$ROOT/scripts/ci/extract-workflow-step.sh" "$fixture/prepare-steps.json" cache-options > "$fixture/cache-options.sh"

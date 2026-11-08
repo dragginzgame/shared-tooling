@@ -83,5 +83,21 @@ for route in recover rate-limit exhaust permanent corrupt; do
         [[ "$(cat "$fixture/$route")" == wrong ]] || exit 1
     fi
 done
+# Authenticate cache hits, repair corruption, and never retain failed downloads.
+export SHARED_TOOLING_DOWNLOAD_CACHE="$fixture/cache"
+tool_store_download https://fixture.invalid/recover "$fixture/cached-first" "$digest"
+[[ -f "$SHARED_TOOLING_DOWNLOAD_CACHE/$digest" ]]
+requests="$(wc -l < "$fixture/requests")"
+tool_store_download https://fixture.invalid/exhaust "$fixture/cached-second" "$digest"
+[[ "$(wc -l < "$fixture/requests")" == "$requests" ]]
+cmp "$fixture/cached-first" "$fixture/cached-second"
+printf corrupt > "$SHARED_TOOLING_DOWNLOAD_CACHE/$digest"
+tool_store_download https://fixture.invalid/recover "$fixture/repaired" "$digest"
+[[ "$(wc -l < "$fixture/requests")" -eq $((requests + 1)) ]]
+tool_store_download_digest "$SHARED_TOOLING_DOWNLOAD_CACHE/$digest" "$digest"
+rm "$SHARED_TOOLING_DOWNLOAD_CACHE/$digest"
+if tool_store_download https://fixture.invalid/corrupt "$fixture/rejected" "$digest"; then exit 1; fi
+[[ ! -e "$SHARED_TOOLING_DOWNLOAD_CACHE/$digest" ]]
+unset SHARED_TOOLING_DOWNLOAD_CACHE
 fixture_complete=true
 echo 'Real curl transient recovery, exhaustion, permanent failure and checksum refusal passed (loopback HTTP transport)'
