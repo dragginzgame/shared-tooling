@@ -348,7 +348,7 @@ git init -q "$logging_root"
 bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$logging_root" scripts/ci/run-validation-targets.sh make/consumer.mk
 cp "$ROOT/Makefile" "$logging_root/Makefile"
 cat >> "$logging_root/Makefile" <<'MAKE'
-ci:
+release-basic:
 	@test "$(RELEASE_VERSION)" = 0.1.1
 	@test -z "$(RELEASE_COMMIT)"
 	@echo release-gate-failure-marker
@@ -367,13 +367,13 @@ for attempt in first second; do
         exit 1
     }
     if [[ "$attempt" == first ]]; then
-        retained_logs=("$logging_root"/.git/release-state/validation-failures/*-0-ci.log)
+        retained_logs=("$logging_root"/.git/release-state/validation-failures/*-0-release-basic.log)
         retained_log="${retained_logs[0]}"
         cp "$retained_log" "$FIXTURE/first-retained.log"
     fi
 done
 cmp "$retained_log" "$FIXTURE/first-retained.log"
-retained_logs=("$logging_root"/.git/release-state/validation-failures/*-0-ci.log)
+retained_logs=("$logging_root"/.git/release-state/validation-failures/*-0-release-basic.log)
 [[ "${#retained_logs[@]}" == 2 ]] || exit 1
 
 echo 'release metadata real-Git and validation-retention tests passed'

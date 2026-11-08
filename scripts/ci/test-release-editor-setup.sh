@@ -94,7 +94,7 @@ unset GIT_DIR GIT_WORK_TREE GIT_COMMON_DIR GIT_INDEX_FILE GIT_OBJECT_DIRECTORY G
 cat > "$consumer/scripts/ci/run-validation-targets.sh" <<'GATE'
 #!/usr/bin/env bash
 set -euo pipefail
-[[ "$*" == ci && -z "${SHARED_RELEASE_PREPARE_TOOLS+x}" ]] || exit 91
+[[ "$*" == release-basic && -z "${SHARED_RELEASE_PREPARE_TOOLS+x}" ]] || exit 91
 printf 'release-gate\n' >> "$EDITOR_SETUP_EVENTS"
 exit "${EDITOR_RELEASE_GATE_STATUS:-43}"
 GATE

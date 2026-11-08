@@ -15,6 +15,9 @@
 - Existing Git snapshots require their historical checkout once to prove old-file
   ownership during migration. Subsequent installations fetch current and prior
   package bytes from crates.io without a sibling checkout or GitHub fetch.
+- Keep Shared's long-tail regressions in GitHub CI. Local source-bundle releases
+  run the basic metadata, shell, pin, documentation and packaged-installation
+  gate; consumer release obligations and the full CI matrix remain unchanged.
 
 ### 🩹 Fixed
 

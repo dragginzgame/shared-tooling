@@ -29,7 +29,7 @@ include make/consumer.mk
 release-patch release-minor release-major release-resume: export SHARED_RELEASE_PREPARE_TOOLS := 1
 release-patch release-minor release-major release-resume: export RELEASE_VERSION_MODE := pending
 
-.PHONY: help tasks version check-shell check-pins check-doc-links check-release-commands check-tooling-package test-portable ci \
+.PHONY: help tasks version check-shell check-pins check-doc-links check-release-commands check-tooling-package test-portable ci release-basic \
         prepare-work check-version release-base-version \
         release-version release-preflight release-verify \
         release-prepare-version release-prepared-check release-files \
@@ -51,7 +51,8 @@ help:
 	@echo "Shared integration editor: install-release-editor; offline verification: release-editor-check"
 	@echo "Cargo tool freshness (online, read-only): check-cargo-tool-versions"
 	@echo "Caller catalog agreement (offline, opt-in): check-tool-catalogs TOOL_CATALOG_BINDINGS=path"
-	@echo "Full release/explicit-check gates: ci, test-portable, check-shell"
+	@echo "Basic local release gate: release-basic (metadata, shell lint, pins, links, source package)"
+	@echo "Long-tail CI/explicit local checks: ci, test-portable"
 	@echo "Maintainer releases: release-patch, release-minor, release-major"
 	@echo "Tooling source bundle publication: publish-check, then publish after the Git release"
 	@echo "Delivery: direct by default; RELEASE_DELIVERY=pr selects review then merged validation/tag"
@@ -111,6 +112,10 @@ check-release-commands:
 ci:
 	+@bash scripts/ci/run-validation-targets.sh --fail-fast check-version check-no-symlinks check-shell check-pins check-doc-links test-portable
 
+# Maintainer-approved source-bundle gate. The complete regression suite stays in CI.
+release-basic:
+	+@bash scripts/ci/run-validation-targets.sh --fail-fast check-version check-no-symlinks check-shell check-pins check-doc-links check-tooling-package
+
 prepare-work:
 	@perl scripts/release/work-version.pl prepare "$(WORK_VERSION_KIND)"
 
@@ -129,7 +134,7 @@ release-preflight:
 release-verify:
 	+@unset SHARED_RELEASE_PREPARE_TOOLS RELEASE_VERSION_MODE; \
 		VALIDATION_FAILURE_LOG_DIR="$$(git rev-parse --git-path release-state)/validation-failures" \
-		bash scripts/ci/run-validation-targets.sh ci
+		bash scripts/ci/run-validation-targets.sh release-basic
 
 release-prepare-version:
 	@bash scripts/release/metadata.sh prepare

@@ -34,10 +34,16 @@ owns when to run checks. This overlay identifies the local checks only.
 - For affected scripts, run selected consumer/contract fixtures and ShellCheck,
   using `shellcheck -x` for sourced helpers. Inspect fixture dispatch and select
   affected cases; expose narrow selections when oversized fixtures are touched.
-- Full local checks are `make ci`, `bash scripts/ci/test-portable-tools.sh` and
-  blanket ShellCheck over `scripts/ci/*.sh`, `scripts/dev/*.sh` and
-  `scripts/distribution/*.sh`. These require release or explicit-check authority
-  under the baseline; shared helper/installer/release edits alone do not activate them.
+- Shared's source-bundle release gate is `make release-basic`: version consistency,
+  regular-file admission, shell lint, dependency pins, documentation links and an
+  actual packaged-payload installation/check. All release kinds use this gate;
+  publication repeats only the fresh version/archive checks.
+- By maintainer direction on 2026-11-08, the long-tail regression suite stays in
+  GitHub CI. Keep `make ci` and `bash scripts/ci/test-portable-tools.sh` unchanged
+  for CI and explicitly requested full local checks. A normal tooling release
+  or publication does not run that suite locally. This is Shared's local gate
+  selection for its source-distribution crate, which has no Rust runtime API;
+  it does not change consumer repositories' release obligations.
 - Documentation/policy-only changes use `make check-doc-links`, instruction
   consistency review and `git diff --check`; they do not require installer/export
   regression suites. Run `make check-version` when maintaining the pending pair.

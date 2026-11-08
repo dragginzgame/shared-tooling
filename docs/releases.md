@@ -52,6 +52,15 @@ directory, including after a partial replacement. Retry uses the existing releas
 reconciliation; it does not delete earlier evidence or automatically restore files.
 Successful attempts remove only their own scratch directory.
 
+Shared's own `release-verify` runs `make release-basic`: version and regular-file
+admission, shell lint, pin declarations, documentation links, and an installation
+from the actual packaged source bundle. Its full portable/tool/recovery matrix
+remains in GitHub CI (`make ci`) or an explicitly requested full local check.
+This maintainer-selected gate applies to this source-distribution crate, which
+has no Rust runtime API; consumer projects retain their own complete gates.
+Publication checks the fresh package/version again before upload. A crates.io
+upload does not require replaying Shared's long-tail CI suite locally.
+
 Shared selects `RELEASE_VERSION_MODE=pending` and supplies `release-base-version`.
 That read-only hook returns the preceding ledger version when package.version already
 matches an explicit pending heading, otherwise the current finalized version.
