@@ -98,6 +98,9 @@ for mode in read-failure reader-present reader-read-failure exit-failure signal 
             [[ "$status" == 47 ]] || exit 1
             for side in before after; do
                 cmp "$MEASUREMENT_READER_SOURCE" "$fixture/$mode/$side/scripts/ci/shared-companions.sh"
+                "$MEASUREMENT_REAL_GIT" -C "$ROOT" show "$revision:scripts/ci/shared-package-version.pl" \
+                    > "$fixture/package-version-reader"
+                cmp "$fixture/package-version-reader" "$fixture/$mode/$side/scripts/ci/shared-package-version.pl"
             done
             grep -F "$MEASUREMENT_READER_BLOB" "$fixture/$mode/identities.txt" > /dev/null ;;
         reader-read-failure) [[ "$status" == 74 && ! -e "$fixture/$mode/samples.tsv" ]] || exit 1 ;;

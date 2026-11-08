@@ -72,10 +72,12 @@ git -C "$selected/source" checkout --quiet --detach "$payload" >> "$selected/sou
 git -C "$selected/source" remote set-url origin https://github.com/dragginzgame/shared-tooling
 # Freeze runner-local helpers with the payload too. Only the selected exporter
 # blob varies; do not introduce unrecorded working-tree code. Historical payloads
-# without the declaration reader still support their self-contained exporters.
+# without the declaration/version readers still support their older exporters.
 helpers=(verify-file-checksum.sh verify-shared-tooling-snapshot.sh)
-reader="$(git -C "$ROOT" ls-tree --name-only "$payload" -- scripts/ci/shared-companions.sh)"
-[[ -z "$reader" ]] || helpers+=(shared-companions.sh)
+for helper in shared-companions.sh shared-package-version.pl; do
+    reader="$(git -C "$ROOT" ls-tree --name-only "$payload" -- "scripts/ci/$helper")"
+    [[ -z "$reader" ]] || helpers+=("$helper")
+done
 for helper in "${helpers[@]}"; do
     blob="$(git -C "$ROOT" rev-parse "$payload:scripts/ci/$helper")"
     printf 'integrity_blob\t%s\t%s\n' "$helper" "$blob" >> "$selected/identities.txt"

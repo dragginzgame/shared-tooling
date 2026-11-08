@@ -18,6 +18,8 @@
   wired to the publication adapter's declared companion files.
 - Run positive shared formatter qualification in a space-containing checkout,
   consistent with the policy that excludes newlines from workspace paths.
+- Freeze the Cargo version reader alongside paired snapshot exporters so
+  measurement and rejection fixtures can read Cargo-based source versions.
 
 ## [0.32.0] - Unreleased
 
