@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.31.11] - Unreleased
+
+### 🔧 Changed
+
+- Close ordinary implementation issues after local fixes and focused validation,
+  without waiting for commits, pushes, publication, deployment or broad CI. Record
+  delivery status honestly and retain only issue-specific external acceptance
+  requirements as closure gates.
+
 ## [0.31.10] - Unreleased
 
 ### ➕ Added
