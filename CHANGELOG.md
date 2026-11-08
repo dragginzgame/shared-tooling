@@ -16,6 +16,8 @@
 - Qualify documentation exports against the Cargo version source and include the
   referenced crate README and download-cache action; keep release logging fixtures
   wired to the publication adapter's declared companion files.
+- Run positive shared formatter qualification in a space-containing checkout,
+  consistent with the policy that excludes newlines from workspace paths.
 
 ## [0.32.0] - Unreleased
 

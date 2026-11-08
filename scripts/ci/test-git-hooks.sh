@@ -427,7 +427,7 @@ expect_failure bash scripts/dev/install-git-hooks.sh --consumer "$PWD"
 
 # Qualify the optional shared formatter against real Cargo and the actual hook,
 # including the adoption checker's partial-stage and preservation cases.
-new_fixture $'shared-format-include\n'
+new_fixture 'shared-format-include space'
 bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$PWD" make/consumer.mk
 cat > Makefile <<'MAKE'
 include make/consumer.mk
@@ -462,12 +462,12 @@ grep -Fx '# Tests and tooling only' Cargo.toml > /dev/null
 perl -pi -e 's/^(# Shared companions:.*)$/$1 make\/hook-extra.mk/' make/consumer.mk
 printf '\ninclude make/hook-extra.mk\n' >> make/consumer.mk
 printf '# Untracked consumer companion required by the formatter.\n' > make/hook-extra.mk
-cp .git/index "$FIXTURE/newline-index"
-cp src/lib.rs "$FIXTURE/newline-source"
+cp .git/index "$FIXTURE/shared-index"
+cp src/lib.rs "$FIXTURE/shared-source"
 CDPATH="$FIXTURE" bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$PWD" src/lib.rs Cargo.toml --no-dependency-tables \
     make/consumer.mk ci/tool-versions.env
-cmp .git/index "$FIXTURE/newline-index"
-cmp src/lib.rs "$FIXTURE/newline-source"
+cmp .git/index "$FIXTURE/shared-index"
+cmp src/lib.rs "$FIXTURE/shared-source"
 
 # Real tools qualify the shared root/extra-workspace driver and the unchanged
 # shortcut. These independent packages need no dependencies or compilation.
