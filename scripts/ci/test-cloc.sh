@@ -279,5 +279,41 @@ SH
 if PATH="$FIXTURE/bin:$PATH" bash "$FIXTURE/reporter/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/Cargo.toml" "$FIXTURE" > "$FIXTURE/removed.json" 2> "$FIXTURE/removed.err"; then exit 1; fi
 grep -F 'LOC scratch input disappeared:' "$FIXTURE/removed.err" >/dev/null
 [[ ! -s "$FIXTURE/removed.json" ]]
-echo 'LOC classification and source-total fixtures passed'
+# Depth is a view of existing file counts, never a second counting pass.
+depth_root="$FIXTURE/depth"
+mkdir -p "$depth_root/src/foo/deep" "$depth_root/tests"
+printf '[package]\nname="depth-fixture"\nversion="0.1.0"\nedition="2021"\n[workspace]\n' > "$depth_root/Cargo.toml"
+printf 'pub mod foo; pub mod util;\n' > "$depth_root/src/lib.rs"
+printf 'pub mod deep;\n' > "$depth_root/src/foo/mod.rs"
+printf 'pub mod leaf;\n' > "$depth_root/src/foo/deep/mod.rs"
+printf 'pub fn leaf() {}\n' > "$depth_root/src/foo/deep/leaf.rs"
+printf 'pub fn util() {}\n' > "$depth_root/src/util.rs"
+printf '#[test] fn test() {}\n' > "$depth_root/tests/check.rs"
+printf '#[cfg(test)] mod tests;\n' >> "$depth_root/src/lib.rs"
+printf '#[test] fn unit() {}\n' > "$depth_root/src/tests.rs"
+for depth in 0 1 2 3 999999; do
+    bash "$ROOT/scripts/dev/cloc.sh" -d "$depth" --manifest "$depth_root/Cargo.toml" "$depth_root" > "$FIXTURE/depth-$depth"
+    grep -Eq '^  depth-fixture +5 +3 +0 +0 +0 +0 +8$' "$FIXTURE/depth-$depth"
+    if grep -Eq '\(root\)|\(self\)|\.rs |/ ' "$FIXTURE/depth-$depth"; then exit 1; fi
+done
+if grep -q '^    foo ' "$FIXTURE/depth-0"; then exit 1; fi
+grep -Eq '^    foo +3 +0 +0 +0 +0 +0 +3$' "$FIXTURE/depth-1"
+grep -Eq '^    util +1 +0 +0 +0 +0 +0 +1$' "$FIXTURE/depth-1"
+grep -Eq '^    tests +0 +2 +0 +0 +0 +0 +2$' "$FIXTURE/depth-1"
+[[ $(grep -c '^    tests ' "$FIXTURE/depth-1") == 1 ]]
+if grep -q '^      deep ' "$FIXTURE/depth-1"; then exit 1; fi
+grep -Eq '^      deep +2 +0 +0 +0 +0 +0 +2$' "$FIXTURE/depth-2"
+grep -Eq '^      check +0 +1 +0 +0 +0 +0 +1$' "$FIXTURE/depth-2"
+if grep -q '^        leaf ' "$FIXTURE/depth-2"; then exit 1; fi
+grep -Eq '^        leaf +1 +0 +0 +0 +0 +0 +1$' "$FIXTURE/depth-3"
+cmp "$FIXTURE/depth-3" "$FIXTURE/depth-999999"
+# foo.rs plus foo/ is equivalent to foo/mod.rs plus foo/.
+mv "$depth_root/src/foo/mod.rs" "$depth_root/src/foo.rs"
+bash "$ROOT/scripts/dev/cloc.sh" -d 3 --manifest "$depth_root/Cargo.toml" "$depth_root" > "$FIXTURE/depth-file"
+cmp "$FIXTURE/depth-3" "$FIXTURE/depth-file"
+for invalid in -1 1.5 nope 01 1000000 ''; do
+    if bash "$ROOT/scripts/dev/cloc.sh" -d "$invalid" "$depth_root" > "$FIXTURE/invalid-depth" 2>&1; then exit 1; fi
+done
+if bash "$ROOT/scripts/dev/cloc.sh" -d > "$FIXTURE/invalid-depth" 2>&1; then exit 1; fi
+echo 'LOC classification, source totals and module depth fixtures passed'
 fixture_complete=true

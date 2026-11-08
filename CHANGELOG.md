@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.31.9] - Unreleased
+
+### ➕ Added
+
+- Add `cloc.sh -d N` to expand source modules beneath each crate, including
+  sibling reports. Nested rows reuse classified file counts and preserve totals;
+  matching file/directory names merge without `.rs`, slashes or root/self rows.
+  Inline modules remain attributed to their containing file.
+- Replace `--subcrates` with `-d 0` and Make's `CLOC_SUBCRATES=1` with
+  `CLOC_DEPTH=0`. Group classified files once per crate and build only requested
+  tree levels; category counts are unchanged.
+
 ## [0.31.8] - Unreleased
 
 ### 🩹 Fixed

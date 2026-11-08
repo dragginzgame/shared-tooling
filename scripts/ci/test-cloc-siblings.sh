@@ -36,7 +36,10 @@ cmp "$FIXTURE/summary" "$FIXTURE/default-scratch"
 (cd "$FIXTURE"; TMPDIR='relative scratch' report "$parent") > "$FIXTURE/relative-scratch"
 cmp "$FIXTURE/summary" "$FIXTURE/relative-scratch"
 [[ -d "$FIXTURE/relative scratch" && ! -e "$parent/zeta/relative scratch" ]]
-report --subcrates "$parent" > "$FIXTURE/expanded"
+report -d 0 "$parent" > "$FIXTURE/expanded"
+report -d 1 "$parent" > "$FIXTURE/modules"
+if grep -Eq '\(root\)|\(self\)' "$FIXTURE/modules"; then exit 1; fi
+[[ "$(awk 'END {print $2,$3,$4,$5,$6,$7,$8}' "$FIXTURE/modules")" == '2 4 0 0 0 0 6' ]]
 [[ "$(awk 'END {print $2,$3,$4,$5,$6,$7,$8}' "$FIXTURE/summary")" == '2 4 0 0 0 0 6' ]]
 [[ "$(awk 'END {print $2,$3,$4,$5,$6,$7,$8}' "$FIXTURE/expanded")" == '2 4 0 0 0 0 6' ]]
 awk -v width="$((${#long_name}+2))" 'NR==1 {n=length($0)} length($0)!=n {exit 1} END {if(n!=width+57)exit 1}' "$FIXTURE/expanded"
@@ -46,7 +49,7 @@ awk -v width="$((${#long_name}+2))" 'NR==1 {n=length($0)} length($0)!=n {exit 1}
 [[ "$(grep -Ec '^[- ]+$' "$FIXTURE/summary")" == 2 ]]
 (cd "$parent" && report) > "$FIXTURE/default"
 cmp "$FIXTURE/summary" "$FIXTURE/default"
-make --no-print-directory -s -f "$ROOT/make/tools.mk" cloc SHARED_TOOLING_ROOT="$ROOT" CLOC_ROOT="$parent" CLOC_SUBCRATES=1 > "$FIXTURE/make"
+make --no-print-directory -s -f "$ROOT/make/tools.mk" cloc SHARED_TOOLING_ROOT="$ROOT" CLOC_ROOT="$parent" CLOC_DEPTH=0 > "$FIXTURE/make"
 cmp "$FIXTURE/expanded" "$FIXTURE/make"
 ln -s "$parent" "$FIXTURE/parent-alias"
 report "$FIXTURE/parent-alias" > "$FIXTURE/alias"
