@@ -5,6 +5,45 @@ CI and release behavior must not depend on a sibling checkout, a moving Git
 branch, or network availability. Consumers vendor a reviewed file set and
 record its exact Toko Tooling source revision.
 
+## Small baseline snapshots
+
+`TOKO-TOOLING.md` is a standalone entrypoint. Its detailed policy and procedure
+links point to an immutable reviewed revision rather than pulling every linked
+guide, audit and maintenance task into a product snapshot. This changes document
+selection, not the Cargo pin, receipt, installer or policy authority contract.
+Executable entrypoints still carry their required executable companions.
+
+Choose the baseline, `make/consumer.mk` and the hook as needed. For offline policy
+access, additionally select the required guide entrypoints or the complete list
+in `scripts/distribution/governance-files.txt`. That list intentionally remains
+the comprehensive option; selecting all of it does not produce a minimal bundle.
+Keep required references available before a task; a small installation is not
+permission to skip the detailed rules. The crate retains the full documents.
+
+During an ordinary refresh, preview the selected roots. Previously derived,
+unchanged files that are no longer required retire through the exporter. Explicitly
+selected roots remain selected: use the complete `--entrypoint` list to remove
+unneeded audit/task roots, preserving guides used by local commands or offline
+workflows. Never edit receipt records or delete snapshot files by hand. No
+immediate refresh is required for an intact consumer installation.
+
+Policy adoption uses the checklist in `TOKO-TOOLING.md`: binding rules,
+consumer-owned choices, explicitly permitted defaults, and scoped approved
+exceptions. Record unresolved conflicts before claiming adoption; tooling can
+be installed and verified independently. This checklist clarifies existing
+authority and does not create blanket exceptions for legacy product practices.
+
+Maintainers should batch changes to selection, receipt and installer contracts
+at a planned minor boundary and document the concrete need and migration once.
+Do not introduce another migration merely to refresh terminology or policy prose.
+Consumers adopt for a needed correction or capability; an older intact snapshot
+alone is not an adoption defect or a reason to block a product release.
+
+The baseline's detailed-reference revision is a policy selection, not a moving
+"latest" pointer. Keep it unchanged for unrelated script releases. When revising
+the detailed rules themselves, review and update that reference deliberately;
+do not claim a newer policy is adopted merely because its files are packaged.
+
 ## Baseline filename migration in 0.37.0
 
 This is a hard cut to the Toko Tooling name, including `TOKO-TOOLING.md`,
@@ -51,7 +90,7 @@ proof. Preview first and retain the old receipt until admission succeeds.
   or workflows that require them. Normal update still installs and checks tools.
 - Select executable entrypoints for the runtime closure. Governance guides are
   explicit optional entrypoints, not companions of runtime scripts. Adopt the
-  baseline either as the `TOKO-TOOLING.md` entrypoint with its linked closure or
+  baseline either as the standalone `TOKO-TOOLING.md` entrypoint or
   through a reviewed revision-bound link. The crate still contains the full source
   bundle; a smaller consumer snapshot does not change that distribution.
 - Common engineering rules, integrity and execution admission remain mandatory.
@@ -979,10 +1018,12 @@ Shared fixtures that remain dependencies of another selected root stay exported.
 
 ## Audit method adoption
 
-Include the complete `audits/` file set in the governance list when adopting this
-baseline, so its method links work offline. The snapshot's reviewed source revision identifies
-the common contract; do not read methods from a moving sibling checkout or copy
-uncommitted documents and attribute them to an older revision.
+Audit methods are optional export roots, not an automatic baseline dependency.
+Select `audits/README.md` and its companions when offline audit procedures are
+needed; otherwise use the baseline's revision-bound method links for an explicitly
+requested audit. The snapshot's reviewed source revision identifies the common
+contract; do not read methods from a moving sibling checkout or copy uncommitted
+documents and attribute them to an older revision.
 
 For each selected existing local audit, map its questions to the shared method
 and retain product-specific obligations in a local overlay under the consumer's

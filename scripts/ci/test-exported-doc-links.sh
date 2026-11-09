@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/ci/prepare-script-fixture.sh scripts/distribution/refresh-consumer.sh scripts/distribution/governance-files.txt scripts/ci/check-documentation-links.pl
+# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/ci/prepare-script-fixture.sh scripts/distribution/refresh-consumer.sh scripts/distribution/governance-files.txt scripts/ci/check-documentation-links.pl scripts/ci/verify-file-checksum.sh scripts/ci/verify-toko-tooling-snapshot.sh
 set -euo pipefail
+case "${1:-}" in
+    '') baseline_only=false ;;
+    --baseline-only) baseline_only=true ;;
+    *) echo 'usage: test-exported-doc-links.sh [--baseline-only]' >&2; exit 2 ;;
+esac
 root="${BASH_SOURCE[0]}"
 [[ "$root" == /* ]] || root="$PWD/$root"
 root="$(cd -P "${root%/*}/../.." && printf '%s/.' "$PWD")"
@@ -24,11 +29,13 @@ while IFS= read -r path; do
     entrypoints+=("$path")
 done < "$root/scripts/distribution/governance-files.txt"
 entrypoints+=(make/consumer.mk scripts/dev/cloc.sh)
+if [[ "$baseline_only" == true ]]; then entrypoints=(TOKO-TOOLING.md); fi
 # Qualify current working bytes without staging or committing the real checkout.
 source_fixture="$fixture/source"
 mkdir "$source_fixture"
 bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$source_fixture" \
-    Cargo.toml scripts/distribution/refresh-consumer.sh "${entrypoints[@]}"
+    Cargo.toml scripts/distribution/refresh-consumer.sh scripts/ci/verify-file-checksum.sh \
+    scripts/ci/verify-toko-tooling-snapshot.sh "${entrypoints[@]}"
 git -C "$source_fixture" init -q
 git -C "$source_fixture" remote add origin https://github.com/dragginzgame/toko-tooling
 git -C "$source_fixture" -c core.hooksPath=/dev/null add .
@@ -44,6 +51,15 @@ check_exported_docs() {
     perl "$root/scripts/ci/check-documentation-links.pl" --root "$directory" "${documents[@]}"
 }
 check_exported_docs "$consumer"
+if [[ "$baseline_only" == true ]]; then
+    [[ ! -e "$consumer/audits" && ! -e "$consumer/tasks" && ! -e "$consumer/docs" && ! -e "$consumer/rules" ]]
+    # The baseline and the two mandatory integrity verifiers are the whole payload.
+    [[ "$(awk -F '\t' '$1 == "file" {n++} END {print n}' "$consumer/.toko-tooling.snapshot")" == 3 ]]
+    grep -Eq 'https://github.com/dragginzgame/toko-tooling/blob/[0-9a-f]{40}/rules/' "$consumer/TOKO-TOOLING.md"
+    fixture_complete=true
+    echo 'Standalone baseline export has valid links and only integrity companions'
+    exit 0
+fi
 # Partial adopters must receive the local documents directly referenced by
 # setup/adoption guidance, even without the complete governance entrypoint list.
 for entry in docs/local-setup.md docs/consuming-snapshots.md; do

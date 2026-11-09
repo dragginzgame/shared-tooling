@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.37.3] - Unreleased
+
+### 🩹 Fixed
+
+- Make the baseline a standalone export with revision-bound detailed references;
+  keep complete offline governance available through explicit entrypoints.
+  Clarify policy adoption, local choices and scoped exceptions, and batch future
+  adoption-contract changes instead of requiring routine consumer migrations.
+
 ## [0.37.2] - 2026-11-09
 
 ### 🩹 Fixed
