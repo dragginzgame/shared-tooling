@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.36.1] - Unreleased
+
+### 🩹 Fixed
+
+- Count test-only blocks and statements inside call-argument closures as Tests,
+  preserving production counts, macro boundaries and total source inventory.
+  [#367](https://github.com/dragginzgame/toko-tooling/issues/367)
+
 ## [0.36.0] - 2026-11-08
 
 ### ➕ Added

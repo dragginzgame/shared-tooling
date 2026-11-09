@@ -4,6 +4,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 export PATH="$ROOT/.tools/host/bin:$PATH"
 unset CARGO_TARGET_DIR
+case "${1:-}" in
+    '') scopes_only=false ;;
+    --scopes-only) scopes_only=true ;;
+    *) echo 'usage: test-cloc.sh [--scopes-only]' >&2; exit 2 ;;
+esac
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-cloc-test.XXXXXX")"
 FIXTURE="$(cd "$FIXTURE" && pwd -P)"
 git init -q "$FIXTURE"
@@ -11,6 +16,79 @@ git init -q "$FIXTURE"
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture_complete=false
 trap 'fixture_finish "$?" "$FIXTURE" "Failed LOC fixture retained"' EXIT
+mkdir -p "$FIXTURE/scopes/src"
+printf '[package]\nname="scopes"\nversion="0.1.0"\n[workspace]\n' > "$FIXTURE/scopes/Cargo.toml"
+cat > "$FIXTURE/scopes/src/lib.rs" <<'RUST'
+pub fn bind() {
+    RUNTIME.with(|runtime| {
+        #[cfg(test)]
+        if take_fault() {
+            return Err(handle);
+        }
+        runtime.bind(handle)
+    })
+}
+pub fn finish() {
+    let completed = with_registry_mut(|registry| {
+        #[cfg(test)]
+        {
+            if take_fault() {
+                return Err(error);
+            }
+        }
+        registry.complete()
+    });
+    finish_transition(completed);
+}
+pub mod controls;
+RUST
+cat > "$FIXTURE/scopes/src/controls.rs" <<'RUST'
+pub fn controls() {
+    call((move || {
+        #[cfg(any(test, feature = "production"))]
+        {
+            production();
+        }
+        #[cfg_attr(feature = "conditional", test)]
+        fn conditional() {}
+        emit!(#[cfg(test)] { not_expanded(); });
+        emit! { #[cfg(test)] { not_expanded(); } }
+        "#[cfg(test)] { string(); }"
+    }))
+}
+pub fn nested() {
+    call([outer(inner(|| {
+        #[cfg(all(test, feature = "fixture"))]
+        {
+            test_hook();
+        }
+        production();
+    }))]);
+}
+pub fn mixed() { call(|| { #[cfg(test)] { test_hook(); } production(); }); }
+#[cfg(test)]
+mod inline {
+    fn helper() { call(|| { test_hook(); }); }
+}
+RUST
+(cd "$FIXTURE/scopes" && cargo generate-lockfile --offline)
+cp "$FIXTURE/scopes/Cargo.lock" "$FIXTURE/scopes.lock"
+bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/scopes/Cargo.toml" "$FIXTURE/scopes" > "$FIXTURE/scopes.json"
+jq -e '
+  (.files | length) == 2 and .totals.unclassified == 0 and
+  ([.files[] | select(.path | endswith("/src/lib.rs"))][0].counts.tests == 10) and
+  ([.files[] | select(.path | endswith("/src/controls.rs"))][0].counts.tests == 8) and
+  ([.diagnostics[] | select(.reason | startswith("conditional attributes"))] | length == 1) and
+  ([.diagnostics[] | select(.reason | startswith("mixed-category"))] | length == 1)
+' "$FIXTURE/scopes.json" >/dev/null
+cloc --json --skip-uniqueness "$FIXTURE/scopes/src" > "$FIXTURE/scopes-cloc.json"
+[[ "$(jq '.SUM.code' "$FIXTURE/scopes-cloc.json")" == "$(jq '.totals.total' "$FIXTURE/scopes.json")" ]]
+cmp "$FIXTURE/scopes.lock" "$FIXTURE/scopes/Cargo.lock"
+if [[ "$scopes_only" == true ]]; then
+    echo 'Nested closure/block LOC classification passed'
+    fixture_complete=true
+    exit 0
+fi
 mkdir -p "$FIXTURE/crates/app/src/tests" "$FIXTURE/crates/app/examples" "$FIXTURE/crates/app/benches" \
     "$FIXTURE/crates/app/tests" "$FIXTURE/crates/fixture/src" "$FIXTURE/.cargo"
 cat > "$FIXTURE/Cargo.toml" <<'TOML'

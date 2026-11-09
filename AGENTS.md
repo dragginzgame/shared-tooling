@@ -10,6 +10,10 @@ for actual caller wiring and missed shared capabilities. An older version or
 LOC count alone is not an adoption defect. Run on request, not as background
 monitoring or an added release gate.
 
+By maintainer direction on 2026-11-09, exclude `ic-replica-watch` and
+`ic-profiler` from sibling audits for now unless the user explicitly includes
+them. This is in addition to the baseline's existing exclusions.
+
 ## Validation in Shared Tooling
 
 For meaningful new work, run `make prepare-work` and add the batch's notes to
