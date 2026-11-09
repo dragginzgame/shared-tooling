@@ -1,4 +1,15 @@
 # Cargo owns resolved identity; catalog edits never select a supplier by name alone.
+def qualification_member_catalog($product; $catalog):
+  [$product.packages[] | select(.id as $id | $product.workspace_members | index($id)) | .name] as $names |
+  [.dependencies, ."dev-dependencies", ."build-dependencies",
+   ((.target // {})[] | .dependencies, ."dev-dependencies", ."build-dependencies")] |
+  all(.[] // {} | to_entries[]; . as $d |
+    if ($names | index($d.value.package? // $d.key)) != null or ($catalog | any(.alias == $d.key))
+    then ($catalog | any(.alias == $d.key)) and
+      (($d.value | type) == "object" and ($d.value.workspace? // false) == true and
+       ($d.value | has("version") or has("path") | not))
+    else true end);
+
 def qualification_plan($product; $manifest; $plan; $directory; $next):
   . as $qualification |
   [$product.packages[] | select(.id as $id | $product.workspace_members | index($id))] as $owned |

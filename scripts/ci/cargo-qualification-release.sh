@@ -48,16 +48,10 @@ qualification_admit() {
             index($path) | not' "$root/$policy" > /dev/null || return
         # Product requirements must inherit this workspace's catalog, so no
         # hidden member requirement can lag the selected version transition.
-        "${YQ:-yq}" -p toml -o json '.' "$manifest" | jq -e \
+        "${YQ:-yq}" -p toml -o json '.' "$manifest" | jq -L "$script_dir" -e \
             --slurpfile plan "$evidence/qualification/plan.json" --slurpfile product "$evidence/metadata.json" '
-            [$product[0].packages[] | select(.id as $id | $product[0].workspace_members | index($id)) | .name] as $names |
-            [.dependencies, ."dev-dependencies", ."build-dependencies",
-             ((.target // {})[] | .dependencies, ."dev-dependencies", ."build-dependencies")] |
-            all(.[] // {} | to_entries[]; . as $d |
-              if ($names | index($d.value.package? // $d.key)) != null or ($plan[0].catalog | any(.alias == $d.key))
-              then ($plan[0].catalog | any(.alias == $d.key)) and
-                ($d.value.workspace? == true and ($d.value | has("version") or has("path") | not))
-              else true end)' > /dev/null || return
+            include "cargo-qualification-release";
+            qualification_member_catalog($product[0]; $plan[0].catalog)' > /dev/null || return
     done < "$evidence/qualification/members"
     jq --slurpfile qualification "$evidence/qualification/plan.json" '
         .manifests += [$qualification[0].manifest] |

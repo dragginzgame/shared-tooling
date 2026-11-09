@@ -66,6 +66,13 @@ refuse() { if "$@"; then echo 'unexpected qualification acceptance' >&2; exit 1;
 restore() { cp -R "$fixture/original/." "$fixture/source/"; }
 assert_original() { diff -r "$fixture/original" "$fixture/source"; }
 bash "$helper" plan product > "$fixture/plan.json"
+cargo metadata --locked --offline --format-version 1 > "$fixture/product.json"
+# jq optional indexing must not turn a string requirement into an empty predicate
+# that all() accepts. Exercise admission directly before Cargo rejects resolution.
+jq -L "$ROOT/scripts/ci" -ne --slurpfile product "$fixture/product.json" --slurpfile plan "$fixture/plan.json" '
+    include "cargo-qualification-release";
+    {dependencies:{renamed:"0.1.0"}} |
+    qualification_member_catalog($product[0]; $plan[0].qualification.catalog) | not' > /dev/null
 jq -e '.qualification.members == ["product"] and
     ([.files[] | select(startswith("qualification/"))] == ["qualification/Cargo.toml","qualification/Cargo.lock"]) and
     (.qualification.manifest.dependencies == [{alias:"renamed",previous:"=0.1.0",next:"=0.2.0"}])' "$fixture/plan.json" > /dev/null
@@ -83,13 +90,14 @@ cmp qualification/Cargo.toml "$fixture/original/qualification/Cargo.toml"
 restore
 # Refuse stale locks, public harnesses, aliases escaping their product identity,
 # overlapping ownership, and direct member requirements before installation.
-for fault in stale public alias overlap direct reverse symlink; do
+for fault in stale public alias overlap direct string reverse symlink; do
     case "$fault" in
         stale) perl -pi -e 's/version = "0.7.0"/version = "0.7.1"/' qualification/Cargo.lock ;;
         public) perl -ni -e 'print unless /publish = false/' qualification/domain/probe/Cargo.toml ;;
         alias) perl -pi -e 's@path = "../crates/domain/product" }@path = "../crates/unused" }@' qualification/Cargo.toml ;;
         overlap) jq '.shared_metadata_files=["qualification/Cargo.lock"]' ci/cargo-release-groups.json > "$fixture/policy"; cp "$fixture/policy" ci/cargo-release-groups.json ;;
         direct) perl -pi -e 's/renamed.workspace = true/renamed = { package = "product", path = "..\/..\/..\/crates\/domain\/product", version = "=0.1.0" }/' qualification/domain/probe/Cargo.toml ;;
+        string) printf '\n[target.\x27cfg(any())\x27.dependencies]\nproduct = "0.1.0"\n' >> qualification/domain/probe/Cargo.toml ;;
         reverse) printf '\n[dev-dependencies]\nprobe = { path = "../../../qualification/domain/probe" }\n' >> crates/domain/product/Cargo.toml ;;
         symlink) mv qualification/Cargo.lock "$fixture/symlink-lock"; ln -s "$fixture/symlink-lock" qualification/Cargo.lock ;;
     esac
