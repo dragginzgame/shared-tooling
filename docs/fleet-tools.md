@@ -125,6 +125,12 @@ items still count as tests. Generated markers (`@generated` or `DO NOT EDIT`
 near the file start) and declared generated paths set a separate flag; generated
 source under Cargo output remains excluded.
 
+The scanner rejects `package.metadata.<other-namespace>.loc` tables before
+counting source, including empty tables and declarations alongside the current
+namespace. Move the settings to `package.metadata.toko-tooling.loc` and resolve
+conflicting tables explicitly. The diagnostic names each affected manifest;
+no partial LOC report is emitted. Unrelated package metadata is unaffected.
+
 Shared target source is counted once and flagged with all observed target
 categories. Without an override or conventional path, the accounting owner is
 the first applicable category in the table's order. That choice does not claim

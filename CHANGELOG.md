@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.37.1] - Unreleased
+
+### 🩹 Fixed
+
+- Refuse LOC policies declared under unsupported metadata namespaces before
+  counting source. Name the affected manifests and required metadata migration
+  instead of silently reclassifying fixture code as library/application code.
+
 ## [0.37.0] - 2026-11-09
 
 ### ⚠️ Breaking

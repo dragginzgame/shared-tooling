@@ -5,9 +5,10 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 export PATH="$ROOT/.tools/host/bin:$PATH"
 unset CARGO_TARGET_DIR
 case "${1:-}" in
-    '') scopes_only=false ;;
-    --scopes-only) scopes_only=true ;;
-    *) echo 'usage: test-cloc.sh [--scopes-only]' >&2; exit 2 ;;
+    '') scopes_only=false; metadata_only=false ;;
+    --scopes-only) scopes_only=true; metadata_only=false ;;
+    --metadata-only) scopes_only=false; metadata_only=true ;;
+    *) echo 'usage: test-cloc.sh [--scopes-only|--metadata-only]' >&2; exit 2 ;;
 esac
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-cloc-test.XXXXXX")"
 FIXTURE="$(cd "$FIXTURE" && pwd -P)"
@@ -16,6 +17,39 @@ git init -q "$FIXTURE"
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture_complete=false
 trap 'fixture_finish "$?" "$FIXTURE" "Failed LOC fixture retained"' EXIT
+if [[ "$scopes_only" == false ]]; then
+    mkdir -p "$FIXTURE/policy/src"
+    printf '[package]\nname="policy"\nversion="0.1.0"\n[workspace]\n' > "$FIXTURE/policy/Cargo.toml"
+    printf 'pub fn fixture() {}\n' > "$FIXTURE/policy/src/lib.rs"
+    (cd "$FIXTURE/policy" && cargo generate-lockfile --offline)
+    cp "$FIXTURE/policy/Cargo.toml" "$FIXTURE/policy-base.toml"
+    cp "$FIXTURE/policy/Cargo.lock" "$FIXTURE/policy.lock"
+    for declaration in misplaced both empty; do
+        cp "$FIXTURE/policy-base.toml" "$FIXTURE/policy/Cargo.toml"
+        printf '\n[package.metadata.other-tooling.loc]\ncategory="tests"\n' >> "$FIXTURE/policy/Cargo.toml"
+        if [[ "$declaration" == both ]]; then
+            printf '\n[package.metadata.toko-tooling.loc]\ncategory="tests"\n' >> "$FIXTURE/policy/Cargo.toml"
+        elif [[ "$declaration" == empty ]]; then
+            # Even an empty obsolete table declares a policy, not an absent one.
+            sed '/category=/d' "$FIXTURE/policy/Cargo.toml" > "$FIXTURE/policy-empty.toml"
+            cp "$FIXTURE/policy-empty.toml" "$FIXTURE/policy/Cargo.toml"
+        fi
+        if bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/policy/Cargo.toml" "$FIXTURE/policy" > "$FIXTURE/policy.json" 2> "$FIXTURE/policy.err"; then exit 1; fi
+        [[ ! -s "$FIXTURE/policy.json" ]]
+        grep -F "$FIXTURE/policy/Cargo.toml: unsupported LOC metadata" "$FIXTURE/policy.err" >/dev/null
+        grep -F 'package.metadata.toko-tooling.loc' "$FIXTURE/policy.err" >/dev/null
+        cmp "$FIXTURE/policy.lock" "$FIXTURE/policy/Cargo.lock"
+    done
+    cp "$FIXTURE/policy-base.toml" "$FIXTURE/policy/Cargo.toml"
+    printf '\n[package.metadata.toko-tooling.loc]\ncategory="tests"\n[package.metadata.unrelated]\nlabel="retained"\n' >> "$FIXTURE/policy/Cargo.toml"
+    bash "$ROOT/scripts/dev/cloc.sh" --json --manifest "$FIXTURE/policy/Cargo.toml" "$FIXTURE/policy" > "$FIXTURE/policy.json"
+    jq -e '.totals.tests == 1 and .totals.library_app == 0 and .totals.total == 1' "$FIXTURE/policy.json" >/dev/null
+    if [[ "$metadata_only" == true ]]; then
+        echo 'LOC metadata admission and migrated fixture classification passed'
+        fixture_complete=true
+        exit 0
+    fi
+fi
 mkdir -p "$FIXTURE/scopes/src"
 printf '[package]\nname="scopes"\nversion="0.1.0"\n[workspace]\n' > "$FIXTURE/scopes/Cargo.toml"
 cat > "$FIXTURE/scopes/src/lib.rs" <<'RUST'
