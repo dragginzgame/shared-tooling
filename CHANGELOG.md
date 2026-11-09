@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.37.4] - Unreleased
+
+### ➕ Added
+
+- Prefer latest stable direct dependencies during authorized updates, independently
+  of older DFINITY transitive selections. Allow reasonable duplicate versions,
+  require scoped exceptions for older direct selections, and reduce upstream
+  coupling while preserving type, runtime and cryptographic contracts.
+
 ## [0.37.3] - 2026-11-09
 
 ### 🩹 Fixed

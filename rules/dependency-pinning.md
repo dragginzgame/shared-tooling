@@ -8,6 +8,12 @@ The [Cargo ownership rules](cargo-dependencies.md) define where declarations liv
 
 ## Selection and reproducibility
 
+The baseline's
+[current dependency selection rule](../TOKO-TOOLING.md#current-dependencies-and-upstream-independence)
+owns freshness, acceptable duplicates and exceptions for older direct selections.
+Reproducibility freezes a reviewed selection; it does not justify choosing an
+older dependency merely to match an upstream integration stack.
+
 | Input | Required selection |
 | --- | --- |
 | Registry dependencies | Explicit compatible version requirements plus a tracked lockfile for each maintained build workspace. |

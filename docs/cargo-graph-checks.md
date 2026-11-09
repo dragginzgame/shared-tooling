@@ -150,6 +150,10 @@ a permanent design defect. Add or tighten a consumer guard with the completed
 adoption when justified; do not create a blanket duplicate-dependency ban or
 restructure workspaces merely to make a lockfile uniform. Existing ownership,
 focused validation and release authority still apply.
+Apply the [current dependency selection rule](../TOKO-TOOLING.md#current-dependencies-and-upstream-independence)
+to independent general-purpose libraries: older upstream `num-bigint` or `sha2`
+selections do not by themselves block newer direct selections. Assess material
+cost in the actual consumer artifact, rather than rejecting duplicates by count.
 
 ## Dependency adoption planning
 
@@ -158,7 +162,9 @@ destination application's selected roots, targets/features and independent
 manifests/locks. In the existing issue or change notes, distinguish the requested
 upgrade and required runtime/public-type/security/minimum-capability alignments
 from optional refreshes. Explain required extra selections with their introducing
-dependency path or contract; do not make every package track the latest release.
+dependency path or contract; do not expand a scoped update into unrelated
+package refreshes. Within the selected update scope, use the baseline's latest
+stable selection rule and document any required older-version exception.
 
 Optional refreshes are deferred by default and batched with requested maintenance
 or a natural release boundary. Do not start an update-everything pass because a

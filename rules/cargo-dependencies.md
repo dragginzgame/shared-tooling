@@ -11,6 +11,10 @@ same owning root catalog regardless of its directory; package grouping does
 not authorize separate dependency selections.
 The [pinning rules](dependency-pinning.md) define compatible ranges, justified
 exact constraints, immutable Git revisions, lockfiles and external path inputs.
+Apply the baseline's
+[current dependency selection rule](../TOKO-TOOLING.md#current-dependencies-and-upstream-independence)
+when adding or updating dependencies. General-purpose selections are independent
+of older DFINITY transitive requirements; justified multiple versions are allowed.
 
 ## Shared boundary check
 

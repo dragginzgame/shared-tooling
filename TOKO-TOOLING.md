@@ -180,6 +180,44 @@ when changing interfaces, persistence or installation/recovery behavior.
 Do not submit DFINITY PRs or depend on future DFINITY work. Use available qualified
 dependencies or own the solution under the [maintenance contract](https://github.com/dragginzgame/toko-tooling/blob/626da7cd9626cc2e152594862a2d82ea82ef51da/rules/engineering-details.md#dfinity-dependencies-own-the-solution).
 
+## Current dependencies and upstream independence
+
+- When adding or updating a direct dependency, select its latest stable,
+  non-yanked release, including a newer major version where applicable. Verify
+  registry availability at selection time and qualify the affected APIs, targets
+  and features. An existing version requirement is not a reason to stop at the
+  latest release within an old range. Keep compatible requirements and reviewed
+  lockfiles; this rule does not require exact pins or prereleases.
+- Select general-purpose dependencies independently of DFINITY's transitive
+  selections. Do not downgrade or hold back our `num-bigint`, `sha2` or similar
+  dependencies merely to match an upstream version or eliminate duplicates.
+  Two versions are acceptable when their types need not interoperate and their
+  actual size, build and runtime costs are reasonable for the consuming product.
+  A whole-lockfile duplicate count does not establish deployed code size.
+- Keep genuinely required shared type identities, runtime singletons, protocol
+  bytes and security guarantees intact. If duplication may materially affect a
+  product budget, measure the selected target/feature graph and resulting
+  artifact; for Wasm, use complete uncompressed and code-section sizes. Prefer
+  removing unused edges and narrowing features over holding back independent
+  dependencies. Optional upstream edges can still constrain resolution; prove
+  independence rather than assuming a disabled feature removes the constraint.
+- Retaining an older direct selection is exceptional. Record the package and
+  versions, concrete blocker (for example a regression, approved compiler/target
+  incompatibility, shared public type or measured budget breach), affected scope,
+  maintainer approval and condition for revisiting it in the local overlay or
+  its linked policy. Upstream age, deduplication alone or unexamined migration
+  effort is not sufficient. An upstream-only older transitive selection needs
+  no freshness exception for our independent direct dependency; security
+  findings still require remediation.
+- Reduce DFINITY coupling incrementally at the existing capability owner as
+  affected work permits. Preserve reviewed cryptographic implementations,
+  external behavior and provenance; do not bypass the Platform boundary or
+  rewrite cryptography to obtain a newer dependency.
+- Apply this selection rule during authorized dependency maintenance. It does
+  not trigger background fleet updates, unrelated upgrades or republishing on
+  every upstream release. Routine validation and deployment use their reviewed
+  locked inputs; batch optional refreshes at requested maintenance boundaries.
+
 <a id="repository-files-no-symlinks"></a>
 
 ## Repository files: self-contained source and packages
