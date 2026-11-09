@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.38.2] - Unreleased
+
+### 🩹 Fixed
+
+- Explicitly authorize scoped Git intent-to-add entries for newly created,
+  task-owned files when required by validation, such as qualification lockfiles.
+  Agents need no separate approval for that bookkeeping; staging file contents,
+  commits and delivery retain their existing authorization requirements.
+
 ## [0.38.1] - 2026-11-09
 
 ### ➕ Added
