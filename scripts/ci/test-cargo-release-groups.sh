@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/cargo-release-metadata.sh scripts/ci/check-dependency-pins.sh scripts/ci/run-release.sh scripts/ci/release-receipts.sh scripts/ci/fixture-lifecycle.sh scripts/ci/cargo-publication-selection.pl
+# Shared companions: scripts/ci/cargo-release-metadata.sh scripts/ci/check-dependency-pins.sh scripts/ci/run-release.sh scripts/ci/release-receipts.sh scripts/ci/fixture-lifecycle.sh scripts/ci/cargo-publication-selection.pl scripts/ci/test-cargo-qualification-release.sh
 set -euo pipefail
 selection=all
 if [[ $# != 0 ]]; then
@@ -17,6 +17,7 @@ fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Release-group fixtures retained"' EXIT
 if [[ "$selection" == all ]]; then
     export CARGO_RELEASE_METADATA_EDITOR="${CARGO_RELEASE_METADATA_EDITOR:?select group-capable compiled IC Build editor}"
+    bash "$ROOT/scripts/ci/test-cargo-qualification-release.sh"
 fi
 export CARGO_RELEASE_METADATA_MAX_BYTES=8388608
 export RELEASE_GROUP=endpoint RELEASE_PREVIOUS=0.1.0 RELEASE_VERSION=0.2.0 RELEASE_DATE=2026-10-31
@@ -463,7 +464,7 @@ GROUP_FAIL_PUSH=1 refuse bash "$ROOT/scripts/ci/run-release.sh" minor origin mai
 # An attempt copied into another group's namespace must refuse before effects.
 cp .git/release-state/endpoint-0.2.0.plan .git/release-state/codec-0.2.0.plan
 RELEASE_GROUP=codec refuse bash "$ROOT/scripts/ci/run-release.sh" resume 0.2.0 origin main > "$fixture/wrong-resume.log" 2>&1
-grep -q 'release group changed' "$fixture/wrong-resume.log"
+grep -q 'group identity mismatch' "$fixture/wrong-resume.log"
 bash "$ROOT/scripts/ci/run-release.sh" resume 0.2.0 origin main > "$fixture/resume.log" 2>&1
 [[ "$(git --git-dir="$fixture/destination.git" rev-parse main)" == "$(git rev-parse HEAD)" ]]
 [[ "$(git status --porcelain)" == '' ]]

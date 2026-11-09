@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.38.1] - Unreleased
+
+### ➕ Added
+
+- Prepare product and qualification release metadata in one shared transaction.
+  Opt in through `qualification_workspace`, update both locks and inherited
+  product requirements, preserve private versions and unrelated suppliers, and
+  restore all selected files if either graph fails. Include adoption guidance
+  for single-group workspaces and replacement of consumer renderers.
+  [#369](https://github.com/dragginzgame/toko-tooling/issues/369)
+
 ## [0.38.0] - 2026-11-09
 
 ### ⚠️ Breaking
