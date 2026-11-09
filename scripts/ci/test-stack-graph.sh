@@ -139,9 +139,9 @@ graph() {
 graph --write
 graph --check
 grep -Fq 'p_app_7ccargo_3aapp --> p_engine_7ccargo_3aengine' "$output/docs/stack.md"
-grep -Fq 'p_engine_7ccargo_3aengine --> p_platform_7ccargo_3aplatform' "$output/docs/stack.md"
-grep -Fq 'p_app_7ccargo_3aapp -.-> p_ic_2dtooling_7ccargo_3aic_2dbuild' "$output/docs/stack.md"
-grep -Fq 'p_ic_2dtooling_7ccargo_3aic_2dbuild -.-> p_platform_7ccargo_3aplatform' "$output/docs/stack.md"
+grep -Fq 'p_engine_7ccargo_3aengine -. "normal, conditional" .-> p_platform_7ccargo_3aplatform' "$output/docs/stack.md"
+grep -Fq 'p_app_7ccargo_3aapp -. "normal, native" .-> p_ic_2dtooling_7ccargo_3aic_2dbuild' "$output/docs/stack.md"
+grep -Fq 'p_ic_2dtooling_7ccargo_3aic_2dbuild -. "normal, native" .-> p_platform_7ccargo_3aplatform' "$output/docs/stack.md"
 grep -Fq 'p_engine_7ccargo_3aengine --> p_engine_7ccargo_3aengine_2dcore' "$output/docs/stack.md"
 grep -Fq 'p_engine_7ccargo_3aengine_2dcore --> p_engine_7ccargo_3astorage' "$output/docs/stack.md"
 grep -Fq 'p_engine_7ccargo_3astorage --> p_engine_7ccargo_3amemory' "$output/docs/stack.md"
@@ -165,6 +165,10 @@ grep -Fq 'app → legacy-bridge (pinned Git)' "$output/docs/stack.md"
 # shellcheck disable=SC2016 # Match literal Markdown code spans.
 grep -Fq '→ `engine` (cargo normal)' "$output/docs/stack.md"
 grep -Fq 'target-specific' "$output/docs/stack.md"
+grep -Fq 'target=cfg(target_arch = "wasm32")' "$output/docs/stack.md"
+grep -Fq 'declared source=path:engine/crates/engine' "$output/docs/stack.md"
+grep -Fq 'Generated and independent qualification workspaces are unobserved' "$output/docs/stack.md"
+grep -Fq 'p_app_7ccargo_3aapp -. "dev" .-> p_unused_7ccargo_3aunused' "$output/docs/stack.md"
 # shellcheck disable=SC2016
 grep -Fq '→ `legacy-bridge` (cargo dev)' "$output/docs/stack.md"
 # shellcheck disable=SC2016
@@ -180,6 +184,37 @@ cp "$output/README.md" "$FIXTURE/saved-readme"
 cp "$output/docs/stack.md" "$FIXTURE/saved-details"
 graph --write
 cmp "$FIXTURE/saved-readme" "$output/README.md"
+cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
+
+# A private qualification consumer may use normal dependencies while its
+# supplier's return edge is optional: neither belongs in the compact overview.
+cp "$parent/unused/crates/unused/Cargo.toml" "$FIXTURE/saved-unused"
+cp "$parent/engine/crates/memory/Cargo.toml" "$FIXTURE/role-memory"
+cat >> "$parent/unused/crates/unused/Cargo.toml" <<'TOML'
+[package.metadata.toko-tooling.loc]
+category = "tests"
+[dependencies]
+memory = { path = "../../../engine/crates/memory", version = ">=0.1, <0.3" }
+platform = { version = "0.2", optional = true, default-features = false, features = ["fixture"] }
+TOML
+cat >> "$parent/engine/crates/memory/Cargo.toml" <<'TOML'
+[dependencies]
+unused = { path = "../../../unused/crates/unused", version = "0.1", optional = true }
+TOML
+mkdir -p "$parent/unused/generated/driver"
+printf 'Not a Cargo manifest: this generator output must not be executed.\n' > "$parent/unused/generated/driver/Cargo.toml"
+graph --write
+grep -Fq 'unused (qualification: tests)' "$output/docs/stack.md"
+grep -Fq 'p_unused_7ccargo_3aunused -. "normal, qualification" .-> p_engine_7ccargo_3amemory' "$output/docs/stack.md"
+grep -Fq 'p_engine_7ccargo_3amemory -. "normal, conditional, qualification" .-> p_unused_7ccargo_3aunused' "$output/docs/stack.md"
+grep -Fq 'requirement=&#62;=0.1, &#60;0.3' "$output/docs/stack.md"
+grep -Fq 'requirement=^0.2; declared source=registry+' "$output/docs/stack.md"
+grep -Fq 'requested features=fixture; default features=no' "$output/docs/stack.md"
+grep -Fq 'crates/platform/Cargo.toml) (0.1.0;' "$output/docs/stack.md"
+cmp "$FIXTURE/saved-readme" "$output/README.md"
+cp "$FIXTURE/saved-unused" "$parent/unused/crates/unused/Cargo.toml"
+cp "$FIXTURE/role-memory" "$parent/engine/crates/memory/Cargo.toml"
+graph --write
 cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
 
 # Policies group nodes without merging their dependency edges; the full view
@@ -205,6 +240,14 @@ for fault in duplicate unknown unassigned primary ledger; do
     cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
 done
 cp "$FIXTURE/saved-groups" "$parent/engine/ci/cargo-release-groups.json"
+# Single-group owners can keep their ledger at the workspace root.
+cp "$parent/engine/releases/engine.md" "$parent/engine/CHANGELOG.md"
+sed 's@releases/engine.md@CHANGELOG.md@' "$FIXTURE/saved-groups" > "$parent/engine/ci/cargo-release-groups.json"
+graph --write
+grep -Fq '/engine/blob/main/CHANGELOG.md' "$output/docs/stack.md"
+cp "$FIXTURE/saved-groups" "$parent/engine/ci/cargo-release-groups.json"
+graph --write
+cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
 cp "$parent/engine/crates/memory/Cargo.toml" "$FIXTURE/saved-memory"
 sed 's/0.1.0/0.2.0/' "$FIXTURE/saved-memory" > "$parent/engine/crates/memory/Cargo.toml"
 if graph --write; then echo 'mismatched group version accepted' >&2; exit 1; fi
@@ -267,6 +310,11 @@ cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
 mv "$parent/unused.saved" "$parent/unused"
 
 # Do not destroy reachability by reducing a graph containing a normal cycle.
+# Make the formerly conditional edges unconditional for this separate case.
+sed '/\[target\./d;s/, optional = true//' "$parent/engine/crates/engine/Cargo.toml" > "$FIXTURE/unconditional-engine"
+cp "$FIXTURE/unconditional-engine" "$parent/engine/crates/engine/Cargo.toml"
+sed 's/, optional = true//' "$parent/app/crates/app/Cargo.toml" > "$FIXTURE/unconditional-app"
+cp "$FIXTURE/unconditional-app" "$parent/app/crates/app/Cargo.toml"
 sed 's/\[build-dependencies\]/[dependencies]/' "$parent/platform/crates/platform/Cargo.toml" > "$FIXTURE/cyclic-manifest"
 cp "$FIXTURE/cyclic-manifest" "$parent/platform/crates/platform/Cargo.toml"
 graph --write

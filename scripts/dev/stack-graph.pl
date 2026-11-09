@@ -51,6 +51,12 @@ sub node_id {
     $id =~ s/([^A-Za-z0-9])/sprintf('_%02x', ord($1))/ge;
     return "p_$id";
 }
+sub text_cell {
+    my $text = shift // '';
+    $text =~ s/&/&amp;/g;
+    $text =~ s/([<>|`\r\n])/sprintf('&#%d;', ord($1))/ge;
+    return $text;
+}
 
 my $catalog = decode_json(read_file($catalog_file));
 die "Catalog needs nonempty roots and repositories\n"
@@ -106,7 +112,7 @@ for my $repo (@{$catalog->{repositories}}) {
             die "Duplicate release group $key\n" if exists $groups{$key};
             my $ledger = $group->{changelog} // '';
             die "Invalid group changelog in $key\n"
-                unless $ledger =~ m{^[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_.-]+)*$}
+                    unless $ledger =~ m{^[a-zA-Z0-9_-][a-zA-Z0-9_.-]*(?:/[a-zA-Z0-9_.-]+)*$}
                     && $ledger !~ m{(?:^|/)\.\.(?:/|$)} && -f "$workspace/$ledger";
             my $version = $member_packages{$group->{primary}}{version};
             for my $member (@{$group->{members}}) {
@@ -131,7 +137,11 @@ for my $repo (@{$catalog->{repositories}}) {
         my $key = "$name|cargo:$package->{name}";
         $owner{"cargo:$package->{name}"}{$name} = 1;
         my $native = $name eq 'ic-tooling' || grep { under($path, $_) } @{$repo->{native} // []};
+        my $role = $package->{metadata}{'toko-tooling'}{loc}{category} // '';
+        my $qualification = $role =~ /\A(?:tests|benchmarks|examples)\z/;
         $nodes{$key} = { name => $package->{name}, repo => $name, native => $native,
+            qualification => $qualification, role => $role,
+            version => $package->{version},
             group => $membership{$package->{name}} };
         my @selected = grep { under($path, $_) } @{$repo->{paths}};
         $matched{$_} = 1 for @selected;
@@ -139,7 +149,9 @@ for my $repo (@{$catalog->{repositories}}) {
         next if grep { under($path, $_) } @{$repo->{exclude} // []};
         $selected{$key} = 1;
         push @packages, [$name, $path, $package, $native];
-        push @{$inventory{$name}}, [$package->{name}, $path];
+        my $visibility = defined($package->{publish}) && !@{$package->{publish}} ? 'private' : 'publishable';
+        push @{$inventory{$name}}, [$package->{name}, $path,
+            "$package->{version}; $visibility; " . ($role ? "declared role: $role" : 'role unspecified')];
     }
     die "Catalog selects no member below $name/$_\n" for grep { !$matched{$_} } @{$repo->{paths}};
     die "Catalog selects no packages in $name\n" unless @{$inventory{$name} // []};
@@ -150,11 +162,11 @@ for my $repo (@{$catalog->{repositories}}) {
         $nodes{"$name|npm:$package->{name}"} = { name => $package->{name}, repo => $name };
         $selected{"$name|npm:$package->{name}"} = 1;
         push @npm, [$name, $path, $package];
-        push @{$inventory{$name}}, [$package->{name}, $path];
+        push @{$inventory{$name}}, [$package->{name}, $path, ($package->{version} // 'version unspecified') . '; browser package'];
     }
 }
 sub dependency {
-    my ($repo, $path, $package, $ecosystem, $dependency, $kind, $annotation, $source, $native) = @_;
+    my ($repo, $path, $package, $ecosystem, $dependency, $kind, $annotation, $source, $native, $conditional, $selection) = @_;
     my $from = "$repo|$ecosystem:$package";
     my @owners = sort keys %{$owner{"$ecosystem:$dependency"} // {}};
     # Pinned Git dependencies can name packages absent from today's workspace.
@@ -173,12 +185,19 @@ sub dependency {
     my $to = "$owners[0]|$ecosystem:$dependency";
     return if $to eq $from;
     my $key = "$from\t$to";
+    my $qualification = $nodes{$from}{qualification} || $nodes{$to}{qualification};
+    my $label = $kind;
+    $label .= ', conditional' if $conditional;
+    $label .= ', qualification' if $qualification;
+    $label .= ', native' if $native || $nodes{$to}{native};
+    $edges{$key}{labels}{$label} = 1;
     if ($kind eq 'normal') {
         $edges{$key}{normal} = 1;
-        $edges{$key}{solid} = 1 unless $native || $nodes{$to}{native};
+        $edges{$key}{solid} = 1 unless $native || $nodes{$to}{native} || $conditional || $qualification;
     }
     $annotation .= ', native package' if $native;
-    my $evidence = "[$package](@{[source_link($repo, $path)]}) → `$dependency` ($ecosystem $kind$annotation)";
+    $annotation .= ', qualification role' if $qualification;
+    my $evidence = "[$package](@{[source_link($repo, $path)]}) → `$dependency` ($ecosystem $kind$annotation); " . text_cell($selection);
     $edges{$key}{evidence}{$evidence} = 1;
 }
 for my $entry (@packages) {
@@ -186,26 +205,35 @@ for my $entry (@packages) {
     for my $dep (@{$package->{dependencies}}) {
         my $annotation = $dep->{optional} ? ', optional' : '';
         $annotation .= ', target-specific' if defined $dep->{target};
+        my $location = $dep->{path} // $dep->{source} // 'registry (Cargo default)';
+        $location = 'path:' . File::Spec->abs2rel($location, $parent) if defined $dep->{path};
+        my $selection = "requirement=$dep->{req}; declared source=$location; target=" . ($dep->{target} // 'all')
+            . '; requested features=' . join(',', @{$dep->{features}})
+            . '; default features=' . ($dep->{uses_default_features} ? 'yes' : 'no');
         dependency($repo, $path, $package->{name}, 'cargo', $dep->{name},
-            $dep->{kind} // 'normal', $annotation, $dep->{source}, $native);
+            $dep->{kind} // 'normal', $annotation, $dep->{source}, $native,
+            $dep->{optional} || defined($dep->{target}), $selection);
     }
 }
 for my $entry (@npm) {
     my ($repo, $path, $package) = @$entry;
     for my $section (qw(dependencies optionalDependencies peerDependencies devDependencies)) {
         dependency($repo, $path, $package->{name}, 'npm', $_,
-            $section eq 'devDependencies' ? 'dev' : 'normal', ", $section")
+            $section eq 'devDependencies' ? 'dev' : 'normal', ", $section", undef, 0,
+            $section eq 'optionalDependencies' || $section eq 'peerDependencies',
+            "requirement=$package->{$section}{$_}; source/activation unresolved")
             for sort keys %{$package->{$section} // {}};
     }
 }
 
-my (%graph, %normal);
+my (%graph, %normal, %declared);
 for my $key (sort keys %edges) {
     my ($from, $to) = split /\t/, $key;
+    $declared{$from}{$to} = 1;
+    $graph{$from}{$to} = 1 if $edges{$key}{solid};
     next unless $edges{$key}{normal};
     $normal{$from}{$to} = 1;
     # Do not let native tooling paths hide direct library/application arrows.
-    $graph{$from}{$to} = 1 if $edges{$key}{solid};
 }
 sub reachable {
     my ($graph, $start, $goal, $skip) = @_;
@@ -227,12 +255,12 @@ my %visible = map { $_ => 1 } keys %selected;
 my @pending = sort keys %visible;
 while (@pending) {
     my $from = shift @pending;
-    for my $to (keys %{$normal{$from} // {}}) {
+    for my $to (keys %{$declared{$from} // {}}) {
         push @pending, $to unless $visible{$to}++;
     }
 }
 sub diagram {
-    my ($labels, $normal, $solid) = @_;
+    my ($labels, $normal, $solid, $full) = @_;
     # Reduction is safe on DAGs; retain all edges if a cycle appears.
     my $cyclic = grep { reachable($solid, $_, $_, undef) } keys %$labels;
     my $diagram = "```mermaid\nflowchart TD\n";
@@ -269,19 +297,24 @@ sub diagram {
         for my $to (sort keys %{$normal->{$from} // {}}) {
             next unless exists $labels->{$to};
             my $native = !$solid->{$from}{$to};
-            next if !$native && !$cyclic && reachable($solid, $from, $to, "$from\t$to");
-            $diagram .= '    ' . node_id($from) . ($native ? ' -.-> ' : ' --> ') . node_id($to) . "\n";
+            next if !$full && !$native && !$cyclic && reachable($solid, $from, $to, "$from\t$to");
+            my $arrow = $native ? ' -.-> ' : ' --> ';
+            if ($full) {
+                my $label = join('; ', sort keys %{$edges{"$from\t$to"}{labels}});
+                $arrow = $native ? " -. \"$label\" .-> " : " -->|\"$label\"| " if $label ne 'normal';
+            }
+            $diagram .= '    ' . node_id($from) . $arrow . node_id($to) . "\n";
         }
     }
     return "$diagram```\n";
 }
-my %labels = map { $_ => $nodes{$_}{name} } keys %visible;
-my $full_diagram = diagram(\%labels, \%normal, \%graph);
+my %labels = map { $_ => $nodes{$_}{name} . ($nodes{$_}{qualification} ? " (qualification: $nodes{$_}{role})" : '') } keys %visible;
+my $full_diagram = diagram(\%labels, \%declared, \%graph, 1);
 
 # The README shows application groups and selected library entry points. Walk
 # through omitted internal crates, stopping at the next displayed dependency.
 # This preserves real package paths rather than merging a workspace's edges.
-my %focus = map { $_ => 1 } grep { /\|cargo:/ && !$nodes{$_}{native} } keys %selected;
+my %focus = map { $_ => 1 } grep { /\|cargo:/ && !$nodes{$_}{native} && !$nodes{$_}{qualification} } keys %selected;
 if (exists $catalog->{overview}) {
     die "Catalog overview must be a nonempty crate-name array\n"
         unless ref($catalog->{overview}) eq 'ARRAY' && @{$catalog->{overview}};
@@ -291,7 +324,7 @@ if (exists $catalog->{overview}) {
         die "Unknown or ambiguous overview crate: $package\n" unless @owners == 1;
         my $key = "$owners[0]|cargo:$package";
         die "Overview crate is not a selected library: $package\n"
-            unless $selected{$key} && !$nodes{$key}{native};
+            unless $selected{$key} && !$nodes{$key}{native} && !$nodes{$key}{qualification};
         $focus{$key} = 1;
     }
 }
@@ -299,7 +332,7 @@ my (%overview_labels, %overview, %starts);
 for my $repo (@{$catalog->{roots}}) {
     my $key = "app:$repo";
     $overview_labels{$key} = $repo;
-    $starts{$key} = [grep { /^\Q$repo\E\|cargo:/ && !$nodes{$_}{native} } sort keys %selected];
+    $starts{$key} = [grep { /^\Q$repo\E\|cargo:/ && !$nodes{$_}{native} && !$nodes{$_}{qualification} } sort keys %selected];
 }
 @pending = sort keys %overview_labels;
 while (@pending) {
@@ -323,7 +356,13 @@ while (@pending) {
     }
 }
 my $overview_diagram = diagram(\%overview_labels, \%overview, \%overview);
-my $details = "## Full package graph\n\n<details>\n<summary>Expand all crates, browser packages and native tools</summary>\n\n"
+my $details = "## Full package graph\n\nDeclaration inventory, not an active production graph or cycle detector. "
+    . "Solid arrows are unconditional normal declarations between non-native, non-qualification packages. "
+    . "Labelled dashed arrows retain dev/build, conditional, native and qualification relationships. "
+    . "All direct edges are retained here. No target or feature selection was resolved.\n\n"
+    . "Coverage: selected Cargo workspace members and catalogued npm files only. "
+    . "Generated and independent qualification workspaces are unobserved; no generators were executed. "
+    . "Private status alone does not infer a qualification role.\n\n<details>\n<summary>Expand declared package relationships</summary>\n\n"
     . $full_diagram . "\n</details>\n\n## Release groups\n\n"
     . "Local policy and manifest versions; not registry publication or downstream adoption evidence. "
     . "Membership includes private qualification packages omitted from the diagram.\n\n"
@@ -339,7 +378,7 @@ $details .= "\nWorkspaces without an explicit release-group policy retain reposi
     . "remain outside Cargo release groups.\n\n## Workspace inventory\n\nRepository | Selected packages and manifests\n--- | ---\n";
 for my $name (sort keys %repos) {
     $details .= "[$name](https://github.com/dragginzgame/$name) | " . join('<br>',
-        map { "[$_->[0]](@{[source_link($name, $_->[1])]})" }
+        map { "[$_->[0]](@{[source_link($name, $_->[1])]}) (" . text_cell($_->[2]) . ")" }
         sort { $a->[0] cmp $b->[0] } @{$inventory{$name}}) . "\n";
 }
 $details .= "\n## Direct dependency evidence\n\nConsumer package → dependency package | Declarations\n--- | ---\n";

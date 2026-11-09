@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.37.2] - Unreleased
+
+### 🩹 Fixed
+
+- Distinguish conditional, development, build and qualification declarations in
+  dependency reports. Preserve requirement/source/feature evidence, exclude these
+  paths from the compact overview, and mark generated fixture coverage unknown
+  without inferring production cycles or release ordering.
+  [#368](https://github.com/dragginzgame/toko-tooling/issues/368)
+
 ## [0.37.1] - 2026-11-09
 
 ### 🩹 Fixed
