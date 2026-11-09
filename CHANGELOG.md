@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.38.0] - Unreleased
+
+### ⚠️ Breaking
+
+- Standardize product packages in the root workspace and separate qualification
+  packages under `qualification/`, with an independent catalog and lock.
+  Remove qualification packages from product release groups; select their required
+  checks through validation plans and preserve private versions during releases.
+  Adopt through scoped migrations, including existing layout exemptions. See the
+  [migration contract](rules/rust-workspaces.md#adoption-and-verification).
+  [#369](https://github.com/dragginzgame/toko-tooling/issues/369)
+
+### ➕ Added
+
+- Explicitly support meaningful nested package grouping under `crates/` and
+  `qualification/`, including Toko's grouped crates. Discover explicit workspace
+  members through Cargo metadata. Classify test/audit canisters as qualification,
+  standalone product canisters as crates and product fleet components as apps;
+  avoid a parallel top-level canisters tree or redundant qualification/crates layer.
+
 ## [0.37.5] - 2026-11-09
 
 ### ➕ Added

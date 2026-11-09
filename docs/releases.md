@@ -79,10 +79,11 @@ version selection; pending-file mode cannot be used with a Cargo release group.
 ## Decide whether publication is needed
 
 Group membership, qualification scope and publication impact are different
-decisions. A private test, benchmark or tooling member belongs to its declared
-group, but editing it does not automatically require bumping or publishing that
-group's public packages. Keep member versions aligned at their current value
-until an actual group release. Do not create a new group merely to avoid a bump.
+decisions. Product packages belong to product release groups. Separate private
+tests, benchmarks and qualification tools belong to the independent qualification
+workspace and no product group. A group's validation plan may require their
+checks without versioning or publishing them. Keep private qualification versions
+independent; do not create a release group merely to classify a test harness.
 
 Before selecting release commands, compare the proposed source with the last
 published source for each affected public group. Use existing Cargo metadata,
@@ -102,8 +103,11 @@ This is release planning, not a new gate on every development edit.
 
 Record the decision and comparison basis in the ordinary handoff or owning issue.
 If impact cannot be established, resolve that uncertainty before declaring the
-public packages unchanged. Retain meaningful private maintenance notes in the
-owning group's pending numbered changelog entry for its next actual release;
+public packages unchanged. Retain meaningful qualification maintenance notes in
+the affected product group's pending numbered entry when they explain its
+qualification, or in the existing owning issue for shared qualification work.
+That association does not create package membership or a qualification release.
+For product-group notes,
 do not date that entry or imply that its version has been published. A pending
 note is not an instruction to release. Routine notes may be omitted under the
 normal changelog rules.
@@ -1014,7 +1018,7 @@ An approved consumer declares `ci/cargo-release-groups.json`, for example:
       "name": "codec",
       "primary": "ic-wire",
       "version": "package",
-      "members": ["ic-wire", "ic-wire-derive", "ic-wire-benchmarks"],
+      "members": ["ic-wire", "ic-wire-derive"],
       "changelog": "releases/codec/CHANGELOG.md",
       "dependencies": ["ic-wire", "ic-wire-derive"]
     },
@@ -1031,8 +1035,9 @@ An approved consumer declares `ci/cargo-release-groups.json`, for example:
 ```
 
 This is an illustrative approved layout, not an instruction to create these
-packages or select their versions. Every actual workspace member, including
-private qualification packages, belongs to exactly one group. Names and ledgers
+packages or select their versions. Every actual product-workspace member belongs
+to exactly one group. Qualification-only packages are in the separate
+`qualification/` workspace and belong to none of these groups. Names and ledgers
 are unique. Every independent group uses `version: "package"`: literal
 `package.version` values in every member, all matching its primary member. The
 primary owns only that group's version; no group is the workspace master. No
@@ -1071,6 +1076,19 @@ its transaction on failure. The consumer owns their rendering, semantic checks
 and any recovery spanning its additional preparation steps; listing a file does
 not supply those checks or make the whole consumer adapter transactional.
 An unselected group's additional metadata remains outside the staging roster.
+
+The [product/qualification standard](../rules/rust-workspaces.md#qualification-and-release-group-relationships)
+requires affected product references and qualification locks to be prepared,
+validated and installed atomically with release metadata, without advancing
+qualification-package versions or unrelated suppliers. Shared qualification
+metadata is not a group-membership declaration. Reusable multi-lock rendering,
+admission and rollback belong in Toko Tooling; consumers retain product-specific
+semantic checks and the mapping of groups to qualification commands. The current
+additional-file mechanism above is not itself generic multi-lock rendering.
+Do not infer implemented support from this policy or copy a renderer into every
+consumer. The review in [#369](https://github.com/dragginzgame/toko-tooling/issues/369)
+owns the remaining mechanics assessment and proof; preserve qualified existing
+adapters until a reviewed shared replacement is available.
 
 `dependencies` explicitly lists root `workspace.dependencies` aliases with both
 path and version that refer to members of that group, including renamed aliases
