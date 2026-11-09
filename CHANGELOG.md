@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.37.5] - Unreleased
+
+### ➕ Added
+
+- Admit direct Candid only as an unconditional dev dependency of unpublished
+  ic-wire-benchmarks, retaining its independent Rust/Wasm oracle after Platform
+  removes Candid forwarding. Reject production, build, target-specific, public
+  and other-owner edges; consumer restrictions remain authoritative.
+
 ## [0.37.4] - 2026-11-09
 
 ### ➕ Added

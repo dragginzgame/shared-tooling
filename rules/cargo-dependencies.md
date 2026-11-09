@@ -140,6 +140,14 @@ and [browser check](../docs/node-tools.md) alongside Cargo declarations.
 
 ## External IC dependency boundary
 
+The unpublished `ic-wire-benchmarks` package may select `candid` as an
+unconditional dev dependency solely for its independent codec oracle, including
+its Wasm measurement guest. This does not permit a production adapter, public
+package, normal/build edge, other SDK dependency or a replacement Platform
+codec mislabeled as Candid. Keep comparison inputs and admission changes explicit.
+Consumer policy may narrow this exception. Platform removed upstream Candid
+forwarding in 0.28; the oracle belongs to the comparison owner.
+
 The Tooling-owned `ic-testkit` native PocketIC implementation may select
 `candid`, `ic-certification`, `ic-management-canister-types` and
 `ic-transport-types` only as normal dependencies under
