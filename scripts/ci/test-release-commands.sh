@@ -36,12 +36,12 @@ printf '%s\n' "$@" > "$RELEASE_TEST_EVENTS"
 exit "${RELEASE_TEST_STATUS:-0}"
 RUNNER
 cat > "$fixture/included/Makefile" <<'MAKE'
-SHARED_TOOLING_ROOT ?= $(CURDIR)/vendor
+TOKO_TOOLING_ROOT ?= $(CURDIR)/vendor
 include vendor/make/release.mk
 .PHONY: help admit nested
 help:
 	@echo harmless
-release-patch release-minor release-major release-resume: override SHARED_TOOLING_ROOT := $(CURDIR)/vendor
+release-patch release-minor release-major release-resume: override TOKO_TOOLING_ROOT := $(CURDIR)/vendor
 release-patch release-minor release-major release-resume: export CACHE_PREPARE := selected
 release-patch release-minor release-major release-resume: export RELEASE_DELIVERY := pr
 release-patch release-minor release-major release-resume: admit
@@ -81,9 +81,9 @@ for target in help release-patch; do
     for source in environment command; do
         : > "$RELEASE_TEST_EVENTS"
         if [[ "$source" == environment ]]; then
-            SHARED_TOOLING_ROOT="$fixture/unselected" make --no-print-directory -C "$fixture/included" "$target" > "$fixture/root-$source.log" 2>&1
+            TOKO_TOOLING_ROOT="$fixture/unselected" make --no-print-directory -C "$fixture/included" "$target" > "$fixture/root-$source.log" 2>&1
         else
-            make --no-print-directory -C "$fixture/included" "$target" "SHARED_TOOLING_ROOT=$fixture/unselected" > "$fixture/root-$source.log" 2>&1
+            make --no-print-directory -C "$fixture/included" "$target" "TOKO_TOOLING_ROOT=$fixture/unselected" > "$fixture/root-$source.log" 2>&1
         fi
         if [[ "$target" == help ]]; then
             [[ ! -s "$RELEASE_TEST_EVENTS" ]] || exit 1
@@ -97,14 +97,14 @@ done
 # changing the consumer's selected overrides or running the external probe.
 : > "$RELEASE_TEST_EVENTS"
 make -j2 --no-print-directory -C "$fixture/included" nested "MAKE=$recursive_make" \
-    "SHARED_TOOLING_ROOT=$fixture/unselected" > "$fixture/recursive-root.log" 2>&1
+    "TOKO_TOOLING_ROOT=$fixture/unselected" > "$fixture/recursive-root.log" 2>&1
 printf 'patch\nrecursive\nmain\n' > "$fixture/expected"
 cmp "$fixture/expected" "$RELEASE_TEST_EVENTS"
 # An incomplete selected snapshot refuses; it cannot borrow an ambient probe.
 mv "$fixture/included/vendor/scripts/ci/check-make-execution.sh" "$fixture/saved-probe"
 : > "$RELEASE_TEST_EVENTS"
 status=0
-make --no-print-directory -C "$fixture/included" help "SHARED_TOOLING_ROOT=$fixture/unselected" \
+make --no-print-directory -C "$fixture/included" help "TOKO_TOOLING_ROOT=$fixture/unselected" \
     > "$fixture/missing-probe.log" 2>&1 || status=$?
 [[ "$status" == 2 && ! -s "$RELEASE_TEST_EVENTS" ]] || exit 1
 mv "$fixture/saved-probe" "$fixture/included/vendor/scripts/ci/check-make-execution.sh"
@@ -161,15 +161,15 @@ echo escaped >> "$RELEASE_TEST_EVENTS"
 exit 99
 SENTINEL
 cat > "$fixture/root-consumer/Makefile" <<'MAKE'
-SHARED_TOOLING_ROOT := $(EXTERNAL_ROOT)
+TOKO_TOOLING_ROOT := $(EXTERNAL_ROOT)
 include make/tools.mk make/release.mk
 MAKE
 : > "$RELEASE_TEST_EVENTS"
-EXTERNAL_ROOT="$fixture/external" SHARED_TOOLING_ROOT="$fixture/external" \
+EXTERNAL_ROOT="$fixture/external" TOKO_TOOLING_ROOT="$fixture/external" \
     bash "$root/scripts/ci/check-release-commands.sh" "$fixture/root-consumer" "${make_inputs[@]}"
 [[ ! -s "$RELEASE_TEST_EVENTS" ]] || exit 1
 cat > "$fixture/root-parent.mk" <<'MAKE'
-export SHARED_TOOLING_ROOT := $(EXTERNAL_ROOT)
+export TOKO_TOOLING_ROOT := $(EXTERNAL_ROOT)
 export EXTERNAL_ROOT
 test:
 	+@bash "$(CHECKER)" "$(CONSUMER)" make/tools.mk make/release.mk

@@ -398,7 +398,7 @@ TMPDIR="$fixture/portable" PATH="$fixture/bin:$PATH" \
     CARGO_RELEASE_METADATA_EDITOR="$fixture/portable/editor" CARGO_RELEASE_METADATA_MAX_BYTES=1 \
     "$BASH" "$ROOT/scripts/ci/test-portable-tools.sh" > "$fixture/portable.log" 2>&1 || status=$?
 [[ "$status" == 24 ]] || exit 1
-set -- "$fixture/portable"/shared-tooling-test.*
+set -- "$fixture/portable"/toko-tooling-test.*
 [[ $# == 1 && -f "$1/input.txt" ]] || exit 1
 
 # Timing and child-stop behavior are qualified independently by
@@ -509,18 +509,18 @@ install-host-tools install-ic-tools:
 	@:
 MAKE
 bash "$ROOT/scripts/ci/prepare-cargo-failure-fixture.sh" "$native/cargo-fixture"
-export SHARED_TOOLING_STORE="$native/store"
+export TOKO_TOOLING_STORE="$native/store"
 for phase in install check; do
     target=install-tools
     [[ "$phase" != check ]] || target=rust-tools-check
     status=0
-    PATH="$native/cargo-fixture/bin:$PATH" make --no-print-directory -C "$native" SHARED_TOOLING_ROOT="$ROOT" \
+    PATH="$native/cargo-fixture/bin:$PATH" make --no-print-directory -C "$native" TOKO_TOOLING_ROOT="$ROOT" \
         IC_TOOL_PINS="$ROOT/ci/ic-tools.tsv" RUST_TOOL_VERSIONS="$ROOT/ci/tool-versions.env" "$target" \
         2>&1 | tee "$native/temp/rust-tools-$phase.log" > "$native/$phase.log" || status=$?
-    set -- "$SHARED_TOOLING_STORE"/rust-*/set.*
+    set -- "$TOKO_TOOLING_STORE"/rust-*/set.*
     [[ "$status" == 2 && $# == 1 && -f "$1/build/failed-build.txt" ]] || exit 1
     attempt="$1"
-    archived_attempt="${attempt#"$SHARED_TOOLING_STORE/"}"
+    archived_attempt="${attempt#"$TOKO_TOOLING_STORE/"}"
     mkdir -p "$native/.tools/rust/fixture-1.0.0-bin-fixture-release/installed/build"
     printf 'retained admitted-slot evidence\n' > "$native/.tools/rust/fixture-1.0.0-bin-fixture-release/installed/build/evidence"
     for compact in false true; do

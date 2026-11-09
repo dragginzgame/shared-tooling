@@ -172,7 +172,7 @@ for bad_store in "$fixture/rejected/store-link" relative-store "$fixture/rejecte
     for compact in true false; do
         attempt="$(mktemp -d "$fixture/rejected/attempt.XXXXXX")"
         printf 'original setup failure\n' > "$attempt/tools-install.log"
-        SHARED_TOOLING_STORE="$bad_store" EVIDENCE_TEMP_ROOT="$attempt" \
+        TOKO_TOOLING_STORE="$bad_store" EVIDENCE_TEMP_ROOT="$attempt" \
             EVIDENCE_REPOSITORY_ROOT="$fixture/rejected/consumer" \
             EVIDENCE_ACTION_ROOT="$ROOT/.github/actions/retain-failure-evidence" \
             EVIDENCE_COMPACT="$compact" GITHUB_OUTPUT="$attempt/output" RUNNER_TEMP="$attempt" \

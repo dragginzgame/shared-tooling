@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Shared companions: docs/type-docs.md scripts/ci/RustSource.pm
+# Shared companions: scripts/ci/RustSource.pm
 use strict;
 use warnings;
 use File::Find qw(find);

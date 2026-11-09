@@ -14,8 +14,8 @@ case "$scope" in
 esac
 list="$(mktemp "${TMPDIR:-/tmp}/frontend-format.XXXXXX")"
 trap 'rm -f "$list"' EXIT
-if [[ "$mode" == --write && -n "${SHARED_TOOLING_FORMAT_FILES:-}" ]]; then
-    cp "$SHARED_TOOLING_FORMAT_FILES" "$list"
+if [[ "$mode" == --write && -n "${TOKO_TOOLING_FORMAT_FILES:-}" ]]; then
+    cp "$TOKO_TOOLING_FORMAT_FILES" "$list"
 else
     [[ -d "$scope" ]] || { echo 'frontend scope directory does not exist' >&2; exit 2; }
     git --literal-pathspecs ls-files -z -- "$scope/" > "$list"

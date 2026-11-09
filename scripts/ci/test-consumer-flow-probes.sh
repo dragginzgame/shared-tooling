@@ -60,11 +60,25 @@ export FLOW_SOURCE="$ROOT" FLOW_EVENTS="$fixture/events"
 cd "$ROOT"
 cat > "$fixture/Makefile" <<'MAKE'
 include make/execution.mk
-run:
+run: | toko-execution-check
 	+@perl "$(FLOW_SOURCE)/scripts/ci/check-pipe-jobserver.pl"
 	@printf 'called\n' >> "$(FLOW_EVENTS)"
+preview:
+	@printf 'unrelated\n' >> "$(FLOW_EVENTS)"
+wrapped: run
 MAKE
 real_make="$(command -v make)"
+# Parsing and unrelated read-only goals must not spawn the execution probe.
+mkdir "$fixture/probe-bin"
+# shellcheck disable=SC2016 # The generated probe expands its runtime environment.
+printf '#!/bin/sh\nprintf probe >> "$FLOW_EVENTS"\nexit 1\n' > "$fixture/probe-bin/bash"
+chmod +x "$fixture/probe-bin/bash"
+: > "$FLOW_EVENTS"
+PATH="$fixture/probe-bin:$PATH" "$real_make" -n -f "$fixture/Makefile" preview > "$fixture/preview.log"
+status=0
+PATH="$fixture/probe-bin:$PATH" "$real_make" -npq -f "$fixture/Makefile" .DEFAULT > "$fixture/completion.log" 2>&1 || status=$?
+[[ ! -s "$FLOW_EVENTS" && "$status" -le 2 ]]
+if grep -F 'requires Make recipe execution' "$fixture/completion.log"; then exit 1; fi
 cat > "$fixture/lint.mk" <<'MAKE'
 run:
 	@printf 'prepare\nlint\n' >> "$(MAKE_PROBE_EVENTS)"; exit "$(MAKE_PROBE_LINT_STATUS)"
@@ -83,7 +97,7 @@ for defect in ignored missing reversed; do
     esac
     if make_probe_lint_order "$real_make" "$fixture/bad-lint.mk" "$fixture" "$FLOW_EVENTS" run "$fixture/lint-failure" "$fixture/lint-success"; then exit 1; fi
 done
-make_probe_execution_modes "$real_make" "$fixture/Makefile" "$fixture" "$FLOW_EVENTS" run
+make_probe_execution_modes "$real_make" "$fixture/Makefile" "$fixture" "$FLOW_EVENTS" run wrapped
 make_probe_target_admission "$real_make" "$fixture/Makefile" "$fixture" "$FLOW_EVENTS" run
 make_probe_parallel_dispatch "$real_make" "$fixture/Makefile" "$fixture" "$FLOW_EVENTS" run
 # A permissive Makefile must not be accepted as evidence of safe admission.

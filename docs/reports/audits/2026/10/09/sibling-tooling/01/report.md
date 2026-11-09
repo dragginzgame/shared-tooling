@@ -8,7 +8,7 @@ not 5,061 lines of independently maintained implementations or achieved savings.
 ## Scope and evidence
 
 Method: [flow convergence and duplication](../../../../../../../../audits/flow-convergence-and-duplication.md),
-under Shared Tooling `635a39a9dd5f8d021fa9c9196b591e00521a7e02` and its
+under Toko Tooling `635a39a9dd5f8d021fa9c9196b591e00521a7e02` and its
 `AGENTS.md`/`DRAGGINZGAME.md`. Trigger: maintainer request for further 0.1.33
 work and sibling duplication reduction. Existing dirty dashboard changes were
 preserved. The new Make diagnostic, fixture and adoption guidance are uncommitted
@@ -16,7 +16,7 @@ preserved. The new Make diagnostic, fixture and adoption guidance are uncommitte
 
 The read-only inventory covered all 17 immediate Git checkouts using cloc 2.10:
 `perl scripts/dev/cloc-tooling.pl --json /home/adam/projects`. Findings cover the
-15 connected sibling repositories, excluding Shared Tooling itself and the
+15 connected sibling repositories, excluding Toko Tooling itself and the
 unconnected `ichelper` checkout. Their tooling measures **126,177 code LOC**:
 **69,624 verified shared** and **56,553 local**. Most local code is not proven
 redundant. Supporting data, docs and product runtime code are separate; two
@@ -32,7 +32,7 @@ whole-workspace builds, deployment and native consumer adoption were not audited
 ## Finding: common setup unnecessarily carries fleet reporting
 
 **LOW — ownership leak / unnecessary adoption.** The engineering baseline assigns
-cross-repository inventories to Shared Tooling, but the common tool adoption
+cross-repository inventories to Toko Tooling, but the common tool adoption
 instructions also required `scripts/dev/cloc-tooling.pl` in every consumer.
 Thirteen consumers carry it; several schedule its tests in Make or CI. This adds
 vendored footprint and consumer qualification work without benefiting their own
@@ -40,7 +40,7 @@ workspace setup or LOC reporting.
 
 Trace: consumer Makefile includes `make/tools.mk`; setup and offline checks call
 their installers, while local `cloc` calls `scripts/dev/cloc.sh`. Only the explicit
-`cloc-tooling` target calls `cloc-tooling.pl`. Shared Tooling additionally selects
+`cloc-tooling` target calls `cloc-tooling.pl`. Toko Tooling additionally selects
 `cloc-siblings.sh` for its own `cloc` entry point. These fleet reports can remain
 centrally owned without becoming dependencies of every product checkout.
 
@@ -49,7 +49,7 @@ report a clear diagnostic. Existing selected reports keep their command and
 behavior. The fixture qualifies common setup/check/local LOC without a fleet
 report and explicit report selection under a snapshot path containing spaces.
 There is no implicit sibling execution, download, new framework or automatic
-snapshot deletion. Upstream owner: [Shared Tooling #83](https://github.com/dragginzgame/shared-tooling/issues/83).
+snapshot deletion. Upstream owner: [Toko Tooling #83](https://github.com/dragginzgame/toko-tooling/issues/83).
 
 Consumer issues carry concrete file lists and acceptance checks:
 
@@ -76,12 +76,12 @@ and remove unused files, snapshot records and callers together. Preserve local
 `cloc.sh`, the installed cloc executable, checksum/snapshot helpers needed by
 other selections and product integration checks. No consumer files were edited;
 the shared change adds a small diagnostic and focused coverage, so there is no
-net code deletion in Shared Tooling from this batch.
+net code deletion in Toko Tooling from this batch.
 
 ## Other candidates and retained boundaries
 
 - **Cargo tool installation remains the next extraction candidate**, under
-  [#65](https://github.com/dragginzgame/shared-tooling/issues/65). Toko Miner's
+  [#65](https://github.com/dragginzgame/toko-tooling/issues/65). Toko Miner's
   local Blob example installer and fixture measure 124 + 208 code LOC. They are
   an affected surface, not a removal estimate. The existing native assessment
   passed Linux but stopped on both macOS receipts; 0.1.32 corrects the profile
@@ -91,7 +91,7 @@ net code deletion in Shared Tooling from this batch.
   consumer profile policy. No new installer or qualification run was started.
 - **Retain consumer release-fixture ownership.** Backup and Blob's current local
   release fixtures measure 815 and 856 code LOC. Their closed assertion maps and
-  [shared #40](https://github.com/dragginzgame/shared-tooling/issues/40) explain
+  [shared #40](https://github.com/dragginzgame/toko-tooling/issues/40) explain
   why retained Git substitutes support different receipt, metadata, historical
   source and publication obligations. Generic runner cases were already retired.
   Raw similarity is insufficient grounds to replace them with a general mock
@@ -99,7 +99,7 @@ net code deletion in Shared Tooling from this batch.
 - **Keep product orchestration with its owner.** Canic/IcyDB Wasm reports select
   different artifact rosters, build and evidence contracts; Toko/Miners' local
   fleet orchestration includes deployment authority and recovery. Large file
-  counts alone do not justify moving these scripts wholesale into Shared Tooling.
+  counts alone do not justify moving these scripts wholesale into Toko Tooling.
   Timers' already-dirty failure collector delegates to the shared archiver; its
   [existing adoption issue](https://github.com/dragginzgame/ic-timers/issues/30)
   remains the owner, without another competing change.

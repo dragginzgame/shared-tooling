@@ -25,7 +25,7 @@ existing `path` remains the first package path; feature violations retain their
 feature path. These paths describe the same successful observation as the policy
 failure, without another diagnostic command or different feature selection.
 
-Shared Tooling owns the observation/checking mechanics. Consumers own the roots,
+Toko Tooling owns the observation/checking mechanics. Consumers own the roots,
 targets, features, forbidden packages and required identity counts. This helper
 complements direct declaration checks; it does not replace them or infer policy
 from dependency-role comments.
@@ -37,7 +37,7 @@ perl scripts/ci/check-cargo-graph.pl --consumer . --package production-package \
 ```
 
 This example selects a Wire application root. Choose exclusions and counts for
-the actual product under the [encoding policy](https://github.com/dragginzgame/shared-tooling/blob/main/DRAGGINZGAME.md#ic-application-encoding);
+the actual product under the [encoding policy](https://github.com/dragginzgame/toko-tooling/blob/main/TOKO-TOOLING.md#ic-application-encoding);
 required Candid interoperability is not a blanket graph violation.
 
 Pass one or more explicit `--package NAME` selections and one `--target TRIPLE`

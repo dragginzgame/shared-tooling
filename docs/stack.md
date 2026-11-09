@@ -78,7 +78,7 @@ packages; native paths do not hide library dependencies during reduction.
   closure, deployed topology or Wasm-size report. Source links navigate to the
   owner's catalogued default branch (`development` for Toko, otherwise `main`);
   they do not certify that local changes have been pushed there.
-- Shared Tooling owns this central report and development/governance helpers;
+- Toko Tooling owns this central report and development/governance helpers;
   it is not a canister runtime dependency. Snapshot adoption and runtime
   interactions are not inferred from Cargo or npm declarations. Product runtime
   architecture stays with the product repositories.
@@ -92,8 +92,8 @@ packages; native paths do not hide library dependencies during reduction.
 
 ## Refreshing the overview
 
-With the catalogued checkouts as siblings and Shared Tooling's Cargo toolchain
-already prepared, run from Shared Tooling:
+With the catalogued checkouts as siblings and Toko Tooling's Cargo toolchain
+already prepared, run from Toko Tooling:
 
 ```bash
 make stack-graph
@@ -115,8 +115,8 @@ consumer release gate or CI requirement for a checkout without its siblings.
 
 ## Automatic local refresh
 
-The deterministic [service](../tasks/systemd/shared-tooling-stack-graph.service)
-and [timer](../tasks/systemd/shared-tooling-stack-graph.timer) refresh the generated
+The deterministic [service](../tasks/systemd/toko-tooling-stack-graph.service)
+and [timer](../tasks/systemd/toko-tooling-stack-graph.timer) refresh the generated
 sections daily at **09:15 in the host timezone**, while the user manager is
 running. A missed refresh runs when the persistent timer becomes active again;
 there is no requirement to keep the computer awake or enable user lingering.
@@ -124,7 +124,7 @@ This is separate from the agent maintenance timer and needs no Codex or GitHub
 credentials. It reads the existing local checkouts, including pending work;
 it does not fetch newer branches or registry packages.
 
-The service uses Shared Tooling's already prepared compiler, disables Rustup
+The service uses Toko Tooling's already prepared compiler, disables Rustup
 automatic installation and runs Cargo offline. It does not stage, commit, push
 or edit siblings. Unchanged output is left untouched; changed generated blocks
 appear as working-tree edits for the next normal commit. Handwritten content
@@ -133,11 +133,11 @@ diagnostics and leave the previous documentation intact; no partial graph is
 published. The next scheduled attempt is the next day, without a retry loop.
 
 Installation is explicit and host-local. Create the regular file
-`~/.config/shared-tooling/stack-graph.env` with absolute checkout locations and
+`~/.config/toko-tooling/stack-graph.env` with absolute checkout locations and
 a prepared Cargo executable on `PATH`, for example:
 
 ```text
-SHARED_TOOLING_ROOT=/home/USER/projects/shared-tooling
+TOKO_TOOLING_ROOT=/home/USER/projects/toko-tooling
 STACK_PROJECTS_ROOT=/home/USER/projects
 PATH=/home/USER/.cargo/bin:/usr/local/bin:/usr/bin:/bin
 ```
@@ -148,17 +148,17 @@ verify them with `systemd-analyze --user verify` before enabling. Then:
 
 ```bash
 systemctl --user daemon-reload
-systemctl --user enable --now shared-tooling-stack-graph.timer
-systemctl --user start shared-tooling-stack-graph.service
-systemctl --user list-timers shared-tooling-stack-graph.timer
-journalctl --user -u shared-tooling-stack-graph.service
+systemctl --user enable --now toko-tooling-stack-graph.timer
+systemctl --user start toko-tooling-stack-graph.service
+systemctl --user list-timers toko-tooling-stack-graph.timer
+journalctl --user -u toko-tooling-stack-graph.service
 ```
 
 That first service run verifies actual execution; enabling a timer alone does
 not prove a successful refresh. The service serializes timer starts and stops
 after five minutes. Prefer starting it through systemd for manual retries too.
 Pause future runs with `systemctl --user disable --now
-shared-tooling-stack-graph.timer`; stop the service separately if it is active.
+toko-tooling-stack-graph.timer`; stop the service separately if it is active.
 After changing these templates, review and reinstall the host-owned copies.
 The timer reads the selected checkout's current generator and catalog. Snapshot
 adoption does not install or enable this timer for consumers.

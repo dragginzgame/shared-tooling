@@ -19,18 +19,18 @@ mkdir -p "$snapshot/make" "$snapshot/scripts/ci" "$snapshot/scripts/dev" \
 bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$snapshot" make/consumer.mk
 # Hooks retain their root-layout contract even when other tooling is nested.
 bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$consumer" \
-    .githooks/pre-commit scripts/ci/verify-shared-tooling-snapshot.sh scripts/ci/verify-file-checksum.sh
+    .githooks/pre-commit scripts/ci/verify-toko-tooling-snapshot.sh scripts/ci/verify-file-checksum.sh
 printf '[workspace]\nmembers = ["app", "helper"]\ndefault-members = ["app"]\n' > "$consumer/Cargo.toml"
 for member in app helper; do
     mkdir -p "$consumer/$member/src"
     printf '[package]\nname = "fixture-%s"\nversion = "0.0.0"\n' "$member" > "$consumer/$member/Cargo.toml"
     printf 'pub fn fixture() {}\n' > "$consumer/$member/src/lib.rs"
 done
-printf 'SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\nSHARED_TOOLING_CARGO_SORT_DERIVES_VERSION=0.1.3\n' > "$snapshot/ci/tool-versions.env"
+printf 'TOKO_TOOLING_CARGO_SORT_VERSION=2.1.4\nTOKO_TOOLING_CARGO_SORT_DERIVES_VERSION=0.1.3\n' > "$snapshot/ci/tool-versions.env"
 printf 'exit 99 # obsolete consumer catalog must not execute\n' > "$consumer/ci/tool-versions.env"
 export MAKE_CONSUMER_EVENTS="$fixture/events" RUNNER_TEMP="$fixture"
 cat > "$consumer/Makefile" <<'MAKE'
-override SHARED_TOOLING_ROOT := $(CURDIR)/vendor/shared
+override TOKO_TOOLING_ROOT := $(CURDIR)/vendor/shared
 FORMAT_CARGO := fixture-cargo
 FORMAT_RUST_ARGS := --no-cache
 RELEASE_RESUME_CHECK_COMMAND = bash "$(CURDIR)/resume-check.sh" "$(VERSION)"
@@ -91,7 +91,7 @@ grep -q 'malformed JSON' "$fixture/metadata-refusal.log"
 
 # Formatting follows the Rust catalog, including when the host catalog has no
 # Cargo pins. Wrong Rust selections still refuse before invoking formatters.
-printf 'SHARED_TOOLING_CARGO_SORT_VERSION=2.1.5\nSHARED_TOOLING_CARGO_SORT_DERIVES_VERSION=0.1.3\n' > "$consumer/ci/rust pins.env"
+printf 'TOKO_TOOLING_CARGO_SORT_VERSION=2.1.5\nTOKO_TOOLING_CARGO_SORT_DERIVES_VERSION=0.1.3\n' > "$consumer/ci/rust pins.env"
 printf '# Host-only catalog\n' > "$consumer/ci/host pins.env"
 for host_catalog in tool-versions.env 'host pins.env'; do
     : > "$MAKE_CONSUMER_EVENTS"
@@ -169,7 +169,7 @@ for mode in -i -n -t -q; do
     [[ ! -s "$MAKE_CONSUMER_EVENTS" ]]
 done
 for assignment in 'FORMAT_WRITE_COMMAND=echo unexpected' 'FORMAT_CHECK_COMMAND=echo unexpected' \
-    'SHARED_TOOLING_RUST=' 'SHARED_TOOLING_RUST=0 1' 'SHARED_TOOLING_RUST=%'; do
+    'TOKO_TOOLING_RUST=' 'TOKO_TOOLING_RUST=0 1' 'TOKO_TOOLING_RUST=%'; do
     if make -s -C "$consumer" help "$assignment" > "$fixture/invalid.log" 2>&1; then exit 1; fi
 done
 
@@ -186,20 +186,20 @@ if make -s -C "$consumer" install-hooks > "$fixture/hook-refusal.log" 2>&1; then
 # The nested entrypoint verifies the consumer and its selected manifest offline.
 {
     printf 'format\t1\nsource\tfixture\nrevision\t%040d\n' 0
-    for path in scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh; do
+    for path in scripts/ci/verify-file-checksum.sh scripts/ci/verify-toko-tooling-snapshot.sh; do
         digest="$(bash "$root/scripts/ci/verify-file-checksum.sh" --print sha256 "$consumer/$path")"
         mode=-; [[ ! -x "$consumer/$path" ]] || mode=x
         printf 'file\t%s\t%s\t%s\n' "$digest" "$mode" "$path"
     done
 } > "$consumer/reviewed snapshot"
-make -s -C "$consumer" shared-tooling-check 'SHARED_TOOLING_MANIFEST=reviewed snapshot'
+make -s -C "$consumer" toko-tooling-check 'TOKO_TOOLING_MANIFEST=reviewed snapshot'
 printf '\n# drift\n' >> "$consumer/scripts/ci/verify-file-checksum.sh"
-if make -s -C "$consumer" shared-tooling-check 'SHARED_TOOLING_MANIFEST=reviewed snapshot' > "$fixture/snapshot-failure.log" 2>&1; then exit 1; fi
+if make -s -C "$consumer" toko-tooling-check 'TOKO_TOOLING_MANIFEST=reviewed snapshot' > "$fixture/snapshot-failure.log" 2>&1; then exit 1; fi
 
 # Non-Rust owners retain tooling/releases without advertising Rust operations.
-[[ "$(make -s -C "$consumer" SHARED_TOOLING_RUST=0)" == 'consumer help' ]]
+[[ "$(make -s -C "$consumer" TOKO_TOOLING_RUST=0)" == 'consumer help' ]]
 for target in fmt fmt-check install-hooks; do
-    if make -s -C "$consumer" SHARED_TOOLING_RUST=0 "$target" > "$fixture/non-rust.log" 2>&1; then exit 1; fi
+    if make -s -C "$consumer" TOKO_TOOLING_RUST=0 "$target" > "$fixture/non-rust.log" 2>&1; then exit 1; fi
 done
 echo 'Consumer Make entrypoint passed (substitute release/format commands; no installation or release)'
 fixture_complete=true

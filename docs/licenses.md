@@ -1,10 +1,10 @@
 # Canonical software licenses
 <!-- Shared companions: scripts/ci/check-license.pl -->
 
-Shared Tooling owns the master wording for the two selected licenses:
+Toko Tooling owns the master wording for the two selected licenses:
 
 - [MIT](../licenses/MIT.txt): the other sibling libraries and tools, including
-  Shared Tooling.
+  Toko Tooling.
 - [Toko Studios Source Available License — Verifiable ICP Burn 1.1](../licenses/Dragginz-ICP-Burn-1.1.txt), referred to here as Dragginz:
   IcyDB, Canic and IC Relay. Third-party Live Deployments require verifiable mainnet
   burning: 100% of ordinary resource funding or at least 20% of Cloud Engine
@@ -17,7 +17,7 @@ required; monthly reconciliation is not permission to operate without burning.
 Contributor acceptance must expressly include the organization exception.
 The named beneficiary is part of the fixed terms, not a consumer-editable field.
 
-Shared Tooling itself uses the [root MIT license](../LICENSE). These templates
+Toko Tooling itself uses the [root MIT license](../LICENSE). These templates
 do not retroactively change consumer releases or third-party license grants.
 Previously granted rights and third-party licenses remain intact.
 
@@ -166,7 +166,7 @@ For offline consumer CI, adopt `scripts/ci/check-license.pl` as an entrypoint
 through the [reviewed snapshot workflow](consuming-snapshots.md). Its companion
 declaration includes MIT, both versioned Dragginz texts and the prior-material
 notice. The CLA is a separately selected agreement, not an appendix to a software
-license. Pin a committed Shared
+license. Pin a committed Toko
 Tooling revision; do not point CI at a moving sibling checkout. Wire the explicit
 command into the consumer's existing checks when adopting the snapshot.
 Snapshot integrity detects edits to the masters; this checker detects drift in

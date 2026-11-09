@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/verify-shared-tooling-snapshot.sh scripts/ci/verify-file-checksum.sh scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/verify-toko-tooling-snapshot.sh scripts/ci/verify-file-checksum.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
@@ -15,28 +15,28 @@ trap 'fixture_finish "$?" "$fixture" "Snapshot verifier fixture retained"' EXIT
 # of consumer payload size, catalogs, Git state and distribution/setup effects.
 consumer="$fixture/consumer"
 mkdir -p "$consumer/scripts/ci"
-cp -p "$ROOT/scripts/ci/verify-file-checksum.sh" "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" "$consumer/scripts/ci/"
+cp -p "$ROOT/scripts/ci/verify-file-checksum.sh" "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" "$consumer/scripts/ci/"
 printf 'inert sample payload\n' > "$consumer/payload.txt"
 {
-    printf 'format\t1\nsource\thttps://github.com/dragginzgame/shared-tooling\nrevision\t%s\n' \
+    printf 'format\t1\nsource\thttps://github.com/dragginzgame/toko-tooling\nrevision\t%s\n' \
         aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
     printf '# entrypoint\tpayload.txt\n'
-    for path in payload.txt scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh; do
+    for path in payload.txt scripts/ci/verify-file-checksum.sh scripts/ci/verify-toko-tooling-snapshot.sh; do
         digest="$("$BASH" "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$consumer/$path")"
         mode=-
         [[ ! -x "$consumer/$path" ]] || mode=x
         printf 'file\t%s\t%s\t%s\n' "$digest" "$mode" "$path"
     done
-} > "$consumer/.shared-tooling.snapshot"
-verifier="$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh"
+} > "$consumer/.toko-tooling.snapshot"
+verifier="$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh"
 "$BASH" "$verifier" --consumer "$consumer" > "$fixture/valid.log"
-cp -p "$consumer/.shared-tooling.snapshot" "$fixture/manifest"
+cp -p "$consumer/.toko-tooling.snapshot" "$fixture/manifest"
 if "$BASH" "$verifier" --consumer "$consumer" --require-annotations > "$fixture/annotations.log" 2>&1; then exit 1; fi
-{ printf '# version\t0.31.0\n'; cat "$fixture/manifest"; } > "$consumer/.shared-tooling.snapshot"
+{ printf '# version\t0.31.0\n'; cat "$fixture/manifest"; } > "$consumer/.toko-tooling.snapshot"
 "$BASH" "$verifier" --consumer "$consumer" --require-annotations > "$fixture/annotated.log"
-sed '/^# entrypoint/d' "$consumer/.shared-tooling.snapshot" > "$fixture/no-entrypoints"
+sed '/^# entrypoint/d' "$consumer/.toko-tooling.snapshot" > "$fixture/no-entrypoints"
 if "$BASH" "$verifier" --read-manifest "$fixture/no-entrypoints" --require-annotations > "$fixture/annotations.log" 2>&1; then exit 1; fi
-cp -p "$fixture/manifest" "$consumer/.shared-tooling.snapshot"
+cp -p "$fixture/manifest" "$consumer/.toko-tooling.snapshot"
 # A forbidden physical root must not select its valid trimmed neighbor, even
 # when reached through a normal-looking alias or containing a valid snapshot.
 for suffix in $'\n' $'\n\n' $'\r' $'\r\n' $'\nchild'; do
@@ -48,8 +48,8 @@ for suffix in $'\n' $'\n\n' $'\r' $'\r\n' $'\nchild'; do
         status=0
         CDPATH="$fixture" "$BASH" "$verifier" --consumer "$selected" > "$fixture/forbidden.log" 2>&1 || status=$?
         [[ "$status" == 1 ]] || exit 1
-        cmp "$fixture/manifest" "$forbidden/.shared-tooling.snapshot"
-        cmp "$fixture/manifest" "$consumer/.shared-tooling.snapshot"
+        cmp "$fixture/manifest" "$forbidden/.toko-tooling.snapshot"
+        cmp "$fixture/manifest" "$consumer/.toko-tooling.snapshot"
     done
     rm "$fixture/alias"
 done
@@ -59,7 +59,7 @@ rm -rf -- "$missing"
 mkdir "$missing"
 status=0
 "$BASH" "$verifier" --consumer "$missing" > "$fixture/missing.log" 2>&1 || status=$?
-[[ "$status" == 1 && ! -e "$missing/.shared-tooling.snapshot" ]] || exit 1
+[[ "$status" == 1 && ! -e "$missing/.toko-tooling.snapshot" ]] || exit 1
 ln -s "$consumer" "$fixture/alias"
 (cd "$fixture" && CDPATH="$fixture/consumer" "$BASH" "$verifier" --consumer alias) > "$fixture/alias.log"
 rm "$fixture/alias"
@@ -147,31 +147,31 @@ git -C "$source_root" init -q
 git -C "$source_root" add payload.txt scripts/ci
 git -C "$source_root" -c user.name=Fixture -c user.email=fixture@example.invalid -c core.hooksPath=/dev/null commit -qm 'reviewed fixture'
 revision="$(git -C "$source_root" rev-parse HEAD)"
-sed "s/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/$revision/" "$fixture/manifest" > "$consumer/.shared-tooling.snapshot"
+sed "s/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/$revision/" "$fixture/manifest" > "$consumer/.toko-tooling.snapshot"
 "$BASH" "$verifier" --consumer "$consumer" --source "$source_root" --revision "$revision" > "$fixture/source-valid.log"
-cp "$consumer/.shared-tooling.snapshot" "$fixture/source-manifest"
+cp "$consumer/.toko-tooling.snapshot" "$fixture/source-manifest"
 old_digest="$("$BASH" "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$consumer/payload.txt")"
 printf 'tampered payload\n' > "$consumer/payload.txt"
 new_digest="$("$BASH" "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$consumer/payload.txt")"
-sed "s/$old_digest/$new_digest/" "$fixture/source-manifest" > "$consumer/.shared-tooling.snapshot"
+sed "s/$old_digest/$new_digest/" "$fixture/source-manifest" > "$consumer/.toko-tooling.snapshot"
 "$BASH" "$verifier" --consumer "$consumer" > "$fixture/rewritten-integrity.log"
 if "$BASH" "$verifier" --consumer "$consumer" --source "$source_root" --revision "$revision" > "$fixture/rewritten-source.log" 2>&1; then exit 1; fi
 grep -F 'manifest payload differs from reviewed source' "$fixture/rewritten-source.log"
 cp "$fixture/payload" "$consumer/payload.txt"
-cp "$fixture/manifest" "$consumer/.shared-tooling.snapshot"
+cp "$fixture/manifest" "$consumer/.toko-tooling.snapshot"
 if "$BASH" "$verifier" --consumer "$consumer" --source "$source_root" --revision "$revision" > "$fixture/wrong-revision.log" 2>&1; then exit 1; fi
 grep -F 'manifest revision differs' "$fixture/wrong-revision.log"
-cp "$fixture/source-manifest" "$consumer/.shared-tooling.snapshot"
+cp "$fixture/source-manifest" "$consumer/.toko-tooling.snapshot"
 # Working source edits do not change immutable source proof.
 printf 'unreviewed source edit\n' > "$source_root/payload.txt"
 "$BASH" "$verifier" --consumer "$consumer" --source "$source_root" --revision "$revision" > "$fixture/source-dirty.log"
 chmod +x "$consumer/payload.txt"
-sed $'s/\t-\tpayload.txt/\tx\tpayload.txt/' "$fixture/source-manifest" > "$consumer/.shared-tooling.snapshot"
+sed $'s/\t-\tpayload.txt/\tx\tpayload.txt/' "$fixture/source-manifest" > "$consumer/.toko-tooling.snapshot"
 "$BASH" "$verifier" --consumer "$consumer" > "$fixture/rewritten-mode-integrity.log"
 if "$BASH" "$verifier" --consumer "$consumer" --source "$source_root" --revision "$revision" > "$fixture/rewritten-mode-source.log" 2>&1; then exit 1; fi
 grep -F 'reviewed source mode differs' "$fixture/rewritten-mode-source.log"
 chmod -x "$consumer/payload.txt"
-cp "$fixture/source-manifest" "$consumer/.shared-tooling.snapshot"
+cp "$fixture/source-manifest" "$consumer/.toko-tooling.snapshot"
 # The reviewed blob is hashed through the same NUL guard. Call 2 is the first
 # reviewed-source digest, after the consumer copy of payload.txt.
 for position in digest marker trailing; do
@@ -187,12 +187,12 @@ printf 'unreviewed extra\n' > "$consumer/extra.txt"
 {
     cat "$fixture/source-manifest"
     printf 'file\t%s\t-\textra.txt\n' "$("$BASH" "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$consumer/extra.txt")"
-} > "$consumer/.shared-tooling.snapshot"
+} > "$consumer/.toko-tooling.snapshot"
 "$BASH" "$verifier" --consumer "$consumer" > "$fixture/extra-integrity.log"
 if "$BASH" "$verifier" --consumer "$consumer" --source "$source_root" --revision "$revision" > "$fixture/extra-source.log" 2>&1; then exit 1; fi
 grep -F 'reviewed source is missing: extra.txt' "$fixture/extra-source.log"
 rm "$consumer/extra.txt"
-cp "$fixture/source-manifest" "$consumer/.shared-tooling.snapshot"
+cp "$fixture/source-manifest" "$consumer/.toko-tooling.snapshot"
 if "$BASH" "$verifier" --consumer "$consumer" --source "$source_root" > "$fixture/unpaired.log" 2>&1; then exit 1; fi
 fixture_complete=true
 printf 'Snapshot verifier path admission and inert-helper corruption checks passed\n'

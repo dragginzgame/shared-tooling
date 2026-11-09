@@ -14,7 +14,7 @@ fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Script path fixture retained"' EXIT
 checkout="$fixture/checkout"$'\n'
 mkdir -p "$checkout/scripts/ci" "$checkout/scripts/dev" "$fixture/decoy/scripts/ci"
-for script in check-dependency-pins verify-shared-tooling-snapshot install-ci-tool; do
+for script in check-dependency-pins verify-toko-tooling-snapshot install-ci-tool; do
     cp "$ROOT/scripts/ci/$script.sh" "$checkout/scripts/ci/"
 done
 for script in install-host-tools install-ic-tools; do cp "$ROOT/scripts/dev/$script.sh" "$checkout/scripts/dev/"; done

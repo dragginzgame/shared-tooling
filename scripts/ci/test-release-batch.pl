@@ -188,7 +188,7 @@ for my $group (qw(alpha beta)) {
 }
 write_file("$real/ci/cargo-release-groups.json",encode_json({schema=>1,groups=>\@policy}));
 write_file("$real/Makefile",<<'MAKE');
-SHARED_TOOLING_ROOT := $(CURDIR)
+TOKO_TOOLING_ROOT := $(CURDIR)
 RELEASE_GROUPS := alpha,beta
 RELEASE_SETUP_TARGET := setup-candidate
 include make/release.mk
@@ -231,7 +231,7 @@ is(output('cat',$ENV{SETUP_TRACE}),"alpha prepare\nbeta prepare\nbeta check",'re
 # multi-group/capture behavior is qualified above; these sentinels select it.
 my $routing="$fixture/routing";make_path($routing);
 run('bash',"$RealBin/prepare-script-fixture.sh","$RealBin/../..",$routing,'make/release.mk');
-write_file("$routing/Makefile","SHARED_TOOLING_ROOT := \$(CURDIR)\ninclude make/release.mk\n");
+write_file("$routing/Makefile","TOKO_TOOLING_ROOT := \$(CURDIR)\ninclude make/release.mk\n");
 write_file("$routing/scripts/ci/run-release-batch.pl",'print "batch:@ARGV\n";');
 write_file("$routing/scripts/ci/run-release.sh",'printf "standard:%s\\n" "$*"');
 for my $kind (qw(patch minor major)) {

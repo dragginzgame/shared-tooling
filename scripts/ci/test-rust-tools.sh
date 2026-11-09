@@ -29,7 +29,7 @@ finish() {
     fixture_finish "$status" "$fixture" 'Failed Rust tool fixture retained'
 }
 trap finish EXIT
-export SHARED_TOOLING_STORE="$fixture/store"
+export TOKO_TOOLING_STORE="$fixture/store"
 mkdir "$fixture/templates"
 export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TEMPLATE_DIR="$fixture/templates"
 mkdir -p "$fixture/compiler/bin" "$fixture/assets" "$fixture/a" "$fixture/b"
@@ -182,8 +182,8 @@ chmod +x "$fixture/compiler/bin/"*
 export PATH="$fixture/compiler/bin:$PATH"
 installer="$ROOT/scripts/dev/install-rust-tools.sh"
 cat > "$fixture/versions" <<'PINS'
-SHARED_TOOLING_CARGO_SORT_VERSION=99.1.0
-SHARED_TOOLING_CARGO_SORT_DERIVES_VERSION=99.2.0
+TOKO_TOOLING_CARGO_SORT_VERSION=99.1.0
+TOKO_TOOLING_CARGO_SORT_DERIVES_VERSION=99.2.0
 PINS
 source_package() {
     local name="$1" version="$2"
@@ -208,32 +208,32 @@ consumer="$fixture/a"
 cd "$consumer"
 if [[ "$contention_only" == false ]]; then
 common --preflight
-[[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
+[[ ! -e "$TOKO_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
 refuse common --check
 printf 'Explicit setup: bash %q --consumer %q --versions %q\n' "$installer" "$consumer" "$fixture/versions" > "$fixture/expected-hint"
 grep -Fx -f "$fixture/expected-hint" "$fixture/refused.log" >/dev/null
-[[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
+[[ ! -e "$TOKO_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
 # Admit the complete default group before probing the compiler or touching tools.
 for value in '' '01.2.3' '1.2.3-beta.1'; do
-    sed "s/SHARED_TOOLING_CARGO_SORT_DERIVES_VERSION=.*/SHARED_TOOLING_CARGO_SORT_DERIVES_VERSION=$value/" \
+    sed "s/TOKO_TOOLING_CARGO_SORT_DERIVES_VERSION=.*/TOKO_TOOLING_CARGO_SORT_DERIVES_VERSION=$value/" \
         "$fixture/versions" > "$fixture/invalid-versions"
     refuse common --versions "$fixture/invalid-versions" --preflight
-    [[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" && ! -e "$fixture/builds" ]] || exit 1
+    [[ ! -e "$TOKO_TOOLING_STORE" && ! -e "$consumer/.tools" && ! -e "$fixture/builds" ]] || exit 1
 done
 for value in '' '01.2.3' '1.2.3-beta.1'; do
     refuse bash "$installer" --consumer "$consumer" --package sample --version "$value" --bin sample --profile release
-    [[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" && ! -e "$fixture/builds" ]] || exit 1
+    [[ ! -e "$TOKO_TOOLING_STORE" && ! -e "$consumer/.tools" && ! -e "$fixture/builds" ]] || exit 1
 done
 # Invalid feature requests must fail before source acquisition or installation.
 for value in '' ',cli' 'cli,' 'cli,,other' '-flag' 'cli other' $'cli\nother' 'dep:cli' 'dep//cli'; do
     status=0
     bash "$installer" --consumer "$consumer" --package sample --version 1.2.3 --bin prepare \
         --profile debug --features "$value" > "$fixture/invalid-features.log" 2>&1 || status=$?
-    [[ "$status" == 2 && ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" && ! -e "$fixture/builds" ]] || exit 1
+    [[ "$status" == 2 && ! -e "$TOKO_TOOLING_STORE" && ! -e "$consumer/.tools" && ! -e "$fixture/builds" ]] || exit 1
 done
 refuse common --features cli
 refuse common --features cli --preflight
-[[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
+[[ ! -e "$TOKO_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
 if [[ "$path_context" == true ]]; then
     common
     common --check
@@ -248,8 +248,8 @@ if [[ "$path_context" == true ]]; then
     refuse common
     grep -F 'Cargo tool attempt retained:' "$fixture/refused.log"
     [[ "$(readlink "$consumer/.tools/rust/common")" == "$original" ]] || exit 1
-    [[ ! -e "$consumer/.tools/rust/common.lock" && -z "$(find "$SHARED_TOOLING_STORE" -name install.lock)" ]] || exit 1
-    [[ -n "$(find "$SHARED_TOOLING_STORE" -path '*/build/evidence' -type f)" ]] || exit 1
+    [[ ! -e "$consumer/.tools/rust/common.lock" && -z "$(find "$TOKO_TOOLING_STORE" -name install.lock)" ]] || exit 1
+    [[ -n "$(find "$TOKO_TOOLING_STORE" -path '*/build/evidence' -type f)" ]] || exit 1
     fixture_complete=true
     echo 'Rust path-context install, reuse, check and retained failure passed'
     exit 0
@@ -262,10 +262,10 @@ cache_owner="$fixture/cache-source/scripts/ci/cargo-tool-cache-key.sh"
 cache_pins="$fixture/cache-source/ci/tool-versions.env"
 cp "$fixture/versions" "$cache_pins"
 cache_before="$(bash "$cache_owner" "$cache_pins")"
-[[ "$cache_before" == key=*$'\n'root="$SHARED_TOOLING_STORE" ]] || exit 1
-[[ "$(bash "$cache_owner" "$cache_pins")" == "$cache_before" && ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
+[[ "$cache_before" == key=*$'\n'root="$TOKO_TOOLING_STORE" ]] || exit 1
+[[ "$(bash "$cache_owner" "$cache_pins")" == "$cache_before" && ! -e "$TOKO_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1
 printf '\n# Changed pins\n' >> "$cache_pins"
-printf 'export SHARED_TOOLING_JQ_VERSION=99.9.9\nexport SHARED_TOOLING_JQ_SHA256_LINUX_AMD64=abc123\n' >> "$cache_pins"
+printf 'export TOKO_TOOLING_JQ_VERSION=99.9.9\nexport TOKO_TOOLING_JQ_SHA256_LINUX_AMD64=abc123\n' >> "$cache_pins"
 [[ "$(bash "$cache_owner" "$cache_pins")" == "$cache_before" ]] || exit 1
 awk '{ rows[NR]=$0 } END { for (i=NR; i>0; i--) print rows[i] }' "$cache_pins" > "$fixture/reordered-pins"
 [[ "$(bash "$cache_owner" "$fixture/reordered-pins")" == "$cache_before" ]] || exit 1
@@ -279,13 +279,13 @@ refuse bash "$cache_owner" "$cache_pins"
 awk '{ printf "%s\r\n", $0 }' "$fixture/versions" > "$cache_pins"
 refuse bash "$cache_owner" "$cache_pins"
 for pin in CARGO_SORT CARGO_SORT_DERIVES; do
-    sed "s/SHARED_TOOLING_${pin}_VERSION=.*/SHARED_TOOLING_${pin}_VERSION=98.0.0/" "$fixture/versions" > "$cache_pins"
+    sed "s/TOKO_TOOLING_${pin}_VERSION=.*/TOKO_TOOLING_${pin}_VERSION=98.0.0/" "$fixture/versions" > "$cache_pins"
     [[ "$(bash "$cache_owner" "$cache_pins")" != "$cache_before" ]] || exit 1
 done
 # Refuse executable or ambiguous data before cache output or setup.
 # shellcheck disable=SC2016 # Literal shell text must never be evaluated by the cache reader.
 for opaque in 'touch "$CACHE_KEY_SIDE_EFFECT"' 'export RUSTUP_TOOLCHAIN=nightly' \
-    'export SHARED_TOOLING_CARGO_SORT_VERSION=99.1.0'; do
+    'export TOKO_TOOLING_CARGO_SORT_VERSION=99.1.0'; do
     cp "$fixture/versions" "$cache_pins"
     printf '%s\n' "$opaque" >> "$cache_pins"
     CACHE_KEY_SIDE_EFFECT="$fixture/unexpected-cache-effect" refuse bash "$cache_owner" "$cache_pins"
@@ -309,7 +309,7 @@ rm "$fixture/changed-native"
 refuse bash "$cache_owner"
 rm "$cache_pins"
 refuse bash "$cache_owner" "$cache_pins"
-[[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" && ! -e "$fixture/builds" ]] || exit 1
+[[ ! -e "$TOKO_TOOLING_STORE" && ! -e "$consumer/.tools" && ! -e "$fixture/builds" ]] || exit 1
 # User TOML policy retains its boolean type before any source/install dispatch.
 # The environment override remains an independent, explicitly selected contract.
 (
@@ -320,7 +320,7 @@ refuse bash "$cache_owner" "$cache_pins"
     for value in '"true"' '"false\n"' 0 1 '[]' '{}' ; do
         printf '[net]\noffline = %s\n' "$value" > "$CARGO_HOME/config.toml"
         refuse common
-        [[ ! -e "$SHARED_TOOLING_STORE" && ! -e "$consumer/.tools" && ! -e "$fixture/builds" ]] || exit 1
+        [[ ! -e "$TOKO_TOOLING_STORE" && ! -e "$consumer/.tools" && ! -e "$fixture/builds" ]] || exit 1
     done
     # Exercise accepted flags through the same owner, without building tools.
     # shellcheck source=scripts/dev/tool-store.sh
@@ -385,36 +385,36 @@ done
 touch "$fixture/bootstrap-go"
 wait "$owner_setup"; owner_setup=''
 wait "$waiter_setup"; waiter_setup=''
-[[ -f "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/cargo-sort-99.1.0.crate" &&
-   -f "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/cargo-sort-derives-99.2.0.crate" ]]
-[[ "$(find "$SHARED_TOOLING_STORE" -name 'rust-*' | wc -l)" -eq 0 && ! -e "$fixture/builds" ]]
-rm -rf "$SHARED_TOOLING_STORE"
+[[ -f "$TOKO_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/cargo-sort-99.1.0.crate" &&
+   -f "$TOKO_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/cargo-sort-derives-99.2.0.crate" ]]
+[[ "$(find "$TOKO_TOOLING_STORE" -name 'rust-*' | wc -l)" -eq 0 && ! -e "$fixture/builds" ]]
+rm -rf "$TOKO_TOOLING_STORE"
 # Existing redirected, non-directory or writable routes and injected config
 # refuse before Cargo dispatch; initialization must not follow an outside route.
 mkdir "$fixture/bootstrap-outside"
 touch "$fixture/no-info"
 for route in root-link root-file cache-link cache-file cache-mode config; do
     case "$route" in
-        root-link) ln -s "$fixture/bootstrap-outside" "$SHARED_TOOLING_STORE" ;;
-        root-file) touch "$SHARED_TOOLING_STORE" ;;
+        root-link) ln -s "$fixture/bootstrap-outside" "$TOKO_TOOLING_STORE" ;;
+        root-file) touch "$TOKO_TOOLING_STORE" ;;
         *)
-            (umask 077; mkdir "$SHARED_TOOLING_STORE")
+            (umask 077; mkdir "$TOKO_TOOLING_STORE")
             case "$route" in
-                cache-link) ln -s "$fixture/bootstrap-outside" "$SHARED_TOOLING_STORE/cargo-cache" ;;
-                cache-file) touch "$SHARED_TOOLING_STORE/cargo-cache" ;;
-                cache-mode) mkdir -m 777 "$SHARED_TOOLING_STORE/cargo-cache" ;;
-                config) (umask 077; mkdir "$SHARED_TOOLING_STORE/cargo-cache"); touch "$SHARED_TOOLING_STORE/cargo-cache/config.toml" ;;
+                cache-link) ln -s "$fixture/bootstrap-outside" "$TOKO_TOOLING_STORE/cargo-cache" ;;
+                cache-file) touch "$TOKO_TOOLING_STORE/cargo-cache" ;;
+                cache-mode) mkdir -m 777 "$TOKO_TOOLING_STORE/cargo-cache" ;;
+                config) (umask 077; mkdir "$TOKO_TOOLING_STORE/cargo-cache"); touch "$TOKO_TOOLING_STORE/cargo-cache/config.toml" ;;
             esac ;;
     esac
     refuse bootstrap_source cargo-sort 99.1.0
     [[ ! -e "$fixture/info-refusals" && -z "$(find "$fixture/bootstrap-outside" -mindepth 1 -print)" ]]
-    rm -rf "$SHARED_TOOLING_STORE"
+    rm -rf "$TOKO_TOOLING_STORE"
 done
 rm "$fixture/no-info"
 touch "$fixture/bootstrap-denied"
 status=0
 bootstrap_source cargo-sort 99.1.0 > "$fixture/bootstrap-denied.log" 2>&1 || status=$?
-[[ "$status" == 13 && ! -e "$SHARED_TOOLING_STORE" ]]
+[[ "$status" == 13 && ! -e "$TOKO_TOOLING_STORE" ]]
 rm "$fixture/bootstrap-denied"
 # Preserve previous physical installations; adopt new shared references explicitly.
 mkdir -p "$consumer/.tools/rust/previous/installed/build"
@@ -489,7 +489,7 @@ grep -F 'partially staged file: pins' "$fixture/refused.log" >/dev/null
 # unrelated working catalog bytes must never select the exported tools.
 mkdir "$fixture/staged-inputs"
 git -C "$consumer" checkout-index --all --prefix="$fixture/staged-inputs/"
-SHARED_TOOLING_FORMAT_WORKTREE="$fixture/staged-inputs" SHARED_TOOLING_FORMAT_TOOLS_FROM="$consumer" \
+TOKO_TOOLING_FORMAT_WORKTREE="$fixture/staged-inputs" TOKO_TOOLING_FORMAT_TOOLS_FROM="$consumer" \
     bash "$installer" --consumer "$fixture/staged-inputs" --versions "$fixture/staged-inputs/pins" --check
 [[ ! -e "$fixture/staged-inputs/.tools" && "$(cat "$consumer/pins")" == 'exit 99' ]] || exit 1
 cp "$fixture/versions" "$consumer/pins"
@@ -507,7 +507,7 @@ refuse hook
 cp "$fixture/receipt.saved" "$receipt"
 [[ "$(git -C "$consumer" write-tree)" == "$hook_tree" && "$(cat "$consumer/selected.rs")" == unformatted ]] || exit 1
 # Changed staged pins and compiler context require fresh explicit preparation.
-printf 'SHARED_TOOLING_CARGO_SORT_VERSION=99.9.0\n' >> "$consumer/pins"
+printf 'TOKO_TOOLING_CARGO_SORT_VERSION=99.9.0\n' >> "$consumer/pins"
 git -C "$consumer" add pins
 refuse hook
 cp "$fixture/versions" "$consumer/pins"
@@ -523,11 +523,11 @@ grep -F 'unprepared staged compiler' "$fixture/refused.log" >/dev/null
 git -C "$consumer" rm -qf rust-toolchain.toml
 [[ "$(wc -l < "$fixture/builds")" -eq 2 ]]
 mkdir "$fixture/export"
-SHARED_TOOLING_FORMAT_WORKTREE="$fixture/export" SHARED_TOOLING_FORMAT_TOOLS_FROM="$consumer" \
+TOKO_TOOLING_FORMAT_WORKTREE="$fixture/export" TOKO_TOOLING_FORMAT_TOOLS_FROM="$consumer" \
     refuse bash "$installer" --consumer "$fixture/export" --versions "$fixture/versions"
 [[ ! -e "$fixture/export/.tools" ]]
 # An unrelated consumer never borrows a parent hook's selection context.
-SHARED_TOOLING_FORMAT_WORKTREE="$fixture/export" SHARED_TOOLING_FORMAT_TOOLS_FROM="$consumer" \
+TOKO_TOOLING_FORMAT_WORKTREE="$fixture/export" TOKO_TOOLING_FORMAT_TOOLS_FROM="$consumer" \
     refuse bash "$installer" --consumer "$fixture/b" --versions "$fixture/versions" --check
 printf 'old local evidence\n' | cmp - "$consumer/.tools/rust/previous/installed/build/payload"
 # Conditional common setup must preserve a foreign lock and every selection,
@@ -554,7 +554,7 @@ cmp "$fixture/before-held" "$fixture/after-held"
 printf 'pid=%s\nconsumer=%s\n' "$$" "$fixture/a" > "$held_slot/install.lock/owner"
 cp "$held_slot/install.lock/owner" "$fixture/valid-owner"
 status=0
-SHARED_TOOLING_SETUP_WAIT_SECONDS=1 common > "$fixture/timeout.out" 2> "$fixture/timeout.err" || status=$?
+TOKO_TOOLING_SETUP_WAIT_SECONDS=1 common > "$fixture/timeout.out" 2> "$fixture/timeout.err" || status=$?
 [[ "$status" == 1 && ! -s "$fixture/timeout.out" ]]
 grep -F 'wait timed out' "$fixture/timeout.err" >/dev/null
 expect_setup_phase "$fixture/timeout.err" lock-wait failed 1
@@ -563,7 +563,7 @@ cmp "$held_slot/install.lock/owner" "$fixture/valid-owner"
 [[ "$(readlink "$consumer/.tools/rust/common")" == "$old_common" && "$(readlink "$held_slot/current")" == "$old_current" ]]
 [[ "$(wc -l < "$fixture/builds")" -eq 2 ]]
 status=0
-SHARED_TOOLING_SETUP_WAIT_SECONDS=0 common > "$fixture/no-wait.out" 2> "$fixture/no-wait.err" || status=$?
+TOKO_TOOLING_SETUP_WAIT_SECONDS=0 common > "$fixture/no-wait.out" 2> "$fixture/no-wait.err" || status=$?
 [[ "$status" != 0 && ! -s "$fixture/no-wait.out" ]]
 if grep -F 'Waiting for' "$fixture/no-wait.err"; then exit 1; fi
 rm "$held_slot/install.lock/owner"
@@ -571,10 +571,10 @@ rmdir "$held_slot/install.lock"
 # A CI cache restores physical shared generations, never checkout selections.
 # Round-trip all builds/receipts/source bytes before the existing cold-checkout
 # reuse control; its no-info/build-count assertions prove no download or rebuild.
-(cd "$SHARED_TOOLING_STORE" && tar -czf "$fixture/cargo-tools-cache.tar.gz" cargo-cache rust-*)
-mv "$SHARED_TOOLING_STORE" "$fixture/store-before-restore"
-(umask 077; mkdir "$SHARED_TOOLING_STORE")
-tar -xzf "$fixture/cargo-tools-cache.tar.gz" -C "$SHARED_TOOLING_STORE"
+(cd "$TOKO_TOOLING_STORE" && tar -czf "$fixture/cargo-tools-cache.tar.gz" cargo-cache rust-*)
+mv "$TOKO_TOOLING_STORE" "$fixture/store-before-restore"
+(umask 077; mkdir "$TOKO_TOOLING_STORE")
+tar -xzf "$fixture/cargo-tools-cache.tar.gz" -C "$TOKO_TOOLING_STORE"
 consumer="$fixture/b"
 touch "$fixture/no-info"
 CARGO_NET_OFFLINE=true common
@@ -632,8 +632,8 @@ observed="$(BASH_ENV="$fixture/diagnostic-write-failure.sh" bash "$installer" "$
 physical="$(perl -MCwd=abs_path -e 'print abs_path(shift)' "$path")"; bundle="${physical%/bin/*}"
 # Refused offline admission has no stdout, probes, fetches or builds. Name the
 # missing/competing source paths instead of collapsing them into invalid tools.
-archive="$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-1.2.3.crate"
-(umask 077; mkdir "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-other")
+archive="$TOKO_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-1.2.3.crate"
+(umask 077; mkdir "$TOKO_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-other")
 for source_failure in missing ambiguous; do
     if [[ "$source_failure" == missing ]]; then mv "$archive" "$fixture/held-source"
     else cp "$archive" "${archive/index.crates.io-fixture/index.crates.io-other}"; fi
@@ -651,7 +651,7 @@ for source_failure in missing ambiguous; do
         rm "${archive/index.crates.io-fixture/index.crates.io-other}"
     fi
 done
-rmdir "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-other"
+rmdir "$TOKO_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-other"
 # Lock-selected repair advice retains the lock selection, including spaces,
 # rather than substituting a resolved version or emitting an unsafe command.
 mkdir "$fixture/hint checkout"
@@ -667,8 +667,8 @@ grep -Fx "Cargo tool executable is missing or not executable: $physical" "$fixtu
 chmod +x "$physical"
 # Missing source must preserve Cargo's status through both installer call shapes,
 # without a build, retry, activation or loss of previously retained evidence.
-sed 's/SHARED_TOOLING_CARGO_SORT_VERSION=.*/SHARED_TOOLING_CARGO_SORT_VERSION=99.9.9/' "$fixture/versions" > "$fixture/missing-source-versions"
-cp -R "$SHARED_TOOLING_STORE" "$fixture/before-source-store"
+sed 's/TOKO_TOOLING_CARGO_SORT_VERSION=.*/TOKO_TOOLING_CARGO_SORT_VERSION=99.9.9/' "$fixture/versions" > "$fixture/missing-source-versions"
+cp -R "$TOKO_TOOLING_STORE" "$fixture/before-source-store"
 cp -R "$consumer/.tools" "$fixture/before-source-tools"
 source_common="$(readlink "$consumer/.tools/rust/common")"
 : > "$fixture/info-refusals"
@@ -692,7 +692,7 @@ for mode in common selected; do
     # Common records can probe an earlier admitted tool before acquisition fails;
     # selected product tools must still never execute during admission.
     [[ "$mode" == common || ! -s "$fixture/probes" ]] || exit 1
-    diff -r "$fixture/before-source-store" "$SHARED_TOOLING_STORE"
+    diff -r "$fixture/before-source-store" "$TOKO_TOOLING_STORE"
     diff -r "$fixture/before-source-tools" "$consumer/.tools"
 done
 rm "$fixture/no-info"
@@ -746,7 +746,7 @@ rm "$slot/install.lock/owner"
 rmdir "$slot/install.lock"
 # A failed build keeps the previously selected common set and shared evidence.
 source_package cargo-sort 99.1.1
-sed 's/SHARED_TOOLING_CARGO_SORT_VERSION=.*/SHARED_TOOLING_CARGO_SORT_VERSION=99.1.1/' "$fixture/versions" > "$fixture/new-versions"
+sed 's/TOKO_TOOLING_CARGO_SORT_VERSION=.*/TOKO_TOOLING_CARGO_SORT_VERSION=99.1.1/' "$fixture/versions" > "$fixture/new-versions"
 cp "$fixture/new-versions" "$fixture/versions"
 before="$(readlink "$consumer/.tools/rust/common")"
 touch "$fixture/fail-cargo-sort"
@@ -765,7 +765,7 @@ for failure in receipt reference store-activation local-activation common-activa
     [[ "$(readlink "$consumer/.tools/rust/common")" == "$before" ]] || exit 1
     [[ "$(perl -MCwd=abs_path -e 'print abs_path(shift)' "$fixture/a/.tools/rust/common/bin/cargo-sort")" == "$first_binary" ]] || exit 1
     [[ ! -e "$consumer/.tools/rust/common.lock" ]] || exit 1
-    [[ -z "$(find "$SHARED_TOOLING_STORE" -name install.lock)" ]] || exit 1
+    [[ -z "$(find "$TOKO_TOOLING_STORE" -name install.lock)" ]] || exit 1
     rm "$fixture/fail-$failure"
 done
 common
@@ -778,18 +778,18 @@ while IFS= read -r -d '' root && IFS= read -r -d '' relative; do inputs+=("$root
 bash "$ROOT/scripts/ci/archive-evidence.sh" "$fixture/evidence.tar.gz" "${inputs[@]}" > /dev/null
 mkdir "$fixture/unpacked"
 tar -xzf "$fixture/evidence.tar.gz" -C "$fixture/unpacked"
-cmp "$bundle/bin/prepare" "$fixture/unpacked/${bundle#"$SHARED_TOOLING_STORE/"}/bin/prepare"
+cmp "$bundle/bin/prepare" "$fixture/unpacked/${bundle#"$TOKO_TOOLING_STORE/"}/bin/prepare"
 [[ "$(find "$fixture/unpacked" -name evidence -type f | wc -l)" -gt 0 ]] || exit 1
 # Refuse injected global Cargo configuration even on an otherwise reusable set.
-printf '[build]\nrustflags=["--bad"]\n' > "$SHARED_TOOLING_STORE/cargo-cache/config.toml"
+printf '[build]\nrustflags=["--bad"]\n' > "$TOKO_TOOLING_STORE/cargo-cache/config.toml"
 refuse common --check
-rm "$SHARED_TOOLING_STORE/cargo-cache/config.toml"
+rm "$TOKO_TOOLING_STORE/cargo-cache/config.toml"
 common --check
-mv "$SHARED_TOOLING_STORE/cargo-cache/registry/cache" "$fixture/retained-cache"
-ln -s "$fixture/retained-cache" "$SHARED_TOOLING_STORE/cargo-cache/registry/cache"
+mv "$TOKO_TOOLING_STORE/cargo-cache/registry/cache" "$fixture/retained-cache"
+ln -s "$fixture/retained-cache" "$TOKO_TOOLING_STORE/cargo-cache/registry/cache"
 refuse common
-rm "$SHARED_TOOLING_STORE/cargo-cache/registry/cache"
-mv "$fixture/retained-cache" "$SHARED_TOOLING_STORE/cargo-cache/registry/cache"
+rm "$TOKO_TOOLING_STORE/cargo-cache/registry/cache"
+mv "$fixture/retained-cache" "$TOKO_TOOLING_STORE/cargo-cache/registry/cache"
 # Lock-selected package changes during compilation must prevent activation.
 mkdir "$fixture/locked"
 cat > "$fixture/locked/Cargo.lock" <<'LOCK'
@@ -809,8 +809,8 @@ mkdir "$fixture/redirected" "$fixture/outside"
 ln -s "$fixture/outside" "$fixture/redirected/.tools"
 refuse bash "$installer" --consumer "$fixture/redirected" --versions "$fixture/versions"
 [[ -z "$(ls -A "$fixture/outside")" ]] || exit 1
-ln -s "$SHARED_TOOLING_STORE" "$fixture/store-link"
-SHARED_TOOLING_STORE="$fixture/store-link" refuse common --check
+ln -s "$TOKO_TOOLING_STORE" "$fixture/store-link"
+TOKO_TOOLING_STORE="$fixture/store-link" refuse common --check
 # Change each build identity input after the substitute Cargo writes its receipt.
 # Mutate only disposable sources; the real admission, retention and activation run.
 mkdir "$fixture/tool-source"
@@ -818,7 +818,7 @@ bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$fixture/tool-source"
 cp "$fixture/compiler-version" "$fixture/original-compiler"
 before="$(readlink "$consumer/.tools/rust/common")"
 source_package cargo-sort 99.1.2
-sed 's/SHARED_TOOLING_CARGO_SORT_VERSION=.*/SHARED_TOOLING_CARGO_SORT_VERSION=99.1.2/' "$fixture/versions" > "$fixture/new-versions"
+sed 's/TOKO_TOOLING_CARGO_SORT_VERSION=.*/TOKO_TOOLING_CARGO_SORT_VERSION=99.1.2/' "$fixture/versions" > "$fixture/new-versions"
 cp "$fixture/new-versions" "$fixture/versions"
 for change in compiler native policy; do
     printf '%s\n' "$change" > "$fixture/change-build"
@@ -836,7 +836,7 @@ for change in compiler native policy; do
     bash "$ROOT/scripts/ci/verify-file-checksum.sh" sha256 "$(jq -r .native "$attempt/build-identity.observed.json")" "$attempt/native-environment.observed.txt"
     if grep -F must-not-retain "$attempt/"*.json "$attempt/"*.txt "$fixture/$change.err"; then exit 1; fi
     [[ "$(readlink "$consumer/.tools/rust/common")" == "$before" ]] || exit 1
-    [[ ! -e "$consumer/.tools/rust/common.lock" && -z "$(find "$SHARED_TOOLING_STORE" -name install.lock)" ]] || exit 1
+    [[ ! -e "$consumer/.tools/rust/common.lock" && -z "$(find "$TOKO_TOOLING_STORE" -name install.lock)" ]] || exit 1
     # The standard evidence selector must retain both observations, even though
     # this generation was never activated.
     mkdir "$fixture/$change-diagnostics"
@@ -847,7 +847,7 @@ for change in compiler native policy; do
     mkdir "$fixture/$change-unpacked"
     tar -xzf "$fixture/$change-evidence.tar.gz" -C "$fixture/$change-unpacked"
     for evidence in inputs.json native-environment.txt build-identity.observed.json native-environment.observed.txt; do
-        cmp "$attempt/$evidence" "$fixture/$change-unpacked/${attempt#"$SHARED_TOOLING_STORE/"}/$evidence"
+        cmp "$attempt/$evidence" "$fixture/$change-unpacked/${attempt#"$TOKO_TOOLING_STORE/"}/$evidence"
     done
     rm "$fixture/change-build"
     cp "$fixture/original-compiler" "$fixture/compiler-version"
@@ -865,7 +865,7 @@ for leaf in build-identity.observed.json native-environment.observed.txt; do
     [[ ! -e "$attempt/selection.json" && ! -e "${attempt%/*}/current" ]]
     cmp "$fixture/expected-observation" "$fixture/outside-observation"
     [[ "$(readlink "$consumer/.tools/rust/common")" == "$before" ]]
-    [[ ! -e "$consumer/.tools/rust/common.lock" && -z "$(find "$SHARED_TOOLING_STORE" -name install.lock)" ]]
+    [[ ! -e "$consumer/.tools/rust/common.lock" && -z "$(find "$TOKO_TOOLING_STORE" -name install.lock)" ]]
     [[ -z "$(find "$consumer/.tools/rust" -name '.selected-*.lock')" ]]
     mkdir "$fixture/$leaf-diagnostics"
     bash "$ROOT/scripts/ci/select-tool-evidence.sh" full "$consumer" "$fixture/$leaf-diagnostics" > "$fixture/$leaf-selections"
@@ -874,7 +874,7 @@ for leaf in build-identity.observed.json native-environment.observed.txt; do
     bash "$ROOT/scripts/ci/archive-evidence.sh" "$fixture/$leaf.tar.gz" "${inputs[@]}" > /dev/null
     # Extract only this retained leaf: it must still be a link, not target bytes.
     mkdir "$fixture/$leaf-unpacked"
-    relative="${attempt#"$SHARED_TOOLING_STORE/"}/$leaf"
+    relative="${attempt#"$TOKO_TOOLING_STORE/"}/$leaf"
     tar -xzf "$fixture/$leaf.tar.gz" -C "$fixture/$leaf-unpacked" "./$relative"
     [[ -L "$fixture/$leaf-unpacked/$relative" ]]
     cmp "$fixture/expected-observation" "$fixture/outside-observation"
@@ -971,7 +971,7 @@ while [[ ! -f "$5" ]]; do sleep 0.05; done
 OWNER
 cp "$cli_bundle/bin/prepare" "$fixture/admission-binary"
 cp "$cli_bundle/.crates2.json" "$fixture/admission-receipt"
-cp "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-1.2.3.crate" "$fixture/admission-source"
+cp "$TOKO_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-1.2.3.crate" "$fixture/admission-source"
 cp "$fixture/compiler-version" "$fixture/admission-compiler"
 cp "$fixture/feature.lock" "$fixture/admission-lock"
 : > "$fixture/admission-common-versions"
@@ -979,7 +979,7 @@ for command in cargo-sort cargo-sort-derives; do
     common_binary="$(perl -MCwd=abs_path -e 'print abs_path(shift)' "$consumer/.tools/rust/common/bin/$command")"
     version="$(jq -r .version "${common_binary%/bin/*}/inputs.json")"
     catalog_name="$(printf '%s' "$command" | tr '[:lower:]-' '[:upper:]_')"
-    printf 'SHARED_TOOLING_%s_VERSION=%s\n' "$catalog_name" "$version" >> "$fixture/admission-common-versions"
+    printf 'TOKO_TOOLING_%s_VERSION=%s\n' "$catalog_name" "$version" >> "$fixture/admission-common-versions"
 done
 bash "$installer" --consumer "$consumer" --versions "$fixture/admission-common-versions" --check > "$fixture/admission-common-check"
 cp "$fixture/admission-common-versions" "$fixture/admission-common-before"
@@ -1039,7 +1039,7 @@ for scenario in reuse timeout unknown-owner changed-compiler changed-source chan
         grep -F 'Waiting for tool installation slot:' "$fixture/admission-check.err" >/dev/null
         case "$scenario" in
             changed-compiler) printf 'changed admission compiler\n' > "$fixture/compiler-version" ;;
-            changed-source) printf '\n' >> "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-1.2.3.crate" ;;
+            changed-source) printf '\n' >> "$TOKO_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-1.2.3.crate" ;;
             changed-lock) printf '\n# changed saved source lock\n' >> "$fixture/feature.lock" ;;
             changed-catalog) printf '\n# changed catalog input\n' >> "$fixture/admission-common-versions" ;;
             changed-selection)
@@ -1073,7 +1073,7 @@ for scenario in reuse timeout unknown-owner changed-compiler changed-source chan
     [[ "$(wc -l < "$fixture/builds")" == "$admission_builds" && "$(wc -l < "$fixture/probes")" == "$admission_probes" ]]
     cp "$fixture/admission-binary" "$cli_bundle/bin/prepare"
     cp "$fixture/admission-receipt" "$cli_bundle/.crates2.json"
-    cp "$fixture/admission-source" "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-1.2.3.crate"
+    cp "$fixture/admission-source" "$TOKO_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-1.2.3.crate"
     cp "$fixture/admission-compiler" "$fixture/compiler-version"
     cp "$fixture/admission-lock" "$fixture/feature.lock"
     cp "$fixture/admission-common-before" "$fixture/admission-common-versions"
@@ -1115,7 +1115,7 @@ for scenario in reuse changed-compiler changed-source redirected-source; do
     # redirection runs; otherwise it can observe the previous wait diagnostic.
     : > "$fixture/waiter.err"
     : > "$fixture/waiter.out"
-    SHARED_TOOLING_SETUP_WAIT_SECONDS=20 bash "$installer" --consumer "$fixture/$scenario-waiter" \
+    TOKO_TOOLING_SETUP_WAIT_SECONDS=20 bash "$installer" --consumer "$fixture/$scenario-waiter" \
         "${contention_args[@]}" > "$fixture/waiter.out" 2> "$fixture/waiter.err" & waiter_setup=$!
     for ((poll=0; poll<1200; poll++)); do
         if grep -qF 'Waiting for tool installation slot:' "$fixture/waiter.err"; then break; fi
@@ -1125,16 +1125,16 @@ for scenario in reuse changed-compiler changed-source redirected-source; do
     grep -F "package=sample version=$version phase=lock-wait outcome=started elapsed=0s" "$fixture/waiter.err" >/dev/null
     # An offline check never waits, even with the setup budget configured.
     status=0
-    SHARED_TOOLING_SETUP_WAIT_SECONDS=300 bash "$installer" --consumer "$fixture/$scenario-owner" \
+    TOKO_TOOLING_SETUP_WAIT_SECONDS=300 bash "$installer" --consumer "$fixture/$scenario-owner" \
         "${contention_args[@]}" --check > "$fixture/contended-check.out" 2> "$fixture/contended-check.err" || status=$?
     [[ "$status" != 0 && ! -s "$fixture/contended-check.out" ]]
     if grep -F 'Waiting for' "$fixture/contended-check.err"; then exit 1; fi
     [[ "$scenario" != changed-compiler ]] || echo compiler > "$fixture/change-build"
     if [[ "$scenario" == changed-source ]]; then
-        printf '\n' >> "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-$version.crate"
+        printf '\n' >> "$TOKO_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-$version.crate"
     elif [[ "$scenario" == redirected-source ]]; then
-        rm "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-$version.crate"
-        ln -s "$fixture/assets/sample-$version.crate" "$SHARED_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-$version.crate"
+        rm "$TOKO_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-$version.crate"
+        ln -s "$fixture/assets/sample-$version.crate" "$TOKO_TOOLING_STORE/cargo-cache/registry/cache/index.crates.io-fixture/sample-$version.crate"
     fi
     rm "$fixture/hold-install"
     owner_status=0; waiter_status=0
@@ -1169,16 +1169,16 @@ if [[ "$contention_only" == true ]]; then
     fixture_complete=true
     exit 0
 fi
-SHARED_TOOLING_SETUP_WAIT_SECONDS=invalid bash "$installer" "${feature_args[@]}" --features cli --check \
+TOKO_TOOLING_SETUP_WAIT_SECONDS=invalid bash "$installer" "${feature_args[@]}" --features cli --check \
     > "$fixture/check-ignores-wait.out"
 [[ "$(cat "$fixture/check-ignores-wait.out")" == "$cli_path" ]]
-SHARED_TOOLING_SETUP_WAIT_SECONDS=invalid bash "$installer" --consumer "$consumer" --preflight
+TOKO_TOOLING_SETUP_WAIT_SECONDS=invalid bash "$installer" --consumer "$consumer" --preflight
 for invalid in -1 01 301 1.5; do
     status=0
-    SHARED_TOOLING_SETUP_WAIT_SECONDS="$invalid" bash "$installer" --consumer "$consumer" \
+    TOKO_TOOLING_SETUP_WAIT_SECONDS="$invalid" bash "$installer" --consumer "$consumer" \
         "${feature_args[@]:2}" > "$fixture/invalid-wait.out" 2> "$fixture/invalid-wait.err" || status=$?
     [[ "$status" == 2 && ! -s "$fixture/invalid-wait.out" ]]
-    grep -F 'SHARED_TOOLING_SETUP_WAIT_SECONDS must be' "$fixture/invalid-wait.err" >/dev/null
+    grep -F 'TOKO_TOOLING_SETUP_WAIT_SECONDS must be' "$fixture/invalid-wait.err" >/dev/null
 done
 echo 'Shared Cargo installation, standard environment, identities, retention, contention and offline checks passed'
 fixture_complete=true

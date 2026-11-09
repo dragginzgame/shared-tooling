@@ -1,12 +1,12 @@
 # Fleet reports and CI inspection
 
-Shared Tooling owns these central reports. They inspect selected repositories;
+Toko Tooling owns these central reports. They inspect selected repositories;
 they do not run sibling setup, build or release targets. Consumers retain their
 own validation and issue resolution. See the [ownership boundary](../README.md#repository-fleet-ownership)
 and [supported tool dependencies](supported-hosts.md#tool-specific-dependencies).
 
 Prepare tools explicitly using [local setup](local-setup.md). Commands below run
-from Shared Tooling unless another working directory is specified. Prepared
+from Toko Tooling unless another working directory is specified. Prepared
 host tools in this checkout's `.tools/host/bin` take precedence over `PATH`.
 
 ## Cargo workspace LOC report
@@ -108,11 +108,11 @@ visibility change or broad source relocation is needed merely to count lines.
 Declare exceptional roles in the owning package manifest, for example:
 
 ```toml
-[package.metadata.shared-tooling.loc]
+[package.metadata.toko-tooling.loc]
 category = "tests" # Whole fixture-only package, including its helper source.
 generated = ["src/generated"] # Existing file or directory, independent of role.
 
-[package.metadata.shared-tooling.loc.paths]
+[package.metadata.toko-tooling.loc.paths]
 "build.rs" = "build_tooling"
 "examples" = "examples"
 ```

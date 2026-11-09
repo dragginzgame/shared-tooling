@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Shared companions: scripts/ci/tool-catalog-records.pl scripts/ci/verify-shared-tooling-snapshot.sh
+# Shared companions: scripts/ci/tool-catalog-records.pl scripts/ci/verify-toko-tooling-snapshot.sh
 use strict;
 use warnings;
 use Cwd qw(abs_path);
@@ -91,7 +91,7 @@ my $exit = eval {
                     defined($base) && $base !~ /[\0\r\n]/ && ($base eq $consumer || index($base, "$consumer/") == 0)
                         or die "invalid snapshot root\n";
                     # Read with our reviewed grammar owner, never consumer code.
-                    open my $reader, '-|', 'bash', "$RealBin/verify-shared-tooling-snapshot.sh", '--read-manifest', $manifest_path
+                    open my $reader, '-|', 'bash', "$RealBin/verify-toko-tooling-snapshot.sh", '--read-manifest', $manifest_path
                         or die "cannot start snapshot reader: $!\n";
                     my $manifest = do { local $/; <$reader> // '' };
                     close $reader or die "invalid owning snapshot manifest\n";

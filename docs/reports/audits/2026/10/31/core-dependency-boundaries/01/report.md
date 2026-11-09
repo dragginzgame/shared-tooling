@@ -9,7 +9,7 @@ The maintainer requested a fleet rule and sibling audit after IcyDB adoption
 was held by its Canic stack. This central audit applies
 [complexity and technical debt](../../../../../../../../audits/complexity-and-technical-debt.md)
 and the [common evidence contract](../../../../../../../../audits/README.md)
-from Shared Tooling `62edfbd43087a718bf0283e9040676a49211976d`. The proposed
+from Toko Tooling `62edfbd43087a718bf0283e9040676a49211976d`. The proposed
 [core boundary rule](../../../../../../../../rules/rust-workspaces.md#core-and-integration-graph-boundary)
 is a working-tree change, not an adopted consumer snapshot.
 
@@ -118,7 +118,7 @@ required runtime or release acceptance.
 
 ### 3. LOW — The fleet graph catalog describes retired workspace boundaries
 
-**Owner:** Shared Tooling. **Classification:** stale maintenance evidence.
+**Owner:** Toko Tooling. **Classification:** stale maintenance evidence.
 **Trigger:** the next graph/catalog update.
 
 The catalog requires separate ic-jobs and ic-timers checkouts, although both now

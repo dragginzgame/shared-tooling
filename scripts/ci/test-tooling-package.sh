@@ -16,7 +16,7 @@ version="$(perl "$ROOT/scripts/ci/shared-package-version.pl" "$ROOT/Cargo.toml")
 archive="$ROOT/target/package/toko-tooling-$version.crate"
 checksum="$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$archive")"
 perl "$ROOT/scripts/distribution/registry-package.pl" extract "$archive" "$checksum" "$version" "$fixture/package"
-for path in make/consumer.mk scripts/dev/shared-tooling.sh .github/actions/cache-tool-downloads/action.yml licenses/MIT.txt ci/tool-versions.env; do
+for path in make/consumer.mk scripts/dev/toko-tooling.sh .github/actions/cache-tool-downloads/action.yml licenses/MIT.txt ci/tool-versions.env; do
     [[ -f "$fixture/package/$path" ]] || { echo "missing published tooling file: $path" >&2; exit 1; }
 done
 [[ ! -e "$fixture/package/ci/frontend/node_modules" && ! -e "$fixture/package/docs/code-review" ]]
@@ -25,7 +25,7 @@ mkdir "$consumer"
 git -C "$consumer" init -q
 printf '# Consumer-owned README\n' > "$consumer/README.md"
 printf '# Consumer-owned instructions\n' > "$consumer/AGENTS.md"
-entrypoints=(--entrypoint make/consumer.mk --entrypoint scripts/dev/shared-tooling.sh)
+entrypoints=(--entrypoint make/consumer.mk --entrypoint scripts/dev/toko-tooling.sh)
 while IFS= read -r path; do
     [[ -n "$path" && "$path" != \#* ]] || continue
     entrypoints+=(--entrypoint "$path")
@@ -41,7 +41,7 @@ jq '{files: (.files | map_values(.checksum)), package: .checksum}' \
 rm "$fixture/vendor/toko-tooling/.toko-tooling.files.json"
 printf '[source.crates-io]\nreplace-with="fixture"\n[source.fixture]\ndirectory="%s"\n' "$fixture/vendor" > "$consumer/.cargo/config.toml"
 (cd "$consumer" && cargo generate-lockfile --offline)
-make --no-print-directory -C "$consumer" -f make/consumer.mk shared-tooling-check
+make --no-print-directory -C "$consumer" -f make/consumer.mk toko-tooling-check
 documents=()
 while IFS= read -r path; do documents+=("${path#"$consumer/"}"); done < <(find "$consumer" -type f -name '*.md' -not -path '*/.git/*' | sort)
 perl "$fixture/package/scripts/ci/check-documentation-links.pl" --root "$consumer" "${documents[@]}"

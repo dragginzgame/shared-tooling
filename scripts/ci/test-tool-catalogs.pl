@@ -43,7 +43,7 @@ is($record_status, 0, 'select one admitted Rust pin');
 like($record_bytes, qr/\ACARGO_SORT\t[0-9.]+\tall\t-\n\z/, 'selection retains the typed record');
 for my $version ('0.0.0', '18446744073709551616.2.3') {
     my $catalog = read_file("$fixture/ci/host.env");
-    $catalog =~ s/(SHARED_TOOLING_CARGO_SORT_VERSION=)[^\n]+/$1$version/;
+    $catalog =~ s/(TOKO_TOOLING_CARGO_SORT_VERSION=)[^\n]+/$1$version/;
     write_file('ci/versions.env', $catalog);
     ($record_status, $record_bytes) = run_records('rust', 'ci/versions.env', 'CARGO_SORT');
     is($record_status, 0, 'catalog stable versions retain grammar-only admission without release bounds');
@@ -51,7 +51,7 @@ for my $version ('0.0.0', '18446744073709551616.2.3') {
 }
 for my $version ('01.2.3', '1.02.3', '1.2.03', '1.2', '1.2.3-rc.1', '1.2.3+build') {
     my $catalog = read_file("$fixture/ci/host.env");
-    $catalog =~ s/(SHARED_TOOLING_CARGO_SORT_VERSION=)[^\n]+/$1$version/;
+    $catalog =~ s/(TOKO_TOOLING_CARGO_SORT_VERSION=)[^\n]+/$1$version/;
     write_file('ci/versions.env', $catalog);
     ($record_status, $record_bytes) = run_records('rust', 'ci/versions.env');
     isnt($record_status, 0, 'catalog refuses a noncanonical stable version');
@@ -88,7 +88,7 @@ like($record_bytes, qr/^SHELLCHECK\t[^\t]+\tLINUX_AMD64\t[0-9a-f]{64}$/m, 'asset
 isnt($record_status, 0, 'missing selected tool refuses');
 is($record_bytes, '', 'missing selection publishes no records');
 my $invalid_ci = read_file("$fixture/ci/host.env");
-$invalid_ci =~ s/(SHARED_TOOLING_GITLEAKS_SHA256_LINUX_X64=)[^\n]+/${1}invalid/;
+$invalid_ci =~ s/(TOKO_TOOLING_GITLEAKS_SHA256_LINUX_X64=)[^\n]+/${1}invalid/;
 write_file('ci/invalid-ci.env', $invalid_ci);
 ($record_status, $record_bytes) = run_records('ci', 'ci/invalid-ci.env', 'ACTIONLINT');
 isnt($record_status, 0, 'selection cannot hide invalid records in its catalog group');
@@ -168,11 +168,11 @@ $config->{workflows}[0]{callers}[2] = binding_entry('verifier', 'ci/qualified.ts
 # Root and nested ownership are independent of the path of the binding file.
 for my $prefix ('', 'vendor/') {
     write_file("${prefix}ci/owned.tsv", $qualified);
-    my $manifest = "format\t1\nsource\thttps://github.com/dragginzgame/shared-tooling\nrevision\t" . ('1' x 40) . "\nfile\t" . sha256_hex($qualified) . "\t-\tci/owned.tsv\n";
-    write_file("${prefix}.shared-tooling.snapshot", $manifest);
+    my $manifest = "format\t1\nsource\thttps://github.com/dragginzgame/toko-tooling\nrevision\t" . ('1' x 40) . "\nfile\t" . sha256_hex($qualified) . "\t-\tci/owned.tsv\n";
+    write_file("${prefix}.toko-tooling.snapshot", $manifest);
     my $entry = binding_entry('verifier', "${prefix}ci/owned.tsv");
     delete $entry->{exception};
-    $entry->{snapshot} = "${prefix}.shared-tooling.snapshot";
+    $entry->{snapshot} = "${prefix}.toko-tooling.snapshot";
     $entry->{snapshot_root} = $prefix ? 'vendor' : '.';
     $config->{workflows}[0]{callers}[2] = $entry;
     is((run_check())[0], 0, "selected catalog owned by ${prefix}snapshot");
@@ -185,29 +185,29 @@ for my $prefix ('', 'vendor/') {
         $manifest . "file\t" . sha256_hex($qualified) . "\t-\tci/owned.tsv\n",
         $manifest . "\0",
     ) {
-        write_file("${prefix}.shared-tooling.snapshot", $invalid);
+        write_file("${prefix}.toko-tooling.snapshot", $invalid);
         ($status, $result) = run_check();
         is($status, 2, 'malformed owning manifest is unresolved');
         like($result->{callers}[2]{reason}, qr/invalid owning snapshot manifest/, 'canonical reader failure reaches caller evidence');
     }
     # Syntax admission must not turn this selected-catalog check into whole-
     # snapshot verification: unrelated payloads can be absent here.
-    write_file("${prefix}.shared-tooling.snapshot", $manifest . "file\t" . ('0' x 64) . "\t-\tunselected.txt\n");
+    write_file("${prefix}.toko-tooling.snapshot", $manifest . "file\t" . ('0' x 64) . "\t-\tunselected.txt\n");
     is((run_check())[0], 0, 'unselected payload integrity remains a separate check');
     make_path("$fixture/reader-failure/scripts/ci");
     for my $script (qw(check-tool-catalogs.pl tool-catalog-records.pl ic-tool-pins.awk StableVersion.pm)) {
         copy("$root/scripts/ci/$script", "$fixture/reader-failure/scripts/ci/$script") or die $!;
     }
-    write_file('reader-failure/scripts/ci/verify-shared-tooling-snapshot.sh', "#!/usr/bin/env bash\ncat <<'RECORDS'\n${manifest}RECORDS\nexit 91\n");
+    write_file('reader-failure/scripts/ci/verify-toko-tooling-snapshot.sh', "#!/usr/bin/env bash\ncat <<'RECORDS'\n${manifest}RECORDS\nexit 91\n");
     is((run_check("$fixture/reader-failure/scripts/ci/check-tool-catalogs.pl"))[0], 2,
         'failed reader cannot admit even complete valid output');
-    write_file("${prefix}.shared-tooling.snapshot", $manifest);
+    write_file("${prefix}.toko-tooling.snapshot", $manifest);
     write_file("${prefix}ci/owned.tsv", $changed);
     is((run_check())[0], 2, 'snapshot catalog mutation unresolved');
 }
 # A host exception is not inherited by the Rust selection.
 my $host = read_file("$fixture/ci/host.env");
-$host =~ s/SHARED_TOOLING_JQ_VERSION=[^\n]+/SHARED_TOOLING_JQ_VERSION=9.9.9/;
+$host =~ s/TOKO_TOOLING_JQ_VERSION=[^\n]+/TOKO_TOOLING_JQ_VERSION=9.9.9/;
 write_file('ci/host-exception.env', $host);
 $config->{workflows} = [map { {name => 'release', kind => $_, reference => 'setup', callers => [binding_entry('setup','ci/host.env'), binding_entry('verifier','ci/host-exception.env')]} } qw(host rust)];
 ($status, $result) = run_check();

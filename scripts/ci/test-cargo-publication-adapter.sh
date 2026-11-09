@@ -45,15 +45,15 @@ CARGO
 chmod +x "$fixture/bin/git" "$fixture/bin/cargo"
 export PATH="$fixture/bin:$PATH"
 cd "$fixture/workspace with spaces"
-printf 'SHARED_TOOLING_ROOT := %s\n' "$root" > Makefile
+printf 'TOKO_TOOLING_ROOT := %s\n' "$root" > Makefile
 cat >> Makefile <<'MAKE'
 .DEFAULT_GOAL := help
-SHARED_TOOLING_RUST := 0
+TOKO_TOOLING_RUST := 0
 PACKAGE := library
 CARGO_PUBLISH_PACKAGES := library cli
 CARGO_PUBLISH_REGISTRY := crates-io
 CARGO_PUBLISH_VERIFY_TARGETS := prepare verify
-include $(SHARED_TOOLING_ROOT)/make/consumer.mk
+include $(TOKO_TOOLING_ROOT)/make/consumer.mk
 help:
 	@echo help
 prepare:

@@ -151,13 +151,13 @@ TOOL
 include make/tools.mk
 .PHONY: fmt
 fmt:
-	bash scripts/ci/check-format-tools.sh $(SHARED_TOOLING_CARGO_SORT_VERSION) hook-fixture-cargo
+	bash scripts/ci/check-format-tools.sh $(TOKO_TOOLING_CARGO_SORT_VERSION) hook-fixture-cargo
 	env hook-fixture-cargo sort --workspace
 include ci/tool-versions.env
 MAKE
     if [[ "$selection" == ic ]]; then
         cat >> Makefile <<'MAKE'
-export PATH := $(or $(SHARED_TOOLING_FORMAT_TOOLS_FROM),$(CURDIR))/.tools/ic/bin:$(PATH)
+export PATH := $(or $(TOKO_TOOLING_FORMAT_TOOLS_FROM),$(CURDIR))/.tools/ic/bin:$(PATH)
 MAKE
     fi
     git add Makefile
@@ -803,13 +803,13 @@ done
 # No selected frontend input is legitimate, even when the staged tree has no
 # frontend directory (for example after deleting its final tracked file).
 : > "$FIXTURE/no-frontend-selection"
-SHARED_TOOLING_FORMAT_FILES="$FIXTURE/no-frontend-selection" PRETTIER_BIN=/absent \
+TOKO_TOOLING_FORMAT_FILES="$FIXTURE/no-frontend-selection" PRETTIER_BIN=/absent \
     bash scripts/dev/format-frontend.sh --write absent-frontend
 # The explicit list also demonstrates that an unselected frontend file is never
 # passed to the formatter. Use the helper in a disposable snapshot directory.
 printf '%s\0' "$frontend_path" > "$FIXTURE/frontend-selection"
 printf 'unformatted unselected\n' > frontend/unselected.ts
-SHARED_TOOLING_FORMAT_FILES="$FIXTURE/frontend-selection" \
+TOKO_TOOLING_FORMAT_FILES="$FIXTURE/frontend-selection" \
     bash scripts/dev/format-frontend.sh --write frontend
 [[ "$(cat "$frontend_path")" == formatted && "$(cat frontend/unselected.ts)" == 'unformatted unselected' ]] || exit 1
 echo 'Git hook preservation, installation, Cargo sorting and frontend selection tests passed'

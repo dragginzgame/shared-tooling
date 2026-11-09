@@ -15,13 +15,13 @@ consumer="$fixture/consumer with spaces"
 mkdir -p "$consumer/vendor/make" "$consumer/vendor/scripts/ci" "$consumer/ci" "$consumer/vendor/ci" "$consumer/.tools/rust/common/bin"
 printf '[package]\nname = "fixture"\nversion = "0.0.0"\n' > "$consumer/Cargo.toml"
 bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$consumer/vendor" make/rust-format.mk
-printf 'export SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\nSHARED_TOOLING_CARGO_SORT_DERIVES_VERSION=0.1.3\n' > "$consumer/vendor/ci/tool-versions.env"
+printf 'export TOKO_TOOLING_CARGO_SORT_VERSION=2.1.4\nTOKO_TOOLING_CARGO_SORT_DERIVES_VERSION=0.1.3\n' > "$consumer/vendor/ci/tool-versions.env"
 cat > "$consumer/Makefile" <<'MAKE'
-SHARED_TOOLING_ROOT ?= $(CURDIR)/vendor
+TOKO_TOOLING_ROOT ?= $(CURDIR)/vendor
 FORMAT_CARGO := format-fixture-cargo
 FORMAT_RUST_ARGS := --no-cache
 include vendor/make/tools.mk vendor/make/rust-format.mk
-format-tools-check fmt fmt-check: override SHARED_TOOLING_ROOT := $(CURDIR)/vendor
+format-tools-check fmt fmt-check: override TOKO_TOOLING_ROOT := $(CURDIR)/vendor
 .PHONY: help
 help:
 	@echo harmless
@@ -73,9 +73,9 @@ for target in help fmt fmt-check; do
     for source in environment command; do
         : > "$FORMAT_TEST_EVENTS"
         if [[ "$source" == environment ]]; then
-            SHARED_TOOLING_ROOT="$fixture/unselected" make --no-print-directory -C "$consumer" "$target" > "$fixture/root-$source.log" 2>&1
+            TOKO_TOOLING_ROOT="$fixture/unselected" make --no-print-directory -C "$consumer" "$target" > "$fixture/root-$source.log" 2>&1
         else
-            make --no-print-directory -C "$consumer" "$target" "SHARED_TOOLING_ROOT=$fixture/unselected" > "$fixture/root-$source.log" 2>&1
+            make --no-print-directory -C "$consumer" "$target" "TOKO_TOOLING_ROOT=$fixture/unselected" > "$fixture/root-$source.log" 2>&1
         fi
         case "$target" in
             help) : > "$fixture/expected" ;;
@@ -90,7 +90,7 @@ cp "$consumer/vendor/ci/tool-versions.env" "$fixture/catalog"
 for invalid in duplicate executable; do
     cp "$fixture/catalog" "$consumer/vendor/ci/tool-versions.env"
     if [[ "$invalid" == duplicate ]]; then
-        printf 'SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\n' >> "$consumer/vendor/ci/tool-versions.env"
+        printf 'TOKO_TOOLING_CARGO_SORT_VERSION=2.1.4\n' >> "$consumer/vendor/ci/tool-versions.env"
     else
         # shellcheck disable=SC2016 # The forbidden catalog would expand this if sourced.
         printf 'echo executed >> "$FORMAT_TEST_EVENTS"\n' >> "$consumer/vendor/ci/tool-versions.env"
@@ -134,7 +134,7 @@ for target in fmt fmt-check; do
             if [[ "$source" == direct ]]; then
                 FORMAT_TEST_VERSION=0.0.0 make -C "$consumer" "$mode" "$target" > "$fixture/mode.log" 2>&1 || status=$?
             elif [[ "$source" == inherited ]]; then
-                _shared_make_execution_checked=yes MAKEFLAGS="$mode" FORMAT_TEST_VERSION=0.0.0 make -C "$consumer" "$target" > "$fixture/mode.log" 2>&1 || status=$?
+                _toko_make_execution_defined=yes MAKEFLAGS="$mode" FORMAT_TEST_VERSION=0.0.0 make -C "$consumer" "$target" > "$fixture/mode.log" 2>&1 || status=$?
             else
                 flags=(MAKEFLAGS=)
                 [[ "$source" != replaced ]] || flags=(MAKEFLAGS=--no-print-directory)

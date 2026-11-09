@@ -42,7 +42,7 @@ mkdir "$fixture/consumer"
 bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$fixture/consumer" make/release.mk
 cat > "$fixture/consumer/Makefile" <<'MAKE'
 .DEFAULT_GOAL := help
-SHARED_TOOLING_ROOT := $(CURDIR)
+TOKO_TOOLING_ROOT := $(CURDIR)
 RELEASE_DELIVERY_POLICY := $(CURDIR)/policy
 include make/release.mk
 help:
@@ -84,15 +84,15 @@ for source in environment command; do
     : > "$fixture/consumer/events"
     status=0
     if [[ "$source" == environment ]]; then
-        RELEASE_DELIVERY=pr SHARED_TOOLING_ROOT="$fixture/unselected" make --no-print-directory -C "$fixture/consumer" release-preflight > "$fixture/make.log" 2>&1 || status=$?
+        RELEASE_DELIVERY=pr TOKO_TOOLING_ROOT="$fixture/unselected" make --no-print-directory -C "$fixture/consumer" release-preflight > "$fixture/make.log" 2>&1 || status=$?
     else
-        make --no-print-directory -C "$fixture/consumer" release-preflight "SHARED_TOOLING_ROOT=$fixture/unselected" RELEASE_DELIVERY=pr > "$fixture/make.log" 2>&1 || status=$?
+        make --no-print-directory -C "$fixture/consumer" release-preflight "TOKO_TOOLING_ROOT=$fixture/unselected" RELEASE_DELIVERY=pr > "$fixture/make.log" 2>&1 || status=$?
     fi
     [[ "$status" != 0 && ! -s "$fixture/consumer/events" ]] || exit 1
 done
 rm "$fixture/consumer/scripts/ci/check-release-delivery.sh"
 : > "$fixture/consumer/events"
-if make --no-print-directory -C "$fixture/consumer" release-preflight "SHARED_TOOLING_ROOT=$fixture/unselected" > "$fixture/make.log" 2>&1; then exit 1; fi
+if make --no-print-directory -C "$fixture/consumer" release-preflight "TOKO_TOOLING_ROOT=$fixture/unselected" > "$fixture/make.log" 2>&1; then exit 1; fi
 [[ ! -s "$fixture/consumer/events" ]] || exit 1
 fixture_complete=true
 echo 'Release delivery data, standalone admission and actual Make hook refusal passed'

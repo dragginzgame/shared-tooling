@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/distribution/refresh-consumer.sh scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh
+# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/distribution/refresh-consumer.sh scripts/ci/verify-file-checksum.sh scripts/ci/verify-toko-tooling-snapshot.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 mkdir -p "$ROOT/target"
@@ -11,7 +11,7 @@ trap 'fixture_finish "$?" "$FIXTURE" "Failed snapshot transaction fixture retain
 REAL_GIT="$(command -v git)"
 export REAL_GIT
 checksum_path=scripts/ci/verify-file-checksum.sh
-verifier_path=scripts/ci/verify-shared-tooling-snapshot.sh
+verifier_path=scripts/ci/verify-toko-tooling-snapshot.sh
 # Advance a real, unchanged uncommitted export without touching its index.
 # Only these isolated source fixtures create synthetic commits.
 advance_source="$FIXTURE/advance-source"
@@ -22,7 +22,7 @@ git -C "$advance_source" config user.name 'Snapshot fixture'
 git -C "$advance_source" config user.email 'fixture@example.invalid'
 git -C "$advance_source" config commit.gpgsign false
 git -C "$advance_source" config core.hooksPath /dev/null
-git -C "$advance_source" remote add origin https://example.invalid/shared-tooling
+git -C "$advance_source" remote add origin https://example.invalid/toko-tooling
 for path in "$checksum_path" "$verifier_path"; do cp -p "$ROOT/$path" "$advance_source/$path"; done
 printf '#!/usr/bin/env bash\nprintf "old snapshot\\n"\n' > "$advance_source/scripts/ci/sample.sh"
 printf '0.2.8\n' > "$advance_source/VERSION"
@@ -53,9 +53,9 @@ if [[ "$1" == -C && "$2" == "$SNAPSHOT_ADVANCE_SOURCE" && "$3" == cat-file && "$
     ! -e "$SNAPSHOT_ADVANCE_CONSUMER/mutated" ]]; then
     consumer="$SNAPSHOT_ADVANCE_CONSUMER"
     case "$SNAPSHOT_ADVANCE_CASE" in
-        manifest-race) printf '# concurrent manifest edit\n' >> "$consumer/.shared-tooling.snapshot" ;;
+        manifest-race) printf '# concurrent manifest edit\n' >> "$consumer/.toko-tooling.snapshot" ;;
         index-race) "$REAL_GIT" -C "$consumer" update-index --add --cacheinfo "100755,$SNAPSHOT_CONFLICT_BLOB,scripts/ci/sample.sh" ;;
-        manifest-index-race) "$REAL_GIT" -C "$consumer" update-index --add --cacheinfo "100644,$SNAPSHOT_CONFLICT_BLOB,.shared-tooling.snapshot" ;;
+        manifest-index-race) "$REAL_GIT" -C "$consumer" update-index --add --cacheinfo "100644,$SNAPSHOT_CONFLICT_BLOB,.toko-tooling.snapshot" ;;
         path-race)
             cp -p "$consumer/scripts/ci/sample.sh" "$consumer/replacement"
             mv "$consumer/replacement" "$consumer/scripts/ci/sample.sh" ;;
@@ -64,7 +64,7 @@ if [[ "$1" == -C && "$2" == "$SNAPSHOT_ADVANCE_SOURCE" && "$3" == cat-file && "$
     esac
     touch "$consumer/mutated"
     "$REAL_GIT" -C "$consumer" write-tree > "$consumer/expected-index"
-    cp -p "$consumer/.shared-tooling.snapshot" "$consumer/expected-manifest"
+    cp -p "$consumer/.toko-tooling.snapshot" "$consumer/expected-manifest"
 fi
 exec "$REAL_GIT" "$@"
 SCRIPT
@@ -83,15 +83,15 @@ for state in unchanged partial edited mode staged symlink forged unavailable man
             printf '# local edit\n' >> "$consumer/scripts/ci/sample.sh"
             digest="$(bash "$ROOT/$checksum_path" --print sha256 "$consumer/scripts/ci/sample.sh")"
             awk -F '\t' -v OFS='\t' -v digest="$digest" '$1 == "file" && $4 == "scripts/ci/sample.sh" {$2=digest} {print}' \
-                "$consumer/.shared-tooling.snapshot" > "$consumer/forged"
-            mv "$consumer/forged" "$consumer/.shared-tooling.snapshot" ;;
+                "$consumer/.toko-tooling.snapshot" > "$consumer/forged"
+            mv "$consumer/forged" "$consumer/.toko-tooling.snapshot" ;;
         unavailable)
             awk -F '\t' -v OFS='\t' '$1 == "revision" {$2="1111111111111111111111111111111111111111"} {print}' \
-                "$consumer/.shared-tooling.snapshot" > "$consumer/unavailable"
-            mv "$consumer/unavailable" "$consumer/.shared-tooling.snapshot" ;;
+                "$consumer/.toko-tooling.snapshot" > "$consumer/unavailable"
+            mv "$consumer/unavailable" "$consumer/.toko-tooling.snapshot" ;;
     esac
     cp -p "$consumer/scripts/ci/sample.sh" "$consumer/expected-sample"
-    cp -p "$consumer/.shared-tooling.snapshot" "$consumer/expected-manifest"
+    cp -p "$consumer/.toko-tooling.snapshot" "$consumer/expected-manifest"
     git -C "$consumer" write-tree > "$consumer/expected-index"
     status=0
     SNAPSHOT_ADVANCE_CASE="$state" SNAPSHOT_ADVANCE_CONSUMER="$consumer" SNAPSHOT_CONFLICT_BLOB="$conflict_blob" \
@@ -99,7 +99,7 @@ for state in unchanged partial edited mode staged symlink forged unavailable man
         --source "$advance_source" --consumer "$consumer" > "$FIXTURE/advance-$state.log" 2>&1 || status=$?
     if [[ "$state" == unchanged || "$state" == partial ]]; then
         [[ "$status" == 0 ]] || exit 1
-        [[ "$(awk -F '\t' '$1 == "# version" {print $2}' "$consumer/.shared-tooling.snapshot")" == 0.2.9 ]] || exit 1
+        [[ "$(awk -F '\t' '$1 == "# version" {print $2}' "$consumer/.toko-tooling.snapshot")" == 0.2.9 ]] || exit 1
         cmp "$advance_source/scripts/ci/sample.sh" "$consumer/scripts/ci/sample.sh"
         [[ ! -x "$consumer/scripts/ci/sample.sh" ]] || exit 1
         bash "$ROOT/$verifier_path" --consumer "$consumer" >/dev/null
@@ -108,7 +108,7 @@ for state in unchanged partial edited mode staged symlink forged unavailable man
         cmp "$consumer/expected-sample" "$consumer/scripts/ci/sample.sh"
         if [[ -x "$consumer/expected-sample" ]]; then [[ -x "$consumer/scripts/ci/sample.sh" ]] || exit 1;
         else [[ ! -x "$consumer/scripts/ci/sample.sh" ]] || exit 1; fi
-        cmp "$consumer/expected-manifest" "$consumer/.shared-tooling.snapshot"
+        cmp "$consumer/expected-manifest" "$consumer/.toko-tooling.snapshot"
     fi
     [[ "$(git -C "$consumer" write-tree)" == "$(cat "$consumer/expected-index")" ]] || exit 1
     [[ "$(cat "$consumer/unrelated")" == 'unrelated staged input' ]] || exit 1
@@ -156,9 +156,9 @@ for state in interrupted payload-race index-race; do
     [[ "$state" != interrupted || "$status" == 23 ]]
     cmp "$consumer/expected-sample" "$consumer/scripts/ci/sample.sh"
     [[ -x "$consumer/scripts/ci/sample.sh" ]]
-    cmp "$advance_seed/.shared-tooling.snapshot" "$consumer/.shared-tooling.snapshot"
+    cmp "$advance_seed/.toko-tooling.snapshot" "$consumer/.toko-tooling.snapshot"
     [[ "$(git -C "$consumer" write-tree)" == "$(cat "$consumer/expected-index")" ]]
-    [[ -z "$(find "$consumer" -name '.shared-tooling-payload.*')" ]]
+    [[ -z "$(find "$consumer" -name '.toko-tooling-payload.*')" ]]
     if [[ "$state" == interrupted ]]; then
         bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$advance_source" --consumer "$consumer" \
             > "$FIXTURE/copy-retry.log"

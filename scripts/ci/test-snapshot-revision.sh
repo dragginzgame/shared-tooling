@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/distribution/refresh-consumer.sh scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh
+# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/distribution/refresh-consumer.sh scripts/ci/verify-file-checksum.sh scripts/ci/verify-toko-tooling-snapshot.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 mkdir -p "$ROOT/target"
@@ -12,14 +12,14 @@ export GIT_OPTIONAL_LOCKS=0
 source_root="$FIXTURE/source"
 consumer="$FIXTURE/consumer"
 exporter=scripts/distribution/refresh-consumer.sh
-helpers=(scripts/ci/shared-package-version.pl scripts/ci/shared-companions.sh scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh scripts/distribution/registry-package.pl)
+helpers=(scripts/ci/check-tooling-prerequisites.sh scripts/ci/shared-package-version.pl scripts/ci/shared-companions.sh scripts/ci/verify-file-checksum.sh scripts/ci/verify-toko-tooling-snapshot.sh scripts/distribution/registry-package.pl)
 mkdir -p "$source_root/scripts/ci" "$source_root/scripts/distribution" "$consumer"
 git init -q "$source_root"
 git -C "$source_root" config user.name 'Snapshot fixture'
 git -C "$source_root" config user.email 'fixture@example.invalid'
 git -C "$source_root" config commit.gpgsign false
 git -C "$source_root" config core.hooksPath /dev/null
-git -C "$source_root" remote add origin https://example.invalid/shared-tooling
+git -C "$source_root" remote add origin https://example.invalid/toko-tooling
 for path in "$exporter" "${helpers[@]}"; do cp -p "$ROOT/$path" "$source_root/$path"; done
 printf '#!/bin/sh\n# Shared companions: leaf.txt\nprintf "old committed payload\\n"\n' > "$source_root/sample.sh"
 chmod +x "$source_root/sample.sh"
@@ -66,7 +66,7 @@ run_export --revision "$old" --entrypoint sample.sh > "$FIXTURE/old.log"
 git --no-replace-objects -C "$source_root" show "$old:sample.sh" > "$FIXTURE/expected-sample"
 cmp "$FIXTURE/expected-sample" "$consumer/sample.sh"
 [[ -x "$consumer/sample.sh" && -f "$consumer/leaf.txt" && ! -e "$consumer/next.txt" ]]
-bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer" --source "$source_root" --revision "$old" > "$FIXTURE/independent.log"
+bash "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" --consumer "$consumer" --source "$source_root" --revision "$old" > "$FIXTURE/independent.log"
 run_export --revision "$new" > "$FIXTURE/new.log"
 [[ ! -x "$consumer/sample.sh" && ! -e "$consumer/leaf.txt" && -f "$consumer/next.txt" ]]
 run_export --revision "$new" > "$FIXTURE/retry.log"
@@ -130,10 +130,10 @@ for race in origin consumer source; do
         grep -F 'concurrent working edit' "$source_root/VERSION" >/dev/null
     else
         [[ "$status" != 0 ]]
-        cmp "$FIXTURE/consumer-adopted/.shared-tooling.snapshot" "$consumer/.shared-tooling.snapshot"
+        cmp "$FIXTURE/consumer-adopted/.toko-tooling.snapshot" "$consumer/.toko-tooling.snapshot"
         if [[ "$race" == origin ]]; then
             grep -F 'source origin changed' "$FIXTURE/race-origin.log" >/dev/null
-            git -C "$source_root" remote set-url origin https://example.invalid/shared-tooling
+            git -C "$source_root" remote set-url origin https://example.invalid/toko-tooling
         else
             grep -F 'consumer destination has local changes' "$FIXTURE/race-consumer.log" >/dev/null
             grep -F 'concurrent edit' "$consumer/sample.sh" >/dev/null
@@ -145,4 +145,26 @@ done
 cp -p "$FIXTURE/source-before/VERSION" "$source_root/VERSION"
 diff -r "$FIXTURE/source-before" "$source_root"
 echo 'pinned snapshot revision test passed'
+
+# An origin change needs the recorded source and shared commit ancestry.
+git -C "$source_root" remote set-url origin https://example.invalid/renamed
+refuse unreviewed-origin --revision "$new"
+grep -F 'provide --previous-source' "$FIXTURE/unreviewed-origin.log" >/dev/null
+refuse wrong-origin --revision "$new" --previous-source "$source_root"
+unrelated="$(printf 'Unrelated history\n' | git -C "$source_root" commit-tree "$new^{tree}")"
+refuse unrelated-origin --revision "$unrelated" --previous-source "$FIXTURE/source-before"
+grep -F 'recorded commit in the selected source ancestry' "$FIXTURE/unrelated-origin.log" >/dev/null
+run_export --revision "$new" --previous-source "$FIXTURE/source-before" > "$FIXTURE/reviewed-origin.log"
+bash "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" --consumer "$consumer" >/dev/null
+
+# A tracked staged deletion stays untouched and tells the adopter how to proceed.
+git -C "$consumer" config user.name 'Snapshot fixture'
+git -C "$consumer" config user.email 'fixture@example.invalid'
+git -C "$consumer" -c core.hooksPath=/dev/null add .
+git -C "$consumer" -c core.hooksPath=/dev/null -c commit.gpgsign=false commit -qm 'Adopt snapshot'
+git -C "$consumer" rm -q sample.sh
+refuse staged-deletion --revision "$new"
+grep -F 'commit the removal first' "$FIXTURE/staged-deletion.log" >/dev/null
+[[ ! -e "$consumer/sample.sh" ]]
+echo 'explicit origin migration and staged deletion diagnostics passed'
 fixture_complete=true

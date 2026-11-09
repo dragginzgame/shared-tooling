@@ -2,7 +2,7 @@
 # Shared companions: scripts/ci/install-ci-tool.sh scripts/ci/fixture-lifecycle.sh scripts/ci/prepare-script-fixture.sh scripts/ci/verify-file-checksum.sh
 set -euo pipefail
 # Installer fixtures must exercise their own transport, not a hosted warm cache.
-unset SHARED_TOOLING_DOWNLOAD_CACHE
+unset TOKO_TOOLING_DOWNLOAD_CACHE
 
 ROOT="$0"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
@@ -10,7 +10,7 @@ ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
-FIXTURE="$(fixture_create "${TMPDIR:-/tmp}/shared-tooling-installers-test.XXXXXX")"
+FIXTURE="$(fixture_create "${TMPDIR:-/tmp}/toko-tooling-installers-test.XXXXXX")"
 fixture_complete=false
 trap 'fixture_finish "$?" "$FIXTURE" "Installer fixtures retained"' EXIT
 
@@ -139,14 +139,14 @@ sccache_checksum="$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha2
 
 # Default and explicitly selected catalogs use the same authenticated installer.
 cat > "$FIXTURE/ci.env" <<CATALOG
-SHARED_TOOLING_ACTIONLINT_VERSION=1.7.12
-SHARED_TOOLING_ACTIONLINT_SHA256_LINUX_AMD64=$actionlint_checksum
-SHARED_TOOLING_SHELLCHECK_VERSION=0.11.0
-SHARED_TOOLING_SHELLCHECK_SHA256_LINUX_X86_64=$shellcheck_checksum
-SHARED_TOOLING_GITLEAKS_VERSION=8.30.1
-SHARED_TOOLING_GITLEAKS_SHA256_LINUX_X64=$gitleaks_checksum
-SHARED_TOOLING_SCCACHE_VERSION=0.17.0
-SHARED_TOOLING_SCCACHE_SHA256_LINUX_AMD64=$sccache_checksum
+TOKO_TOOLING_ACTIONLINT_VERSION=1.7.12
+TOKO_TOOLING_ACTIONLINT_SHA256_LINUX_AMD64=$actionlint_checksum
+TOKO_TOOLING_SHELLCHECK_VERSION=0.11.0
+TOKO_TOOLING_SHELLCHECK_SHA256_LINUX_X86_64=$shellcheck_checksum
+TOKO_TOOLING_GITLEAKS_VERSION=8.30.1
+TOKO_TOOLING_GITLEAKS_SHA256_LINUX_X64=$gitleaks_checksum
+TOKO_TOOLING_SCCACHE_VERSION=0.17.0
+TOKO_TOOLING_SCCACHE_SHA256_LINUX_AMD64=$sccache_checksum
 CATALOG
 for tool in actionlint shellcheck gitleaks sccache; do
     PATH="$FIXTURE/bin:$PATH" INSTALLER_TEST_ARCHIVES="$archives" \
@@ -166,7 +166,7 @@ for invalid in missing malformed duplicate executable conflict; do
     arguments=(actionlint --catalog "$FIXTURE/invalid.env" --install-dir "$FIXTURE/refused-$invalid")
     case "$invalid" in
         missing) arguments=(actionlint --catalog "$FIXTURE/missing.env" --install-dir "$FIXTURE/refused-$invalid") ;;
-        malformed) printf '\nSHARED_TOOLING_GITLEAKS_VERSION=invalid\n' > "$FIXTURE/invalid.env" ;;
+        malformed) printf '\nTOKO_TOOLING_GITLEAKS_VERSION=invalid\n' > "$FIXTURE/invalid.env" ;;
         duplicate) cat "$FIXTURE/ci.env" >> "$FIXTURE/invalid.env" ;;
         executable) printf '\ntouch SHOULD_NOT_EXIST\n' >> "$FIXTURE/invalid.env" ;;
         conflict) arguments+=(--version 1.7.12 --sha256 "$actionlint_checksum") ;;

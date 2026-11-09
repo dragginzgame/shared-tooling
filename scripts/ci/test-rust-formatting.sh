@@ -36,7 +36,7 @@ export PATH="$fixture/bin:$PATH" FORMAT_EVENTS="$fixture/events" RUNNER_TEMP="$f
 driver="$ROOT/scripts/ci/run-rust-formatting.pl"
 cd "$consumer"
 run() { perl "$driver" "$@" > "$fixture/output" 2>&1; }
-receipt="$consumer/target/shared-tooling/formatting.receipt"
+receipt="$consumer/target/toko-tooling/formatting.receipt"
 
 # A successful complete selection can serve both check and write. A cache hit
 # invokes no formatter, but still observes actual tools/config/source inputs.
@@ -165,7 +165,7 @@ run --write
 for bypass in explicit hook; do
     : > "$FORMAT_EVENTS"
     if [[ "$bypass" == explicit ]]; then run --check --no-cache
-    else SHARED_TOOLING_FORMAT_WORKTREE="$consumer" run --check; fi
+    else TOKO_TOOLING_FORMAT_WORKTREE="$consumer" run --check; fi
     [[ "$(wc -l < "$FORMAT_EVENTS")" -eq 2 ]]
 done
 printf 'fn interrupted() {}\n' > src/lib.rs

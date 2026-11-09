@@ -20,7 +20,7 @@
       ],
       "snapshot_manifests": [
         {
-          "path": ".shared-tooling.snapshot",
+          "path": ".toko-tooling.snapshot",
           "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
           "root": "."
         }
@@ -43,7 +43,7 @@
       "skipped_files": [],
       "snapshot_manifests": [
         {
-          "path": ".shared-tooling.snapshot",
+          "path": ".toko-tooling.snapshot",
           "revision": "e378671d90afa237ff63a4b0e3b9551eb2c222b6",
           "root": "."
         }
@@ -66,7 +66,7 @@
       "skipped_files": [],
       "snapshot_manifests": [
         {
-          "path": ".shared-tooling.snapshot",
+          "path": ".toko-tooling.snapshot",
           "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
           "root": "."
         }
@@ -89,7 +89,7 @@
       "skipped_files": [],
       "snapshot_manifests": [
         {
-          "path": ".shared-tooling.snapshot",
+          "path": ".toko-tooling.snapshot",
           "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
           "root": "."
         }
@@ -112,7 +112,7 @@
       "skipped_files": [],
       "snapshot_manifests": [
         {
-          "path": ".shared-tooling.snapshot",
+          "path": ".toko-tooling.snapshot",
           "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
           "root": "."
         }
@@ -135,7 +135,7 @@
       "skipped_files": [],
       "snapshot_manifests": [
         {
-          "path": ".shared-tooling.snapshot",
+          "path": ".toko-tooling.snapshot",
           "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
           "root": "."
         }
@@ -158,7 +158,7 @@
       "skipped_files": [],
       "snapshot_manifests": [
         {
-          "path": ".shared-tooling.snapshot",
+          "path": ".toko-tooling.snapshot",
           "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
           "root": "."
         }
@@ -181,7 +181,7 @@
       "skipped_files": [],
       "snapshot_manifests": [
         {
-          "path": ".shared-tooling.snapshot",
+          "path": ".toko-tooling.snapshot",
           "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
           "root": "."
         }
@@ -204,19 +204,19 @@
       "skipped_files": [],
       "snapshot_manifests": [
         {
-          "path": ".shared-tooling-audits.snapshot",
+          "path": ".toko-tooling-audits.snapshot",
           "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
           "root": "."
         },
         {
-          "path": ".shared-tooling.snapshot",
+          "path": ".toko-tooling.snapshot",
           "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
           "root": "."
         },
         {
-          "path": ".shared-tooling/helpers/.shared-tooling.snapshot",
+          "path": ".toko-tooling/helpers/.toko-tooling.snapshot",
           "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
-          "root": ".shared-tooling/helpers"
+          "root": ".toko-tooling/helpers"
         }
       ],
       "totals": {
@@ -256,7 +256,7 @@
       ],
       "snapshot_manifests": [
         {
-          "path": ".shared-tooling.snapshot",
+          "path": ".toko-tooling.snapshot",
           "revision": "25e7ce83149e081e4dcc52c55c33724e44153f2a",
           "root": "."
         }
@@ -275,7 +275,7 @@
       "dirty": false,
       "drifted_files": [],
       "head": "bfb50bd0884b5e6c5ee9592056531c6108f96d73",
-      "name": "shared-tooling",
+      "name": "toko-tooling",
       "skipped_files": [],
       "snapshot_manifests": [],
       "totals": {
@@ -296,7 +296,7 @@
       "skipped_files": [],
       "snapshot_manifests": [
         {
-          "path": ".shared-tooling.snapshot",
+          "path": ".toko-tooling.snapshot",
           "revision": "9f8c7c768793f4ce8f25be9e88282c0f63a06e7f",
           "root": "."
         }

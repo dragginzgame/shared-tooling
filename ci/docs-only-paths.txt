@@ -1,7 +1,7 @@
 # Exact reviewed prose paths. No globs: new or executable inputs default to full CI.
 AGENTS.md
 CHANGELOG.md
-DRAGGINZGAME.md
+TOKO-TOOLING.md
 README.md
 audits/README.md
 audits/ci-release-integrity.md

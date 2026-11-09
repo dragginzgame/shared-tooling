@@ -1,7 +1,7 @@
-# Dragginzgame Engineering Baseline
+# Toko Tooling Engineering Baseline
 <!-- Shared companions: audits/README.md docs/principles/rust-code-hygiene.md rules/change-reporting.md rules/contributions.md rules/engineering-details.md rules/hashing.md rules/rpc-budgets.md rules/rust-workspaces.md -->
 
-Shared Tooling owns the common engineering rules for `dragginzgame` repositories.
+Toko Tooling owns the common engineering rules for `dragginzgame` repositories.
 Read this core, the local `AGENTS.md` and the current handoff when present. Read
 linked specialist sections only when the task touches their subject, before the
 affected action. Do not recursively read every linked guide at startup or reread
@@ -11,10 +11,10 @@ same approach: mandatory local constraints first, task-specific references after
 ## Adoption and local authority
 
 - Apply the repository's reviewed snapshot or revision-bound baseline, never a
-  moving sibling checkout. Keep snapshot-owned files intact; repair at Shared
+  moving sibling checkout. Keep snapshot-owned files intact; repair at Toko
   Tooling and adopt a reviewed committed revision through the exporter.
 - Consumers own architecture, product limits, local commands and release inputs.
-  Shared owns common engineering practice and fleet audits. Local exceptions to
+  Toko Tooling owns common engineering practice and fleet audits. Local exceptions to
   common rules need maintainer approval with scope and reason. Preserve explicit
   exclusions and approved product restrictions.
 - During adoption, remove redundant or conflicting overlay wording; retain only
@@ -32,7 +32,7 @@ local overlays must not duplicate it or add routine permission gates.
   the inputs. Separate checkouts are explicit exceptions, not the default for
   isolation, PRs or deployment.
   Ordinary fixes include focused checks and pending notes, not staging, commits
-  or delivery. Shared alone also prepares its pending `VERSION`.
+  or delivery. Toko Tooling alone also prepares its pending `VERSION`.
 - A PR request includes its topic branch, scoped commits, branch push and PR.
   Release/ship/deploy requests include their necessary delivery steps and direct
   integration-branch pushes. An unqualified “deploy”, “ship” or “release” applies
@@ -113,10 +113,10 @@ when changing interfaces, persistence or installation/recovery behavior.
   generic regression matrices with their producer.
 - Repository tooling uses one exact root Cargo dependency pin inherited as a
   dev-dependency by every real workspace package. `cargo update -v` reports newer
-  releases; after changing the pin and Cargo.lock, run `make shared-tooling-update`.
+  releases; after changing the pin and Cargo.lock, run `make toko-tooling-update`.
   Offline admission checks every member, Cargo.lock and installed bytes together.
   See the
-  [tooling selection rule](rules/cargo-dependencies.md#shared-tooling-during-dependency-updates).
+  [tooling selection rule](rules/cargo-dependencies.md#toko-tooling-during-dependency-updates).
 - Give repeated validation one execution owner: selected group scope must reach
   the leaf commands, and aggregate gates must not repeat full lint/setup through
   nested targets. Reuse unchanged release-stage evidence only through the
@@ -138,7 +138,7 @@ when changing interfaces, persistence or installation/recovery behavior.
   or hold a turn open solely for the matrix. Enforced checks/reviews, known defects,
   release gates and issue-specific acceptance still apply. Never invent optional
   GitHub approvals or bypass protections. Synchronous qualification is opt-in.
-- Shared owns its general regression matrix. Consumers check snapshot integrity,
+- Toko Tooling owns its general regression matrix. Consumers check snapshot integrity,
   actual caller wiring and their product/native contracts. Do not replay generic
   producer fixtures by default; retain one only for a named missing consumer proof.
   Use [consumer qualification selection](docs/consuming-snapshots.md#consumer-qualification-selection)
@@ -201,7 +201,7 @@ and [RPC budgets](rules/rpc-budgets.md) for codecs, bindings or protocol changes
 
 ## Wasm optimization
 
-Shared Tooling owns optimization selection and evidence rules; IC Tooling's
+Toko Tooling owns optimization selection and evidence rules; IC Tooling's
 `ic-build` owns reusable build/optimizer mechanics, recommended recipes and their
 qualification evidence. Consumers select qualified recipes against their product
 budgets. Wasm size comparisons report both the complete uncompressed module and
@@ -303,12 +303,12 @@ Dependency adoption must distinguish required compatibility/security changes fro
 optional refreshes and check the destination graph before planning downstream
 releases. A newer external patch alone does not require republishing consumers.
 Defer optional dependency and snapshot refreshes by default, batching them at a
-natural release boundary when requested. Adopt Shared Tooling for a needed fix,
+natural release boundary when requested. Adopt Toko Tooling for a needed fix,
 capability or explicit refresh; an intact older snapshot alone is not work to do.
 Required API, security or compatibility migrations qualify the affected consumer
 boundary, rather than automatically updating the whole fleet.
 Follow the [adoption planning contract](docs/cargo-graph-checks.md#dependency-adoption-planning).
-Use root-owned dependency selections, reviewed shared tooling and explicit setup.
+Use root-owned dependency selections, reviewed toko tooling and explicit setup.
 Rust 1.99.1 is the approved minimum and pinned development/release compiler;
 follow the [compiler support policy](rules/cargo-dependencies.md#minimum-supported-rust-version-msrv)
 when adopting it and consolidating duplicate compiler checks. Preserve product

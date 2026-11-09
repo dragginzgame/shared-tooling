@@ -102,9 +102,9 @@ cat > "$FIXTURE/crates/app/Cargo.toml" <<'TOML'
 name = "app"
 version = "0.1.0"
 edition = "2021"
-[package.metadata.shared-tooling.loc]
+[package.metadata.toko-tooling.loc]
 generated = ["src/generated.rs"]
-[package.metadata.shared-tooling.loc.paths]
+[package.metadata.toko-tooling.loc.paths]
 "generator.rs" = "build_tooling"
 [[example]]
 name = "same_source"
@@ -119,7 +119,7 @@ name = "opaque-name"
 version = "0.1.0"
 edition = "2021"
 publish = false
-[package.metadata.shared-tooling.loc]
+[package.metadata.toko-tooling.loc]
 category = "tests"
 TOML
 printf 'pub fn fixture() {}\n' > "$FIXTURE/crates/fixture/src/lib.rs"

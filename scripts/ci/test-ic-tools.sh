@@ -2,7 +2,7 @@
 # Shared companions: scripts/ci/test-tool-evidence.sh scripts/ci/test-tool-store.sh scripts/ci/prepare-script-fixture.sh
 set -euo pipefail
 # Installer fixtures must exercise their own transport, not a hosted warm cache.
-unset SHARED_TOOLING_DOWNLOAD_CACHE
+unset TOKO_TOOLING_DOWNLOAD_CACHE
 
 ROOT="$0"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
@@ -156,7 +156,7 @@ for invalid in missing unknown empty; do
 done
 
 install() {
-    export SHARED_TOOLING_STORE="${IC_SHARED_STORE:-$consumer/store}"
+    export TOKO_TOOLING_STORE="${IC_SHARED_STORE:-$consumer/store}"
     bash "$ROOT/scripts/dev/install-ic-tools.sh" --consumer "$consumer" --pins "$selected_pins" --tool quill --tool icp --tool didc --tool ic-wasm --tool wasm-opt "$@"
 }
 expect_failure() {
@@ -260,7 +260,7 @@ done
 for host in Linux:x86_64 Darwin:x86_64 Darwin:arm64; do
     export IC_TOOLS_TEST_OS="${host%:*}" IC_TOOLS_TEST_ARCH="${host#*:}"
     subset="$fixture/optimizer $host"; mkdir "$subset"
-    export SHARED_TOOLING_STORE="$subset/store"
+    export TOKO_TOOLING_STORE="$subset/store"
     before="$(wc -l < "$fixture/downloads")"
     bash "$ROOT/scripts/dev/install-ic-tools.sh" --consumer "$subset" --pins "$pins" \
         --tool wasm-opt > "$fixture/subset.log" 2>&1
@@ -286,7 +286,7 @@ for host in Linux:x86_64 Darwin:x86_64 Darwin:arm64; do
     mv "$fixture/subset-tools" "$subset/.tools/ic/tools"
     # The actual Make interface forwards the same selection to offline admission.
     make --no-print-directory -C "$subset" -f "$ROOT/make/tools.mk" \
-        SHARED_TOOLING_ROOT="$ROOT" IC_TOOL_PINS="$pins" IC_TOOLS=wasm-opt ic-tools-check \
+        TOKO_TOOLING_ROOT="$ROOT" IC_TOOL_PINS="$pins" IC_TOOLS=wasm-opt ic-tools-check \
         > "$fixture/subset-make.log" 2>&1
     expect_failure bash "$ROOT/scripts/dev/install-ic-tools.sh" --consumer "$subset" --pins "$pins" \
         --tool wasm-opt --tool ic-wasm --check

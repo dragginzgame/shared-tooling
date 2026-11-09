@@ -143,7 +143,7 @@ aggregate="$fixture/aggregate checkout"
 mkdir -p "$aggregate/scripts/dev"
 bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$aggregate" make/tools.mk
 # shellcheck disable=SC2016 # Make expands its own checkout path.
-printf 'override SHARED_TOOLING_ROOT := $(CURDIR)\ninclude make/tools.mk\n' > "$aggregate/Makefile"
+printf 'override TOKO_TOOLING_ROOT := $(CURDIR)\ninclude make/tools.mk\n' > "$aggregate/Makefile"
 for tool in host ic rust; do
     cat > "$aggregate/scripts/dev/install-$tool-tools.sh" <<'INSTALLER'
 #!/usr/bin/env bash

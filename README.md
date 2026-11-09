@@ -1,7 +1,7 @@
-# Shared Tooling
+# Toko Tooling
 
 Common engineering rules, development tools and CI building blocks for
-`dragginzgame` repositories. Shared Tooling has no Cargo workspace or canister
+`dragginzgame` repositories. Toko Tooling has no Cargo workspace or canister
 runtime dependency. Consumers retain their product architecture, deployment
 identity and validation gates, and implement the shared
 [Rust compiler policy](rules/cargo-dependencies.md#minimum-supported-rust-version-msrv).
@@ -10,17 +10,17 @@ The complete tooling source is distributed as the `toko-tooling` crate on
 crates.io. An exact root Cargo dependency pin is inherited as a dev-dependency
 by every workspace package; Cargo.lock pins the archive. `cargo update -v`
 reports newer available releases. Explicit
-`make shared-tooling-update` and `make shared-tooling-install` install the code.
+`make toko-tooling-update` and `make toko-tooling-install` install the code.
 See [registry adoption and migration](docs/consuming-snapshots.md#cargo-selection-and-installation).
 
 ## Start here
 
 | Need | Guide |
 | --- | --- |
-| Adopt or update Shared Tooling | [Reviewed snapshots and upgrade previews](docs/consuming-snapshots.md) |
+| Adopt or update Toko Tooling | [Reviewed snapshots and upgrade previews](docs/consuming-snapshots.md) |
 | Prepare the compiler and tools | [Local setup](docs/local-setup.md) and [supported hosts](docs/supported-hosts.md) |
 | Configure a consumer's commands | [Make interface](docs/make-interface.md) |
-| Understand the common rules | [Engineering baseline](DRAGGINZGAME.md), then the consumer's `AGENTS.md` |
+| Understand the common rules | [Engineering baseline](TOKO-TOOLING.md), then the consumer's `AGENTS.md` |
 | Release or recover a release | [Release commands and recovery](docs/releases.md) |
 | Inspect the repository fleet | [Fleet reports and CI inspection](docs/fleet-tools.md) |
 
@@ -135,7 +135,7 @@ available in that guide.
 
 ## Repository fleet ownership
 
-Shared Tooling owns common rules and helpers, adoption/pin drift inspection,
+Toko Tooling owns common rules and helpers, adoption/pin drift inspection,
 repository inventories, CI/issue dashboards and repeatable maintenance audits.
 Central reports run here; consumers need only the helpers their workflows use,
 not extra CI gates that scan sibling checkouts. Product repositories retain
@@ -145,17 +145,17 @@ edit or deployment authority.
 Keep reporting here while it shares this maintenance lifecycle. A hosted
 application with its own data, authentication and deployment lifecycle would
 need a separate owner. The [contribution inclusion test](CONTRIBUTING.md#inclusion-test)
-explains what belongs in Shared Tooling.
+explains what belongs in Toko Tooling.
 
 ## Capability ownership
 
 | Capability | Canonical owner |
 | --- | --- |
-| Common rules, setup, formatting, release mechanics, snapshots and fleet reports | Shared Tooling: `rules/`, `scripts/`, `make/` and `.github/actions/` |
+| Common rules, setup, formatting, release mechanics, snapshots and fleet reports | Toko Tooling: `rules/`, `scripts/`, `make/` and `.github/actions/` |
 | External IC-specific dependencies and browser SDK boundary | [IC Platform](https://github.com/dragginzgame/ic-platform), through explicit features and interfaces |
 | Owned application encoding and generated TypeScript codecs | [IC Wire](https://github.com/dragginzgame/ic-wire); consumers own transport and application semantics |
 | Cargo/Wasm builds, host primitives, artifact encoding and PocketIC lifecycle | [IC Tooling](https://github.com/dragginzgame/ic-tooling): Build, Host and Testkit in one workspace |
-| Metrics and logging | [IC Observability](https://github.com/dragginzgame/ic-observability): `ic-metrics` and `ic-logging`, required by the [shared rule](DRAGGINZGAME.md#metrics-and-logging); fleet discovery and dashboards remain here |
+| Metrics and logging | [IC Observability](https://github.com/dragginzgame/ic-observability): `ic-metrics` and `ic-logging`, required by the [shared rule](TOKO-TOOLING.md#metrics-and-logging); fleet discovery and dashboards remain here |
 | Product deployment, limits, release inputs and acceptance evidence | Each consuming repository |
 
 Shared distributes reviewed commands and source; consumers compile the standalone
@@ -168,7 +168,7 @@ of the product workspaces.
 Adopt an exact reviewed revision through the [snapshot exporter](docs/consuming-snapshots.md),
 including its declared companion files, and verify the recorded snapshot offline.
 Use `--preview` to review an upgrade before applying it. CI and releases use the
-reviewed files, rather than loading Shared Tooling from a mutable sibling
+reviewed files, rather than loading Toko Tooling from a mutable sibling
 checkout, moving download URL or symlink. Interactive read-only fleet reports
 may inspect siblings directly.
 
@@ -195,7 +195,7 @@ consumer behavior. Applicable workflows support macOS under the
 | Reuse checksum, source, archive and publication checks | [Verification helper contracts](docs/verification-helpers.md) |
 
 Shared's own integration fixtures additionally require its prepared IC Build
-release editor; [local setup](docs/local-setup.md#shared-toolings-integration-editor)
+release editor; [local setup](docs/local-setup.md#toko-toolings-integration-editor)
 owns that selection. Shared does not activate Rust formatting hooks in this
 non-Cargo checkout. Installer pins, platform coverage and command options live
 in their guides rather than being repeated here.
@@ -211,7 +211,7 @@ from the deterministic stack-diagram timer.
 
 ## Shared principles
 
-Read the [baseline](DRAGGINZGAME.md) and local overlay first. [Engineering
+Read the [baseline](TOKO-TOOLING.md) and local overlay first. [Engineering
 principles](docs/principles/README.md), focused policies in `rules/` and the
 [shared audit methods](audits/README.md) support that baseline; product-specific
 choices and historical reports remain with consumers. [Provenance](docs/provenance.md)
@@ -220,7 +220,7 @@ records earlier extractions rather than defining today's ownership.
 ## Contributing and validation
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) and this repository's [AGENTS.md](AGENTS.md).
-Prepare [Shared's pinned compiler](docs/local-setup.md#shared-toolings-own-compiler)
+Prepare [Shared's pinned compiler](docs/local-setup.md#toko-toolings-own-compiler)
 before installing Cargo tools. For ordinary changes, select the affected
 fixtures and checks; documentation-only changes use `make check-doc-links` and
 `git diff --check`. `make ci`, `make test-portable` and `make check-shell` are

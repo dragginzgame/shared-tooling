@@ -1,6 +1,6 @@
 # Contributing
 
-Shared Tooling accepts reusable engineering principles, portable developer
+Toko Tooling accepts reusable engineering principles, portable developer
 tools, and CI building blocks for Dragginz Game repositories.
 
 ## Pull requests
@@ -23,7 +23,7 @@ A contribution belongs here when it satisfies at least one of these tests:
 3. a shared principle captures a stable decision test while leaving product
    policy with the consumer; or
 4. it inspects or coordinates consistency across the repository fleet under
-   Shared Tooling's [ownership boundary](README.md#repository-fleet-ownership).
+   Toko Tooling's [ownership boundary](README.md#repository-fleet-ownership).
 
 Fleet inventory and dashboards belong here even when no consumer needs to vendor
 their implementation. Keep them outside domain libraries such as IC Metrics;
@@ -37,8 +37,8 @@ within the common baseline. Release command names and sequencing follow the
 
 ## Baseline and overlay
 
-Shared Tooling owns the mandatory common baseline in
-[`DRAGGINZGAME.md`](DRAGGINZGAME.md). Every consumer adopts a reviewed revision
+Toko Tooling owns the mandatory common baseline in
+[`TOKO-TOOLING.md`](TOKO-TOOLING.md). Every consumer adopts a reviewed revision
 and identifies its local overlay in `AGENTS.md`. Additional product-specific
 rules stay within the baseline's delegated scope. A change to an explicit common
 rule requires a maintainer-approved exception with scope and reason, including
@@ -48,7 +48,7 @@ and keep those choices in the local overlays.
 
 Avoid template systems with hidden inheritance. A contributor should be able
 to understand the effective rules by reading the consumer repository and its
-recorded Shared Tooling snapshot.
+recorded Toko Tooling snapshot.
 
 ## Feedback and adoption
 
@@ -70,7 +70,7 @@ accepted shared fix does not prove that a consumer refreshed its rules or tools,
 resolved conflicts or ran the relevant checks.
 
 Keep repository handoff files concise under the baseline's
-[handoff maintenance rules](DRAGGINZGAME.md#repository-handoff-files).
+[handoff maintenance rules](TOKO-TOOLING.md#repository-handoff-files).
 
 ## Documentation contributions
 
@@ -129,7 +129,7 @@ macOS behavior.
 
 For script changes, run affected focused fixtures and source-following ShellCheck
 under [AGENTS.md](AGENTS.md) and the baseline's
-[validation policy](DRAGGINZGAME.md#validation-and-evidence). For documentation-only
+[validation policy](TOKO-TOOLING.md#validation-and-evidence). For documentation-only
 changes, check links, instruction consistency and the diff.
 Keep scratch and loop variables local to fixture helpers. Construct and assert
 each negative case's intended precondition: a partial-staging case must select

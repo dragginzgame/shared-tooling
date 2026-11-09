@@ -102,7 +102,7 @@ td.num { font-variant-numeric: tabular-nums; font-family: var(--font-mono); font
     <a href="https://4faec1ea-0abf-48e4-bb6a-5b49b14d7086.frame.claudeusercontent.com/_f/1791360917-9202/?__frame_v=manifest.3b2edf6a7a07295c.json#summary">Summary</a>
     <a href="https://4faec1ea-0abf-48e4-bb6a-5b49b14d7086.frame.claudeusercontent.com/_f/1791360917-9202/?__frame_v=manifest.3b2edf6a7a07295c.json#decisions">Decisions needed</a>
     <a href="https://4faec1ea-0abf-48e4-bb6a-5b49b14d7086.frame.claudeusercontent.com/_f/1791360917-9202/?__frame_v=manifest.3b2edf6a7a07295c.json#limit">Wasm size limit</a>
-    <a href="https://4faec1ea-0abf-48e4-bb6a-5b49b14d7086.frame.claudeusercontent.com/_f/1791360917-9202/?__frame_v=manifest.3b2edf6a7a07295c.json#shared">shared-tooling</a>
+    <a href="https://4faec1ea-0abf-48e4-bb6a-5b49b14d7086.frame.claudeusercontent.com/_f/1791360917-9202/?__frame_v=manifest.3b2edf6a7a07295c.json#shared">toko-tooling</a>
     <a href="https://4faec1ea-0abf-48e4-bb6a-5b49b14d7086.frame.claudeusercontent.com/_f/1791360917-9202/?__frame_v=manifest.3b2edf6a7a07295c.json#host">ic-host-* crates</a>
     <a href="https://4faec1ea-0abf-48e4-bb6a-5b49b14d7086.frame.claudeusercontent.com/_f/1791360917-9202/?__frame_v=manifest.3b2edf6a7a07295c.json#metrics">ic-metrics plan</a>
     <a href="https://4faec1ea-0abf-48e4-bb6a-5b49b14d7086.frame.claudeusercontent.com/_f/1791360917-9202/?__frame_v=manifest.3b2edf6a7a07295c.json#backend">Backend code audit</a>
@@ -113,10 +113,10 @@ td.num { font-variant-numeric: tabular-nums; font-family: var(--font-mono); font
   <main>
     <header class="top">
       <div class="eyebrow">Toko · development @ 44d4e2c6d · 7 Oct 2026</div>
-      <h1>Toko against shared-tooling, ic-host-* and ic-metrics</h1>
+      <h1>Toko against toko-tooling, ic-host-* and ic-metrics</h1>
       <p class="lede">An audit of how toko measures up to the new shared engineering baseline and the host crates, where those crates fall short for an app like toko, and a plan for adding ic-metrics.</p>
       <div class="meta">
-        <div>shared-tooling <b>0.1.14</b> (25e7ce8)</div>
+        <div>toko-tooling <b>0.1.14</b> (25e7ce8)</div>
         <div>ic-host-tooling <b>0.3.2</b></div>
         <div>ic-metrics <b>0.2.5</b></div>
         <div>Canic <b>0.110.48</b> · IcyDB <b>v0.258.0</b></div>
@@ -133,7 +133,7 @@ td.num { font-variant-numeric: tabular-nums; font-family: var(--font-mono); font
         </div>
         <div class="finding">
           <span class="pill warn">13 of 21 rules missed</span>
-          <h3>shared-tooling adoption is a project</h3>
+          <h3>toko-tooling adoption is a project</h3>
           <p>2 rules met, 6 partly. Most fixes are small. Three need a team decision first: agent commits, the PR-based release flow, and the IC tool versions.</p>
         </div>
         <div class="finding">
@@ -180,13 +180,13 @@ td.num { font-variant-numeric: tabular-nums; font-family: var(--font-mono); font
     </section>
 
     <section id="shared">
-      <h2>shared-tooling compliance</h2>
+      <h2>toko-tooling compliance</h2>
       <p>Toko has no <code>DRAGGINZGAME.md</code>, no snapshot file, and an <code>AGENTS.md</code> that symlinks to <code>CLAUDE.md</code> without mentioning the baseline.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Rule</th><th>Status</th><th>What changes</th><th>Effort</th></tr></thead>
           <tbody>
-            <tr><td>Adopt baseline + snapshot + AGENTS.md overlay</td><td><span class="pill crit">Missing</span></td><td>Run <code>refresh-consumer.sh</code>, add the baseline header and a <code>shared-tooling-check</code> target</td><td>S–M</td></tr>
+            <tr><td>Adopt baseline + snapshot + AGENTS.md overlay</td><td><span class="pill crit">Missing</span></td><td>Run <code>refresh-consumer.sh</code>, add the baseline header and a <code>toko-tooling-check</code> target</td><td>S–M</td></tr>
             <tr><td>Virtual root workspace</td><td><span class="pill ok">Met</span></td><td>None</td><td>–</td></tr>
             <tr><td><code>crates/</code> + <code>apps/&lt;app&gt;/&lt;role&gt;</code> layout</td><td><span class="pill crit">Missing</span></td><td>Move <code>fleets/toko/*</code> → <code>apps/toko/*</code> and <code>backend/src/*</code> → <code>crates/*</code></td><td>L</td></tr>
             <tr><td>One dependency catalog</td><td><span class="pill warn">Partial</span></td><td>Four manifests declare versions directly (schemagen, design_macros, project/hub)</td><td>S</td></tr>
@@ -216,9 +216,9 @@ td.num { font-variant-numeric: tabular-nums; font-family: var(--font-mono); font
       </ol>
       <h3>What toko could give back</h3>
       <ul>
-        <li>An IC install-limit gate. Nothing in shared-tooling checks Wasm size or function count.</li>
+        <li>An IC install-limit gate. Nothing in toko-tooling checks Wasm size or function count.</li>
         <li>The row-at-a-time write lint, which belongs in the IcyDB repo.</li>
-        <li>A frontend / npm lock and Node version rule. shared-tooling has none.</li>
+        <li>A frontend / npm lock and Node version rule. toko-tooling has none.</li>
         <li>A formatting adapter for mixed Rust and frontend repos. The hook rules ask for one but don't provide it.</li>
       </ul>
     </section>
@@ -332,7 +332,7 @@ td.num { font-variant-numeric: tabular-nums; font-family: var(--font-mono); font
         <li>API fixes: hide <code>flate2</code>, consolidate the readers, keep typed errors.</li>
         <li>Mark the old <code>ic-host-tools</code> repo as superseded.</li>
       </ul>
-      <h3>shared-tooling</h3>
+      <h3>toko-tooling</h3>
       <ul>
         <li>A PR-gated release variant.</li>
         <li>A Wasm limit gate.</li>

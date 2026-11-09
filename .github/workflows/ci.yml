@@ -64,7 +64,7 @@ jobs:
       - name: Install pinned validation tools
         shell: bash
         run: |
-          tool_dir="$RUNNER_TEMP/shared-tooling-bin"
+          tool_dir="$RUNNER_TEMP/toko-tooling-bin"
           actionlint_bin="$(bash scripts/ci/install-ci-tool.sh actionlint \
             --install-dir "$tool_dir")"
           shellcheck_bin="$(bash scripts/ci/install-ci-tool.sh shellcheck \
@@ -279,7 +279,7 @@ jobs:
         id: retention-upload
         uses: ./.github/actions/retain-failure-evidence
         env:
-          SHARED_TOOLING_STORE: ${{ runner.temp }}/portable-fixtures/native-retention/store
+          TOKO_TOOLING_STORE: ${{ runner.temp }}/portable-fixtures/native-retention/store
         with:
           name: native-retention-${{ matrix.os }}-${{ github.run_attempt }}
           temp-root: ${{ runner.temp }}/portable-fixtures/native-retention/temp

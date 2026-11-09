@@ -1,4 +1,4 @@
-# Shared Tooling and sibling re-audit — 2026-10-07
+# Toko Tooling and sibling re-audit — 2026-10-07
 
 Reviewed the pushed **0.1.15** source,
 `bfb50bd0884b5e6c5ee9592056531c6108f96d73`, initially clean, following the
@@ -14,9 +14,9 @@ qualification are outside this review. Consumer policy stays local. This report
 does not certify every file in every repository.
 
 **Verdict: FAIL for the two reproduced boundary defects below; structural review
-has findings.** The pushed Shared Tooling CI nevertheless passes its existing
+has findings.** The pushed Toko Tooling CI nevertheless passes its existing
 Linux, macOS Apple Silicon, macOS Intel and lint/security jobs:
-[exact-source CI run](https://github.com/dragginzgame/shared-tooling/actions/runs/37593142226).
+[exact-source CI run](https://github.com/dragginzgame/toko-tooling/actions/runs/37593142226).
 That run lacks the new failing cases and does not qualify Canic's publisher.
 
 ## Inventory and comparison
@@ -41,7 +41,7 @@ IC Blob Storage's fixture is unchanged at
 ## Findings and ownership trace
 
 1. **MEDIUM — the new inventory reconstructs the snapshot contract incorrectly.**
-   `refresh-consumer.sh --manifest config/.shared-tooling.snapshot` exports paths
+   `refresh-consumer.sh --manifest config/.toko-tooling.snapshot` exports paths
    relative to the consumer root; `cloc-tooling.pl::load_snapshot` instead joins
    them to the manifest's directory. A canonical, successfully verified fixture
    reports **198 local / 0 shared LOC**. Moving only the manifest to the root
@@ -52,7 +52,7 @@ IC Blob Storage's fixture is unchanged at
    manifest placement from a nested consumer root; preserve multiple manifests
    and IC Timers' independently rooted helper snapshot. Do not guess a root from
    whichever file happens to match. Owner and focused acceptance:
-   [Shared Tooling #39](https://github.com/dragginzgame/shared-tooling/issues/39).
+   [Toko Tooling #39](https://github.com/dragginzgame/toko-tooling/issues/39).
 
 2. **MEDIUM — release tests maintain three versions of the same Git simulation.**
    IC Backup's local release fixture is 767 code LOC; IC Blob Storage's is 672.
@@ -65,7 +65,7 @@ IC Blob Storage's fixture is unchanged at
    publication policy local. Extract minimal common effect substitutes only if
    the remaining integration proof still requires them; avoid a general fixture
    framework. **1,439 LOC is the affected surface, not a deletion estimate.**
-   [Shared Tooling #40](https://github.com/dragginzgame/shared-tooling/issues/40)
+   [Toko Tooling #40](https://github.com/dragginzgame/toko-tooling/issues/40)
    owns convergence; consumer work is tracked in
    [IC Backup #18](https://github.com/dragginzgame/ic-backup/issues/18) and
    [IC Blob Storage #22](https://github.com/dragginzgame/ic-blob-storage/issues/22).
@@ -84,8 +84,8 @@ IC Blob Storage's fixture is unchanged at
 ## Retained boundaries and earlier findings
 
 The earlier validation-logger and whitespace-finalizer findings remain separate
-work: [#37](https://github.com/dragginzgame/shared-tooling/issues/37) and
-[#38](https://github.com/dragginzgame/shared-tooling/issues/38). Toko Miner's private
+work: [#37](https://github.com/dragginzgame/toko-tooling/issues/37) and
+[#38](https://github.com/dragginzgame/toko-tooling/issues/38). Toko Miner's private
 ShellCheck installer remains the straightforward existing reuse target in
 [Toko Miner #23](https://github.com/dragginzgame/toko-miner/issues/23). This run
 does not manufacture additional copies of those issues or claim adoption.
@@ -116,5 +116,5 @@ Counter SHA-256:
 `ee956c696a775ffb97863488e1c8b09d586e04e84beb53a79ad5c53c0aa3acbd`.
 Canic publisher SHA-256:
 `8b53b1ae6159f0026426222a8510b9bc9717a9354cfa188c396d6abcab0af069`.
-Only this new audit report and its measurement summary were added to Shared
+Only this new audit report and its measurement summary were added to Toko
 Tooling. No sibling files changed; GitHub issues own all follow-up work.

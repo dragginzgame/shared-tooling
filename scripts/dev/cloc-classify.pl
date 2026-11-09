@@ -292,7 +292,7 @@ sub load_source {
 sub unload_source {delete @{$_[0]}{qw(text tokens pair)};}
 for my $p (@packages) {
     my $root=dirname($p->{manifest_path});
-    my $policy=$p->{metadata}{'shared-tooling'}{loc} // {};
+    my $policy=$p->{metadata}{'toko-tooling'}{loc} // {};
     ref($policy) eq 'HASH' or die "LOC metadata must be an object\n";
     for (keys %$policy) { /\A(?:category|paths|generated)\z/ or die "unknown LOC metadata field: $_\n"; }
     if (exists $policy->{category}) { $valid{$policy->{category}} or die "invalid LOC category\n"; }

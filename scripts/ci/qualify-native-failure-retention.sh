@@ -17,7 +17,7 @@ ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
 mkdir -p "$1/consumer" "$1/temp/portable-fixtures"
 fixture="$(cd "$1" && pwd -P)"
-export SHARED_TOOLING_STORE="$fixture/store"
+export TOKO_TOOLING_STORE="$fixture/store"
 echo "Native failure evidence: $fixture"
 original="$ROOT/ci/ic-tools.tsv"
 pins="$fixture/temp/portable-fixtures/rejected-pins.tsv"
@@ -25,7 +25,7 @@ bad_digest=0000000000000000000000000000000000000000000000000000000000000000
 awk -F '\t' -v OFS='\t' -v digest="$bad_digest" '$1 == "quill" { $4 = digest } { print }' "$original" > "$pins"
 status=0
 make --no-print-directory -C "$fixture/consumer" -f "$ROOT/make/tools.mk" \
-    SHARED_TOOLING_ROOT="$ROOT" IC_TOOL_PINS="$pins" IC_TOOLS=quill install-ic-tools \
+    TOKO_TOOLING_ROOT="$ROOT" IC_TOOL_PINS="$pins" IC_TOOLS=quill install-ic-tools \
     2>&1 | tee "$fixture/temp/ic-tools-install.log" || status=$?
 [[ "$status" == 2 ]] || { echo 'Expected the install recipe to fail' >&2; exit 1; }
 [[ ! -e "$fixture/consumer/.tools/ic" && ! -L "$fixture/consumer/.tools/ic" ]] || exit 1
@@ -68,7 +68,7 @@ printf '%s  bin/quill\n' "$bad_digest" > "$bundle/files.sha256"
 ln -s ic-set.check "$fixture/consumer/.tools/ic"
 status=0
 make --no-print-directory -C "$fixture/consumer" -f "$ROOT/make/tools.mk" \
-    SHARED_TOOLING_ROOT="$ROOT" IC_TOOL_PINS="$original" IC_TOOLS=quill ic-tools-check \
+    TOKO_TOOLING_ROOT="$ROOT" IC_TOOL_PINS="$original" IC_TOOLS=quill ic-tools-check \
     2>&1 | tee "$fixture/temp/ic-tools-check.log" || status=$?
 [[ "$status" == 2 && "$(readlink "$fixture/consumer/.tools/ic")" == ic-set.check ]] || exit 1
 bash "$ROOT/scripts/ci/verify-file-checksum.sh" sha256 "$digest" "$bundle/bin/quill"
@@ -82,9 +82,9 @@ for phase in install check; do
     [[ "$phase" != check ]] || target=rust-tools-check
     status=0
     PATH="$fixture/cargo-fixture/bin:$PATH" make --no-print-directory -C "$fixture/consumer" -f "$ROOT/make/tools.mk" \
-        SHARED_TOOLING_ROOT="$ROOT" RUST_TOOL_VERSIONS="$ROOT/ci/tool-versions.env" "$target" \
+        TOKO_TOOLING_ROOT="$ROOT" RUST_TOOL_VERSIONS="$ROOT/ci/tool-versions.env" "$target" \
         2>&1 | tee "$fixture/temp/rust-tools-$phase.log" || status=$?
-    set -- "$SHARED_TOOLING_STORE"/rust-*/set.*/build/failed-build.txt
+    set -- "$TOKO_TOOLING_STORE"/rust-*/set.*/build/failed-build.txt
     [[ "$status" == 2 && $# == 1 && -s "$1" ]] || exit 1
 done
 grep -F 'injected Cargo installation failure' "$fixture/temp/rust-tools-install.log" >/dev/null
@@ -109,7 +109,7 @@ find temp -type f -print | LC_ALL=C sort > files.txt
 while IFS= read -r file; do
     printf '%s  %s\n' "$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$file")" "${file#*/}"
 done < files.txt > expected.sha256.tmp
-for retained in "$candidate" "$bundle" "$SHARED_TOOLING_STORE"/rust-*/set.*; do
+for retained in "$candidate" "$bundle" "$TOKO_TOOLING_STORE"/rust-*/set.*; do
     find "$retained" -type f -print | LC_ALL=C sort > files.txt
     while IFS= read -r file; do
         printf '%s  %s\n' "$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$file")" "${file#"$store_root/"}"

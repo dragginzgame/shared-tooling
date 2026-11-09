@@ -23,14 +23,14 @@ for scenario in host-store ic-store rust-store rust-store-invalid rust-archive-w
     printf 'original tool failure\n' > evidence/tools.log
     printf 'unselected private payload\n' > evidence/private.txt
     printf 'local failed compilation\n' > checkout/.tools/rust/local-failure
-    export SHARED_TOOLING_STORE="$PWD/shared-store"
+    export TOKO_TOOLING_STORE="$PWD/shared-store"
     kind=rust
     case "$scenario" in host-store) kind=host ;; ic-store) kind=ic ;; esac
-    physical_store="$SHARED_TOOLING_STORE"
+    physical_store="$TOKO_TOOLING_STORE"
     if [[ "$scenario" == rust-store-invalid ]]; then
-        physical_store="$SHARED_TOOLING_STORE.physical"
+        physical_store="$TOKO_TOOLING_STORE.physical"
         mkdir "$physical_store"
-        ln -s "$physical_store" "$SHARED_TOOLING_STORE"
+        ln -s "$physical_store" "$TOKO_TOOLING_STORE"
     fi
     slot="$kind-$(printf '%064d' 0)"
     mkdir -p "$physical_store/$slot/set.fixture" "$physical_store/$slot/set.unrelated"

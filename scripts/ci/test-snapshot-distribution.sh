@@ -14,10 +14,10 @@ case "$selection" in
 esac
 case "$selection" in
     revision|transactions) exec bash "$ROOT/scripts/ci/test-snapshot-$selection.sh" ;;
-    all|core) ;;
-    *) echo 'usage: test-snapshot-distribution.sh [--case core|revision|transactions]' >&2; exit 2 ;;
+    all|core|admission) ;;
+    *) echo 'usage: test-snapshot-distribution.sh [--case admission|core|revision|transactions]' >&2; exit 2 ;;
 esac
-FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-tooling-snapshot-test.XXXXXX")"
+FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/toko-tooling-snapshot-test.XXXXXX")"
 FIXTURE="$(CDPATH="" cd -P -- "$FIXTURE" && printf '%s/.' "$PWD")"
 FIXTURE="${FIXTURE%/.}"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
@@ -42,8 +42,9 @@ printf '8.8.8\n' > "$consumer_root/VERSION"
 
 cp "$ROOT/scripts/ci/shared-companions.sh" "$source_root/scripts/ci/"
 cp "$ROOT/scripts/ci/verify-file-checksum.sh" "$source_root/scripts/ci/"
-cp "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" "$source_root/scripts/ci/"
+cp "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" "$source_root/scripts/ci/"
 cp "$ROOT/scripts/ci/shared-package-version.pl" "$source_root/scripts/ci/"
+cp "$ROOT/scripts/ci/check-tooling-prerequisites.sh" "$source_root/scripts/ci/"
 cp "$ROOT/scripts/distribution/refresh-consumer.sh" "$source_root/scripts/distribution/"
 cp "$ROOT/scripts/distribution/registry-package.pl" "$source_root/scripts/distribution/"
 printf '#!/usr/bin/env bash\nprintf "sample tool\\n"\n' >"$source_root/scripts/ci/sample.sh"
@@ -71,7 +72,7 @@ if [[ "$repository" != "$SNAPSHOT_TEST_SOURCE_ROOT" ]]; then
     if [[ "${SNAPSHOT_TEST_INDEX_FAIL:-}" == true && "$3" == --literal-pathspecs && "$4" == ls-files ]]; then
         "$REAL_GIT" "$@"
         # Admit the initial empty checkpoint, then fail its empty re-observation.
-        if [[ "$8" == .shared-tooling.snapshot ]]; then
+        if [[ "$8" == .toko-tooling.snapshot ]]; then
             [[ ! -e "$SNAPSHOT_TEST_INDEX_MARKER" ]] || exit 73
             : > "$SNAPSHOT_TEST_INDEX_MARKER"
         fi
@@ -95,7 +96,7 @@ status:--porcelain)
     fi
     ;;
 remote:get-url)
-    printf '%s\n' 'git@github.com:dragginzgame/shared-tooling.git'
+    printf '%s\n' 'git@github.com:dragginzgame/toko-tooling.git'
     ;;
 cat-file:-t)
     [[ "$3" == "${SNAPSHOT_TEST_REVISION:-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa}" ]] || exit 1
@@ -140,12 +141,12 @@ if PATH="$FIXTURE/bin:$PATH" \
     --source "$source_root" \
     --consumer "$consumer_root" \
     --entrypoint scripts/ci/verify-file-checksum.sh \
-    --entrypoint scripts/ci/verify-shared-tooling-snapshot.sh \
+    --entrypoint scripts/ci/verify-toko-tooling-snapshot.sh \
     --entrypoint ignored.txt >/dev/null 2>&1; then
     echo "snapshot distribution test failed: a file absent from the source revision was accepted" >&2
     exit 1
 fi
-[[ ! -e "$consumer_root/.shared-tooling.snapshot" ]] || exit 1
+[[ ! -e "$consumer_root/.toko-tooling.snapshot" ]] || exit 1
 [[ ! -e "$consumer_root/scripts" ]] || exit 1
 [[ ! -e "$consumer_root/ignored.txt" ]] || exit 1
 
@@ -154,7 +155,7 @@ if SNAPSHOT_TEST_BLOB_FAIL=scripts/ci/sample.sh PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$consumer_root" \
     --entrypoint scripts/ci/sample.sh > "$FIXTURE/failed-blob.log" 2>&1; then exit 1; fi
-[[ ! -e "$consumer_root/.shared-tooling.snapshot" && ! -e "$consumer_root/scripts" ]] || exit 1
+[[ ! -e "$consumer_root/.toko-tooling.snapshot" && ! -e "$consumer_root/scripts" ]] || exit 1
 
 # Even a complete mode row cannot authorize export after its Git command fails.
 for path in VERSION scripts/ci/sample.sh; do
@@ -165,7 +166,7 @@ for path in VERSION scripts/ci/sample.sh; do
         echo 'snapshot distribution test failed: failed Git mode output was accepted' >&2
         exit 1
     fi
-    [[ ! -e "$consumer_root/.shared-tooling.snapshot" && ! -e "$consumer_root/scripts" ]] || exit 1
+    [[ ! -e "$consumer_root/.toko-tooling.snapshot" && ! -e "$consumer_root/scripts" ]] || exit 1
 done
 
 # Empty index output is meaningful only after a successful observation.
@@ -179,7 +180,7 @@ for operation in preview apply; do
         echo 'snapshot distribution test failed: failed empty index observation was accepted' >&2
         exit 1
     fi
-    [[ ! -e "$consumer_root/.shared-tooling.snapshot" && ! -e "$consumer_root/scripts" ]] || exit 1
+    [[ ! -e "$consumer_root/.toko-tooling.snapshot" && ! -e "$consumer_root/scripts" ]] || exit 1
     [[ "$(cat "$consumer_root/VERSION")" == 8.8.8 ]] || exit 1
 done
 
@@ -188,14 +189,14 @@ if ! SNAPSHOT_TEST_READ_LOG="$FIXTURE/selected-reads" SNAPSHOT_TEST_SOURCE_DRIFT
     --source "$source_root" \
     --consumer "$consumer_root" \
     --entrypoint scripts/ci/verify-file-checksum.sh \
-    --entrypoint scripts/ci/verify-shared-tooling-snapshot.sh \
+    --entrypoint scripts/ci/verify-toko-tooling-snapshot.sh \
     --entrypoint scripts/ci/sample.sh >"$FIXTURE/initial-refresh.log" 2>&1; then
     cat "$FIXTURE/initial-refresh.log" >&2
     exit 1
 fi
 
 # Bound immutable source work without weakening the independent drift proof.
-for path in scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh scripts/ci/sample.sh; do
+for path in scripts/ci/verify-file-checksum.sh scripts/ci/verify-toko-tooling-snapshot.sh scripts/ci/sample.sh; do
     for observation in mode blob; do
         [[ "$(grep -Fxc "$observation:$path" "$FIXTURE/selected-reads")" == 1 ]] || exit 1
     done
@@ -209,20 +210,20 @@ if cmp -s "$source_root/scripts/ci/sample.sh" "$consumer_root/scripts/ci/sample.
     exit 1
 fi
 
-bash "$consumer_root/scripts/ci/verify-shared-tooling-snapshot.sh" \
+bash "$consumer_root/scripts/ci/verify-toko-tooling-snapshot.sh" \
     --consumer "$consumer_root" >/dev/null
 
 # Unsupported directory names must refuse, never select a trimmed neighbor.
 # Keep valid snapshot bytes in both neighbors so missing inputs cannot mask the
 # check. A normal-looking symlink must not hide a forbidden physical root.
-cp "$consumer_root/.shared-tooling.snapshot" "$FIXTURE/path-manifest"
+cp "$consumer_root/.toko-tooling.snapshot" "$FIXTURE/path-manifest"
 for suffix in $'\n' $'\n\n' $'\r' $'\r\n' $'\nchild'; do
     bad_consumer="$consumer_root$suffix"
     bad_source="$source_root$suffix"
     mkdir "$bad_consumer" "$bad_source"
     git init -q "$bad_consumer"
     cp -Rp "$consumer_root/scripts" "$bad_consumer/"
-    cp "$FIXTURE/path-manifest" "$bad_consumer/.shared-tooling.snapshot"
+    cp "$FIXTURE/path-manifest" "$bad_consumer/.toko-tooling.snapshot"
     ln -s "$bad_consumer" "$FIXTURE/consumer-alias"
     ln -s "$bad_source" "$FIXTURE/source-alias"
     for candidate in "$bad_consumer" "$FIXTURE/consumer-alias"; do
@@ -237,8 +238,8 @@ for suffix in $'\n' $'\n\n' $'\r' $'\r\n' $'\nchild'; do
             echo 'snapshot refresh accepted a forbidden source directory' >&2; exit 1
         fi
     done
-    cmp "$FIXTURE/path-manifest" "$consumer_root/.shared-tooling.snapshot"
-    cmp "$FIXTURE/path-manifest" "$bad_consumer/.shared-tooling.snapshot"
+    cmp "$FIXTURE/path-manifest" "$consumer_root/.toko-tooling.snapshot"
+    cmp "$FIXTURE/path-manifest" "$bad_consumer/.toko-tooling.snapshot"
     diff -r "$consumer_root/scripts" "$bad_consumer/scripts"
     [[ ! -e "$bad_consumer/.git/index" ]] || exit 1
     rm "$FIXTURE/consumer-alias" "$FIXTURE/source-alias"
@@ -249,7 +250,7 @@ ln -s "$source_root" "$FIXTURE/source-alias"
 (cd "$FIXTURE"; CDPATH="$FIXTURE/source" PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source source-alias --consumer consumer-alias) > "$FIXTURE/path-normal-refresh.log"
-cmp "$FIXTURE/path-manifest" "$consumer_root/.shared-tooling.snapshot"
+cmp "$FIXTURE/path-manifest" "$consumer_root/.toko-tooling.snapshot"
 
 # Git output has one record terminator. Extra pathname bytes and observation
 # failures cannot be normalized into the valid source root beside them.
@@ -265,38 +266,38 @@ if SNAPSHOT_TEST_TOP_FAIL=true PATH="$FIXTURE/bin:$PATH" \
     --source "$source_root" --consumer "$consumer_root" > "$FIXTURE/path-git-failure.log" 2>&1; then
     echo 'snapshot refresh accepted a failed Git root observation' >&2; exit 1
 fi
-cmp "$FIXTURE/path-manifest" "$consumer_root/.shared-tooling.snapshot"
+cmp "$FIXTURE/path-manifest" "$consumer_root/.toko-tooling.snapshot"
 
-[[ "$(awk -F '\t' '$1 == "# version" {print $2}' "$consumer_root/.shared-tooling.snapshot")" == 0.2.8 ]] || exit 1
+[[ "$(awk -F '\t' '$1 == "# version" {print $2}' "$consumer_root/.toko-tooling.snapshot")" == 0.2.8 ]] || exit 1
 [[ "$(cat "$consumer_root/VERSION")" == 8.8.8 ]] || exit 1
-cp "$consumer_root/.shared-tooling.snapshot" "$FIXTURE/version-manifest"
+cp "$consumer_root/.toko-tooling.snapshot" "$FIXTURE/version-manifest"
 for annotation in $'# version\t01.2.3' $'# version\t0.2.8\textra' $'# version\t0.2.8\n# version\t0.2.8'; do
-    sed '/^# version/d' "$FIXTURE/version-manifest" > "$consumer_root/.shared-tooling.snapshot"
-    printf '%s\n' "$annotation" >> "$consumer_root/.shared-tooling.snapshot"
-    cp "$consumer_root/.shared-tooling.snapshot" "$FIXTURE/invalid-version-manifest"
-    if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer_root" \
+    sed '/^# version/d' "$FIXTURE/version-manifest" > "$consumer_root/.toko-tooling.snapshot"
+    printf '%s\n' "$annotation" >> "$consumer_root/.toko-tooling.snapshot"
+    cp "$consumer_root/.toko-tooling.snapshot" "$FIXTURE/invalid-version-manifest"
+    if bash "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" --consumer "$consumer_root" \
         > "$FIXTURE/invalid-version-verify.log" 2>&1; then exit 1; fi
     if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
         --source "$source_root" --consumer "$consumer_root" > "$FIXTURE/invalid-version-refresh.log" 2>&1; then exit 1; fi
-    cmp "$FIXTURE/invalid-version-manifest" "$consumer_root/.shared-tooling.snapshot"
+    cmp "$FIXTURE/invalid-version-manifest" "$consumer_root/.toko-tooling.snapshot"
 done
-cp "$FIXTURE/version-manifest" "$consumer_root/.shared-tooling.snapshot"
+cp "$FIXTURE/version-manifest" "$consumer_root/.toko-tooling.snapshot"
 # Version annotations are display metadata. A record without one remains a
 # valid v1 snapshot; a real refresh adds the version from its selected source.
-sed '/^# version/d' "$FIXTURE/version-manifest" > "$consumer_root/.shared-tooling.snapshot"
-bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer_root" \
+sed '/^# version/d' "$FIXTURE/version-manifest" > "$consumer_root/.toko-tooling.snapshot"
+bash "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" --consumer "$consumer_root" \
     > "$FIXTURE/unrecorded-version.log"
 grep -F 'version unrecorded' "$FIXTURE/unrecorded-version.log" >/dev/null
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$consumer_root" >/dev/null
-cmp "$FIXTURE/version-manifest" "$consumer_root/.shared-tooling.snapshot"
+cmp "$FIXTURE/version-manifest" "$consumer_root/.toko-tooling.snapshot"
 # Invalid or missing committed versions fail before replacing a consumer file.
 for version in missing 01.2.3 $'0.2.8\n\n'; do
     if [[ "$version" == missing ]]; then rm "$revision_root/VERSION";
     else printf '%s' "$version" > "$revision_root/VERSION"; fi
     if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
         --source "$source_root" --consumer "$consumer_root" > "$FIXTURE/source-version.log" 2>&1; then exit 1; fi
-    cmp "$FIXTURE/version-manifest" "$consumer_root/.shared-tooling.snapshot"
+    cmp "$FIXTURE/version-manifest" "$consumer_root/.toko-tooling.snapshot"
     cmp "$revision_root/scripts/ci/sample.sh" "$consumer_root/scripts/ci/sample.sh"
 done
 printf '0.2.8' > "$revision_root/VERSION"
@@ -306,7 +307,7 @@ printf '0.2.8' > "$revision_root/VERSION"
 mkdir "$FIXTURE/empty-path"
 awk -F '\t' '$1 == "# version" || $1 == "# entrypoint" || $1 !~ /^#/' \
     "$FIXTURE/version-manifest" > "$FIXTURE/expected-records"
-PATH="$FIXTURE/empty-path" "$BASH" "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" \
+PATH="$FIXTURE/empty-path" "$BASH" "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" \
     --read-manifest "$FIXTURE/version-manifest" > "$FIXTURE/read-records"
 cmp "$FIXTURE/expected-records" "$FIXTURE/read-records"
 # Git object identities are full SHA-1 or SHA-256, never intermediate lengths.
@@ -315,7 +316,7 @@ for width in 39 40 41 63 64 65; do
     awk -F '\t' -v OFS='\t' -v identity="$identity" '$1=="revision" {$2=identity} {print}' \
         "$FIXTURE/version-manifest" > "$FIXTURE/identity-manifest"
     status=0
-    bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --read-manifest "$FIXTURE/identity-manifest" \
+    bash "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" --read-manifest "$FIXTURE/identity-manifest" \
         > "$FIXTURE/identity-records" 2> "$FIXTURE/identity-error" || status=$?
     case "$width" in
         40|64) [[ "$status" == 0 && "$(awk -F '\t' '$1=="revision" {print $2}' "$FIXTURE/identity-records")" == "$identity" ]] || exit 1 ;;
@@ -324,7 +325,7 @@ for width in 39 40 41 63 64 65; do
             if SNAPSHOT_TEST_REVISION="$identity" PATH="$FIXTURE/bin:$PATH" \
                 bash "$source_root/scripts/distribution/refresh-consumer.sh" \
                 --source "$source_root" --consumer "$consumer_root" > "$FIXTURE/identity-refresh.log" 2>&1; then exit 1; fi
-            cmp "$FIXTURE/version-manifest" "$consumer_root/.shared-tooling.snapshot"
+            cmp "$FIXTURE/version-manifest" "$consumer_root/.toko-tooling.snapshot"
             cmp "$revision_root/scripts/ci/sample.sh" "$consumer_root/scripts/ci/sample.sh"
             ;;
     esac
@@ -338,7 +339,7 @@ unreadable_status=0
 if [[ ! -r "$FIXTURE/unreadable-records" ]]; then
     unreadable_checked=true
     manifest_contents="$(cat "$FIXTURE/version-manifest")" \
-        bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --read-manifest "$FIXTURE/unreadable-records" \
+        bash "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" --read-manifest "$FIXTURE/unreadable-records" \
         > "$FIXTURE/unreadable-records.out" 2> "$FIXTURE/unreadable-records.err" || unreadable_status=$?
 fi
 # Restore this fixture-owned permission before assertions or later failures so
@@ -355,11 +356,11 @@ for invalid in unknown duplicate unowned nul; do
         unowned) printf '# entrypoint\tmissing.sh\n' >> "$FIXTURE/invalid-records" ;;
         nul) printf '\0' >> "$FIXTURE/invalid-records" ;;
     esac
-    if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --read-manifest "$FIXTURE/invalid-records" \
+    if bash "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" --read-manifest "$FIXTURE/invalid-records" \
         > "$FIXTURE/invalid-records.out" 2> "$FIXTURE/invalid-records.err"; then exit 1; fi
     [[ ! -s "$FIXTURE/invalid-records.out" ]] || exit 1
 done
-if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --read-manifest "$FIXTURE/version-manifest" \
+if bash "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" --read-manifest "$FIXTURE/version-manifest" \
     --consumer "$consumer_root" > "$FIXTURE/mixed-mode.out" 2> "$FIXTURE/mixed-mode.err"; then exit 1; fi
 [[ ! -s "$FIXTURE/mixed-mode.out" ]] || exit 1
 
@@ -377,7 +378,7 @@ cat >> "$hash_bin/shasum" <<'SCRIPT'
 exec "$SNAPSHOT_REAL_SHASUM" "$@"
 SCRIPT
 chmod +x "$hash_bin/shasum"
-PATH="$hash_bin" "$BASH" "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" \
+PATH="$hash_bin" "$BASH" "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" \
     --consumer "$consumer_root" > "$FIXTURE/shasum.log"
 [[ -f "$SNAPSHOT_FALLBACK_USED" ]] || exit 1
 rm "$SNAPSHOT_FALLBACK_USED"
@@ -390,33 +391,33 @@ case "${SNAPSHOT_HASH_MODE:-valid}" in
 esac
 SCRIPT
 chmod +x "$hash_bin/sha256sum"
-PATH="$hash_bin" "$BASH" "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" \
+PATH="$hash_bin" "$BASH" "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" \
     --consumer "$consumer_root" > "$FIXTURE/sha256sum.log"
 for failure in malformed failed; do
     if SNAPSHOT_HASH_MODE="$failure" PATH="$hash_bin" "$BASH" \
-        "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer_root" \
+        "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" --consumer "$consumer_root" \
         > "$FIXTURE/hash-$failure.log" 2>&1; then exit 1; fi
 done
 [[ ! -e "$SNAPSHOT_FALLBACK_USED" ]] || exit 1
 
-cp "$consumer_root/.shared-tooling.snapshot" "$consumer_root/duplicate.snapshot"
-awk '$1 == "file" { print; exit }' "$consumer_root/.shared-tooling.snapshot" \
+cp "$consumer_root/.toko-tooling.snapshot" "$consumer_root/duplicate.snapshot"
+awk '$1 == "file" { print; exit }' "$consumer_root/.toko-tooling.snapshot" \
     >>"$consumer_root/duplicate.snapshot"
-if bash "$consumer_root/scripts/ci/verify-shared-tooling-snapshot.sh" \
+if bash "$consumer_root/scripts/ci/verify-toko-tooling-snapshot.sh" \
     --consumer "$consumer_root" --manifest duplicate.snapshot \
     >"$FIXTURE/duplicate.log" 2>&1; then
     echo "snapshot distribution test failed: duplicate file record was accepted" >&2
     exit 1
 fi
 printf '# drift\n' >>"$consumer_root/scripts/ci/sample.sh"
-if bash "$consumer_root/scripts/ci/verify-shared-tooling-snapshot.sh" \
+if bash "$consumer_root/scripts/ci/verify-toko-tooling-snapshot.sh" \
     --consumer "$consumer_root" >/dev/null 2>&1; then
     echo "snapshot distribution test failed: consumer drift was accepted" >&2
     exit 1
 fi
 
 cp "$consumer_root/scripts/ci/sample.sh" "$FIXTURE/dirty-sample"
-cp "$consumer_root/.shared-tooling.snapshot" "$FIXTURE/saved-manifest"
+cp "$consumer_root/.toko-tooling.snapshot" "$FIXTURE/saved-manifest"
 if PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" \
@@ -425,7 +426,7 @@ if PATH="$FIXTURE/bin:$PATH" \
     exit 1
 fi
 cmp "$FIXTURE/dirty-sample" "$consumer_root/scripts/ci/sample.sh"
-cmp "$FIXTURE/saved-manifest" "$consumer_root/.shared-tooling.snapshot"
+cmp "$FIXTURE/saved-manifest" "$consumer_root/.toko-tooling.snapshot"
 rg -F 'consumer destination has local changes' "$FIXTURE/dirty-consumer.log" >/dev/null
 cp -p "$revision_root/scripts/ci/sample.sh" "$consumer_root/scripts/ci/sample.sh"
 # Unrelated edits and a retry of the exact already-installed bytes are allowed.
@@ -434,11 +435,11 @@ PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" \
     --consumer "$consumer_root" >/dev/null
-bash "$consumer_root/scripts/ci/verify-shared-tooling-snapshot.sh" \
+bash "$consumer_root/scripts/ci/verify-toko-tooling-snapshot.sh" \
     --consumer "$consumer_root" >/dev/null
 
 chmod -x "$consumer_root/scripts/ci/sample.sh"
-if bash "$consumer_root/scripts/ci/verify-shared-tooling-snapshot.sh" \
+if bash "$consumer_root/scripts/ci/verify-toko-tooling-snapshot.sh" \
     --consumer "$consumer_root" >/dev/null 2>&1; then
     echo "snapshot distribution test failed: executable-mode drift was accepted" >&2
     exit 1
@@ -483,12 +484,12 @@ PATH="$FIXTURE/bin:$PATH" \
     --source "$source_root" --consumer "$nested_consumer" \
     --manifest 'config/shared tools/snapshot' \
     --entrypoint scripts/ci/verify-file-checksum.sh \
-    --entrypoint scripts/ci/verify-shared-tooling-snapshot.sh >/dev/null
+    --entrypoint scripts/ci/verify-toko-tooling-snapshot.sh >/dev/null
 PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$nested_consumer" \
     --manifest 'config/shared tools/snapshot' >/dev/null
-bash "$nested_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
+bash "$nested_consumer/scripts/ci/verify-toko-tooling-snapshot.sh" \
     --consumer "$nested_consumer" --manifest 'config/shared tools/snapshot' >/dev/null
 
 # Failure to create that parent must precede any snapshot file replacement.
@@ -505,27 +506,36 @@ if PATH="$FIXTURE/bin:$PATH" \
     --source "$source_root" --consumer "$blocked_consumer" \
     --manifest config/shared.snapshot \
     --entrypoint scripts/ci/verify-file-checksum.sh \
-    --entrypoint scripts/ci/verify-shared-tooling-snapshot.sh >/dev/null 2>&1; then
+    --entrypoint scripts/ci/verify-toko-tooling-snapshot.sh >/dev/null 2>&1; then
     echo "snapshot distribution test failed: a blocked manifest parent was accepted" >&2
     exit 1
 fi
 cmp "$FIXTURE/original-checksum.sh" "$blocked_consumer/scripts/ci/verify-file-checksum.sh"
-[[ ! -e "$blocked_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" ]] || exit 1
+[[ ! -e "$blocked_consumer/scripts/ci/verify-toko-tooling-snapshot.sh" ]] || exit 1
 
 # Real Git status must distinguish index changes from working-tree changes.
-# Clone existing history; these fixtures never create commits or touch its index.
+# Clone existing history; any synthetic baseline stays in the disposable clone.
 tracked_consumer="$FIXTURE/tracked consumer"
 git clone --quiet --shared "$ROOT" "$tracked_consumer"
 # A consumer checkout already carries a default snapshot. Exercise that state
 # upstream too, preserving its bytes and using only our own initial manifest.
-if [[ ! -e "$tracked_consumer/.shared-tooling.snapshot" ]]; then
-    cp "$consumer_root/.shared-tooling.snapshot" "$tracked_consumer/.shared-tooling.snapshot"
+if [[ ! -e "$tracked_consumer/.toko-tooling.snapshot" ]]; then
+    cp "$consumer_root/.toko-tooling.snapshot" "$tracked_consumer/.toko-tooling.snapshot"
 fi
-cp "$tracked_consumer/.shared-tooling.snapshot" "$FIXTURE/existing-consumer-manifest"
+cp "$tracked_consumer/.toko-tooling.snapshot" "$FIXTURE/existing-consumer-manifest"
 tracked_manifest_dir="$(mktemp -d "$tracked_consumer/.snapshot-fixture.XXXXXX")"
 tracked_manifest="${tracked_manifest_dir#"$tracked_consumer/"}/snapshot"
 checksum_path=scripts/ci/verify-file-checksum.sh
-verifier_path=scripts/ci/verify-shared-tooling-snapshot.sh
+verifier_path=scripts/ci/verify-toko-tooling-snapshot.sh
+if ! git -C "$tracked_consumer" cat-file -e "HEAD:$verifier_path" 2>/dev/null; then
+    cp "$ROOT/$verifier_path" "$tracked_consumer/$verifier_path"
+    git -C "$tracked_consumer" add "$verifier_path"
+    tree="$(git -C "$tracked_consumer" write-tree)"
+    baseline="$(printf 'Fixture renamed verifier baseline\n' | git -C "$tracked_consumer" \
+        -c user.name=Fixture -c user.email=fixture@example.invalid -c commit.gpgsign=false \
+        commit-tree "$tree" -p HEAD)"
+    git -C "$tracked_consumer" update-ref HEAD "$baseline"
+fi
 cp "$tracked_consumer/$checksum_path" "$FIXTURE/original-tracked-checksum"
 for path in "$checksum_path" "$verifier_path"; do
     printf '\n# Upstream fixture update.\n' >> "$revision_root/$path"
@@ -534,7 +544,7 @@ for state in staged unstaged deleted unavailable; do
     case "$state" in
         staged)
             replacement="$(git -C "$tracked_consumer" rev-parse HEAD:README.md)"
-            git -C "$tracked_consumer" update-index --cacheinfo "100755,$replacement,$verifier_path"
+            git -C "$tracked_consumer" update-index --add --cacheinfo "100755,$replacement,$verifier_path"
             git -C "$tracked_consumer" diff --quiet HEAD -- "$verifier_path"
             if git -C "$tracked_consumer" diff --cached --quiet HEAD -- "$verifier_path"; then
                 echo 'snapshot distribution test failed: hidden staged-change fixture is invalid' >&2
@@ -565,7 +575,7 @@ for state in staged unstaged deleted unavailable; do
     cmp "$FIXTURE/original-tracked-checksum" "$tracked_consumer/$checksum_path"
     [[ "$(git -C "$tracked_consumer" write-tree)" == "$index_before" ]] || exit 1
     [[ ! -e "$tracked_consumer/$tracked_manifest" ]] || exit 1
-    cmp "$FIXTURE/existing-consumer-manifest" "$tracked_consumer/.shared-tooling.snapshot"
+    cmp "$FIXTURE/existing-consumer-manifest" "$tracked_consumer/.toko-tooling.snapshot"
     if [[ "$state" == deleted ]]; then
         [[ ! -e "$tracked_consumer/$verifier_path" ]] || exit 1
     else
@@ -585,9 +595,15 @@ PATH="$FIXTURE/bin:$PATH" \
 cmp "$FIXTURE/consumer-readme" "$tracked_consumer/README.md"
 cmp "$revision_root/$checksum_path" "$tracked_consumer/$checksum_path"
 cmp "$revision_root/$verifier_path" "$tracked_consumer/$verifier_path"
-cmp "$FIXTURE/existing-consumer-manifest" "$tracked_consumer/.shared-tooling.snapshot"
-bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" \
+cmp "$FIXTURE/existing-consumer-manifest" "$tracked_consumer/.toko-tooling.snapshot"
+bash "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" \
     --consumer "$tracked_consumer" --manifest "$tracked_manifest" >/dev/null
+
+if [[ "$selection" == admission ]]; then
+    echo 'Snapshot admission and tracked-change preservation passed'
+    fixture_complete=true
+    exit 0
+fi
 
 # Selection expansion reads dependency declarations from committed payloads.
 # Preview uses external scratch only, preserves the whole consumer including
@@ -715,7 +731,7 @@ cmp "$FIXTURE/selection-after" "$selection_consumer/config/selection"
 cmp "$ROOT/scripts/ci/release-validation-plan.pl" "$selection_consumer/scripts/ci/release-validation-plan.pl"
 cmp "$ROOT/scripts/ci/ValidationPlan.pm" "$selection_consumer/scripts/ci/ValidationPlan.pm"
 [[ "$(cat "$selection_consumer/local.txt")" == 'unrelated input' ]] || exit 1
-bash "$selection_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
+bash "$selection_consumer/scripts/ci/verify-toko-tooling-snapshot.sh" \
     --consumer "$selection_consumer" --manifest config/selection >/dev/null
 printf 'check:\n\t@echo consumer-check-reached\n' > "$selection_consumer/Makefile"
 (cd "$selection_consumer" && bash scripts/ci/run-validation-targets.sh check) > "$FIXTURE/selection-run.log"
@@ -737,7 +753,7 @@ PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consum
     > "$FIXTURE/selection-simulation.log"
 [[ ! -e "$selection_consumer/scripts/ci/test-release-tracking.sh" ]] || exit 1
 [[ -f "$selection_consumer/scripts/ci/finalize-release-changelog.awk" ]] || exit 1
-bash "$selection_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
+bash "$selection_consumer/scripts/ci/verify-toko-tooling-snapshot.sh" \
     --consumer "$selection_consumer" --manifest config/selection >/dev/null
 # Resolve actual maintained companion declarations from the selected revision.
 fixture_directories=()
@@ -762,7 +778,7 @@ while read -r entry missing; do
         --preview --source "$source_root" --consumer "$selected_consumer" \
         --entrypoint "$entry" > "$FIXTURE/closure.out"
     grep -F "$(printf 'ADD\trequired\t%s' "$missing")" "$FIXTURE/closure.out" >/dev/null
-    [[ ! -e "$selected_consumer/scripts" && ! -e "$selected_consumer/.shared-tooling.snapshot" ]] || exit 1
+    [[ ! -e "$selected_consumer/scripts" && ! -e "$selected_consumer/.toko-tooling.snapshot" ]] || exit 1
 done <<'COMPANIONS'
 scripts/ci/compare-stable-versions.pl scripts/ci/StableVersion.pm
 scripts/ci/validate-release-inputs.pl scripts/ci/StableVersion.pm
@@ -773,7 +789,7 @@ scripts/ci/check-type-docs.pl scripts/ci/RustSource.pm
 scripts/dev/check-cargo-tool-versions.pl scripts/ci/StableVersion.pm
 scripts/dev/delete-github-tags-up-to.pl scripts/ci/StableVersion.pm
 scripts/ci/check-tool-catalogs.pl scripts/ci/ic-tool-pins.awk
-scripts/ci/check-tool-catalogs.pl scripts/ci/verify-shared-tooling-snapshot.sh
+scripts/ci/check-tool-catalogs.pl scripts/ci/verify-toko-tooling-snapshot.sh
 scripts/ci/cargo-tool-cache-key.sh scripts/ci/tool-catalog-records.pl
 scripts/dev/install-host-tools.sh scripts/ci/tool-catalog-records.pl
 scripts/dev/install-ic-tools.sh scripts/ci/tool-catalog-records.pl
@@ -839,7 +855,7 @@ cmp "$ROOT/ci/tool-versions.env" "$minimal_consumer/ci/tool-versions.env"
 cmp "$ROOT/ci/ic-tools.tsv" "$minimal_consumer/ci/ic-tools.tsv"
 for target in host-tools-check ic-tools-check rust-tools-check cloc; do
     status=0
-    SHARED_TOOLING_STORE="$FIXTURE/minimal-store" make -s -C "$minimal_consumer" IC_TOOLS=wasm-opt "$target" \
+    TOKO_TOOLING_STORE="$FIXTURE/minimal-store" make -s -C "$minimal_consumer" IC_TOOLS=wasm-opt "$target" \
         > "$FIXTURE/minimal-$target.log" 2>&1 || status=$?
     [[ "$status" == 2 ]]
     case "$target" in
@@ -851,7 +867,7 @@ for target in host-tools-check ic-tools-check rust-tools-check cloc; do
     grep -F "$diagnostic" "$FIXTURE/minimal-$target.log" >/dev/null
     if grep -F 'No such file or directory' "$FIXTURE/minimal-$target.log"; then exit 1; fi
 done
-make -s -C "$minimal_consumer" shared-tooling-check > "$FIXTURE/minimal-integrity.log"
+make -s -C "$minimal_consumer" toko-tooling-check > "$FIXTURE/minimal-integrity.log"
 [[ ! -e "$minimal_consumer/.tools" && ! -e "$FIXTURE/minimal-store" ]]
 
 # Complete focused selections must remain independently runnable, without
@@ -932,7 +948,7 @@ cmp "$revision_root/docs/tool-catalog-bindings.md" "$task_consumer/docs/tool-cat
 [[ ! -e "$task_consumer/scripts/ci/check-tool-catalogs.pl" ]] || exit 1
 perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$task_consumer" \
     tasks/snapshot-drift.md docs/tool-catalog-bindings.md > "$FIXTURE/task-links.log"
-bash "$task_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
+bash "$task_consumer/scripts/ci/verify-toko-tooling-snapshot.sh" \
     --consumer "$task_consumer" >/dev/null
 rm "$task_consumer/docs/tool-catalog-bindings.md"
 if perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$task_consumer" \
@@ -950,7 +966,7 @@ git -C "$publication_source" config user.name 'Snapshot fixture'
 git -C "$publication_source" config user.email 'fixture@example.invalid'
 git -C "$publication_source" config commit.gpgsign false
 git -C "$publication_source" config core.hooksPath /dev/null
-git -C "$publication_source" remote add origin https://example.invalid/shared-tooling
+git -C "$publication_source" remote add origin https://example.invalid/toko-tooling
 publication_args=()
 while IFS= read -r path; do
     [[ "$path" != docs/cargo-publication.md ]] || continue
@@ -981,7 +997,7 @@ cmp "$ROOT/scripts/ci/ValidationPlan.pm" "$publication_consumer/scripts/ci/Valid
 perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$publication_consumer" \
     docs/releases.md docs/cargo-publication.md docs/release-group-validation.md \
     docs/validation-runner.md docs/group-validation-adoption.md > "$FIXTURE/publication-links.log"
-bash "$publication_consumer/scripts/ci/verify-shared-tooling-snapshot.sh" \
+bash "$publication_consumer/scripts/ci/verify-toko-tooling-snapshot.sh" \
     --consumer "$publication_consumer" >/dev/null
 
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
@@ -1006,7 +1022,7 @@ git -C "$maintenance_source" config user.name 'Snapshot fixture'
 git -C "$maintenance_source" config user.email 'fixture@example.invalid'
 git -C "$maintenance_source" config commit.gpgsign false
 git -C "$maintenance_source" config core.hooksPath /dev/null
-git -C "$maintenance_source" remote add origin https://example.invalid/shared-tooling
+git -C "$maintenance_source" remote add origin https://example.invalid/toko-tooling
 git -C "$maintenance_source" add -- .
 git -C "$maintenance_source" commit -qm 'Optional maintenance source'
 git init -q "$maintenance_consumer"
@@ -1020,12 +1036,12 @@ while IFS= read -r path; do
     cmp "$ROOT/$path" "$maintenance_consumer/$path"
 done < "$ROOT/scripts/distribution/maintenance-files.txt"
 bash "$ROOT/$verifier_path" --consumer "$maintenance_consumer" >/dev/null
-cp "$maintenance_consumer/.shared-tooling.snapshot" "$FIXTURE/maintenance-before-refusal"
+cp "$maintenance_consumer/.toko-tooling.snapshot" "$FIXTURE/maintenance-before-refusal"
 printf '\n# consumer change\n' >> "$maintenance_consumer/scripts/dev/run-maintenance.sh"
 if bash "$ROOT/scripts/distribution/refresh-consumer.sh" \
     --source "$maintenance_source" --consumer "$maintenance_consumer" "${governance_args[@]}" \
     > "$FIXTURE/maintenance-retire-refused.log" 2>&1; then exit 1; fi
-cmp "$maintenance_consumer/.shared-tooling.snapshot" "$FIXTURE/maintenance-before-refusal"
+cmp "$maintenance_consumer/.toko-tooling.snapshot" "$FIXTURE/maintenance-before-refusal"
 grep -Fx '# consumer change' "$maintenance_consumer/scripts/dev/run-maintenance.sh" >/dev/null
 cp -p "$ROOT/scripts/dev/run-maintenance.sh" "$maintenance_consumer/scripts/dev/run-maintenance.sh"
 bash "$ROOT/scripts/distribution/refresh-consumer.sh" \

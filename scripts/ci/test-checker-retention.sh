@@ -26,7 +26,7 @@ inputs=(make/tools.mk make/release.mk make/rust-format.mk make/execution.mk \
 bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$consumer" "${inputs[@]}"
 cat > "$consumer/Makefile" <<'MAKE'
 .DEFAULT_GOAL := help
-override SHARED_TOOLING_ROOT := $(CURDIR)
+override TOKO_TOOLING_ROOT := $(CURDIR)
 include make/tools.mk make/release.mk make/rust-format.mk
 .PHONY: help
 help:

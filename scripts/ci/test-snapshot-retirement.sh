@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/distribution/refresh-consumer.sh scripts/ci/verify-file-checksum.sh scripts/ci/verify-shared-tooling-snapshot.sh scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/distribution/refresh-consumer.sh scripts/ci/verify-file-checksum.sh scripts/ci/verify-toko-tooling-snapshot.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
@@ -18,8 +18,8 @@ git -C "$source_root" config user.name 'Snapshot fixture'
 git -C "$source_root" config user.email fixture@example.invalid
 git -C "$source_root" config commit.gpgsign false
 git -C "$source_root" config core.hooksPath /dev/null
-git -C "$source_root" remote add origin https://example.invalid/shared-tooling
-for path in verify-file-checksum.sh verify-shared-tooling-snapshot.sh; do
+git -C "$source_root" remote add origin https://example.invalid/toko-tooling
+for path in verify-file-checksum.sh verify-toko-tooling-snapshot.sh; do
     cp -p "$ROOT/scripts/ci/$path" "$source_root/scripts/ci/"
 done
 printf '0.7.0\n' > "$source_root/VERSION"
@@ -46,8 +46,8 @@ git -C "$source_root" commit -qm replacement
 # An unannotated payload record remains integrity evidence, not inferred roots.
 consumer="$FIXTURE/adopt"
 cp -Rp "$seed" "$consumer"
-sed '/^# entrypoint/d' "$consumer/.shared-tooling.snapshot" > "$consumer/old-manifest"
-mv "$consumer/old-manifest" "$consumer/.shared-tooling.snapshot"
+sed '/^# entrypoint/d' "$consumer/.toko-tooling.snapshot" > "$consumer/old-manifest"
+mv "$consumer/old-manifest" "$consumer/.toko-tooling.snapshot"
 if bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_root" \
     --consumer "$consumer" > "$FIXTURE/unselected.log" 2>&1; then exit 1; fi
 bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_root" \
@@ -73,11 +73,11 @@ for state in unchanged absent edited committed mode staged symlink directory for
             printf '# local\n' >> "$consumer/obsolete.sh"
             digest="$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$consumer/obsolete.sh")"
             awk -F '\t' -v OFS='\t' -v digest="$digest" '$1=="file" && $4=="obsolete.sh" {$2=digest} {print}' \
-                "$consumer/.shared-tooling.snapshot" > "$consumer/forged"
-            mv "$consumer/forged" "$consumer/.shared-tooling.snapshot" ;;
+                "$consumer/.toko-tooling.snapshot" > "$consumer/forged"
+            mv "$consumer/forged" "$consumer/.toko-tooling.snapshot" ;;
         unavailable)
-            sed "s/$old_revision/1111111111111111111111111111111111111111/" "$consumer/.shared-tooling.snapshot" > "$consumer/missing"
-            mv "$consumer/missing" "$consumer/.shared-tooling.snapshot" ;;
+            sed "s/$old_revision/1111111111111111111111111111111111111111/" "$consumer/.toko-tooling.snapshot" > "$consumer/missing"
+            mv "$consumer/missing" "$consumer/.toko-tooling.snapshot" ;;
     esac
     cp -Rp "$consumer" "$FIXTURE/before-$state"
     status=0
@@ -100,7 +100,7 @@ for state in unchanged absent edited committed mode staged symlink directory for
         cmp "$seed/kept.sh" "$consumer/kept.sh"
         cmp "$seed/unowned.sh" "$consumer/unowned.sh"
         cmp "$seed/unrelated" "$consumer/unrelated"
-        bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer" >/dev/null
+        bash "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" --consumer "$consumer" >/dev/null
         bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_root" \
             --consumer "$consumer" > "$FIXTURE/$state-repeat.log"
     else
@@ -126,7 +126,7 @@ if [[ "$#" == 5 && "$3" == cat-file && "$4" == blob &&
             cp -p "$SNAPSHOT_RACE_CONSUMER/obsolete.sh" "$SNAPSHOT_RACE_CONSUMER/replacement"
             mv "$SNAPSHOT_RACE_CONSUMER/replacement" "$SNAPSHOT_RACE_CONSUMER/obsolete.sh" ;;
         index) "$SNAPSHOT_REAL_GIT" -C "$SNAPSHOT_RACE_CONSUMER" add obsolete.sh ;;
-        manifest) printf '# concurrent edit\n' >> "$SNAPSHOT_RACE_CONSUMER/.shared-tooling.snapshot" ;;
+        manifest) printf '# concurrent edit\n' >> "$SNAPSHOT_RACE_CONSUMER/.toko-tooling.snapshot" ;;
         symlink)
             mv "$SNAPSHOT_RACE_CONSUMER/obsolete.sh" "$SNAPSHOT_RACE_CONSUMER/preserved"
             ln -s preserved "$SNAPSHOT_RACE_CONSUMER/obsolete.sh" ;;
@@ -146,7 +146,7 @@ for race in identity index manifest symlink; do
         --source "$source_root" --consumer "$consumer" \
         > "$FIXTURE/race-$race.log" 2>&1; then exit 1; fi
     [[ -f "$FIXTURE/seen-$race" ]] || exit 1
-    diff -r --exclude=.git --exclude='.shared-tooling-refresh.*' "$FIXTURE/expected-$race" "$consumer"
+    diff -r --exclude=.git --exclude='.toko-tooling-refresh.*' "$FIXTURE/expected-$race" "$consumer"
     git -C "$consumer" write-tree > "$FIXTURE/race-index.tree"
     git -C "$FIXTURE/expected-$race" write-tree > "$FIXTURE/expected-index.tree"
     cmp "$FIXTURE/race-index.tree" "$FIXTURE/expected-index.tree"
@@ -173,10 +173,10 @@ status=0
 PATH="$FIXTURE/bin:$PATH" bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_root" \
     --consumer "$consumer" > "$FIXTURE/interrupted.log" 2>&1 || status=$?
 [[ "$status" == 19 && ! -e "$consumer/obsolete.sh" ]] || exit 1
-cmp "$seed/.shared-tooling.snapshot" "$consumer/.shared-tooling.snapshot"
+cmp "$seed/.toko-tooling.snapshot" "$consumer/.toko-tooling.snapshot"
 bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_root" \
     --consumer "$consumer" > "$FIXTURE/reconciled.log"
-bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer" >/dev/null
+bash "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" --consumer "$consumer" >/dev/null
 # Replace the complete root selection, retiring a root and its former companion.
 consumer="$FIXTURE/reselected"
 cp -Rp "$seed" "$consumer"
@@ -186,15 +186,15 @@ bash "$ROOT/scripts/distribution/refresh-consumer.sh" --source "$source_root" \
 [[ ! -e "$consumer/root.sh" && ! -e "$consumer/obsolete.sh" && -f "$consumer/current.sh" ]] || exit 1
 [[ ! -e "$consumer/kept.sh" ]] || exit 1
 cmp "$seed/unowned.sh" "$consumer/unowned.sh"
-grep -F "$(printf '# entrypoint\tcurrent.sh')" "$consumer/.shared-tooling.snapshot" >/dev/null
+grep -F "$(printf '# entrypoint\tcurrent.sh')" "$consumer/.toko-tooling.snapshot" >/dev/null
 for annotation in $'# entrypoint\t' $'# entrypoint\tcurrent.sh' $'# entrypoint\tunowned.sh' $'# entrypoint\t../escape' $'# entrypoint\tcurrent.sh\t' $'# entrypoint\t\tcurrent.sh'; do
-    cp "$consumer/.shared-tooling.snapshot" "$FIXTURE/valid-manifest"
-    printf '%s\n' "$annotation" >> "$consumer/.shared-tooling.snapshot"
-    if bash "$ROOT/scripts/ci/verify-shared-tooling-snapshot.sh" --consumer "$consumer" \
+    cp "$consumer/.toko-tooling.snapshot" "$FIXTURE/valid-manifest"
+    printf '%s\n' "$annotation" >> "$consumer/.toko-tooling.snapshot"
+    if bash "$ROOT/scripts/ci/verify-toko-tooling-snapshot.sh" --consumer "$consumer" \
         > "$FIXTURE/bad-annotation.log" 2>&1; then exit 1; fi
     if bash "$ROOT/scripts/distribution/refresh-consumer.sh" --preview --source "$source_root" \
         --consumer "$consumer" > "$FIXTURE/bad-root-preview.log" 2>&1; then exit 1; fi
-    cp "$FIXTURE/valid-manifest" "$consumer/.shared-tooling.snapshot"
+    cp "$FIXTURE/valid-manifest" "$consumer/.toko-tooling.snapshot"
 done
 # Missing committed companions fail before exporting anything, even in preview.
 printf '#!/bin/sh\n# Shared companions: absent.sh\n' > "$source_root/root.sh"

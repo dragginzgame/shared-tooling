@@ -69,11 +69,11 @@ after_blob="$(git -C "$ROOT" rev-parse "$after:$runner_path")"
 # One clean committed payload and identical tool selection serve both runners.
 git clone --quiet --no-hardlinks --no-checkout "$ROOT" "$selected/source" > "$selected/source.log" 2>&1
 git -C "$selected/source" checkout --quiet --detach "$payload" >> "$selected/source.log" 2>&1
-git -C "$selected/source" remote set-url origin https://github.com/dragginzgame/shared-tooling
+git -C "$selected/source" remote set-url origin https://github.com/dragginzgame/toko-tooling
 # Freeze runner-local helpers with the payload too. Only the selected exporter
 # blob varies; do not introduce unrecorded working-tree code. Historical payloads
 # without the declaration/version readers still support their older exporters.
-helpers=(verify-file-checksum.sh verify-shared-tooling-snapshot.sh)
+helpers=(verify-file-checksum.sh verify-toko-tooling-snapshot.sh)
 for helper in shared-companions.sh shared-package-version.pl; do
     reader="$(git -C "$ROOT" ls-tree --name-only "$payload" -- "scripts/ci/$helper")"
     [[ -z "$reader" ]] || helpers+=("$helper")
@@ -122,7 +122,7 @@ sample() {
         --source "$selected/source" --consumer "$consumer" \
         --entrypoint "$runner_path" --entrypoint scripts/dev/install-rust-tools.sh \
         --entrypoint scripts/ci/run-release.sh > "$selected/$label.log" 2>&1
-    "$BASH" "$selected/source/scripts/ci/verify-shared-tooling-snapshot.sh" \
+    "$BASH" "$selected/source/scripts/ci/verify-toko-tooling-snapshot.sh" \
         --consumer "$consumer" > "$selected/$label.verify.log" 2>&1
     elapsed="$(cat "$selected/$label.seconds")"
     [[ "$elapsed" =~ ^[0-9]+\.[0-9]+$ ]] || exit 1

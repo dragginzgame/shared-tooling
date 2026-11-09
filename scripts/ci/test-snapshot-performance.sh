@@ -56,7 +56,7 @@ RUNNER
             "$MEASUREMENT_REAL_GIT" "$@"
             cat <<'APPEND'
 if [[ "$MEASUREMENT_MODE" == verify-failure ]]; then
-    printf corrupt >> "$CONSUMER_ROOT/scripts/ci/verify-shared-tooling-snapshot.sh"
+    printf corrupt >> "$CONSUMER_ROOT/scripts/ci/verify-toko-tooling-snapshot.sh"
 elif [[ "$MEASUREMENT_MODE" == cpu-write-failure ]]; then
     mkdir "${CONSUMER_ROOT%/*}/warmup-0-before.cpu"
 elif [[ "${BASH_SOURCE[0]}" == */after/* ]]; then
@@ -137,7 +137,7 @@ for scenario in complete partial archive-failure; do
     native="$fixture/workflow $scenario"
     evidence="$native/snapshot-comparison"
     mkdir -p "$evidence/consumer-measurement-1-after/.git" "$evidence/source"
-    printf 'retained receipt\n' > "$evidence/consumer-measurement-1-after/.shared-tooling.snapshot"
+    printf 'retained receipt\n' > "$evidence/consumer-measurement-1-after/.toko-tooling.snapshot"
     printf 'Git store must be excluded\n' > "$evidence/consumer-measurement-1-after/.git/config"
     printf 'source clone must be excluded\n' > "$evidence/source/bulk"
     printf 'phase\tpair\tside\tseconds\n' > "$evidence/samples.tsv"
@@ -149,7 +149,7 @@ for scenario in complete partial archive-failure; do
         (cd "$ROOT"; PATH="$fixture/bin:$PATH" RUNNER_TEMP="$native" "$BASH" --noprofile --norc -e -o pipefail \
             "$fixture/archive.sh") > "$native/packaging.log" 2>&1 || status=$?
         [[ "$status" != 0 && ! -e "$native/snapshot-comparison.sha256" &&
-           -f "$evidence/consumer-measurement-1-after/.shared-tooling.snapshot" ]] || exit 1
+           -f "$evidence/consumer-measurement-1-after/.toko-tooling.snapshot" ]] || exit 1
         grep -F 'Evidence archive failed' "$native/snapshot-comparison-archive.log" > /dev/null
         [[ "$(cat "$native/snapshot-comparison.tar.gz")" == 'partial archive' ]] || exit 1
         continue
@@ -162,8 +162,8 @@ for scenario in complete partial archive-failure; do
     mkdir "$native/unpacked"
     tar -xzf "$native/snapshot-comparison.tar.gz" -C "$native/unpacked"
     replay="$native/unpacked/snapshot-comparison"
-    cmp "$evidence/consumer-measurement-1-after/.shared-tooling.snapshot" \
-        "$replay/consumer-measurement-1-after/.shared-tooling.snapshot"
+    cmp "$evidence/consumer-measurement-1-after/.toko-tooling.snapshot" \
+        "$replay/consumer-measurement-1-after/.toko-tooling.snapshot"
     cmp "$evidence/samples.tsv" "$replay/samples.tsv"
     cmp "$evidence/cpu.tsv" "$replay/cpu.tsv"
     [[ ! -e "$replay/source" && ! -e "$replay/consumer-measurement-1-after/.git" ]] || exit 1

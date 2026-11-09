@@ -58,7 +58,7 @@ awk -v width="$((${#long_name}+2))" 'NR==1 {n=length($0)} length($0)!=n {exit 1}
 [[ "$(grep -Ec '^[- ]+$' "$FIXTURE/summary")" == 2 ]]
 (cd "$parent" && report) > "$FIXTURE/default"
 cmp "$FIXTURE/summary" "$FIXTURE/default"
-make --no-print-directory -s -f "$ROOT/make/tools.mk" cloc SHARED_TOOLING_ROOT="$ROOT" CLOC_ROOT="$parent" CLOC_DEPTH=0 > "$FIXTURE/make"
+make --no-print-directory -s -f "$ROOT/make/tools.mk" cloc TOKO_TOOLING_ROOT="$ROOT" CLOC_ROOT="$parent" CLOC_DEPTH=0 > "$FIXTURE/make"
 cmp "$FIXTURE/expanded" "$FIXTURE/make"
 ln -s "$parent" "$FIXTURE/parent-alias"
 report "$FIXTURE/parent-alias" > "$FIXTURE/alias"

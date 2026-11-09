@@ -109,7 +109,7 @@ for failure in admit-host admit-rust admit-ic jq cloc cargo-sort-derives wasm-op
 done
 # Invalid catalogs refuse before admission; no implicit preparation is allowed.
 # shellcheck disable=SC2016 # Invalid literal catalog must never execute.
-printf 'export SHARED_TOOLING_JQ_VERSION=$(exit 99)\n' > "$snapshot/ci/tool-versions.env"
+printf 'export TOKO_TOOLING_JQ_VERSION=$(exit 99)\n' > "$snapshot/ci/tool-versions.env"
 : > "$REPORT_EVENTS"
 if bash "$snapshot/scripts/ci/report-tool-versions.sh" "$consumer" > "$fixture/catalog.out" 2> "$fixture/catalog.err"; then exit 1; fi
 [[ ! -s "$REPORT_EVENTS" ]]

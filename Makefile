@@ -7,9 +7,9 @@ CLOC_REPORT := $(CURDIR)/scripts/dev/cloc.sh
 CLOC_ROOT = $(CLOC_PARENT)
 CLOC_PARENT ?= $(CURDIR)/..
 STACK_PARENT ?= $(CURDIR)/..
-SHARED_TOOLING_RUST := 0
+TOKO_TOOLING_RUST := 0
 # The producer validates its own source package; it has no installed self-snapshot.
-SHARED_TOOLING_PRODUCER := 1
+TOKO_TOOLING_PRODUCER := 1
 CARGO_PUBLISH_PACKAGES := toko-tooling
 CARGO_PUBLISH_REGISTRY := crates-io
 CARGO_PUBLISH_VERIFY_TARGETS := check-version check-tooling-package

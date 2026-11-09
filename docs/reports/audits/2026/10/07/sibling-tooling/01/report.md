@@ -1,7 +1,7 @@
 # Sibling CI and tooling inventory — 2026-10-07
 
 The 13 sibling repositories contain **78,862 code LOC** in the selected tooling
-scope: **33,467 match recorded Shared Tooling snapshots** and **45,395 are local**.
+scope: **33,467 match recorded Toko Tooling snapshots** and **45,395 are local**.
 An additional 9,644 physical lines are supporting data. These are working-tree
 measurements, not promised deletion counts or a repository health score.
 
@@ -9,13 +9,13 @@ measurements, not promised deletion counts or a repository health score.
 
 Triggered by the maintainer's request for repeatable tooling counts and concrete
 consolidation findings. Method: `audits/flow-convergence-and-duplication.md` with
-`audits/README.md`, Shared Tooling `AGENTS.md` and `DRAGGINZGAME.md`. Shared Tooling
+`audits/README.md`, Toko Tooling `AGENTS.md` and `DRAGGINZGAME.md`. Toko Tooling
 base: `25e7ce83149e081e4dcc52c55c33724e44153f2a`; the counter, Make integration,
 fixtures and pending 0.1.15 documentation are uncommitted additions. Earlier dirty
 setup, governance and Rust LOC work is included and preserved.
 
 Mode: read-only sibling inventory and selected source/caller inspection. Consumer
-overlays and runtime invariants were not audited; this is an aggregate Shared
+overlays and runtime invariants were not audited; this is an aggregate Toko
 Tooling discovery report, not consumer release qualification. The inventory
 captures tracked and nonignored untracked bytes before cloc. It includes scripts,
 workflows, hooks, Make/build configuration and Cargo package `build.rs`, including
@@ -23,7 +23,7 @@ nested shared snapshots. Product crates, Rust integration binaries outside these
 directories, documentation, caches, generated build output and symlinks are out of
 scope. JSON, patch and table files count as supporting data rather than code.
 
-[Counts](counts.txt) retain every checkout, including Shared Tooling itself.
+[Counts](counts.txt) retain every checkout, including Toko Tooling itself.
 [Measurement identities](measurements.json) retain each HEAD, dirty flag, snapshot
 revision, totals and skipped/drifted paths. The full per-file JSON is retained at
 `/tmp/tooling-inventory.vaIdWt/inventory-final.json` with SHA-256
@@ -97,11 +97,11 @@ the owning issue below. No broader correctness verdict is implied.
    logs, timing table and structured errors must survive consolidation. IcyDB's
    41-LOC wrapper already delegates execution but aggregates raw failure logs.
    Extend the shared evidence contract before deleting Canic's engine; evidence
-   added to [Shared Tooling #37](https://github.com/dragginzgame/shared-tooling/issues/37).
+   added to [Toko Tooling #37](https://github.com/dragginzgame/toko-tooling/issues/37).
 4. **MEDIUM upstream defect; LOW duplication — changelog draft selection.**
    A whitespace-suffixed `## [0.1.1]` makes the shared helper emit an empty dated
    release above the existing notes. Reproduction and smallest repair are in
-   [Shared Tooling #38](https://github.com/dragginzgame/shared-tooling/issues/38).
+   [Toko Tooling #38](https://github.com/dragginzgame/toko-tooling/issues/38).
    After that fix, replace ic-timers' private selection engine while preserving
    its check-only, exact SemVer, history and transactional file behavior:
    [ic-timers #24](https://github.com/dragginzgame/ic-timers/issues/24).

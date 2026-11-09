@@ -1,6 +1,6 @@
 [package]
 name = "toko-tooling"
-version = "0.36.1"
+version = "0.37.0"
 edition = "2024"
 rust-version = "1.99.1"
 license = "MIT"
@@ -12,13 +12,13 @@ include = [
     "/src/**", "/scripts/**", "/make/**", "/ci/**", "/docs/**",
     "/rules/**", "/tasks/**", "/audits/**", "/licenses/**",
     "/.github/**", "/.githooks/**", "/Makefile", "/rust-toolchain.toml",
-    "/AGENTS.md", "/DRAGGINZGAME.md", "/CONTRIBUTING.md", "/README.md",
+    "/AGENTS.md", "/TOKO-TOOLING.md", "/CONTRIBUTING.md", "/README.md",
     "/CHANGELOG.md", "/LICENSE", "!/ci/frontend/node_modules/**",
     "!/docs/code-review/**",
 ]
 
 # Consumer dev-dependencies and Cargo.lock select this source bundle.
 # Installation remains explicit:
-# make shared-tooling-install refreshes scripts and prepares the pinned tools.
+# make toko-tooling-install refreshes scripts and prepares the pinned tools.
 [lib]
 path = "src/lib.rs"

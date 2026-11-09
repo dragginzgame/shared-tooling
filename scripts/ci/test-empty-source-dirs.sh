@@ -29,7 +29,7 @@ mkdir -p src/ignored
 if perl "$ROOT/scripts/dev/clean-empty-source-dirs.pl" src missing > refusal.log 2>&1; then exit 1; fi
 [[ -d src/ignored ]]
 # Exercise the real Make preflight dependency, without release effects.
-printf 'SHARED_TOOLING_ROOT := %s\ninclude %s/make/release.mk\nrelease-preflight:\n\t@test ! -e src/ignored\n' "$ROOT" "$ROOT" > Makefile
+printf 'TOKO_TOOLING_ROOT := %s\ninclude %s/make/release.mk\nrelease-preflight:\n\t@test ! -e src/ignored\n' "$ROOT" "$ROOT" > Makefile
 make --no-print-directory release-preflight
 # Automatic discovery covers nested frontend sources and skips build artifacts.
 mkdir -p frontend/src/ignored/nested crates/demo/src/ignored src/build/keep

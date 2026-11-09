@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: docs/verification-helpers.md
+# Shared companions:
 set -euo pipefail
 [[ $# -le 1 ]] || { echo 'usage: collect-release-changes.sh [BASE]' >&2; exit 2; }
 export GIT_OPTIONAL_LOCKS=0

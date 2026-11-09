@@ -2,7 +2,7 @@
 # Shared companions: scripts/ci/test-tool-evidence.sh scripts/ci/test-tool-store.sh scripts/ci/prepare-script-fixture.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 # Installer fixtures must exercise their own transport, not a hosted warm cache.
-unset SHARED_TOOLING_DOWNLOAD_CACHE
+unset TOKO_TOOLING_DOWNLOAD_CACHE
 path_context=false
 if [[ "${1:-}" == --path-context && $# == 1 ]]; then path_context=true;
 elif [[ $# != 0 ]]; then echo 'usage: fixture [--path-context]' >&2; exit 2; fi
@@ -43,7 +43,7 @@ SCRIPT
 chmod +x "$fixture/bin/"*
 export PATH="$fixture/bin:$PATH"
 pins="$fixture/pins.env"
-printf 'export SHARED_TOOLING_JQ_VERSION=1.8.2\nexport SHARED_TOOLING_YQ_VERSION=4.47.2\n' > "$pins"
+printf 'export TOKO_TOOLING_JQ_VERSION=1.8.2\nexport TOKO_TOOLING_YQ_VERSION=4.47.2\n' > "$pins"
 for tool in jq yq; do
     case "$tool" in
         jq) report=jq-1.8.2 ;;
@@ -61,10 +61,10 @@ for tool in jq yq; do
         esac
         if [[ "$tool" == jq ]]; then key=JQ; asset="$jq_asset"; else key=YQ; asset="$yq_asset"; fi
         cp "$fixture/$tool" "$fixture/assets/$asset"
-        printf 'export SHARED_TOOLING_%s_SHA256_%s=%s\n' "$key" "$host" "${digest%% *}" >> "$pins"
+        printf 'export TOKO_TOOLING_%s_SHA256_%s=%s\n' "$key" "$host" "${digest%% *}" >> "$pins"
     done
 done
-printf 'export SHARED_TOOLING_RIPGREP_VERSION=15.2.0\n' >> "$pins"
+printf 'export TOKO_TOOLING_RIPGREP_VERSION=15.2.0\n' >> "$pins"
 cat > "$fixture/rg" <<'SCRIPT'
 #!/usr/bin/env bash
 echo executed >> "$HOST_TOOLS_FIXTURE/executions"
@@ -86,7 +86,7 @@ for host in LINUX_AMD64 LINUX_ARM64 DARWIN_AMD64 DARWIN_ARM64; do
     cp "$fixture/rg" "$fixture/$directory/rg"
     tar -czf "$fixture/assets/$directory.tar.gz" -C "$fixture" "$directory/rg"
     digest="$(shasum -a 256 "$fixture/assets/$directory.tar.gz")"
-    printf 'export SHARED_TOOLING_RIPGREP_SHA256_%s=%s\n' "$host" "${digest%% *}" >> "$pins"
+    printf 'export TOKO_TOOLING_RIPGREP_SHA256_%s=%s\n' "$host" "${digest%% *}" >> "$pins"
 done
 
 cat > "$fixture/cloc" <<'SCRIPT'
@@ -97,11 +97,11 @@ exit "${TEST_CLOC_STATUS:-0}"
 SCRIPT
 cp "$fixture/cloc" "$fixture/assets/cloc-2.10.pl"
 digest="$(shasum -a 256 "$fixture/cloc")"
-printf 'export SHARED_TOOLING_CLOC_VERSION=2.10\nexport SHARED_TOOLING_CLOC_SHA256=%s\n' "${digest%% *}" >> "$pins"
+printf 'export TOKO_TOOLING_CLOC_VERSION=2.10\nexport TOKO_TOOLING_CLOC_SHA256=%s\n' "${digest%% *}" >> "$pins"
 
 consumer="$fixture/consumer"
 install() {
-    export SHARED_TOOLING_STORE="${HOST_SHARED_STORE:-$consumer/store}"
+    export TOKO_TOOLING_STORE="${HOST_SHARED_STORE:-$consumer/store}"
     printf 'install %s for %s\n' "$*" "$consumer" >> "$fixture/install.log"
     bash "$ROOT/scripts/dev/install-host-tools.sh" --consumer "$consumer" --versions "$pins" "$@" >> "$fixture/install.log" 2>&1
 }
@@ -119,7 +119,7 @@ grep -F 'make install-host-tools' "$fixture/install.log"
 # downloads, executable probes or any installation directory is created.
 cp "$pins" "$fixture/literal-pins"
 # shellcheck disable=SC2016 # Keep the attempted catalog command literal.
-for invalid in 'SHARED_TOOLING_JQ_VERSION=1.8.2' 'touch "$HOST_TOOLS_FIXTURE/catalog-executed"'; do
+for invalid in 'TOKO_TOOLING_JQ_VERSION=1.8.2' 'touch "$HOST_TOOLS_FIXTURE/catalog-executed"'; do
     cp "$fixture/literal-pins" "$pins"
     printf '%s\n' "$invalid" >> "$pins"
     refuse install
@@ -138,11 +138,11 @@ if [[ "$path_context" == true ]]; then
     # Interrupted replacement retains evidence and releases only owned locks.
     saved_consumer="$consumer"
     consumer="$fixture/interrupted"; mkdir "$consumer"
-    export SHARED_TOOLING_STORE="$consumer/store"
+    export TOKO_TOOLING_STORE="$consumer/store"
     refuse env TEST_INTERRUPT=1 bash "$ROOT/scripts/dev/install-host-tools.sh" --consumer "$consumer" --versions "$pins"
     [[ ! -e "$consumer/.tools/host" && ! -e "$consumer/.tools/.host-tools.lock" ]] || exit 1
-    [[ -n "$(find "$SHARED_TOOLING_STORE" -name 'set.*' -type d)" ]] || exit 1
-    [[ -z "$(find "$SHARED_TOOLING_STORE" -name install.lock)" ]] || exit 1
+    [[ -n "$(find "$TOKO_TOOLING_STORE" -name 'set.*' -type d)" ]] || exit 1
+    [[ -z "$(find "$TOKO_TOOLING_STORE" -name install.lock)" ]] || exit 1
     consumer="$saved_consumer"
     [[ "$(readlink "$consumer/.tools/host")" == "$original" ]] || exit 1
     install --check
@@ -209,7 +209,7 @@ original="$(readlink "$consumer/.tools/host")"
 cp "$pins" "$fixture/saved.env"
 sed 's/jq-1.8.2/jq-1.8.20/' "$fixture/jq" > "$fixture/assets/jq-macos-arm64"
 digest="$(shasum -a 256 "$fixture/assets/jq-macos-arm64")"
-sed "s/SHARED_TOOLING_JQ_SHA256_DARWIN_ARM64=.*/SHARED_TOOLING_JQ_SHA256_DARWIN_ARM64=${digest%% *}/" "$fixture/saved.env" > "$pins"
+sed "s/TOKO_TOOLING_JQ_SHA256_DARWIN_ARM64=.*/TOKO_TOOLING_JQ_SHA256_DARWIN_ARM64=${digest%% *}/" "$fixture/saved.env" > "$pins"
 refuse install
 [[ "$(readlink "$consumer/.tools/host")" == "$original" ]] || exit 1
 cp "$fixture/saved.env" "$pins"
@@ -304,7 +304,7 @@ install
 # The complete roster is required even when no consumer command uses each tool.
 for key in RIPGREP_VERSION CLOC_VERSION; do
     cp "$pins" "$fixture/complete-pins"
-    printf 'unset SHARED_TOOLING_%s\n' "$key" >> "$pins"
+    printf 'unset TOKO_TOOLING_%s\n' "$key" >> "$pins"
     before="$(wc -l < "$fixture/downloads")"
     : > "$fixture/executions"
     refuse install --check

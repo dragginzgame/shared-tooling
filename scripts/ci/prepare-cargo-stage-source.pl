@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Shared companions: scripts/ci/cargo-release-group.sh docs/release-validation-reuse.md
+# Shared companions: scripts/ci/cargo-release-group.sh
 use strict;
 use warnings;
 use Cwd qw(abs_path getcwd);

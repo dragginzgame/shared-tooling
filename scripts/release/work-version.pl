@@ -8,7 +8,7 @@ use StableVersion qw(stable version_cmp);
 use File::Temp qw(tempdir);
 use File::Copy qw(copy);
 
-# Shared Tooling root package only. Consumer release groups retain their own owner.
+# Toko Tooling root package only. Consumer release groups retain their own owner.
 my ($operation, $kind) = @ARGV;
 defined($operation) && (($operation =~ /\A(?:base|check)\z/ && @ARGV == 1) ||
     ($operation eq 'prepare' && @ARGV == 2 && $kind =~ /\A(?:patch|minor|major)\z/))

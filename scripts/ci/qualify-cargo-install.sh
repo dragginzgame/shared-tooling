@@ -19,7 +19,7 @@ fixture="$(cd -P "$selected" && printf '%s/.' "$PWD")"
 fixture="${fixture%/.}"
 trap 'printf "Cargo installation evidence retained: %s\n" "$fixture" >&2' EXIT
 export RUSTUP_AUTO_INSTALL=0
-export SHARED_TOOLING_STORE="$fixture/store"
+export TOKO_TOOLING_STORE="$fixture/store"
 record="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" rust "$ROOT/ci/tool-versions.env" CARGO_SORT)"
 IFS=$'\t' read -r _ sort_version _ _ <<< "$record"
 checksum="$ROOT/scripts/ci/verify-file-checksum.sh"
@@ -95,7 +95,7 @@ exercise() {
     assert_preserved
 
     if CARGO_NET_OFFLINE=true install_at "$case_root/install" "$case_root/build" \
-        --bin shared_tooling_missing_target > "$case_root/missing-target.log" 2>&1; then
+        --bin toko_tooling_missing_target > "$case_root/missing-target.log" 2>&1; then
         echo 'missing Cargo target was admitted' >&2; exit 1
     fi
     assert_preserved

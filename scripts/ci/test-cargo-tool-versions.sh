@@ -34,8 +34,8 @@ mkdir -p "$fixture/snapshot/scripts/ci" "$fixture/snapshot/scripts/dev" "$fixtur
 cp "$ROOT/scripts/ci/StableVersion.pm" "$fixture/snapshot/scripts/ci/"
 cp "$ROOT/scripts/ci/tool-catalog-records.pl" "$fixture/snapshot/scripts/ci/"
 cp "$ROOT/scripts/dev/check-cargo-tool-versions.pl" "$fixture/snapshot/scripts/dev/"
-printf 'export SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4\n' > "$fixture/consumer/ci/tool-versions.env"
-printf 'SHARED_TOOLING_CARGO_SORT_DERIVES_VERSION=0.14.1\n' >> "$fixture/consumer/ci/tool-versions.env"
+printf 'export TOKO_TOOLING_CARGO_SORT_VERSION=2.1.4\n' > "$fixture/consumer/ci/tool-versions.env"
+printf 'TOKO_TOOLING_CARGO_SORT_DERIVES_VERSION=0.14.1\n' >> "$fixture/consumer/ci/tool-versions.env"
 cp "$fixture/consumer/ci/tool-versions.env" "$fixture/snapshot/ci/tool-versions.env"
 printf 'fixture binary; never execute\n' > "$fixture/bundle/bin/cargo-sort"
 ln -s "$fixture/bundle/bin/cargo-sort" "$fixture/consumer/.tools/rust/common/bin/cargo-sort"
@@ -104,7 +104,7 @@ done
 cp "$fixture/valid.json" "$fixture/cargo-sort.json"
 VERSION_CURL=8.3.0 run 2
 cat > "$fixture/consumer/ci/tool-versions.env" <<'PINS'
-SHARED_TOOLING_CARGO_SORT_VERSION=$(touch "$VERSION_FIXTURE/unexpected") # pin=2.1.4
+TOKO_TOOLING_CARGO_SORT_VERSION=$(touch "$VERSION_FIXTURE/unexpected") # pin=2.1.4
 PINS
 run 2
 [[ ! -e "$fixture/unexpected" ]]
@@ -126,10 +126,10 @@ jq -e '(.tools[] | select(.tool=="cargo-sort")).latest=="18446744073709551617.0.
 echo 'Cargo version freshness, separate selections and incomplete observation tests passed (substitute registry)'
 # Optional binary-installed sccache participates in freshness without becoming
 # a required common Cargo installation or assuming a Cargo receipt exists.
-printf '\nSHARED_TOOLING_SCCACHE_VERSION=0.19.0\nSHARED_TOOLING_SCCACHE_SHA256_LINUX_AMD64=%064d\n' 0 >> "$fixture/snapshot/ci/tool-versions.env"
+printf '\nTOKO_TOOLING_SCCACHE_VERSION=0.19.0\nTOKO_TOOLING_SCCACHE_SHA256_LINUX_AMD64=%064d\n' 0 >> "$fixture/snapshot/ci/tool-versions.env"
 # The CI catalog parser admits the common group before the optional selection.
 for entry in ACTIONLINT:LINUX_AMD64 SHELLCHECK:LINUX_X86_64 GITLEAKS:LINUX_X64; do
-    printf 'SHARED_TOOLING_%s_VERSION=1.0.0\nSHARED_TOOLING_%s_SHA256_%s=%064d\n' "${entry%:*}" "${entry%:*}" "${entry#*:}" 0 >> "$fixture/snapshot/ci/tool-versions.env"
+    printf 'TOKO_TOOLING_%s_VERSION=1.0.0\nTOKO_TOOLING_%s_SHA256_%s=%064d\n' "${entry%:*}" "${entry%:*}" "${entry#*:}" 0 >> "$fixture/snapshot/ci/tool-versions.env"
 done
 jq -n '{crate:{id:"sccache"},versions:[{crate:"sccache",num:"0.19.0",yanked:false}]}' > "$fixture/sccache.json"
 perl "$fixture/snapshot/scripts/dev/check-cargo-tool-versions.pl" --consumer "$fixture/consumer" --cargo-home "$fixture/home" --tool sccache --json > "$fixture/sccache-report.json"
@@ -147,7 +147,7 @@ jq '.installs += {
 }' "$fixture/bundle/.crates2.json" > "$fixture/mixed-receipt.json"
 cp "$fixture/mixed-receipt.json" "$fixture/home/.crates2.json"
 cp "$fixture/mixed-receipt.json" "$fixture/bundle/.crates2.json"
-sed 's/SHARED_TOOLING_CARGO_SORT_VERSION=2.1.4/SHARED_TOOLING_CARGO_SORT_VERSION=2.1.10/' \
+sed 's/TOKO_TOOLING_CARGO_SORT_VERSION=2.1.4/TOKO_TOOLING_CARGO_SORT_VERSION=2.1.10/' \
     "$fixture/snapshot/ci/tool-versions.env" > "$fixture/current-pins"
 cp "$fixture/current-pins" "$fixture/snapshot/ci/tool-versions.env"
 single() {
