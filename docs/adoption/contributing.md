@@ -72,6 +72,11 @@ Keep repository handoff files concise under the baseline's
 
 ## Documentation contributions
 
+Apply the baseline's
+[documentation ownership boundary](../../TOKO-TOOLING.md#documentation-ownership-boundary).
+The producer owns the canonical path migration and its qualification; consumers
+must not work around it by moving snapshot files or wrapping all native docs.
+
 A shared principle should state:
 
 - the problem and maintained invariant;

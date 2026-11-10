@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.39.3] - Unreleased
+
+### 🔧 Changed
+
+- Define `docs/toko-tooling/` as the destination for shared documentation,
+  preserving product-owned topic layouts. This policy release keeps installed
+  paths unchanged; namespace enforcement follows a qualified upstream migration.
+
 ## [0.39.2] - 2026-11-10
 
 ### 🐛 Fixed

@@ -44,6 +44,50 @@ crate or vendoring this file grants no exception and does not activate audits.
   into a new permission prompt when the common rule already authorizes the task.
   See [adoption details](https://github.com/dragginzgame/toko-tooling/blob/626da7cd9626cc2e152594862a2d82ea82ef51da/rules/engineering-details.md#adoption-and-local-authority).
 
+## Documentation ownership boundary
+
+The standard layout separates ownership before topic:
+
+```text
+docs/
+  toko-tooling/       # Snapshot-managed documentation only
+    adoption/
+    releases/
+    tools/
+    validation/
+    principles/
+    rules/
+    audits/
+    tasks/
+  architecture/      # Product-owned documentation
+  design/
+  governance/
+```
+
+- Toko Tooling's installed reference docs, rules, audit procedures and task
+  guides belong under `docs/toko-tooling/`. Keep `TOKO-TOOLING.md` at the
+  repository root as the baseline entrypoint. Root licence and contribution
+  files retain their separate canonical-file contract below.
+- Product documentation stays outside that reserved directory, organised by
+  topic. Do not require `docs/<product-name>/` or relocate native documentation
+  merely to accommodate shared files. Consumer-specific overlays and audit
+  results belong to the consumer, not the managed namespace.
+- Establish the canonical paths in Toko Tooling itself and export them unchanged.
+  Do not introduce consumer-specific path rewriting or manually move installed
+  files. The snapshot receipt remains the authority for installed ownership.
+- A layout migration must update upstream links, companion declarations, entrypoint
+  catalogs, affected callers and fixtures together. Preview the refresh, retire
+  only unchanged receipt-owned predecessors, and preserve native files and edits.
+- The migration's boundary check must verify that installed shared documentation
+  is inside the namespace and every file there is snapshot-managed. Apply it to
+  the installed file set, not a hard-coded document count or prose match.
+
+This establishes the required destination, not a claim that existing exports
+already use it. Until a release supplies and qualifies the upstream path migration,
+keep its existing snapshot paths intact; installing this policy alone must not
+trigger consumer moves or the new boundary gate. Adopt the migrated layout through
+an explicitly scoped tooling refresh once available.
+
 ## Scope and authorization
 
 The [contribution rules](https://github.com/dragginzgame/toko-tooling/blob/626da7cd9626cc2e152594862a2d82ea82ef51da/rules/contributions.md) own detailed action authority;

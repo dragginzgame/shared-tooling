@@ -1,5 +1,20 @@
 # Consumer migration history
 
+## Documentation ownership policy in 0.39.3
+
+The baseline now specifies a reserved `docs/toko-tooling/` namespace for installed
+shared documentation, including rules, audit procedures and task guides. Native
+documentation retains its existing topic layout outside that directory; there is
+no requirement to introduce `docs/canic/`, `docs/icydb/` or another product wrapper.
+
+This release publishes the policy only. Its exported paths and snapshot format
+are unchanged. Do not rename managed files or enable a namespace gate yet.
+Toko Tooling must first migrate and qualify its canonical source paths, links,
+catalogs and callers. That later release must provide the reviewed entrypoint
+mapping and safe refresh/retirement procedure. Until then, receipt verification
+continues to govern the installed layout. See the
+[ownership boundary](../../TOKO-TOOLING.md#documentation-ownership-boundary).
+
 ## Documentation paths in 0.39.0
 
 Guides now live under `docs/adoption/`, `docs/tools/`, `docs/validation/`,
