@@ -11,15 +11,15 @@ this contract; the [release contract](../docs/releases/releases.md) owns release
 - Keep legal and licensing changes out of changelogs, including root,
   package, release-group and archived or detailed changelogs. This includes
   licence adoption, terms, drafts, notices, contributor agreements, legal
-  contribution eligibility, rights ownership and legal audits. Keep these in
-  their authoritative legal documents instead. This exclusion overrides the
+  contribution eligibility, rights ownership and legal audits. Keep operative
+  terms in the canonical root files and legal review records outside the
+  repository under the baseline's
+  [canonical-file policy](../TOKO-TOOLING.md#canonical-licence-and-contribution-policy).
+  This exclusion overrides the
   usual meaningful-change, breaking-change and fixed-issue-link requirements;
   do not add a changelog entry merely to describe this policy or such cleanup.
-  The sole exception is one neutral notice in the adopting release naming the
-  adopted licence and linking to its authoritative text. It may state that
-  earlier grants remain unchanged. Do not include drafting history, legal
-  analysis, rationale or claims about consent or enforceability. Do not repeat
-  the notice in subsequent releases unless the adopted licence changes again.
+  Do not add neutral adoption notices either. Previously published notices do
+  not authorise new ones; this rule does not require rewriting published entries.
   It does not authorise removing legal notices, required provenance or Git history.
 - Root `CHANGELOG.md` is the concise release ledger for a single release group.
   Independently versioned groups use the

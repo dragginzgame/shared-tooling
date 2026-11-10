@@ -137,6 +137,9 @@ run("$attempt/preparation.log",'tar','-xf',$archive,'-C',$tree);
 my %original=map {$_=>sha256_hex(bytes("$tree/$_"))} @paths;
 my $policy=$json->decode(bytes("$tree/ci/cargo-release-groups.json"));
 ref($policy->{groups}) eq 'ARRAY' && @{$policy->{groups}} or die "missing candidate group policy\n";
+if (-e "$tree/qualification/Cargo.toml" && !exists $policy->{qualification_workspace}) {
+    die "qualification workspace requires declared multi-lock admission; use fresh execution\n";
+}
 my %versions;
 chdir $tree or die $!;
 local $ENV{CARGO_TARGET_DIR}="$tree/target";

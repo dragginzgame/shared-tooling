@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/cargo-release-group.sh scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/cargo-release-group.sh scripts/ci/fixture-lifecycle.sh scripts/ci/check-dependency-pins.sh
 set -euo pipefail
+selection=all
+if [[ $# != 0 ]]; then
+    [[ $# == 2 && $1 == --case && $2 == inheritance ]] || exit 2
+    selection=$2
+fi
+if [[ $selection == all ]]; then bash "$0" --case inheritance; fi
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES RELEASE_COMMIT
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_NAMESPACE
 export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
@@ -12,7 +18,9 @@ fixture="$(fixture_create "$ROOT/target/fixtures/cargo-qualification.XXXXXX")"
 export TMPDIR="$fixture"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Qualification release fixtures retained"' EXIT
-export CARGO_RELEASE_METADATA_EDITOR="${CARGO_RELEASE_METADATA_EDITOR:?select the released Build editor}"
+if [[ $selection == all ]]; then
+    export CARGO_RELEASE_METADATA_EDITOR="${CARGO_RELEASE_METADATA_EDITOR:?select the released Build editor}"
+fi
 export CARGO_RELEASE_METADATA_MAX_BYTES=8388608
 export RELEASE_PREVIOUS=0.1.0 RELEASE_VERSION=0.2.0 RELEASE_DATE=2026-11-09
 helper="$ROOT/scripts/ci/cargo-release-group.sh"
@@ -65,6 +73,34 @@ cp -R "$fixture/source" "$fixture/original"
 refuse() { if "$@"; then echo 'unexpected qualification acceptance' >&2; exit 1; fi; }
 restore() { cp -R "$fixture/original/." "$fixture/source/"; }
 assert_original() { diff -r "$fixture/original" "$fixture/source"; }
+if [[ $selection == inheritance ]]; then
+    # Exercise the actual pin checker, with distinct retained private versions.
+    mkdir -p qualification/domain/second/src
+    cp qualification/domain/probe/Cargo.toml qualification/domain/second/Cargo.toml
+    perl -pi -e 's/name = "probe"/name = "second"/; s/0.7.0/0.9.0/' qualification/domain/second/Cargo.toml
+    cp qualification/domain/probe/src/lib.rs qualification/domain/second/src/lib.rs
+    perl -pi -e 's/"domain\/probe"/"domain\/probe", "domain\/second"/; s/=0.1.0/0.1.0/' qualification/Cargo.toml
+    (cd qualification && cargo generate-lockfile --offline)
+    cp -R "$fixture/source" "$fixture/inheritance-original"
+    git init -q
+    git add .
+    pins() { bash "$ROOT/scripts/ci/check-dependency-pins.sh" --consumer "$PWD" --cargo-inheritance; }
+    pins
+    for fault in public direct reverse undeclared ordinary; do
+        case "$fault" in
+            public) perl -ni -e 'print unless /publish = false/' qualification/domain/second/Cargo.toml ;;
+            direct) perl -pi -e 's/renamed.workspace = true/renamed = { package = "product", path = "..\/..\/..\/crates\/domain\/product" }/' qualification/domain/second/Cargo.toml ;;
+            reverse) printf '\n[dev-dependencies]\nprobe = { path = "../../../qualification/domain/probe" }\n' >> crates/domain/product/Cargo.toml ;;
+            undeclared) jq 'del(.qualification_workspace)' ci/cargo-release-groups.json > "$fixture/policy"; cp "$fixture/policy" ci/cargo-release-groups.json ;;
+            ordinary) rm ci/cargo-release-groups.json ;;
+        esac
+        refuse pins > "$fixture/inheritance-$fault.log" 2>&1
+        cp -R "$fixture/inheritance-original/." "$fixture/source/"
+    done
+    fixture_complete=true
+    echo 'Qualification inheritance: distinct private versions admitted; public, catalog, reverse-edge and undeclared exceptions refused'
+    exit
+fi
 bash "$helper" plan product > "$fixture/plan.json"
 cargo metadata --locked --offline --format-version 1 > "$fixture/product.json"
 # jq optional indexing must not turn a string requirement into an empty predicate

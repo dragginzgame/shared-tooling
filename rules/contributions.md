@@ -6,6 +6,11 @@ Direct local edits are the default; requested or required review contributions
 use a topic branch and PR. Human contributors use their normal repository/fork
 permissions. The agent authority below does not restrict that human workflow.
 
+Use the unmodified canonical root `CONTRIBUTING.md` and `LICENSE.md` under the
+baseline's [canonical-file policy](../TOKO-TOOLING.md#canonical-licence-and-contribution-policy).
+Keep repository-specific engineering guidance in the local overlay or its linked
+guides, and signed agreements and legal reviews outside the repository.
+
 ## Trusted pull request sources
 
 Dragginzgame repositories must restrict new pull requests to trusted repository

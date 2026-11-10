@@ -164,6 +164,12 @@ qualification packages or their versions. Qualification references the actual
 product source under test, and required composed checks remain explicit. Product
 normal/build/dev edges must not pull qualification packages back into its graph.
 
+With `qualification_workspace: "qualification"` in the product release policy,
+the inheritance checker admits each private qualification member's retained
+version after the product owner validates both graphs. Dependencies still inherit
+the qualification catalog. Directory placement alone grants no exception, and
+qualification packages never need a dummy product release group.
+
 Before planning downstream version bumps or publication order, identify the
 destination application's selected roots, targets/features and independent
 manifests/locks. In the existing issue or change notes, distinguish the requested

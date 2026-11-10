@@ -172,6 +172,19 @@ provenance according to those boundaries.
 
 ## Admission and recovery
 
+For an explicitly declared `qualification_workspace`, final-candidate projection
+uses the existing group transaction to update product references in both locks
+and the qualification catalog. Private package versions and unrelated suppliers
+remain unchanged. The native Cargo observer includes both resolved graphs,
+including external dependencies used only by qualification. Both locks belong
+to the sealed source inventory; missing or changed bytes invalidate admission.
+
+`test-cargo-stage-source.sh --qualification` exercises real Cargo execution and
+cross-group reuse with two product groups and a private qualification workspace.
+Native reuse remains Linux-qualified. Other hosts run their ordinary checks;
+PocketIC server binaries, configuration and any other consumer-specific inputs
+still require explicit stage inventory and qualification before reusing results.
+
 1. Admit the current source, index, explicit group policy, configuration and
    saved intent through the existing consumer checks. Reuse never bypasses them.
 2. Enumerate the full required stage roster. A consumer cannot select only the

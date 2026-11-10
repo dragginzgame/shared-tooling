@@ -1,9 +1,29 @@
 # Changelog
 
+## [0.39.2] - Unreleased
+
+### 🐛 Fixed
+
+- Admit preserved private versions in an explicitly declared qualification
+  workspace while retaining dependency inheritance and graph-boundary checks.
+  [#371](https://github.com/dragginzgame/toko-tooling/issues/371)
+- Qualify release-candidate projection and native stage reuse across product
+  and qualification locks, including qualification-only dependency inputs.
+  [#370](https://github.com/dragginzgame/toko-tooling/issues/370)
+
+## [0.39.1] - Unreleased
+
+### 🐛 Fixed
+
+- Admit the maintainer-approved native `pocket-ic` dependency in IC Tooling's
+  Testkit and its private qualification driver. Keep canonical alias checks,
+  target/kind restrictions, other-owner refusals and stricter consumer policies.
+- Make release-metadata fixtures independent of a main branch in detached CI
+  checkouts.
+
 ## [0.39.0] - 2026-11-10
 
 ### 🔧 Changed
-
 
 - **Licence:** This release uses the Toko Studios Network Licence 1.0. See
   [LICENSE.md](LICENSE.md) for its terms. Earlier grants remain unchanged.
@@ -11,6 +31,7 @@
 - **Breaking:** `make/consumer.mk` exposes shared release and empty-source cleanup
   targets only with `TOKO_TOOLING_RELEASE := 1`. Existing shared-release consumers
   must set it before the include; direct `make/release.mk` includes remain opt-in.
+  [#373](https://github.com/dragginzgame/toko-tooling/issues/373)
 
 - Group documentation into adoption, tools, validation, releases and fleet
   guides, with a central index and separate migration history. Update explicit
@@ -22,8 +43,10 @@
 - Support explicit `make -n ... TOKO_TOOLING_DRY_RUN=1` previews through formatting,
   setup and release prerequisites without executing shared forced recipes. Keep
   ordinary execution admission and reject the preview option without dry-run mode.
+  [#372](https://github.com/dragginzgame/toko-tooling/issues/372)
 - Mark consumer `ci` phony and point retired release settings at a revision-bound
   guide available outside minimal snapshots.
+  [#374](https://github.com/dragginzgame/toko-tooling/issues/374)
 - Prepare the pinned compiler before CI dependency checks. Update the consumer
   Make fixture with Git initialization and a valid Cargo selection/receipt before
   release checks, and verify drift prevents release execution. Keep the hook

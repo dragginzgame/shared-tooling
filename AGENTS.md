@@ -4,6 +4,9 @@ Read and apply [the Toko Tooling engineering baseline](TOKO-TOOLING.md) first.
 Toko Tooling owns that canonical baseline; this file contains only its local
 overlay. Consumers adopt the baseline and keep their own `AGENTS.md`.
 
+For changes to Toko Tooling itself, apply the
+[engineering contribution guide](docs/adoption/contributing.md).
+
 For sibling tooling audits, use [snapshot-drift](tasks/snapshot-drift.md) for
 integrity and applicable updates, then [tooling-duplication](tasks/tooling-duplication.md)
 for actual caller wiring and missed shared capabilities. An older version or

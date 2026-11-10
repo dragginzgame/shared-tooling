@@ -146,7 +146,7 @@ edit or deployment authority.
 
 Keep reporting here while it shares this maintenance lifecycle. A hosted
 application with its own data, authentication and deployment lifecycle would
-need a separate owner. The [contribution inclusion test](CONTRIBUTING.md#inclusion-test)
+need a separate owner. The [contribution inclusion test](docs/adoption/contributing.md#inclusion-test)
 explains what belongs in Toko Tooling.
 
 ## Capability ownership

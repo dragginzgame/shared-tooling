@@ -59,14 +59,23 @@ sub tree {
     }},$directory);
     tree($_) for @linked;
 }
-my $metadata=$json->decode(command('cargo','metadata','--offline','--locked','--all-features','--format-version','1'));
-for my $package (@{$metadata->{packages}}) {
-    my $manifest=$package->{manifest_path};
-    # Local tracked source is already enumerated. External package directories
-    # include expanded registry sources, not just their lockfile checksums.
-    next if index($manifest,"$root/")==0;
-    $manifest =~ s{/Cargo\.toml\z}{} or die "invalid dependency manifest path\n";
-    tree($manifest);
+my @manifests=('Cargo.toml');
+my $policy=document('ci/cargo-release-groups.json');
+if (exists $policy->{qualification_workspace}) {
+    $policy->{qualification_workspace} eq 'qualification'
+        or die "unsupported qualification workspace\n";
+    push @manifests,'qualification/Cargo.toml';
+}
+for my $manifest (@manifests) {
+    my $metadata=$json->decode(command('cargo','metadata','--offline','--locked','--all-features','--format-version','1','--manifest-path',$manifest));
+    for my $package (@{$metadata->{packages}}) {
+        my $package_manifest=$package->{manifest_path};
+        # Local tracked source is already enumerated. External package directories
+        # include expanded registry sources, not just their lockfile checksums.
+        next if index($package_manifest,"$root/")==0;
+        $package_manifest =~ s{/Cargo\.toml\z}{} or die "invalid dependency manifest path\n";
+        tree($package_manifest);
+    }
 }
 my $sysroot=command('rustc','--print','sysroot'); $sysroot =~ s/\n\z//;
 tree("$sysroot/bin");

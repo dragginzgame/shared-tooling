@@ -1,6 +1,46 @@
 # TOKO STUDIOS NETWORK LICENCE
 ## Version 1.0
 
+### Plain-language summary — non-binding
+
+This summary explains the main points; it is not part of the licence and does
+not grant rights or change any obligation. The full terms below control.
+
+- **You can build a business with this software.** You can read, modify and
+  distribute it, and build commercial applications, subject to the full terms.
+  Compliant use does not require paying Toko a licence fee or a share of revenue.
+- **Production use is for the actual public Internet Computer.** The public
+  licence does not permit production on private IC networks, forks, other
+  blockchains or substitute platforms, even if they burn ICP. Separate written
+  permission is needed for those uses.
+- **Actual network charges must use verifiable ICP-origin funding.** All cycles
+  or other credits used to pay those charges must come from recognised ICP
+  conversion on the public IC. You must keep evidence of that funding. There is
+  no extra infrastructure-value payment or additional burn for free queries.
+- **Changes to the covered software must be shared when distributed or used in
+  production.** Publish their corresponding source and build instructions under
+  this licence. Your independently written application can remain proprietary;
+  copying or adapting covered implementation code does not make it independent.
+  Distributing unchanged binaries also requires continued access to their exact
+  corresponding source. Preserve the licence and required notices.
+- **Local development and genuine support tools are allowed.** Isolated testing
+  and development can run outside the IC. Build tools, clients, administration,
+  monitoring and backups may also run elsewhere to support an authorised IC
+  deployment. This does not permit moving the live application runtime or
+  database off the authorised network.
+- **Toko Studios retains broader rights.** Within the rights granted to it, Toko
+  can keep modifications private, offer different licence terms and move the
+  software to another blockchain or platform. Covered modifications published
+  or required to be published under this licence grant Toko those rights too.
+  Other users do not automatically receive the same exceptions.
+- **Other rights and responsibilities still matter.** Third-party dependencies
+  keep their own terms, and earlier licence grants remain valid. This is a
+  source-available licence with restrictions, not an OSI-approved open-source
+  licence. The software comes without warranties; the full terms explain
+  liability limits, compliance, correction periods and termination.
+
+---
+
 **Licensing Organisation:** Toko Studios Limited
 
 **Company number or registration identifier:** IBC No. 1503915

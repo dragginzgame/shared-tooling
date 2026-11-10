@@ -106,10 +106,8 @@ fixtures, docs and cleanup. Split independent outcomes, not compiler fallout or
 each proof of the same change. Stop at new independent scope or a release boundary.
 Maintain meaningful [changelog notes](https://github.com/dragginzgame/toko-tooling/blob/626da7cd9626cc2e152594862a2d82ea82ef51da/rules/changelogs.md) once per completed batch;
 governance-only edits need no note unless they change a maintained surface or one
-is requested. Keep legal and licensing changes in their authoritative documents,
-with one narrow changelog exception: a neutral adoption notice naming the licence
-and linking to its text, without drafting history, legal analysis or rationale.
-Other legal and licensing content is excluded. This exclusion overrides
+is requested. Exclude all legal and licensing content from changelogs, including
+adoption notices and notes about this policy or its cleanup. This exclusion overrides
 general changelog coverage and fixed-issue-link requirements.
 Report outcome, relevant evidence and actionable blockers.
 Detailed line metrics and symbol inventories are optional under the
@@ -206,7 +204,8 @@ dependencies or own the solution under the [maintenance contract](https://github
   interfaces, protocol facts and lawful black-box observations. Keep upstream
   implementation text, patches and expressive tests out of the implementation
   context, including agent prompts. Record specification sources, author/context
-  separation, ownership evidence and independently written qualification tests.
+  separation and independently written qualification tests. Keep ownership
+  agreements and legal assessments in company records outside the repository.
   An agent that has read the upstream implementation must not label its rewrite
   clean-room; use a separate unexposed implementer and reviewed specification.
 - Separately licensed external dependencies, including transitive dependencies,
@@ -220,6 +219,33 @@ dependencies or own the solution under the [maintenance contract](https://github
   This policy does not authorize sibling edits or immediate fleet rewrites.
 
 This section supersedes older linked guidance permitting new maintained imports.
+
+## Canonical licence and contribution policy
+
+- Use only the Toko Studios Network Licence for first-party code. Each repository
+  keeps one root `LICENSE.md` and one root `CONTRIBUTING.md`, byte-identical to
+  the canonical files in its reviewed Toko Tooling release. Adopt updates from
+  that master deliberately; do not customise the copies or fetch moving `main`
+  during builds. Local engineering instructions belong in `AGENTS.md`.
+- Do not retain nested licence files, alternate licences, `licenses/` trees or
+  duplicate contribution policies in tracked source, including vendored tooling
+  snapshots. Package metadata points to the root licence; a standalone package
+  archive may include the canonical licence where its packaging requires it,
+  without creating a second maintained source copy.
+- Apart from these canonical files, required notices and factual metadata or
+  links to them, do not retain legal material in repository files. This includes
+  legal audits, opinions, exposure assessments, drafting history, superseded
+  drafts, signed agreements and legal commentary in docs, source comments,
+  handoffs or changelogs. Keep necessary company legal records outside the
+  repository. Technical audits and factual source-origin records remain allowed.
+- Separately licensed external dependencies remain allowed. Preserve their
+  required notices and earlier grants; this policy does not relicense them or
+  authorise deleting required records or rewriting Git history. If adoption
+  would discard an obligation or required notice, stop that migration for review
+  rather than silently stripping it or declaring compliance.
+
+This section owns the repository policy and supersedes conflicting older linked
+guidance, including permission for new licence-adoption changelog notices.
 
 ## Current dependencies and upstream independence
 
@@ -349,8 +375,7 @@ for exceptions, historical cleanup and protected release/recovery records.
 Use IcyDB-style emoji category sections in the owning release changelog; read the
 [changelog rules](https://github.com/dragginzgame/toko-tooling/blob/626da7cd9626cc2e152594862a2d82ea82ef51da/rules/changelogs.md) when updating them. Every issue fixed must
 have a direct link in that changelog before handoff, except legal and licensing
-changes, which require no issue links and permit only the neutral adoption notice
-described above: root `CHANGELOG.md` for a
+changes, which must not be recorded there: root `CHANGELOG.md` for a
 workspace without independent release groups, or `releases/<group>/CHANGELOG.md`
 for the owning group. A grouped workspace's root remains a navigation index;
 it does not need duplicate issue links. Preserve selected
