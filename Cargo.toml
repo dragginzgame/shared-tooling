@@ -1,9 +1,9 @@
 [package]
 name = "toko-tooling"
-version = "0.39.1"
+version = "0.40.0"
 edition = "2024"
 rust-version = "1.99.1"
-license = "MIT"
+license-file = "LICENSE"
 description = "Shared development tools, CI helpers and engineering rules for Dragginzgame"
 repository = "https://github.com/dragginzgame/toko-tooling"
 publish = ["crates-io"]

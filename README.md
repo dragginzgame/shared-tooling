@@ -230,4 +230,11 @@ aggregate gates for releases or explicit full-check requests.
 entry describes pending work and does not prove publication. Tags establish
 release identity. Releases and recovery follow the [release contract](docs/releases.md).
 
-Licensed under [MIT](LICENSE).
+## Licence
+
+Toko Tooling selects the [Toko Studios Network Licence 1.1](LICENSE)
+(TSNL-1.1), a source-available licence. Finalisation remains pending the
+governing-law and forum decision; the text retains its legal-review status.
+Earlier MIT grants remain available for material previously released under MIT;
+the original notice is preserved in `LICENSE`. See
+[the licensing guide](docs/licenses.md) for scope and outstanding review.
