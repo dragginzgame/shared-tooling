@@ -8,6 +8,7 @@ CLOC_ROOT = $(CLOC_PARENT)
 CLOC_PARENT ?= $(CURDIR)/..
 STACK_PARENT ?= $(CURDIR)/..
 TOKO_TOOLING_RUST := 0
+TOKO_TOOLING_RELEASE := 1
 # The producer validates its own source package; it has no installed self-snapshot.
 TOKO_TOOLING_PRODUCER := 1
 CARGO_PUBLISH_PACKAGES := toko-tooling

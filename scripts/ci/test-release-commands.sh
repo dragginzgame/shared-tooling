@@ -27,6 +27,7 @@ done
 # The include preserves defaults and consumer admission/environment even in a
 # nested snapshot. Only the runner is substituted; no release effects occur.
 mkdir -p "$fixture/included/vendor/make" "$fixture/included/vendor/scripts/ci"
+git init -q "$fixture/included"
 bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$fixture/included/vendor" make/release.mk
 cat > "$fixture/included/vendor/scripts/ci/run-release.sh" <<'RUNNER'
 #!/usr/bin/env bash
@@ -53,6 +54,12 @@ MAKE
 export RELEASE_TEST_EVENTS="$fixture/include-events"
 [[ "$(make --no-print-directory -C "$fixture/included")" == harmless ]] || exit 1
 [[ ! -e "$RELEASE_TEST_EVENTS" ]] || exit 1
+# Minimal snapshots need a usable remote guide in retired-setting diagnostics.
+if make --no-print-directory -C "$fixture/included" release-patch RELEASE_FROZEN_GROUPS=old \
+    > "$fixture/retired-settings.log" 2>&1; then exit 1; fi
+grep -Eq 'https://github.com/dragginzgame/toko-tooling/blob/[0-9a-f]{40}/docs/release-batches.md' \
+    "$fixture/retired-settings.log"
+[[ ! -e "$RELEASE_TEST_EVENTS" ]] || exit 1
 make --no-print-directory -C "$fixture/included" release-patch
 printf 'patch\norigin\nmain\n' > "$fixture/expected"
 cmp "$fixture/expected" "$RELEASE_TEST_EVENTS"
@@ -69,7 +76,7 @@ recursive_make="$(command -v make) --no-print-directory -f Makefile -f overrides
 make -j2 --no-print-directory -C "$fixture/included" nested "MAKE=$recursive_make" > "$fixture/recursive.log" 2>&1
 printf 'patch\nrecursive\nmain\n' > "$fixture/expected"
 cmp "$fixture/expected" "$RELEASE_TEST_EVENTS"
-# Parse-time admission follows the selected include, never the runtime root.
+# Execution admission follows the selected include, never the runtime root.
 # Target-specific root bindings take effect only after the includes are read.
 mkdir -p "$fixture/unselected/scripts/ci"
 cat > "$fixture/unselected/scripts/ci/check-make-execution.sh" <<'SENTINEL'
@@ -100,11 +107,14 @@ make -j2 --no-print-directory -C "$fixture/included" nested "MAKE=$recursive_mak
     "TOKO_TOOLING_ROOT=$fixture/unselected" > "$fixture/recursive-root.log" 2>&1
 printf 'patch\nrecursive\nmain\n' > "$fixture/expected"
 cmp "$fixture/expected" "$RELEASE_TEST_EVENTS"
-# An incomplete selected snapshot refuses; it cannot borrow an ambient probe.
+# Unrelated help stays available; a protected recipe cannot borrow an ambient probe.
 mv "$fixture/included/vendor/scripts/ci/check-make-execution.sh" "$fixture/saved-probe"
 : > "$RELEASE_TEST_EVENTS"
 status=0
 make --no-print-directory -C "$fixture/included" help "TOKO_TOOLING_ROOT=$fixture/unselected" \
+    > "$fixture/missing-probe.log" 2>&1 || status=$?
+[[ "$status" == 0 && ! -s "$RELEASE_TEST_EVENTS" ]] || exit 1
+make --no-print-directory -C "$fixture/included" release-patch "TOKO_TOOLING_ROOT=$fixture/unselected" \
     > "$fixture/missing-probe.log" 2>&1 || status=$?
 [[ "$status" == 2 && ! -s "$RELEASE_TEST_EVENTS" ]] || exit 1
 mv "$fixture/saved-probe" "$fixture/included/vendor/scripts/ci/check-make-execution.sh"

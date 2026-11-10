@@ -138,6 +138,9 @@ CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0 perl -MJSON::PP -e '
                                 && ($dependency->{kind} // "") eq "dev"))
                         || ($common{$name} && $package->{name} ne "ic-platform"
                             && !($package->{name} eq "ic-platform-types" && $name eq "ic_principal")
+                            && !($package->{name} eq "ic-platform-runtime" && $name eq "ic0"
+                                && !defined($dependency->{kind}) && !defined($dependency->{target})
+                                && $dependency->{optional})
                             && !($package->{name} eq "ic-wire-benchmarks" && $name eq "candid"
                                 && ($dependency->{kind} // "") eq "dev" && !defined($dependency->{target})
                                 && ref($package->{publish}) eq "ARRAY" && !@{$package->{publish}})

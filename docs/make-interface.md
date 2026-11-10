@@ -15,6 +15,14 @@ common toolset, but does not expose Rust formatting or hook installation.
 The include preserves the consumer's default goal, even when declared later.
 Parsing it never installs tools, activates hooks or starts a release.
 
+Shared releases are opt-in: set `TOKO_TOOLING_RELEASE := 1` before including
+`consumer.mk` only after providing the [release adapters](releases.md).
+The default `0` supplies no shared release or empty-directory cleanup targets
+and leaves consumer-owned release recipes alone. Existing users of the shared
+release runner must add this setting when adopting 0.39.0. A focused include of
+`make/release.mk` itself remains an explicit opt-in. `ci` is always phony;
+consumers supply their product gate alongside shared snapshot admission.
+
 To restrict release delivery, set `RELEASE_DELIVERY_POLICY` before the include
 to a consumer-owned regular data file containing `direct`, `pr`, or both, one
 per line. The common include refuses unsupported selections when a standard
@@ -46,7 +54,7 @@ reports require explicit selection.
 | `toko-tooling-check` | Offline snapshot integrity and Cargo selection agreement | `TOKO_TOOLING_MANIFEST`, default `.toko-tooling.snapshot` |
 | `toko-tooling-preview` | Preview the selected crate refresh without changing consumer files or tools | `TOKO_TOOLING_MANIFEST`, optional `TOKO_TOOLING_SOURCE` |
 | `cloc` | Workspace report | Optional report/manifest selection |
-| `release-patch`, `release-minor`, `release-major`, `release-resume` | Admission and exact-version recovery runner | Metadata, validation, delivery policy, branch and remote |
+| `release-patch`, `release-minor`, `release-major`, `release-resume` | Opt-in admission and exact-version recovery runner | `TOKO_TOOLING_RELEASE := 1`, metadata, validation, delivery policy, branch and remote |
 
 The included `tools.mk`, `rust-format.mk`, `release.mk` and `execution.mk` are
 the implementation owners. Existing focused includes remain supported; full
@@ -57,8 +65,15 @@ consumer snapshot to verify; `toko-tooling-check` is for adopted copies.
 Execution admission runs only when a protected formatting, setup or release
 recipe is selected, including through a wrapper target. Unrelated `make -n`
 previews and completion queries do not execute the probe. Protected recipes still
-reject ignore-errors, dry-run, touch and question modes. Consumer-owned effectful
-targets can add `| toko-execution-check` to their prerequisites.
+reject ignore-errors, dry-run, touch and question modes by default. For an explicit
+preview, use `make -n check TOKO_TOOLING_DRY_RUN=1` (likewise `patch`, `setup-dev`,
+`install-dev` or a shared target). This option requires GNU Make dry-run mode;
+shared recipes print their commands with forced/recursive execution disabled.
+The guard still runs its isolated read-only probe. Shared recursive Make commands
+are printed without traversing their submakes. Consumer-owned `+` recipes and
+Make expansions retain GNU Make's normal behavior and must be reviewed separately.
+Consumer-owned effectful targets can add `| toko-execution-check` to their
+prerequisites; opting into preview does not suppress their own `+` recipes.
 Set `TOKO_TOOLING_INSTALL_TOOLS=0` for snapshot-only install/update; normal updates
 still prepare and check tools. See the [adoption guide](consuming-snapshots.md#baseline-filename-migration-in-0370)
 for bootstrap, prerequisites and the hard-cut migration.
@@ -380,7 +395,8 @@ No consumer fixture body is run by these prefix-only probes.
 
 Standard release entrypoints and release preflight automatically run
 `clean-empty-source-dirs`, including before frozen-batch capture. No consumer
-configuration is required. The helper selects existing conventional source roots:
+cleanup configuration is required once shared releases are opted into. The helper
+selects existing conventional source roots:
 `src`, `crates`, `apps`, `backend`, `fleets`, `canisters`, `packages`, `tests`,
 `testing`, `schema`, `profiler`, `scripts`, `frontend/src` and `frontend/tests`.
 Repositories without those roots report zero deletions. Application deployment

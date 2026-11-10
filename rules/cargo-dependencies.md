@@ -16,6 +16,11 @@ Apply the baseline's
 when adding or updating dependencies. General-purpose selections are independent
 of older DFINITY transitive requirements; justified multiple versions are allowed.
 
+External dependencies retain their own licences. Bringing their implementation
+into an owned package must follow the
+[independent implementation rule](../TOKO-TOOLING.md#independently-owned-implementations);
+a workspace member, renamed package or Platform adapter is not an exemption.
+
 ## Shared boundary check
 
 Consumers can adopt the reviewed inventory in `ci/external-ic-dependencies.txt`

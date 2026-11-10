@@ -93,9 +93,11 @@ to include siblings; cross-repository delivery requires an explicit request.
 - **Do not submit PRs to DFINITY crates or repositories, or make our work depend
   on DFINITY accepting, implementing, maintaining or publishing changes.** Plan
   against the capabilities of already available, qualified dependencies.
-- When those capabilities are insufficient, maintain the necessary implementation
-  ourselves at its canonical owner or change our code so the dependency is no
-  longer needed. Apply the [maintenance and provenance rules](dependency-pinning.md#maintaining-upstream-code)
+- When those capabilities are insufficient, independently implement the necessary
+  behavior at its canonical owner or change our code so the dependency is no
+  longer needed. Do not take over a DFINITY fork as the ownership solution.
+  Apply the [independent implementation rule](../TOKO-TOOLING.md#independently-owned-implementations),
+  the [maintenance and provenance rules](dependency-pinning.md#maintaining-upstream-code)
   and the [IC Platform boundary](cargo-dependencies.md#external-ic-dependency-boundary).
   This does not require removing working dependencies or rewriting cryptography.
 - Retire issues whose proposed outcome requires future DFINITY work as not

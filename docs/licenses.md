@@ -21,6 +21,13 @@ Toko Tooling itself uses the [root MIT license](../LICENSE). These templates
 do not retroactively change consumer releases or third-party license grants.
 Previously granted rights and third-party licenses remain intact.
 
+New in-house code must follow the
+[independent implementation rule](../TOKO-TOOLING.md#independently-owned-implementations).
+Our selected licence requires documented rights in the implementation; maintaining
+an upstream fork does not establish those rights. External dependencies remain
+separately licensed, and existing imports retain their terms and notices during
+an explicitly recorded migration or exception. Removing a notice is not a migration.
+
 ## Proposed TRNL-1.0: release review
 
 The [Toko Reciprocal Network Licence draft](../licenses/Toko-Studios-1.0.md)

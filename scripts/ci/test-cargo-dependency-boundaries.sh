@@ -3,8 +3,8 @@
 set -euo pipefail
 selection=all
 if [[ $# != 0 ]]; then
-    [[ $# == 2 && $1 == --case && ($2 == native-client || $2 == cbor || $2 == hashing || $2 == wire-oracle) ]] || {
-        echo 'usage: test-cargo-dependency-boundaries.sh [--case native-client|cbor|hashing|wire-oracle]' >&2; exit 2;
+    [[ $# == 2 && $1 == --case && ($2 == native-client || $2 == cbor || $2 == hashing || $2 == wire-oracle || $2 == runtime-ic0) ]] || {
+        echo 'usage: test-cargo-dependency-boundaries.sh [--case native-client|cbor|hashing|wire-oracle|runtime-ic0]' >&2; exit 2;
     }
     selection="$2"
 fi
@@ -36,6 +36,36 @@ chmod +x "$FIXTURE/bin/cargo"
 export PATH="$FIXTURE/bin:$PATH"
 perl -MJSON::PP -e 'print encode_json({version => 1, workspace_root => $ARGV[0], workspace_members => ["consumer"], packages => [{id => "consumer", name => "consumer", dependencies => [{name => "substrate", rename => "hidden", kind => "dev", target => "cfg(windows)"}]}]})' "$FIXTURE" > "$FIXTURE/metadata.json"
 cp "$FIXTURE/metadata.json" "$FIXTURE/valid-metadata.json"
+# Runtime owns optional, portable raw IC0; the exception adds no SDK/executor owner.
+if [[ $selection == all || $selection == runtime-ic0 ]]; then
+    for mode in valid renamed dev build target unconditional other-owner other-sdk tightened; do
+        perl -MJSON::PP -e '
+          my ($root,$mode)=@ARGV;
+          my $dependency={name=>"ic0",kind=>undef,target=>undef,optional=>JSON::PP::true};
+          my $package={id=>"member",name=>"ic-platform-runtime",dependencies=>[$dependency]};
+          $dependency->{rename}="system_api" if $mode eq "renamed";
+          $dependency->{kind}=$mode if $mode eq "dev" || $mode eq "build";
+          $dependency->{target}="cfg(windows)" if $mode eq "target";
+          $dependency->{optional}=JSON::PP::false if $mode eq "unconditional";
+          $dependency->{name}="ic-cdk-executor" if $mode eq "other-sdk";
+          $package->{name}="consumer" if $mode eq "other-owner";
+          print encode_json({version=>1,workspace_root=>$root,workspace_members=>["member"],packages=>[$package]});
+        ' "$FIXTURE" "$mode" > "$FIXTURE/metadata.json"
+        printf '[{"dependency":"ic0","allowed_packages":["ic-platform-runtime","consumer"]}]\n' > "$FIXTURE/ci/cargo-dependency-boundaries.json"
+        if [[ $mode == tightened ]]; then
+            printf '[{"dependency":"ic0","allowed_packages":[]}]\n' > "$FIXTURE/ci/cargo-dependency-boundaries.json"
+        fi
+        if (cd "$FIXTURE" && bash "$root/scripts/ci/check-cargo-dependency-boundaries.sh" --consumer "$FIXTURE" --external-ic) > "$FIXTURE/runtime-$mode.log" 2>&1; then
+            [[ $mode == valid || $mode == renamed ]] || { echo "unexpected runtime admission: $mode" >&2; exit 1; }
+        else
+            [[ $mode != valid && $mode != renamed ]] || { cat "$FIXTURE/runtime-$mode.log" >&2; exit 1; }
+            grep -q 'Forbidden direct Cargo dependencies' "$FIXTURE/runtime-$mode.log"
+        fi
+    done
+    cp "$FIXTURE/valid-metadata.json" "$FIXTURE/metadata.json"
+    echo 'Runtime IC0 admission: optional registry-facing owner, aliases and refusal cases passed'
+    if [[ $selection == runtime-ic0 ]]; then fixture_complete=true; exit 0; fi
+fi
 # Only the named private, unconditional development oracle is admitted.
 if [[ $selection == all || $selection == wire-oracle ]]; then
     for mode in valid normal build target published other-owner other-sdk tightened; do

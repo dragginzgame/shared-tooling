@@ -83,6 +83,9 @@ jobs:
         uses: ./.github/actions/cache-tool-downloads
         with:
           mode: save
+      - name: Prepare pinned compiler for dependency checks
+        id: lint-toolchain
+        run: bash scripts/dev/prepare-rust-toolchain.sh --toolchain-file rust-toolchain.toml
       - name: Check shell and workflow sources
         shell: bash
         run: |

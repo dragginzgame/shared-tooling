@@ -44,6 +44,22 @@ The baseline's detailed-reference revision is a policy selection, not a moving
 the detailed rules themselves, review and update that reference deliberately;
 do not claim a newer policy is adopted merely because its files are packaged.
 
+## Consumer Make changes in 0.39.0
+
+Shared release commands now require `TOKO_TOOLING_RELEASE := 1` before including
+`make/consumer.mk`. Set it only for consumers with the required release adapters;
+otherwise shared release and cleanup targets are absent. Directly including
+`make/release.mk` remains an explicit selection. This is a breaking Make interface
+change; consumers already using the shared release runner must add the setting.
+
+For read-only previews through shared prerequisites, use
+`make -n check TOKO_TOOLING_DRY_RUN=1`, substituting the desired goal. Shared
+formatting, setup, release and publication recipes print without forced execution.
+The option refuses without dry-run mode; ordinary failure admission stays enabled.
+Review consumer-owned recursive/effectful recipes separately, as described in the
+[Make interface](make-interface.md). The shared `ci` target is phony even when a
+`ci/` directory exists; product CI checks remain consumer-owned.
+
 ## Baseline filename migration in 0.37.0
 
 This is a hard cut to the Toko Tooling name, including `TOKO-TOOLING.md`,
@@ -70,6 +86,13 @@ that prior revision in its ancestry. Git-to-crate migration uses the installer's
 proof. Preview first and retain the old receipt until admission succeeds.
 
 ### Adoption choices and prerequisites
+
+Adopting the crate also adopts its Rust 1.99.1 minimum. Its
+`package.rust-version = "1.99.1"` applies when Cargo builds it as a dev-dependency
+in every member's test graph, even though the crate distributes tooling and needs
+no Rust imports. Cargo/Rust 1.91 cannot build those tests. Prepare a compiler that
+satisfies this requirement before running tests or other commands that compile
+dev-dependencies; this requirement is separate from snapshot installation.
 
 - Keep the exact root Cargo pin inherited by every real member, Cargo.lock and
   installed-byte verification. A single carrier or metadata-only pin is not an
@@ -1195,8 +1218,9 @@ include, and include its `make/consumer.mk`. `HOST_TOOL_VERSIONS`,
 exceptions; their defaults use the snapshot's `ci/tool-versions.env` and
 `ci/ic-tools.tsv`. Command selections target the
 consumer checkout; host/IC payloads use the [shared per-user store](local-setup.md#shared-executable-storage).
-The [consumer Make interface](make-interface.md) selects the setup, release and
-Rust formatting modules and supplies hook installation and snapshot checking.
+The [consumer Make interface](make-interface.md) selects setup and Rust formatting
+and supplies hook installation and snapshot checking. Shared releases require
+`TOKO_TOOLING_RELEASE := 1` before the include and consumer-owned release adapters.
 Select `make/consumer.mk` and review its derived closure, keeping product admission,
 metadata, validation and custom formatter adapters local. Non-Rust consumers explicitly
 set `TOKO_TOOLING_RUST := 0`. Existing focused module includes remain supported;

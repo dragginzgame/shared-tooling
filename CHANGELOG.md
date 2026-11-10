@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.39.0] - Unreleased
+
+### 🔧 Changed
+
+- **Breaking:** `make/consumer.mk` exposes shared release and empty-source cleanup
+  targets only with `TOKO_TOOLING_RELEASE := 1`. Existing shared-release consumers
+  must set it before the include; direct `make/release.mk` includes remain opt-in.
+
+### 🩹 Fixed
+
+- Support explicit `make -n ... TOKO_TOOLING_DRY_RUN=1` previews through formatting,
+  setup and release prerequisites without executing shared forced recipes. Keep
+  ordinary execution admission and reject the preview option without dry-run mode.
+- Mark consumer `ci` phony and point retired release settings at a revision-bound
+  guide available outside minimal snapshots.
+- Prepare the pinned compiler before CI dependency checks. Update the consumer
+  Make fixture with Git initialization and a valid Cargo selection/receipt before
+  release checks, and verify drift prevents release execution. Keep the hook
+  installation target unavailable when Rust tooling is disabled.
+- Admit the optional, unconditional normal `ic0` dependency of
+  `ic-platform-runtime`, allowing Platform to retire copied System API bindings.
+  Other owners, SDK dependencies, dev/build/target-specific edges and local
+  policy refusals remain enforced.
+
+### 📝 Documentation
+
+- State that the crate's Rust 1.99.1 minimum applies to every adopting member's
+  dev-dependency/test graph, including consumers previously testing with 1.91.
+- Require independently authored in-house implementations instead of copied or
+  adapted third-party code, including DFINITY forks. Define clean-room evidence,
+  preserve separately licensed external dependencies and cryptographic safeguards,
+  and require recorded migration plans or exceptions for existing imports without
+  stripping their licences or notices.
+
 ## [0.38.3] - Unreleased
 
 ### 🩹 Fixed

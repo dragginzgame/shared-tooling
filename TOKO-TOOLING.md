@@ -186,6 +186,36 @@ when changing interfaces, persistence or installation/recovery behavior.
 Do not submit DFINITY PRs or depend on future DFINITY work. Use available qualified
 dependencies or own the solution under the [maintenance contract](https://github.com/dragginzgame/toko-tooling/blob/626da7cd9626cc2e152594862a2d82ea82ef51da/rules/engineering-details.md#dfinity-dependencies-own-the-solution).
 
+## Independently owned implementations
+
+- Code brought in-house must be independently authored, with documented rights
+  to distribute it under our selected licence. Do not copy, adapt, translate or
+  vendor third-party implementations into owned source. This applies throughout
+  our first-party package graph, including tests, tools, generated source and
+  embedded assets; moving code to another owned crate does not evade the rule.
+- In particular, do not import or fork unmaintained DFINITY code as a way to
+  remove a dependency. Taking over maintenance does not transfer copyright or
+  remove upstream licence conditions. Implement the required behavior independently
+  or retain a qualified external dependency.
+- For a clean-room replacement, derive a behavior specification from published
+  interfaces, protocol facts and lawful black-box observations. Keep upstream
+  implementation text, patches and expressive tests out of the implementation
+  context, including agent prompts. Record specification sources, author/context
+  separation, ownership evidence and independently written qualification tests.
+  An agent that has read the upstream implementation must not label its rewrite
+  clean-room; use a separate unexposed implementer and reviewed specification.
+- Separately licensed external dependencies, including transitive dependencies,
+  remain allowed under the dependency rules. Their distribution obligations still
+  apply; this is not a claim that the complete binary has only our licence.
+  Do not rewrite cryptography merely to remove third-party code or notices.
+- Existing imports require an explicit, scoped migration plan or maintainer
+  exception before claiming compliance. Preserve applicable licences, notices and
+  provenance while that material remains. Do not strip credits, rebrand a fork,
+  or claim that a rewrite automatically clears ownership or patent questions.
+  This policy does not authorize sibling edits or immediate fleet rewrites.
+
+This section supersedes older linked guidance permitting new maintained imports.
+
 ## Current dependencies and upstream independence
 
 - When adding or updating a direct dependency, select its latest stable,
