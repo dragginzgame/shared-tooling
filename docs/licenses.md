@@ -21,6 +21,40 @@ Toko Tooling itself uses the [root MIT license](../LICENSE). These templates
 do not retroactively change consumer releases or third-party license grants.
 Previously granted rights and third-party licenses remain intact.
 
+## Proposed TRNL-1.0: release review
+
+The [Toko Reciprocal Network Licence draft](../licenses/Toko-Studios-1.0.md)
+is not an adopted master and is not approved for publication or consumer
+relicensing. The MIT and Dragginz selections above remain unchanged. This
+checklist is release documentation, not part of the proposed legal instrument.
+
+The draft permits compliant corporate use on the canonical IC, preserves Toko's
+separate licensing rights, and retains Toko Studios Ltd as the Organisation.
+It does not implement a holding-company transfer or founder-control protection.
+The selected policy permits timely cure of eligible inadvertent source defects
+without claims based solely on the cured defect; a bounded, documented
+good-faith valuation true-up; and exact-source access for unchanged binary
+redistribution, with fallback responsibility when upstream hosting fails.
+
+Before adoption:
+
+- Confirm the Organisation's exact registered identity and select governing law
+  and forum with counsel. The draft's jurisdiction placeholders remain open.
+- Verify employee, contractor and contributor copyright and patent authority for
+  every designated release. Company membership and repository access are not
+  evidence of assignment. Do not trim the draft's ownership cautions until the
+  required procedures and rights records exist.
+- Establish the repository contribution-eligibility policy and acceptance
+  process. The draft does not itself impose company-member-only acceptance.
+- Validate Cloud Engine classification and funding evidence against intended
+  deployments, transferred credits, pools and mixed balances. A licence clause
+  does not prove that operators can obtain the required records.
+- Exercise the 30-day valuation true-up and source-correction rules against
+  realistic disputes, outages and missed deadlines. Confirm enforcement,
+  notices, exceptions and remedies under the selected law.
+- Preserve earlier licence grants and independently licensed dependencies, and
+  verify the actual licensed material and notices in each publication artifact.
+
 ## Patent protection: Dragginz 1.1
 
 The ICP burn requirements are economic conditions for Live Deployment, separate

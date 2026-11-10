@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.38.3] - Unreleased
+
+### 🩹 Fixed
+
+- Include the standard qualification workspace in repository and sibling LOC
+  summaries. Deduplicate shared source paths, preserve product attribution and
+  reject failed or inconsistent combined scans; explicit manifest selections
+  still count one workspace.
+
+### 📝 Documentation
+
+- Clarify in the proposed TRNL-1.0 draft that Toko's reserved rights permit
+  private modifications and separate proprietary licensing, with explicit
+  written exceptions for recipients and preservation of third-party rights.
+  The draft remains unapproved and does not change any adopted licence.
+- Resolve draft host-operation exceptions, combined-build source boundaries,
+  funding allocations, advance-coverage shortfalls and correction deadlines.
+  Record ownership, governing-law and practical evidence checks still required
+  before adoption; preserve the current entity and permitted corporate IC use.
+- Add timely-cure protection, a bounded good-faith valuation true-up and source
+  access for unchanged binaries to the draft. Clarify objective host-use limits
+  and temporary network outages; move the release checklist into licensing docs.
+
 ## [0.38.2] - 2026-11-09
 
 ### 🩹 Fixed

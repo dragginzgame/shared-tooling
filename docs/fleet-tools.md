@@ -11,7 +11,7 @@ host tools in this checkout's `.tools/host/bin` take precedence over `PATH`.
 
 ## Cargo workspace LOC report
 
-For one row per sibling root workspace:
+For one row per sibling repository, including product and qualification code:
 
 ```bash
 make cloc
@@ -26,6 +26,7 @@ bash scripts/dev/cloc.sh /path/to/repository
 bash scripts/dev/cloc.sh -d 0 /path/to/projects
 bash scripts/dev/cloc.sh -d 2 /path/to/projects
 bash scripts/dev/cloc.sh --manifest testing/Cargo.toml /path/to/repository
+bash scripts/dev/cloc.sh --manifest qualification/Cargo.toml /path/to/repository
 bash scripts/dev/cloc.sh --json /path/to/repository
 bash scripts/dev/cloc.sh --check-tools
 ```
@@ -46,7 +47,7 @@ the exclusions above. Each admitted Rust source path counts once, including
 copies with identical bytes. Retained source fixtures and unreachable source
 still belong to this maintenance footprint; this is not a compiled-code count.
 
-The unified [cloc.sh](../scripts/dev/cloc.sh) reports workspace summaries by
+The unified [cloc.sh](../scripts/dev/cloc.sh) reports repository summaries by
 default; `-d 0` adds individual crate rows without changing totals. Terminal names
 are green for all workspaces (including non-Cargo repositories with `n/a` counts),
 blue for crates and white for modules. Redirected output,
@@ -69,8 +70,11 @@ remain merged. Selected totals and JSON include only that crate/branch; inline
 modules still belong to their containing file. Existing directory paths take
 precedence over crate names. Unknown names fail explicitly.
 The target defaults to the current directory. A parent directory selects its
-immediate repositories; a checkout selects its root workspace. `--json` selects
-one workspace and always includes its crate rows.
+immediate repositories; a checkout includes its root workspace and the standard
+`qualification/Cargo.toml` workspace when present. `--json` reports one repository
+or explicit workspace selection and always includes its crate rows. Crate/module
+selectors still select root-workspace packages; use `--manifest` to select a
+qualification package or another independent workspace.
 
 The parent-directory report visits
 immediate Git checkouts in name order, including linked worktrees and hidden
@@ -78,9 +82,25 @@ directories, skipping symlink aliases and non-repositories.
 Each workspace checks its prerequisites. A repository without a root manifest shows `N/A`; a failed
 count shows `ERROR`, retains other rows and makes the command fail. Totals sum
 successful workspaces; failures
-label the sum `TOTAL (partial)`. Independent excluded workspaces are not silently
-combined with root counts. Select them explicitly with `--manifest` or the
-consumer Make interface's `CLOC_MANIFEST` input.
+label the sum `TOTAL (partial)`. A failure in qualification fails that repository's
+row rather than presenting an incomplete root-only count as successful.
+
+Repository aggregation counts each canonical source path once across product and
+qualification. Shared paths retain the product workspace's category partitions
+and accounting owner, are marked shared, and combine target-usage evidence.
+Different paths with identical contents still count separately. If a shared
+path's recorded source digest changes between scans, the report fails and asks
+for a rerun with stable inputs. Crate rows from qualification use the display
+prefix `qualification/`, including when package names match between workspaces.
+Combined JSON includes `scope: "repository"`, the ordered `manifests` roster,
+and each counted file's owning `workspace_manifest`; its totals and crate rows
+are computed from the deduplicated file inventory.
+
+Explicit `--manifest` (including the root `Cargo.toml`) or the consumer Make
+interface's `CLOC_MANIFEST` input counts only that selected workspace. Other
+independent workspaces are not recursively discovered; select them explicitly.
+Root-package filesystem discovery does not absorb the separate qualification
+tree, although explicitly referenced shared targets/modules still count.
 
 ### Source classification
 
