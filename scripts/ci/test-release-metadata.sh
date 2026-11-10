@@ -22,6 +22,9 @@ git clone --quiet --shared --no-checkout "$ROOT" "$FIXTURE/repository"
 cd "$FIXTURE/repository"
 git read-tree HEAD
 git checkout-index --all
+# Detached CI source checkouts need not expose a main branch to the clone.
+# This fixture owns the remote-tracking evidence used by its release scenarios.
+git update-ref refs/remotes/origin/main HEAD
 # Metadata qualification does not install real tools. Setup/check routing through
 # the real Makefile and runner is covered by test-release-editor-setup.sh.
 cat > "$FIXTURE/tool-make" <<'MAKE'
