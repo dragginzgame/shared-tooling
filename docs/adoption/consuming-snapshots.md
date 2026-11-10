@@ -26,18 +26,20 @@ guide, audit and maintenance task into a product snapshot. This changes document
 selection, not the Cargo pin, receipt, installer or policy authority contract.
 Executable entrypoints still carry their required executable companions.
 
-Choose the baseline, `make/consumer.mk` and the hook as needed. For offline policy
-access, additionally select the required guide entrypoints or the complete list
-in `scripts/distribution/governance-files.txt`. That list intentionally remains
-the comprehensive option; selecting all of it does not produce a minimal bundle.
-Keep required references available before a task; a small installation is not
-permission to skip the detailed rules. The crate retains the full documents.
+Choose the baseline, `make/consumer.mk` and the hook as needed. Read supporting
+guides, rules, audit methods and task catalogs through reviewed commit-pinned
+upstream links. Do not select reference docs for consumer installation. The
+`scripts/distribution/governance-files.txt` catalog remains a producer fixture
+inventory, not the recommended consumer entrypoint set. The crate retains the
+full upstream documents; their presence in the archive does not require exporting
+them into the repository. Required references must still be read before a task.
 
 During an ordinary refresh, preview the selected roots. Previously derived,
 unchanged files that are no longer required retire through the exporter. Explicitly
 selected roots remain selected: use the complete `--entrypoint` list to remove
-unneeded audit/task roots, preserving guides used by local commands or offline
-workflows. Never edit receipt records or delete snapshot files by hand. No
+unneeded documentation/audit/task roots, preserving actual executable runtime
+inputs. Update consumer-owned links to pinned upstream URLs in the same batch.
+Never edit receipt records or delete snapshot files by hand. No
 immediate refresh is required for an intact consumer installation.
 
 Policy adoption uses the checklist in `TOKO-TOOLING.md`: binding rules,
@@ -586,8 +588,8 @@ through the exporter and consumer diff; ordinary builds retain offline checks.
 ## Shared baseline and local instructions
 
 [`TOKO-TOOLING.md`](../../TOKO-TOOLING.md) is the reusable engineering baseline.
-Vendor it with its linked guides so the complete rule set remains readable
-offline. Keep the consumer's `AGENTS.md` as its entry point and local overlay;
+Install only that baseline; read its linked guides online at their immutable
+reviewed revisions. Keep the consumer's `AGENTS.md` as its entry point and local overlay;
 do not copy Toko Tooling's `AGENTS.md` over it.
 
 Keep the local entry point organised around four things: the adopted baseline,
@@ -607,38 +609,32 @@ Do not impose a line quota or erase approved layout, validation, release or asse
 exceptions merely to make overlays look identical. Check local entry points and
 their linked governance for contradictory authority before declaring alignment.
 
-For a new governance snapshot, use the canonical
-[governance file list](../../scripts/distribution/governance-files.txt), including
-linked guides and required helpers. Add selected tools explicitly to the command:
+For a new consumer snapshot, select the baseline and the executable interfaces
+actually used by the repository. For example:
 
 ```bash
 toko_tooling=/path/to/toko-tooling
-files=()
-while IFS= read -r file; do
-  files+=(--entrypoint "$file")
-done < "$toko_tooling/scripts/distribution/governance-files.txt"
 bash "$toko_tooling/scripts/distribution/refresh-consumer.sh" \
-  --consumer /path/to/consumer "${files[@]}"
+  --consumer /path/to/consumer --entrypoint TOKO-TOOLING.md \
+  --entrypoint make/consumer.mk --entrypoint .githooks/pre-commit
 ```
 
-The distribution fixture exports this list and checks its Markdown links inside
-the isolated consumer. The source checkout's link check alone cannot establish
-that exported documentation is complete. Keep the list current when adding guides.
-It is an initial root selection. Subsequent refreshes derive script companions,
-but do not implicitly adopt new governance roots from a changed list.
+Add other directly called executable helpers explicitly. The producer's
+[governance catalog](../../scripts/distribution/governance-files.txt) and its
+export-link fixture still exercise document integrity; that test coverage is not
+an instruction for consumers to copy the documentation library.
 
-For an existing snapshot with recorded roots, add paths with `--add-entrypoint`
-procedure above, including all shared rule files. Include
-`docs/releases/releases.md`, the release runner and its version/changelog helpers when
-adopting the release command contract. The local `AGENTS.md` must direct contributors to
+For an existing snapshot, use a complete retained `--entrypoint` selection to
+remove reference-doc roots; `--add-entrypoint` cannot retire an old root. Select
+the release runner and its operational helpers when adopting release commands,
+and link to their upstream guide. The local `AGENTS.md` must direct contributors to
 `TOKO-TOOLING.md`, identify `.toko-tooling.snapshot` as its source record, and
 state local product contracts, commands and approved exceptions. Resolve local
 conflicts before claiming adoption. Do not edit a vendored shared document in
 place or attribute dirty upstream bytes to a committed revision.
 
-When adopting PR contribution authority, add `rules/contributions.md` explicitly
-and refresh the baseline, changelog/maintenance rules, release guidance and
-reviewable-changes guide together. Remove blanket agent-commit prohibitions from
+When adopting PR contribution authority, read the baseline's pinned contribution,
+changelog/maintenance and release references online. Remove blanket agent-commit prohibitions from
 the consumer's `AGENTS.md`, `CLAUDE.md` and other active overlays so an authorized
 PR can include commits and a topic-branch push. Retain required reviews/checks,
 branch protections and separate merge/release authority. Historical audit reports
@@ -690,8 +686,8 @@ workflow or authorization to dispatch CI or start a schedule.
 Consumers using the maintenance rule's exact-commit CI inspection command also
 refresh `scripts/dev/gh-ci.sh` from that reviewed revision. It remains a read-only
 interactive helper using the consumer checkout and authenticated GitHub CLI.
-When adopting the repeatable task commands, include the `tasks/` catalog,
-definitions, prompt and schedule guidance from the governance file list. Toko
+When adopting repeatable tasks, read the catalog, definitions and schedule
+guidance at their pinned upstream revision. Toko
 Tooling coordinates central runs; consumers retain their focused commands and
 product scope. The operational runner and systemd units are optional: their
 selection roots are listed in
@@ -806,21 +802,19 @@ Shared fixtures that remain dependencies of another selected root stay exported.
 
 ## Audit method adoption
 
-Audit methods are optional export roots, not an automatic baseline dependency.
-Select `audits/README.md` and its companions when offline audit procedures are
-needed; otherwise use the baseline's revision-bound method links for an explicitly
+Audit methods remain upstream. Use the baseline's revision-bound method links for an explicitly
 requested audit. The snapshot's reviewed source revision identifies the common
 contract; do not read methods from a moving sibling checkout or copy uncommitted
 documents and attribute them to an older revision.
 
 For each selected existing local audit, map its questions to the shared method
 and retain product-specific obligations in a local overlay under the consumer's
-existing audit directory. Link to the vendored `audits/` definition and record
+existing audit directory. Link to the pinned upstream `audits/` definition and record
 local source roots, authority boundaries, focused checks, allowed measurement
 methods and report destination. Resolve conflicts with the common contract,
 including automatic fixes, unconditional broad gates and composite scores.
 
-Replace duplicated generic prose only after the snapshot is installed. Update
+Replace duplicated generic prose after verifying the pinned references. Update
 local catalogs, entrypoints and any method fingerprints in the same batch.
 Where a frozen method is needed to reproduce earlier reports, preserve its old
 identity as historical and ineligible for new runs; do not label historical

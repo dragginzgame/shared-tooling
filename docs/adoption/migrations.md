@@ -1,5 +1,22 @@
 # Consumer migration history
 
+## Online reference documentation in 0.39.5
+
+This replaces the 0.39.3–0.39.4 plan to install shared docs under a separate
+directory. Keep root `TOKO-TOOLING.md`, required executable entrypoints and their
+runtime inputs; read reference docs, detailed rules, audits and task catalogs
+online using reviewed commit-pinned links. Do not copy the reference library or
+create `docs/toko-tooling/`. Product docs retain their own topic organisation.
+
+For an existing installation, identify managed files from the snapshot receipt.
+Replace consumer-owned links with pinned upstream URLs, then preview a refresh
+with the complete retained `--entrypoint` set, omitting reference-document roots.
+The exporter retires unchanged files no longer needed by that selection; required
+runtime inputs stay. Resolve changed managed copies explicitly, preserve native
+files and verify the resulting receipt. Adding entrypoints alone does not remove
+old selections. No exporter relocation feature or upstream directory move is
+needed. This policy does not automatically refresh sibling repositories.
+
 ## Documentation organisation clarification in 0.39.4
 
 Every repository should organise product-owned docs by meaningful topic. That

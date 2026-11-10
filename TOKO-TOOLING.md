@@ -1,5 +1,5 @@
 # Toko Tooling Engineering Baseline
-<!-- Detailed references are pinned; select governance entrypoints explicitly for offline use. -->
+<!-- Detailed references are pinned online; do not vendor the reference documentation. -->
 
 Toko Tooling owns the common engineering rules for `dragginzgame` repositories.
 Read this core, the local `AGENTS.md` and the current handoff when present. Read
@@ -10,10 +10,11 @@ same approach: mandatory local constraints first, task-specific references after
 
 Detailed links below identify an immutable reviewed policy revision. Selecting
 this file does not install their documents, audit procedures or task runners.
-For offline work, explicitly select the needed guides or the complete governance
-entrypoint list from the same tooling release; do not assume linked content is
-available locally. The full crate also contains those documents. If a required
-reference is unavailable, obtain the pinned reference before the affected task.
+Read those references online at their explicit reviewed revision, never moving
+`main` or a sibling checkout. Do not copy their documents into consumers. The
+full upstream crate retains them for producer use. If a required reference is
+unavailable, report that specific blocker before the affected action; do not
+silently substitute a different revision or skip the rule.
 
 ## Adoption and local authority
 
@@ -49,55 +50,30 @@ crate or vendoring this file grants no exception and does not activate audits.
 Every repository must organise its documentation by topic and make ownership
 clear. Keep product-owned documentation under `docs/`; use meaningful directories
 as the collection grows rather than accumulating unrelated files at its root.
-The topics below are examples, not mandatory empty directories:
+Use topics such as architecture, design and operations as needed; do not create
+empty directories or require a `docs/<product-name>/` wrapper.
 
-```text
-docs/
-  toko-tooling/       # Only when Toko Tooling docs are installed
-    adoption/
-    releases/
-    tools/
-    validation/
-    principles/
-    rules/
-    audits/
-    tasks/
-  architecture/      # Product-owned documentation
-  design/
-  governance/
-```
+- Keep root `TOKO-TOOLING.md` as the small installed baseline and `AGENTS.md`
+  as the local overlay. Read shared guides, detailed rules, audit procedures and
+  task catalogs through immutable upstream links. Do not vendor, paraphrase into
+  parallel policies, or create `docs/toko-tooling/` for those references.
+- Install only the required executable entrypoints and their declared runtime
+  inputs. A Markdown prompt actually consumed by a selected executable is a
+  runtime input, not a reason to install the reference library. Root licence
+  and contribution files retain their separate canonical-file contract below.
+- The snapshot receipt identifies existing managed copies. During a scoped
+  refresh, replace consumer-owned links to them with reviewed commit-pinned URLs
+  and supply the complete retained entrypoint list: baseline, needed executables
+  and operational inputs. Preview the exporter removing unchanged doc copies
+  that are no longer required. Preserve native files and resolve modified
+  managed files explicitly; do not hand-edit receipts or bulk-delete directories.
+- Organisation of native docs can proceed independently. Retiring existing
+  shared copies uses the current exporter, without a new directory migration or
+  relocation feature. The upstream repository owns the reference documentation.
 
-- Toko Tooling's installed reference docs, rules, audit procedures and task
-  guides belong together under `docs/toko-tooling/`, separate from product docs.
-  Install only the shared guides the repository needs; pinned upstream links
-  can serve the others. Do not create this directory when no shared docs are
-  installed. Keep `TOKO-TOOLING.md` at the
-  repository root as the baseline entrypoint. Root licence and contribution
-  files retain their separate canonical-file contract below.
-- Product documentation stays outside that reserved directory, organised by
-  topic. Do not require `docs/<product-name>/` or relocate native documentation
-  merely to accommodate shared files. Consumer-specific overlays and audit
-  results belong to the consumer, not the managed namespace.
-- Establish the canonical paths in Toko Tooling itself and export them unchanged.
-  This is an upstream source-path migration, not a requirement for a new exporter
-  relocation feature. Consumers must not implement their own path translation.
-  The snapshot receipt remains the authority for installed ownership; do not
-  manually move its files or rewrite it to conceal a local relocation.
-- A layout migration must update upstream links, companion declarations, entrypoint
-  catalogs, affected callers and fixtures together. Preview the refresh, retire
-  only unchanged receipt-owned predecessors, and preserve native files and edits.
-- The migration's boundary check must verify that installed shared documentation
-  is inside the namespace and every file there is snapshot-managed. Apply it to
-  the installed file set, not a hard-coded document count or prose match.
-
-Organising product-owned docs does not depend on a Toko Tooling update. During
-authorised documentation cleanup, improve their topic layout and update local
-links now, preserving snapshot-managed files. For shared docs still exported at
-older paths, the remaining work belongs to Toko Tooling: migrate the canonical
-paths, qualify refresh and publish the mapping. Consumers then adopt that release
-through a scoped refresh and enable the boundary check. Until then, keep those
-managed paths intact and report only that shared-doc migration as outstanding;
-do not describe the whole repository's documentation cleanup as blocked.
+This supersedes the 0.39.3–0.39.4 managed-document namespace plan and older linked
+instructions to vendor governance guides. It does not trigger unsolicited sibling
+refreshes or change the offline verification of installed executable bytes.
 
 ## Scope and authorization
 

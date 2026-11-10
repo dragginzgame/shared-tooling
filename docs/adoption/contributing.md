@@ -74,8 +74,9 @@ Keep repository handoff files concise under the baseline's
 
 Apply the baseline's
 [documentation ownership boundary](../../TOKO-TOOLING.md#documentation-ownership-boundary).
-The producer owns the canonical path migration and its qualification; consumers
-must not work around it by moving snapshot files or wrapping all native docs.
+Keep shared reference documentation upstream and link consumers to reviewed
+immutable revisions. Do not add reference guides as executable companions;
+declare Markdown only when it is an actual runtime input or producer fixture input.
 
 A shared principle should state:
 
@@ -90,7 +91,7 @@ or clearly marked as examples rather than required repository shape.
 
 Focused mandatory policies belong in `rules/` and must be linked from the
 baseline. Keep each policy's rules in one place and include new linked files in
-the governance snapshot instructions. Follow the [changelog rules](../../rules/changelogs.md)
+the producer documentation catalog. Follow the [changelog rules](../../rules/changelogs.md)
 when preparing release notes; consumer audience and presentation choices stay local.
 
 Reusable audit methods live in `audits/`. Share the review questions and proof

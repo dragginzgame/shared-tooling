@@ -174,6 +174,11 @@ reviewed files, rather than loading Toko Tooling from a mutable sibling
 checkout, moving download URL or symlink. Interactive read-only fleet reports
 may inspect siblings directly.
 
+Install the small `TOKO-TOOLING.md` baseline and needed executable entrypoints,
+not the reference documentation library. Read supporting guides, detailed rules,
+audit methods and task catalogs through immutable upstream links. Consumer docs
+remain product-owned and organised by topic; no shared-doc directory is needed.
+
 Consumers use `make/consumer.mk` for shared setup, checks, formatting and release
 mechanics, with explicit local inputs. Browser/npm checks are [opt-in](docs/tools/node-tools.md).
 Review [migration impact](docs/adoption/consuming-snapshots.md#upgrade-impact) alongside

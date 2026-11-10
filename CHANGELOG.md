@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.39.5] - Unreleased
+
+### 🔧 Changed
+
+- Keep shared reference documentation upstream and use pinned online links.
+  Replace the shared-doc directory plan with baseline-and-executable adoption,
+  and document safe retirement of existing managed doc copies during refresh.
+
 ## [0.39.4] - 2026-11-10
 
 ### 🔧 Changed
