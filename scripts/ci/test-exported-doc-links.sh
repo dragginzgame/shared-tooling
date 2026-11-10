@@ -44,7 +44,7 @@ git -C "$source_fixture" -c core.hooksPath=/dev/null -c commit.gpgsign=false \
 arguments=(--source "$source_fixture" --consumer "$consumer")
 for path in "${entrypoints[@]}"; do arguments+=(--entrypoint "$path"); done
 bash "$source_fixture/scripts/distribution/refresh-consumer.sh" "${arguments[@]}" > "$fixture/export.log" 2>&1
-[[ ! -e "$consumer/docs/fleet-tools.md" && ! -e "$consumer/docs/stack.md" ]]
+[[ ! -e "$consumer/docs/fleet/fleet-tools.md" && ! -e "$consumer/docs/fleet/stack.md" ]]
 check_exported_docs() {
     local directory="$1" path documents=()
     while IFS= read -r path; do documents+=("${path#"$directory/"}"); done < <(find "$directory" -type f -name '*.md' -not -path '*/.git/*' | sort)
@@ -62,7 +62,7 @@ if [[ "$baseline_only" == true ]]; then
 fi
 # Partial adopters must receive the local documents directly referenced by
 # setup/adoption guidance, even without the complete governance entrypoint list.
-for entry in docs/local-setup.md docs/consuming-snapshots.md; do
+for entry in docs/adoption/local-setup.md docs/adoption/consuming-snapshots.md; do
     partial="$fixture/partial-$(basename "$entry" .md)"
     mkdir "$partial"
     git -C "$partial" init -q
@@ -73,9 +73,9 @@ for entry in docs/local-setup.md docs/consuming-snapshots.md; do
     check_exported_docs "$partial"
 done
 # Missing local targets must still fail in this actual exported context.
-mv "$consumer/docs/make-interface.md" "$fixture/make-interface.md"
+mv "$consumer/docs/adoption/make-interface.md" "$fixture/make-interface.md"
 if perl "$root/scripts/ci/check-documentation-links.pl" --root "$consumer" \
-    docs/local-setup.md > "$fixture/missing-target.log" 2>&1; then
+    docs/adoption/local-setup.md > "$fixture/missing-target.log" 2>&1; then
     echo 'exported documentation accepted a missing local target' >&2
     exit 1
 fi

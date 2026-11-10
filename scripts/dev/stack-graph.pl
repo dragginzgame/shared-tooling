@@ -18,7 +18,7 @@ GetOptions('parent=s' => \$parent, 'catalog=s' => \$catalog_file,
 if ($help) {
     print "Usage: perl scripts/dev/stack-graph.pl (--write | --check) [--parent DIR]\n",
         "Read catalogued sibling manifests offline, then update or check the README\n",
-        "overview and docs/stack.md evidence. No builds, downloads or sibling edits.\n",
+        "overview and docs/fleet/stack.md evidence. No builds, downloads or sibling edits.\n",
         "Advanced: --catalog FILE --output-root DIR (defaults to this checkout).\n";
     exit 0;
 }
@@ -27,7 +27,7 @@ die "Select exactly one of --write or --check; use --help\n"
 $parent //= "$root/..";
 $parent = abs_path($parent) // die "Cannot find sibling parent\n";
 $output_root //= $root;
-$catalog_file //= "$root/docs/stack-catalog.json";
+$catalog_file //= "$root/docs/fleet/stack-catalog.json";
 
 sub read_file {
     my ($file) = @_;
@@ -398,7 +398,7 @@ $details .= "\nSelected packages without a normal-dependency path from the appli
     . join(', ', map { "`$nodes{$_}{name}`" } @outside) . ".\n" if @outside;
 
 my @updates;
-for my $selection (['README.md', $overview_diagram], ['docs/stack.md', $details]) {
+for my $selection (['README.md', $overview_diagram], ['docs/fleet/stack.md', $details]) {
     my ($relative, $generated) = @$selection;
     my $file = "$output_root/$relative";
     die "Refusing symlink output: $file\n" if -l $file;

@@ -7,7 +7,8 @@ Rust library is dependency-free and `no_std`, with no build script.
 The package selects the Toko Studios Network Licence 1.0 (TSNL-1.0), provided
 in its `LICENSE` file together with the preserved notice for previously
 MIT-licensed material. This source-available licence permits canonical IC production use and
-preserves Toko Studios' separate migration rights. See [the licensing guide](licenses.md).
+preserves Toko Studios' separate migration rights. See
+[the licensing guide](https://github.com/dragginzgame/toko-tooling/blob/main/docs/licenses.md).
 
 Select an exact release once in repository-root Cargo.toml:
 
@@ -39,7 +40,7 @@ pin, Cargo.lock and installed files. Common CI/release entrypoints require it;
 Cargo builds never install tools. The producer qualifies its source archive
 instead of depending on itself.
 
-Follow the [migration guide](https://github.com/dragginzgame/toko-tooling/blob/main/docs/consuming-snapshots.md#migration-from-cargo-dependencies)
+Follow the [migration guide](https://github.com/dragginzgame/toko-tooling/blob/main/docs/adoption/consuming-snapshots.md#migration-from-cargo-dependencies)
 to remove the 0.34–0.35 metadata tables and `toko-tooling.lock`, plus any old
 selection-only packages. Real tools and qualification packages remain.
 Releases before 0.33 contain only a marker; 0.36 introduces this Cargo-visible

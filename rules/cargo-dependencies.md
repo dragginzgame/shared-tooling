@@ -1,5 +1,5 @@
 # Cargo dependency ownership
-<!-- Shared companions: ci/examples/platform-owner-boundaries.json rules/rust-workspaces.md rules/hashing.md -->
+<!-- Shared companions: ci/examples/platform-owner-boundaries.json rules/rust-workspaces.md rules/hashing.md rules/engineering-details.md docs/validation/candid-boundary.md -->
 
 These rules are part of the mandatory [engineering baseline](../TOKO-TOOLING.md).
 The repository's root `Cargo.toml` is the authoritative catalog of direct
@@ -90,7 +90,7 @@ subject to the same owner policy. This is a consumer policy, not a blanket ban
 on facade use or a new common external-package exception.
 
 Declaration admission alone does not establish the enabled transitive graph.
-Use [selected owner graph checks](../docs/cargo-graph-checks.md#platform-owner-graphs)
+Use [selected owner graph checks](../docs/validation/cargo-graph-checks.md#platform-owner-graphs)
 for actual roots, targets and features. Types crossing public boundaries must
 resolve to one compatible identity; runtime/executor consumers need one selected
 execution owner and guard where applicable. A facade-only release must not
@@ -141,8 +141,8 @@ The common option also enforces `ci/cbor-dependencies.json` independently of
 consumer allowlists. Platform owns direct CBOR codecs; Platform Types may use
 them only in development dependencies for serializer compatibility tests. The
 native Testkit exception never grants CBOR. Transitive dependencies are permitted.
-Use the [CBOR source mode](../docs/candid-boundary.md#optional-cbor-source-enforcement)
-and [browser check](../docs/node-tools.md) alongside Cargo declarations.
+Use the [CBOR source mode](../docs/validation/candid-boundary.md#optional-cbor-source-enforcement)
+and [browser check](../docs/tools/node-tools.md) alongside Cargo declarations.
 
 ## External IC dependency boundary
 
@@ -294,7 +294,7 @@ availability is separate evidence; a cached offline build or a `version` beside
   selected. Review its lockfile changes, including required transitive changes.
   Network access does not authorize unrelated upgrades or a broad `cargo update`.
 - Before planning a downstream release cascade, apply the
-  [adoption planning contract](../docs/cargo-graph-checks.md#dependency-adoption-planning).
+  [adoption planning contract](../docs/validation/cargo-graph-checks.md#dependency-adoption-planning).
   Every additional dependency upgrade must have a required contract/security
   reason or be explicitly selected as an optional refresh. Compatible external
   patch availability alone does not justify raising a minimum or republishing
@@ -353,7 +353,7 @@ operations according to their purpose rather than applying one flag everywhere.
   not build, test or native-host qualification; a full gate is not required just
   to prepare a dependency change.
 - For focused post-update qualification, follow the
-  [dependency-adoption contract](../docs/cargo-graph-checks.md#focused-dependency-adoption-contract).
+  [dependency-adoption contract](../docs/validation/cargo-graph-checks.md#focused-dependency-adoption-contract).
   Keep manifest inventories, target/features, singleton policy, affected-package
   lint and artifact verification consumer-owned. Reuse existing observations and
   sequential fail-fast orchestration before adding shared machinery.
@@ -510,5 +510,5 @@ adapters must also admit tooling. No Cargo build or ordinary check installs it.
 
 Remove obsolete tooling metadata tables, `toko-tooling.lock` and selection-only
 packages while preserving real tools/tests. Follow
-[the migration procedure](../docs/consuming-snapshots.md#migration-from-cargo-dependencies)
+[the migration procedure](../docs/adoption/consuming-snapshots.md#migration-from-cargo-dependencies)
 for source-archive bootstrap, independent workspaces and non-Cargo repositories.

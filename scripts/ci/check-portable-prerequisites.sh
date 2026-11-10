@@ -16,7 +16,7 @@ for tool in bash git make curl tar gzip xz zip unzip perl shasum cargo jq yq rg 
     fi
 done
 if [[ "$missing" == 1 ]]; then
-    echo 'See docs/local-setup.md: install bootstrap packages, prepare local host tools and select their bin directory on PATH.' >&2
+    echo 'See docs/adoption/local-setup.md: install bootstrap packages, prepare local host tools and select their bin directory on PATH.' >&2
     exit 1
 fi
 # The Make entrypoint admits the selected installation and supplies these inputs.
@@ -38,6 +38,6 @@ fi
 record="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" rust "$ROOT/ci/tool-versions.env" CARGO_SORT)"
 IFS=$'\t' read -r _ sort_version _ _ <<< "$record"
 if ! bash "$ROOT/scripts/ci/check-format-tools.sh" "$sort_version"; then
-    echo 'See docs/local-setup.md for explicit Cargo/rustfmt/cargo-sort setup; no tools were installed.' >&2
+    echo 'See docs/adoption/local-setup.md for explicit Cargo/rustfmt/cargo-sort setup; no tools were installed.' >&2
     exit 1
 fi

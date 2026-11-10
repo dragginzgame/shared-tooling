@@ -1,4 +1,5 @@
 # Bounded code audit
+<!-- Shared companions: audits/README.md audits/code-hygiene.md audits/complexity-and-technical-debt.md audits/module-surface-hardening.md audits/ic-canister-applications.md -->
 
 Apply the [common run contract](README.md) and
 [shared audit contract](../audits/README.md). Choose one repository and a concrete

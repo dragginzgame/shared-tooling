@@ -155,11 +155,11 @@ still governs the independent qualification graph.
   selected boundary or versioning-policy change. Carry an existing approval
   forward; do not request it again for implementing that agreed boundary.
   Approved product release groups share the product workspace and lockfile using the existing
-  [explicit release-group contract](../docs/releases.md#explicit-cargo-release-groups).
+  [explicit release-group contract](../docs/releases/releases.md#explicit-cargo-release-groups).
   Its admitted member versions are the scoped exception to workspace-version
   inheritance; root dependency inheritance and repository-wide CI remain.
   Release qualification defaults to the full gate until the consumer qualifies
-  an explicit [group plan](../docs/release-group-validation.md).
+  an explicit [group plan](../docs/releases/release-group-validation.md).
 - In a product workspace with independent release groups, every product member
   belongs to one explicit group. Qualification-only tooling and fixtures are
   members of the separate qualification workspace, never of these groups. Remove
@@ -177,7 +177,7 @@ still governs the independent qualification graph.
   `releases/<group>/CHANGELOG.md`, and root `CHANGELOG.md` is an index. Release,
   resume and publication commands require an explicit `RELEASE_GROUP`; never
   silently default to the former root-version group or the whole public roster.
-  Follow the [selection contract](../docs/releases.md#explicit-cargo-release-groups)
+  Follow the [selection contract](../docs/releases/releases.md#explicit-cargo-release-groups)
   and [history migration rules](changelogs.md#release-group-changelogs-and-shared-history).
 - Leave unaffected groups' versions and changelogs unchanged. Cross-group
   requirements change only when needed for the selected dependency contract;
@@ -188,7 +188,7 @@ still governs the independent qualification graph.
 - Qualification-only maintenance does not select a product group for publication
   or change the qualification packages' versions to match it. Changes to private
   product tools require their actual product-impact assessment. Apply the
-  [publication-impact decision](../docs/releases.md#decide-whether-publication-is-needed)
+  [publication-impact decision](../docs/releases/releases.md#decide-whether-publication-is-needed)
   before bumping versions. Qualification selection is a validation relationship,
   not release-group membership.
 - Start each group from its existing package/release history. Do not reset
@@ -204,7 +204,7 @@ still governs the independent qualification graph.
 - Keep unrelated repositories independently versioned. Toko Tooling snapshot
   adoption, a common dependency or a common owner does not require fleet-wide
   version synchronization. Verify adoption through the consumer's
-  [selected dependency graphs](../docs/cargo-graph-checks.md#coordinated-release-adoption).
+  [selected dependency graphs](../docs/validation/cargo-graph-checks.md#coordinated-release-adoption).
 
 ### Visible release-group map in Cargo.toml
 
@@ -436,7 +436,7 @@ separately scoped consumer task.
 
 ## Adoption and verification
 
-Adopt this rule through a reviewed [governance snapshot](../docs/consuming-snapshots.md).
+Adopt this rule through a reviewed [governance snapshot](../docs/adoption/consuming-snapshots.md).
 Coordinate consumer work through issues and preserve unrelated working changes.
 The product/qualification standard is introduced in the pending 0.38.0 policy.
 Consumers must verify the supplying release is actually published, then adopt

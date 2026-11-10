@@ -4,17 +4,22 @@
 These rules are part of the mandatory [engineering baseline](../TOKO-TOOLING.md)
 for repositories with changelogs. Read them before editing release notes.
 Consumer overlays own audience, presentation and package-specific views within
-this contract; the [release contract](../docs/releases.md) owns release execution.
+this contract; the [release contract](../docs/releases/releases.md) owns release execution.
 
 ## Content and writing
 
-- Never record legal or licensing changes in any changelog, including root,
+- Keep legal and licensing changes out of changelogs, including root,
   package, release-group and archived or detailed changelogs. This includes
   licence adoption, terms, drafts, notices, contributor agreements, legal
   contribution eligibility, rights ownership and legal audits. Keep these in
   their authoritative legal documents instead. This exclusion overrides the
   usual meaningful-change, breaking-change and fixed-issue-link requirements;
   do not add a changelog entry merely to describe this policy or such cleanup.
+  The sole exception is one neutral notice in the adopting release naming the
+  adopted licence and linking to its authoritative text. It may state that
+  earlier grants remain unchanged. Do not include drafting history, legal
+  analysis, rationale or claims about consent or enforceability. Do not repeat
+  the notice in subsequent releases unless the adopted licence changes again.
   It does not authorise removing legal notices, required provenance or Git history.
 - Root `CHANGELOG.md` is the concise release ledger for a single release group.
   Independently versioned groups use the
@@ -30,7 +35,7 @@ this contract; the [release contract](../docs/releases.md) owns release executio
   Another compatible implementation slice extends that draft.
   A pending note does not require immediate publication. Private-only group
   maintenance follows the
-  [publication-impact decision](../docs/releases.md#decide-whether-publication-is-needed);
+  [publication-impact decision](../docs/releases/releases.md#decide-whether-publication-is-needed);
   keep its note pending for the next actual release without bumping member
   versions or inventing a published entry.
 - Omit formatting-only churn, incidental internal renames, routine test runs
@@ -246,7 +251,7 @@ releases/
 
 Ledger organization does not authorize package moves, version resets, commits,
 tags or publication. Preserve already-published identities and unfinished release
-recovery. The [release mechanism](../docs/releases.md#explicit-cargo-release-groups)
+recovery. The [release mechanism](../docs/releases/releases.md#explicit-cargo-release-groups)
 selects the group's own ledger; it does not finalize a shared historical file.
 
 ## Automatic next-version selection

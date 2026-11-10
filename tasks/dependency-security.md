@@ -1,4 +1,5 @@
 # Dependency advisory review
+<!-- Shared companions: rules/engineering-details.md -->
 
 Apply the [common run contract](README.md). This initial task covers Rust
 lockfiles; identify other package ecosystems as outside this task's coverage.
@@ -9,7 +10,7 @@ owner CI first. Freshness requires a current advisory observation even when the
 source commit and lockfile have not changed.
 
 For authorized execution with prepared tools, use the existing
-[isolated RustSec preparation procedure](../docs/verification-helpers.md#isolated-rustsec-database-preparation).
+[isolated RustSec preparation procedure](../docs/validation/source-helpers.md#isolated-rustsec-database-preparation).
 An explicitly selected online run may read the official advisory feed into its
 new evidence directory. Record its exact revision and use `cargo audit --no-fetch`
 against that prepared database and the selected lockfile. An offline run records

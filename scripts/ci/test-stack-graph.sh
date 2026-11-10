@@ -17,8 +17,8 @@ trap finish EXIT
 
 parent="$FIXTURE/sibling checkouts"
 output="$FIXTURE/report"
-mkdir -p "$output/docs"
-for file in "$output/README.md" "$output/docs/stack.md"; do
+mkdir -p "$output/docs/fleet"
+for file in "$output/README.md" "$output/docs/fleet/stack.md"; do
     printf 'Retain handwritten prose.\n<!-- stack-graph:start -->\n<!-- stack-graph:end -->\n' > "$file"
 done
 for name in app engine platform unused ic-tooling; do
@@ -138,16 +138,16 @@ graph() {
 # dev-only dependency are classified using real Cargo metadata, without builds.
 graph --write
 graph --check
-grep -Fq 'p_app_7ccargo_3aapp --> p_engine_7ccargo_3aengine' "$output/docs/stack.md"
-grep -Fq 'p_engine_7ccargo_3aengine -. "normal, conditional" .-> p_platform_7ccargo_3aplatform' "$output/docs/stack.md"
-grep -Fq 'p_app_7ccargo_3aapp -. "normal, native" .-> p_ic_2dtooling_7ccargo_3aic_2dbuild' "$output/docs/stack.md"
-grep -Fq 'p_ic_2dtooling_7ccargo_3aic_2dbuild -. "normal, native" .-> p_platform_7ccargo_3aplatform' "$output/docs/stack.md"
-grep -Fq 'p_engine_7ccargo_3aengine --> p_engine_7ccargo_3aengine_2dcore' "$output/docs/stack.md"
-grep -Fq 'p_engine_7ccargo_3aengine_2dcore --> p_engine_7ccargo_3astorage' "$output/docs/stack.md"
-grep -Fq 'p_engine_7ccargo_3astorage --> p_engine_7ccargo_3amemory' "$output/docs/stack.md"
-grep -Fq 'p_app_7ccargo_3amemory_2dclient --> p_engine_7ccargo_3amemory' "$output/docs/stack.md"
-grep -Fq 'p_app_7cnpm_3aapp_2dbrowser --> p_platform_7cnpm_3a_40fleet_2fplatform' "$output/docs/stack.md"
-if grep -Eq 'p_app_7ccargo_3aapp --> p_platform_7ccargo_3aplatform|p_app_7ccargo_3aapp --> p_unused_7ccargo_3aunused|p_app_7ccargo_3amemory_2dclient --> p_engine_7ccargo_3astorage' "$output/docs/stack.md"; then
+grep -Fq 'p_app_7ccargo_3aapp --> p_engine_7ccargo_3aengine' "$output/docs/fleet/stack.md"
+grep -Fq 'p_engine_7ccargo_3aengine -. "normal, conditional" .-> p_platform_7ccargo_3aplatform' "$output/docs/fleet/stack.md"
+grep -Fq 'p_app_7ccargo_3aapp -. "normal, native" .-> p_ic_2dtooling_7ccargo_3aic_2dbuild' "$output/docs/fleet/stack.md"
+grep -Fq 'p_ic_2dtooling_7ccargo_3aic_2dbuild -. "normal, native" .-> p_platform_7ccargo_3aplatform' "$output/docs/fleet/stack.md"
+grep -Fq 'p_engine_7ccargo_3aengine --> p_engine_7ccargo_3aengine_2dcore' "$output/docs/fleet/stack.md"
+grep -Fq 'p_engine_7ccargo_3aengine_2dcore --> p_engine_7ccargo_3astorage' "$output/docs/fleet/stack.md"
+grep -Fq 'p_engine_7ccargo_3astorage --> p_engine_7ccargo_3amemory' "$output/docs/fleet/stack.md"
+grep -Fq 'p_app_7ccargo_3amemory_2dclient --> p_engine_7ccargo_3amemory' "$output/docs/fleet/stack.md"
+grep -Fq 'p_app_7cnpm_3aapp_2dbrowser --> p_platform_7cnpm_3a_40fleet_2fplatform' "$output/docs/fleet/stack.md"
+if grep -Eq 'p_app_7ccargo_3aapp --> p_platform_7ccargo_3aplatform|p_app_7ccargo_3aapp --> p_unused_7ccargo_3aunused|p_app_7ccargo_3amemory_2dclient --> p_engine_7ccargo_3astorage' "$output/docs/fleet/stack.md"; then
     echo 'graph invented a workspace dependency or retained a redundant arrow' >&2; exit 1
 fi
 # The README groups application packages, contracts through hidden internals,
@@ -159,32 +159,32 @@ grep -Fq 'p_engine_7ccargo_3astorage --> p_engine_7ccargo_3amemory' "$output/REA
 if grep -Eq 'engine-core|engine-cli|ic-build|app-browser|memory-client|p_app_3aapp --> p_platform_7ccargo_3aplatform' "$output/README.md"; then
     echo 'overview expanded internals or retained a redundant arrow' >&2; exit 1
 fi
-grep -Fq 'storage → memory' "$output/docs/stack.md"
-grep -Fq 'engine-cli → app' "$output/docs/stack.md"
-grep -Fq 'app → legacy-bridge (pinned Git)' "$output/docs/stack.md"
+grep -Fq 'storage → memory' "$output/docs/fleet/stack.md"
+grep -Fq 'engine-cli → app' "$output/docs/fleet/stack.md"
+grep -Fq 'app → legacy-bridge (pinned Git)' "$output/docs/fleet/stack.md"
 # shellcheck disable=SC2016 # Match literal Markdown code spans.
-grep -Fq '→ `engine` (cargo normal)' "$output/docs/stack.md"
-grep -Fq 'target-specific' "$output/docs/stack.md"
-grep -Fq 'target=cfg(target_arch = "wasm32")' "$output/docs/stack.md"
-grep -Fq 'declared source=path:engine/crates/engine' "$output/docs/stack.md"
-grep -Fq 'Generated and independent qualification workspaces are unobserved' "$output/docs/stack.md"
-grep -Fq 'p_app_7ccargo_3aapp -. "dev" .-> p_unused_7ccargo_3aunused' "$output/docs/stack.md"
+grep -Fq '→ `engine` (cargo normal)' "$output/docs/fleet/stack.md"
+grep -Fq 'target-specific' "$output/docs/fleet/stack.md"
+grep -Fq 'target=cfg(target_arch = "wasm32")' "$output/docs/fleet/stack.md"
+grep -Fq 'declared source=path:engine/crates/engine' "$output/docs/fleet/stack.md"
+grep -Fq 'Generated and independent qualification workspaces are unobserved' "$output/docs/fleet/stack.md"
+grep -Fq 'p_app_7ccargo_3aapp -. "dev" .-> p_unused_7ccargo_3aunused' "$output/docs/fleet/stack.md"
 # shellcheck disable=SC2016
-grep -Fq '→ `legacy-bridge` (cargo dev)' "$output/docs/stack.md"
+grep -Fq '→ `legacy-bridge` (cargo dev)' "$output/docs/fleet/stack.md"
 # shellcheck disable=SC2016
-grep -Fq '→ `unused` (cargo dev)' "$output/docs/stack.md"
+grep -Fq '→ `unused` (cargo dev)' "$output/docs/fleet/stack.md"
 # shellcheck disable=SC2016
-grep -Fq '→ `@fleet/platform` (npm normal' "$output/docs/stack.md"
-grep -Fq 'Retain handwritten prose.' "$output/docs/stack.md"
-grep -Fq '/app/blob/development/crates/app/Cargo.toml' "$output/docs/stack.md"
-if grep -Fq '/crates/fixture/' "$output/docs/stack.md"; then
+grep -Fq '→ `@fleet/platform` (npm normal' "$output/docs/fleet/stack.md"
+grep -Fq 'Retain handwritten prose.' "$output/docs/fleet/stack.md"
+grep -Fq '/app/blob/development/crates/app/Cargo.toml' "$output/docs/fleet/stack.md"
+if grep -Fq '/crates/fixture/' "$output/docs/fleet/stack.md"; then
     echo 'excluded fixture included in report' >&2; exit 1
 fi
 cp "$output/README.md" "$FIXTURE/saved-readme"
-cp "$output/docs/stack.md" "$FIXTURE/saved-details"
+cp "$output/docs/fleet/stack.md" "$FIXTURE/saved-details"
 graph --write
 cmp "$FIXTURE/saved-readme" "$output/README.md"
-cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
+cmp "$FIXTURE/saved-details" "$output/docs/fleet/stack.md"
 
 # A private qualification consumer may use normal dependencies while its
 # supplier's return edge is optional: neither belongs in the compact overview.
@@ -204,25 +204,25 @@ TOML
 mkdir -p "$parent/unused/generated/driver"
 printf 'Not a Cargo manifest: this generator output must not be executed.\n' > "$parent/unused/generated/driver/Cargo.toml"
 graph --write
-grep -Fq 'unused (qualification: tests)' "$output/docs/stack.md"
-grep -Fq 'p_unused_7ccargo_3aunused -. "normal, qualification" .-> p_engine_7ccargo_3amemory' "$output/docs/stack.md"
-grep -Fq 'p_engine_7ccargo_3amemory -. "normal, conditional, qualification" .-> p_unused_7ccargo_3aunused' "$output/docs/stack.md"
-grep -Fq 'requirement=&#62;=0.1, &#60;0.3' "$output/docs/stack.md"
-grep -Fq 'requirement=^0.2; declared source=registry+' "$output/docs/stack.md"
-grep -Fq 'requested features=fixture; default features=no' "$output/docs/stack.md"
-grep -Fq 'crates/platform/Cargo.toml) (0.1.0;' "$output/docs/stack.md"
+grep -Fq 'unused (qualification: tests)' "$output/docs/fleet/stack.md"
+grep -Fq 'p_unused_7ccargo_3aunused -. "normal, qualification" .-> p_engine_7ccargo_3amemory' "$output/docs/fleet/stack.md"
+grep -Fq 'p_engine_7ccargo_3amemory -. "normal, conditional, qualification" .-> p_unused_7ccargo_3aunused' "$output/docs/fleet/stack.md"
+grep -Fq 'requirement=&#62;=0.1, &#60;0.3' "$output/docs/fleet/stack.md"
+grep -Fq 'requirement=^0.2; declared source=registry+' "$output/docs/fleet/stack.md"
+grep -Fq 'requested features=fixture; default features=no' "$output/docs/fleet/stack.md"
+grep -Fq 'crates/platform/Cargo.toml) (0.1.0;' "$output/docs/fleet/stack.md"
 cmp "$FIXTURE/saved-readme" "$output/README.md"
 cp "$FIXTURE/saved-unused" "$parent/unused/crates/unused/Cargo.toml"
 cp "$FIXTURE/role-memory" "$parent/engine/crates/memory/Cargo.toml"
 graph --write
-cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
+cmp "$FIXTURE/saved-details" "$output/docs/fleet/stack.md"
 
 # Policies group nodes without merging their dependency edges; the full view
 # also retains selected packages outside the application closure.
 grep -Fq 'subgraph p_group_3aengine_7cstorage["storage · 0.1.0"]' "$output/README.md"
-grep -Fq 'subgraph p_group_3aengine_7cengine["engine · 0.1.0"]' "$output/docs/stack.md"
-grep -Fq 'p_unused_7ccargo_3aunused["unused"]' "$output/docs/stack.md"
-grep -Fq '/engine/blob/main/releases/storage.md' "$output/docs/stack.md"
+grep -Fq 'subgraph p_group_3aengine_7cengine["engine · 0.1.0"]' "$output/docs/fleet/stack.md"
+grep -Fq 'p_unused_7ccargo_3aunused["unused"]' "$output/docs/fleet/stack.md"
+grep -Fq '/engine/blob/main/releases/storage.md' "$output/docs/fleet/stack.md"
 cp "$parent/engine/ci/cargo-release-groups.json" "$FIXTURE/saved-groups"
 for fault in duplicate unknown unassigned primary ledger; do
     perl -MJSON::PP -e '
@@ -237,23 +237,23 @@ for fault in duplicate unknown unassigned primary ledger; do
     if graph --write; then echo "invalid group accepted: $fault" >&2; exit 1; fi
     grep -Eq 'release-group member|primary is not a member|Invalid group changelog' "$FIXTURE/command.log"
     cmp "$FIXTURE/saved-readme" "$output/README.md"
-    cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
+    cmp "$FIXTURE/saved-details" "$output/docs/fleet/stack.md"
 done
 cp "$FIXTURE/saved-groups" "$parent/engine/ci/cargo-release-groups.json"
 # Single-group owners can keep their ledger at the workspace root.
 cp "$parent/engine/releases/engine.md" "$parent/engine/CHANGELOG.md"
 sed 's@releases/engine.md@CHANGELOG.md@' "$FIXTURE/saved-groups" > "$parent/engine/ci/cargo-release-groups.json"
 graph --write
-grep -Fq '/engine/blob/main/CHANGELOG.md' "$output/docs/stack.md"
+grep -Fq '/engine/blob/main/CHANGELOG.md' "$output/docs/fleet/stack.md"
 cp "$FIXTURE/saved-groups" "$parent/engine/ci/cargo-release-groups.json"
 graph --write
-cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
+cmp "$FIXTURE/saved-details" "$output/docs/fleet/stack.md"
 cp "$parent/engine/crates/memory/Cargo.toml" "$FIXTURE/saved-memory"
 sed 's/0.1.0/0.2.0/' "$FIXTURE/saved-memory" > "$parent/engine/crates/memory/Cargo.toml"
 if graph --write; then echo 'mismatched group version accepted' >&2; exit 1; fi
 grep -Fq 'Release-group version mismatch' "$FIXTURE/command.log"
 cmp "$FIXTURE/saved-readme" "$output/README.md"
-cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
+cmp "$FIXTURE/saved-details" "$output/docs/fleet/stack.md"
 cp "$FIXTURE/saved-memory" "$parent/engine/crates/memory/Cargo.toml"
 # A legitimate independent version change must refresh both group projections.
 cp "$parent/engine/crates/storage/Cargo.toml" "$FIXTURE/saved-storage"
@@ -263,12 +263,12 @@ if graph --check; then echo 'stale group version accepted' >&2; exit 1; fi
 grep -Fq 'Stack graph is stale' "$FIXTURE/command.log"
 graph --write
 grep -Fq 'storage · 0.2.0' "$output/README.md"
-grep -Fq 'engine · 0.1.0' "$output/docs/stack.md"
+grep -Fq 'engine · 0.1.0' "$output/docs/fleet/stack.md"
 cp "$FIXTURE/saved-memory" "$parent/engine/crates/memory/Cargo.toml"
 cp "$FIXTURE/saved-storage" "$parent/engine/crates/storage/Cargo.toml"
 graph --write
 cmp "$FIXTURE/saved-readme" "$output/README.md"
-cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
+cmp "$FIXTURE/saved-details" "$output/docs/fleet/stack.md"
 
 # A typo or a native tool in the overview selection must not replace either
 # output. Custom catalogs may still omit the optional overview selection.
@@ -279,7 +279,7 @@ for package in missing ic-build; do
     if graph --write; then echo 'invalid overview selection accepted' >&2; exit 1; fi
     grep -Eq 'Unknown or ambiguous overview crate|Overview crate is not a selected library' "$FIXTURE/command.log"
     cmp "$FIXTURE/saved-readme" "$output/README.md"
-    cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
+    cmp "$FIXTURE/saved-details" "$output/docs/fleet/stack.md"
 done
 perl -MJSON::PP -e 'local $/; my $c=decode_json(<>); delete $c->{overview}; print encode_json($c)' \
     "$FIXTURE/saved-catalog" > "$FIXTURE/catalog.json"
@@ -288,25 +288,25 @@ grep -Fq '["engine-core"]' "$output/README.md"
 cp "$FIXTURE/saved-catalog" "$FIXTURE/catalog.json"
 graph --write
 cmp "$FIXTURE/saved-readme" "$output/README.md"
-cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
+cmp "$FIXTURE/saved-details" "$output/docs/fleet/stack.md"
 
 # Changed declarations make --check fail without changing either output.
 printf '\n[build-dependencies]\nengine = { path = "../../../engine/crates/engine" }\n' >> "$parent/platform/crates/platform/Cargo.toml"
 if graph --check; then echo 'stale graph accepted' >&2; exit 1; fi
 grep -Fq 'Stack graph is stale' "$FIXTURE/command.log"
 cmp "$FIXTURE/saved-readme" "$output/README.md"
-cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
+cmp "$FIXTURE/saved-details" "$output/docs/fleet/stack.md"
 graph --write
-grep -Fq 'platform → engine' "$output/docs/stack.md"
+grep -Fq 'platform → engine' "$output/docs/fleet/stack.md"
 
 # A missing final checkout cannot leave a partial publication of earlier inputs.
 cp "$output/README.md" "$FIXTURE/saved-readme"
-cp "$output/docs/stack.md" "$FIXTURE/saved-details"
+cp "$output/docs/fleet/stack.md" "$FIXTURE/saved-details"
 mv "$parent/unused" "$parent/unused.saved"
 if graph --write; then echo 'missing checkout accepted' >&2; exit 1; fi
 grep -Fq 'Missing checkout: unused' "$FIXTURE/command.log"
 cmp "$FIXTURE/saved-readme" "$output/README.md"
-cmp "$FIXTURE/saved-details" "$output/docs/stack.md"
+cmp "$FIXTURE/saved-details" "$output/docs/fleet/stack.md"
 mv "$parent/unused.saved" "$parent/unused"
 
 # Do not destroy reachability by reducing a graph containing a normal cycle.
@@ -324,12 +324,12 @@ grep -Fq 'p_app_3aapp --> p_platform_7ccargo_3aplatform' "$output/README.md"
 
 # A broken second output must not publish an already prepared README change.
 cp "$output/README.md" "$FIXTURE/saved-readme"
-printf 'Missing generated markers.\n' > "$output/docs/stack.md"
+printf 'Missing generated markers.\n' > "$output/docs/fleet/stack.md"
 if graph --write; then echo 'missing output markers accepted' >&2; exit 1; fi
 grep -Fq 'Expected one generated block' "$FIXTURE/command.log"
 cmp "$FIXTURE/saved-readme" "$output/README.md"
 
-cp "$FIXTURE/saved-details" "$output/docs/stack.md"
+cp "$FIXTURE/saved-details" "$output/docs/fleet/stack.md"
 mkdir -p "$parent/unused/browser"
 cp "$parent/platform/browser/package.json" "$parent/unused/browser/package.json"
 perl -MJSON::PP -e 'local $/; my $c=decode_json(<>); for (@{$c->{repositories}}) { $_->{npm}=["browser/package.json"] if $_->{name} eq "unused" } print encode_json($c)' \

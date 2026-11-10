@@ -1,4 +1,5 @@
 # User-triggered agent maintenance
+<!-- Shared companions: rules/engineering-details.md -->
 
 These rules are part of the [engineering baseline](../TOKO-TOOLING.md). They
 define chat instructions for agents working in an authorized repository. The
@@ -211,7 +212,7 @@ gh issue view ISSUE_NUMBER --repo "$repository" --comments
 ```
 
 Consumers adopt this rule through their
-[reviewed governance snapshot](../docs/consuming-snapshots.md). Keep product
+[reviewed governance snapshot](../docs/adoption/consuming-snapshots.md). Keep product
 priorities and required workflow coverage in the local overlay. Refresh the
 baseline and this rule together, then remove redundant local wording only after
 checking equivalent obligations. Preserve approved scoped exceptions, including

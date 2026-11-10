@@ -27,7 +27,7 @@ before preparation rather than reuse its heading or ask for another version requ
 This is ordinary local preparation, not staging, committing or releasing.
 
 Toko Tooling's own compiler is pinned in `rust-toolchain.toml`. Prepare it explicitly
-as described in [local setup](docs/local-setup.md#toko-toolings-own-compiler)
+as described in [local setup](docs/adoption/local-setup.md#toko-toolings-own-compiler)
 before installing Cargo tools. The runtime scanner uses that same prepared
 compiler. Consumers implement the baseline's Rust 1.99.1 support policy with
 their own target, feature and host qualification.

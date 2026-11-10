@@ -60,7 +60,7 @@ The common installer combines existing Canic and IcyDB Binaryen/PocketIC setup
 requirements with IC Timers' verification-before-execution checks and IC Metrics'
 retained provisioning evidence. Exact default versions match the inspected
 consumers; Quill is added from the official release. Platform digests and release
-sources are recorded in [IC tools](ic-tools.md). This is setup orchestration.
+sources are recorded in [IC tools](tools/ic-tools.md). This is setup orchestration.
 The current [capability owners](https://github.com/dragginzgame/toko-tooling/blob/main/README.md#capability-ownership) separate
 executable provisioning here, host primitives/IC interpretation in IC Host
 Tooling, and build/Candid extraction orchestration in IC Build. The inspected
@@ -68,7 +68,7 @@ historical provisioning requirements above retain their original attribution.
 
 The local jq/yq pair extends the existing shared yq selection in
 `ci/tool-versions.env`; jq 1.8.2 digests were read from official release-asset
-metadata on 2026-10-06. [Local setup](local-setup.md) records upstream releases
+metadata on 2026-10-06. [Local setup](adoption/local-setup.md) records upstream releases
 and the distinction between pinned executables and system bootstrap packages.
 
 The evidence-manifest helper and its fixtures came from IC Blob Storage's
@@ -151,7 +151,7 @@ Canic, IC Timers, IcyDB and IC Metrics, including IC Metrics' nested Make/logger
 isolation. These extractions add explicit inputs, retained smoke-check failures
 and offline regression coverage. Product-specific documentation, receipt and
 publication behavior remains with the consumers. See the
-[maintained contracts](verification-helpers.md) for scope and adoption.
+[maintained contracts](validation/verification-helpers.md) for scope and adoption.
 
 The metadata extension to that same registry helper consolidates Auth's exact
 checksum readback and Blob's package/version/checksum/yanked parsing, reviewed in

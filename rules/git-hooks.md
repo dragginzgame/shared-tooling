@@ -10,7 +10,7 @@ the independent, non-mutating formatting gate.
 
 - Vendor the reviewed Toko Tooling `.githooks/pre-commit` and
   `scripts/dev/install-git-hooks.sh`, with `scripts/ci/check-make-execution.sh`,
-  unchanged in the [recorded snapshot](../docs/consuming-snapshots.md).
+  unchanged in the [recorded snapshot](../docs/adoption/consuming-snapshots.md).
   Keep the hook and installer executable.
   Retire the superseded local formatter hook after reviewing its obligations.
 - Every Rust repository provides `make fmt` and `make fmt-check`. Both cover the
@@ -68,7 +68,7 @@ the independent, non-mutating formatting gate.
   failures, discard diffs or remove workspace/derive/frontend checks to reduce
   output. Retain failure logs in CI artifacts too.
 
-Use the [consumer Make entrypoint](../docs/make-interface.md), which includes
+Use the [consumer Make entrypoint](../docs/adoption/make-interface.md), which includes
 the shared `make/rust-format.mk`:
 
 ```make
@@ -76,7 +76,7 @@ include make/consumer.mk
 ```
 
 It supplies `format-tools-check`, `fmt` and `fmt-check`, using the shared
-[formatter prerequisite check](../docs/verification-helpers.md#formatter-prerequisites)
+[formatter prerequisite check](../docs/tools/setup-helpers.md#formatter-prerequisites)
 and the `RUST_TOOL_VERSIONS` pin file (the reviewed snapshot catalog by default).
 Formatting uses prepared tools offline and
 disables automatic rustup installation. `FORMAT_CARGO` selects one executable
@@ -95,7 +95,7 @@ Admission checks both `MAKEFLAGS` and Make's retained `MFLAGS`, including when
 `MAKEFLAGS` is cleared or replaced. Do not assign `MFLAGS` on the command line or
 in a Makefile; the guard requires GNU Make's generated invocation flags.
 
-Use the [declarative formatting inputs](../docs/make-interface.md#custom-formatting-without-replacement-recipes)
+Use the [declarative formatting inputs](../docs/adoption/make-interface.md#custom-formatting-without-replacement-recipes)
 for independent workspaces, derive sorting and manifest order. Retire adapters
 that only repeat that sequence after qualifying their actual callers. Keep local
 adapters for additional policies such as frontend formatting; set both `FORMAT_WRITE_COMMAND` and
@@ -278,7 +278,7 @@ it.
 
 Consumers may replace repeated mechanical adoption fixtures with
 `scripts/ci/check-formatting-hooks.sh`, retaining their selected manifests,
-formatter inputs and product-specific cases. Its [documented contract](../docs/verification-helpers.md#consumer-formatting-hook-adoption)
+formatter inputs and product-specific cases. Its [documented contract](../docs/tools/setup-helpers.md#consumer-formatting-hook-adoption)
 requires already-prepared tools and retains failed exports. A committed snapshot
 and focused native consumer qualification are still required before deleting
 superseded checks.

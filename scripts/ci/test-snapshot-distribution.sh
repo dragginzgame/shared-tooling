@@ -804,7 +804,7 @@ scripts/ci/test-tool-catalogs.pl scripts/ci/check-tool-catalogs.pl
 scripts/ci/collect-native-diagnostics.sh scripts/ci/verify-file-checksum.sh
 scripts/ci/run-cargo-publication.sh scripts/ci/check-make-execution.sh
 scripts/ci/run-cargo-publication.sh scripts/ci/cargo-publication-paths.sh
-scripts/ci/cargo-publication-adapter.sh docs/cargo-publication.md
+scripts/ci/cargo-publication-adapter.sh docs/releases/cargo-publication.md
 scripts/ci/test-cargo-publication-attempt.sh scripts/ci/run-cargo-publication.sh
 scripts/ci/run-release.sh scripts/ci/check-release-tag.sh
 scripts/ci/test-release-runner.sh scripts/ci/fixture-lifecycle.sh
@@ -935,22 +935,22 @@ bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$revision_root" "${go
 task_consumer="$FIXTURE/task-consumer"
 git init -q "$task_consumer"
 task_args=(--entrypoint tasks/snapshot-drift.md --entrypoint tasks/README.md
-    --entrypoint docs/consuming-snapshots.md --entrypoint rules/agent-maintenance.md)
+    --entrypoint docs/adoption/consuming-snapshots.md --entrypoint rules/agent-maintenance.md)
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --preview --source "$source_root" --consumer "$task_consumer" "${task_args[@]}" \
     > "$FIXTURE/task-preview.log"
-grep -F "$(printf 'ADD\trequired\tdocs/tool-catalog-bindings.md')" "$FIXTURE/task-preview.log" >/dev/null
+grep -F "$(printf 'ADD\trequired\tdocs/tools/tool-catalog-bindings.md')" "$FIXTURE/task-preview.log" >/dev/null
 [[ ! -e "$task_consumer/docs" ]] || exit 1
 PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$task_consumer" "${task_args[@]}" \
     > "$FIXTURE/task-refresh.log"
-cmp "$revision_root/docs/tool-catalog-bindings.md" "$task_consumer/docs/tool-catalog-bindings.md"
+cmp "$revision_root/docs/tools/tool-catalog-bindings.md" "$task_consumer/docs/tools/tool-catalog-bindings.md"
 [[ ! -e "$task_consumer/scripts/ci/check-tool-catalogs.pl" ]] || exit 1
 perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$task_consumer" \
-    tasks/snapshot-drift.md docs/tool-catalog-bindings.md > "$FIXTURE/task-links.log"
+    tasks/snapshot-drift.md docs/tools/tool-catalog-bindings.md > "$FIXTURE/task-links.log"
 bash "$task_consumer/scripts/ci/verify-toko-tooling-snapshot.sh" \
     --consumer "$task_consumer" >/dev/null
-rm "$task_consumer/docs/tool-catalog-bindings.md"
+rm "$task_consumer/docs/tools/tool-catalog-bindings.md"
 if perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$task_consumer" \
     tasks/snapshot-drift.md > "$FIXTURE/task-missing.log" 2>&1; then exit 1; fi
 
@@ -969,34 +969,34 @@ git -C "$publication_source" config core.hooksPath /dev/null
 git -C "$publication_source" remote add origin https://example.invalid/toko-tooling
 publication_args=()
 while IFS= read -r path; do
-    [[ "$path" != docs/cargo-publication.md ]] || continue
+    [[ "$path" != docs/releases/cargo-publication.md ]] || continue
     publication_args+=(--entrypoint "$path")
 done < "$ROOT/scripts/distribution/governance-files.txt"
-sed '2{/^<!-- Shared companions:/d;}' "$ROOT/docs/releases.md" > "$publication_source/docs/releases.md"
+sed '2{/^<!-- Shared companions:/d;}' "$ROOT/docs/releases/releases.md" > "$publication_source/docs/releases/releases.md"
 git -C "$publication_source" add -- .
 git -C "$publication_source" commit -qm 'Prior publication documentation selection'
 bash "$ROOT/scripts/distribution/refresh-consumer.sh" \
     --source "$publication_source" --consumer "$publication_consumer" "${publication_args[@]}" > "$FIXTURE/publication-before.log"
-[[ ! -e "$publication_consumer/docs/cargo-publication.md" ]] || exit 1
-cp "$ROOT/docs/releases.md" "$publication_source/docs/releases.md"
-git -C "$publication_source" add -- docs/releases.md
+[[ ! -e "$publication_consumer/docs/releases/cargo-publication.md" ]] || exit 1
+cp "$ROOT/docs/releases/releases.md" "$publication_source/docs/releases/releases.md"
+git -C "$publication_source" add -- docs/releases/releases.md
 git -C "$publication_source" commit -qm 'Declare publication guide companion'
 bash "$ROOT/scripts/distribution/refresh-consumer.sh" \
     --preview --source "$publication_source" --consumer "$publication_consumer" > "$FIXTURE/publication-preview.log"
-grep -F "$(printf 'ADD\trequired\tdocs/cargo-publication.md')" "$FIXTURE/publication-preview.log" >/dev/null
-grep -F "$(printf 'ADD\trequired\tdocs/validation-runner.md')" "$FIXTURE/publication-preview.log" >/dev/null
-[[ ! -e "$publication_consumer/docs/cargo-publication.md" ]] || exit 1
+grep -F "$(printf 'ADD\trequired\tdocs/releases/cargo-publication.md')" "$FIXTURE/publication-preview.log" >/dev/null
+grep -F "$(printf 'ADD\trequired\tdocs/validation/validation-runner.md')" "$FIXTURE/publication-preview.log" >/dev/null
+[[ ! -e "$publication_consumer/docs/releases/cargo-publication.md" ]] || exit 1
 bash "$ROOT/scripts/distribution/refresh-consumer.sh" \
     --source "$publication_source" --consumer "$publication_consumer" > "$FIXTURE/publication-refresh.log"
-cmp "$ROOT/docs/cargo-publication.md" "$publication_consumer/docs/cargo-publication.md"
-cmp "$ROOT/docs/validation-runner.md" "$publication_consumer/docs/validation-runner.md"
-cmp "$ROOT/docs/group-validation-adoption.md" "$publication_consumer/docs/group-validation-adoption.md"
+cmp "$ROOT/docs/releases/cargo-publication.md" "$publication_consumer/docs/releases/cargo-publication.md"
+cmp "$ROOT/docs/validation/validation-runner.md" "$publication_consumer/docs/validation/validation-runner.md"
+cmp "$ROOT/docs/releases/group-validation-adoption.md" "$publication_consumer/docs/releases/group-validation-adoption.md"
 cmp "$ROOT/scripts/ci/validation-evidence.pl" "$publication_consumer/scripts/ci/validation-evidence.pl"
 cmp "$ROOT/scripts/ci/ValidationPlan.pm" "$publication_consumer/scripts/ci/ValidationPlan.pm"
 [[ ! -e "$publication_consumer/scripts/ci/run-cargo-publication.sh" ]] || exit 1
 perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$publication_consumer" \
-    docs/releases.md docs/cargo-publication.md docs/release-group-validation.md \
-    docs/validation-runner.md docs/group-validation-adoption.md > "$FIXTURE/publication-links.log"
+    docs/releases/releases.md docs/releases/cargo-publication.md docs/releases/release-group-validation.md \
+    docs/validation/validation-runner.md docs/releases/group-validation-adoption.md > "$FIXTURE/publication-links.log"
 bash "$publication_consumer/scripts/ci/verify-toko-tooling-snapshot.sh" \
     --consumer "$publication_consumer" >/dev/null
 
@@ -1055,7 +1055,7 @@ perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$maintenance_consum
     "${governance_docs[@]}" > "$FIXTURE/maintenance-retired-links.log"
 
 # Ensure the checker actually inspects exported targets, not the source files.
-rm "$governance_consumer/docs/tag-maintenance.md"
+rm "$governance_consumer/docs/releases/tag-maintenance.md"
 if perl "$ROOT/scripts/ci/check-documentation-links.pl" --root "$governance_consumer" \
     "${governance_docs[@]}" > "$FIXTURE/governance-missing.log" 2>&1; then exit 1; fi
 

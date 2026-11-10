@@ -1,5 +1,5 @@
 # Contributions, commits and pull requests
-<!-- Shared companions: docs/release-batches.md -->
+<!-- Shared companions: docs/releases/release-batches.md rules/engineering-details.md -->
 
 These rules are part of the [engineering baseline](../TOKO-TOOLING.md).
 Direct local edits are the default; requested or required review contributions
@@ -77,7 +77,7 @@ obtain authority for the specific recovery.
 
 ## Durable work and checkout location
 
-Qualified [frozen release batches](../docs/release-batches.md) are a narrow
+Qualified [frozen release batches](../docs/releases/release-batches.md) are a narrow
 managed-delivery exception: committed source executes under the owning checkout's
 `target/release-frozen/BATCH`, with durable Git/recovery state under
 `.git/release-state/frozen/BATCH`. Normal delivery authority covers that adopted
@@ -170,7 +170,7 @@ permission for already-authorized steps.
 | Update an existing PR with a fix | Commit the scoped fix and push to that PR's branch within the established authorization. |
 | Merge a PR or push directly to a named integration branch | Perform the specifically authorized action, subject to repository protections and required checks. |
 | Change the repository version to an exact value | Make the named metadata edit and its required consistency updates; no commit, tag, push or release execution. |
-| Run a selected standard release command | Execute its documented release effects under the [release contract](../docs/releases.md); package publication and deployment remain separate. |
+| Run a selected standard release command | Execute its documented release effects under the [release contract](../docs/releases/releases.md); package publication and deployment remain separate. |
 | Release the scoped changes | Select affected approved groups and appropriate semantic-version increments, prepare scoped commits, complete GitHub delivery and publish affected publishable groups to crates.io, without another push/publication approval. |
 | Ship or deploy the scoped crate changes | Complete Git delivery to the established integration branch and registry publication for the affected groups, including validation and verification, without another push/publication approval. |
 | Deploy, without a named repository/group or application target | Deliver only the current repository: push its reviewed changes to `origin/main` (or its established integration branch), and release/publish its affected eligible crate groups to crates.io. Do not discover or include sibling repositories. |
@@ -306,7 +306,7 @@ PR closure or branch deletion; a policy update does not request fleet adoption P
 
 The standard release runner defaults to an atomic selected-branch/tag push.
 Consumers can explicitly adopt `RELEASE_DELIVERY=pr` under the
-[release contract](../docs/releases.md#pr-delivery): prepare a release PR, then
+[release contract](../docs/releases/releases.md#pr-delivery): prepare a release PR, then
 validate its exact merged commit and push only its tag. The release request
 authorizes that documented delivery, including creating the PR. The runner never
 approves or merges it; an agent may merge only with the authority described in

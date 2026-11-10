@@ -1,5 +1,5 @@
 # Dependency and repository pinning
-<!-- Shared companions: docs/node-tools.md -->
+<!-- Shared companions: docs/tools/node-tools.md -->
 
 These rules are part of the [engineering baseline](../TOKO-TOOLING.md).
 Use one consistent selection method across repositories; consumers still own
@@ -22,7 +22,7 @@ older dependency merely to match an upstream integration stack.
 | Additional repository checkouts | Full commit ID in `ref`, unless an approved moving-input exception applies. The workflow's own checkout may follow the selected event/branch/PR. |
 | CI container images and Docker actions | `@sha256:` image digest. A repository-owned Dockerfile belongs to the source; review its base-image pins too. |
 | Downloaded executables | Exact version and platform checksum, verified before extraction/execution, followed by a version check. |
-| Toko Tooling snapshots | Reviewed source commit plus file digests under the [snapshot contract](../docs/consuming-snapshots.md). |
+| Toko Tooling snapshots | Reviewed source commit plus file digests under the [snapshot contract](../docs/adoption/consuming-snapshots.md). |
 
 - A Cargo declaration such as `version = "0.49.2"` is a compatibility range,
   not an exact pin. Prefer Cargo's ordinary compatible requirements for registry
@@ -165,7 +165,7 @@ and [npm provenance](https://docs.npmjs.com/generating-provenance-statements/).
 - Update the manifest, lock, imports and affected build inputs together. Consumer
   checks must reject first-party direct SDK declarations/imports after adoption,
   including aliases and generated entrypoints, while permitting the qualified
-  transitive provider graph. The opt-in [SDK boundary checker](../docs/node-tools.md#ic-sdk-boundary-check)
+  transitive provider graph. The opt-in [SDK boundary checker](../docs/tools/node-tools.md#ic-sdk-boundary-check)
   covers direct declarations and plain literal imports in explicitly selected
   roots; the Cargo boundary and npm declaration checkers do not inspect imports.
   Retain actual product, refusal,

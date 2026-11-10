@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/check-runtime-panics.rs scripts/ci/fixture-lifecycle.sh docs/rust-source-checks.md
+# Shared companions: scripts/ci/check-runtime-panics.rs scripts/ci/fixture-lifecycle.sh docs/validation/rust-source-checks.md
 set -euo pipefail
 
 [[ "$#" -eq 1 && "$1" == /* && -x "$1" ]] || {

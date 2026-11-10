@@ -28,7 +28,7 @@ Make targets, shell/Rust adapters and external tools that participate.
   tool/source admission; a hit is not proof of trusted bytes.
 - Verify explicit setup and offline admission, relevant failure propagation,
   early fail-closed Clippy and the consumer's release/recovery ordering under
-  the [release contract](../docs/releases.md). Preserve consumer gate selections;
+  the [release contract](../docs/releases/releases.md). Preserve consumer gate selections;
   passing CI alone does not prove release adapters use those same inputs/checks.
 - Review credential scope, command output, raw failure logs, retained archives
   and publication inputs. Record redaction or custody gaps without copying secret
@@ -58,7 +58,7 @@ Record the declared native OS/architecture and product-target matrix alongside
 matching source-bound local/hosted evidence. Missing, skipped, cancelled or
 pending required cells remain qualification gaps. Linux execution and compiler
 cross-checks do not qualify native macOS behavior. Follow the
-[host policy](../docs/supported-hosts.md); do not invent support exclusions.
+[host policy](../docs/tools/supported-hosts.md); do not invent support exclusions.
 Build reproducibility, runtime correctness and measured footprint retain their
 owning methods; release metadata or hash equality cannot substitute for them.
 

@@ -4,6 +4,13 @@
 
 ### 🔧 Changed
 
+- Group documentation into adoption, tools, validation, releases and fleet
+  guides, with a central index and separate migration history. Update explicit
+  snapshot entrypoint paths when adopting this layout; directory link checks
+  now include nested guides.
+- **Licence:** This release uses the Toko Studios Network Licence 1.0. See
+  [LICENSE](LICENSE) for its terms. Earlier grants remain unchanged.
+
 - **Breaking:** `make/consumer.mk` exposes shared release and empty-source cleanup
   targets only with `TOKO_TOOLING_RELEASE := 1`. Existing shared-release consumers
   must set it before the include; direct `make/release.mk` includes remain opt-in.
@@ -133,7 +140,7 @@
   `TOKO-TOOLING.md`. Replace the old snapshot entrypoint and update consumer
   instruction links when adopting this release; unchanged old payloads retire
   through the exporter. No compatibility alias is retained. See the
-  [migration guide](docs/consuming-snapshots.md#baseline-filename-migration-in-0370).
+  [migration guide](docs/adoption/migrations.md#baseline-filename-migration-in-0370).
 
 ### ➕ Added
 
@@ -1306,7 +1313,7 @@
 - Supply optional sccache 0.19.0 through the existing catalog and installer, with
   maintenance-only freshness inspection and explicit compatibility exceptions
   ([#319](https://github.com/dragginzgame/toko-tooling/issues/319)).
-  
+
 ### 🩹 Fixed
 
 - Build consumer formatting-hook fixtures from explicit roots and their declared
@@ -1867,7 +1874,7 @@
   input byte allowance to the renderer. The standalone Perl editors
   `render-cargo-workspace-version.pl` and `rewrite-local-lock-versions.pl` are
   removed; direct callers must adopt the owner command. See
-  [Cargo candidate rendering](docs/releases.md#cargo-release-candidate-rendering)
+  [Cargo candidate rendering](docs/releases/releases.md#cargo-release-candidate-rendering)
   and [#273 — Adopt released IC Build Cargo editor and retire Perl renderers](https://github.com/dragginzgame/toko-tooling/issues/273).
 
 ### Added
@@ -2867,7 +2874,7 @@ These notes are pending PR integration; the changes below are not yet on `main`.
   catalogs implicitly; host overrides no longer change Rust selections. Adopt
   the catalog companions and explicitly select any qualified exceptions before
   running setup. Tool versions and shared binary storage are unchanged.
-  [Adoption guide](docs/consuming-snapshots.md#common-catalog-ownership-in-0100).
+  [Adoption guide](docs/adoption/migrations.md#common-catalog-ownership-in-0100).
   ([#153](https://github.com/dragginzgame/toko-tooling/issues/153))
 
 ## [0.9.16]

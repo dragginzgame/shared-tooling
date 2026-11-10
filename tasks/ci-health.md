@@ -45,7 +45,7 @@ default from a verified custom allowance. Missing admin access is a limitation,
 not permission to expand token privileges. Repository-scoped evidence alone
 cannot establish organization-wide capacity exhaustion.
 
-For routine CI, recommend the [newest-run policy](../docs/supported-hosts.md):
+For routine CI, recommend the [newest-run policy](../docs/tools/supported-hosts.md):
 group by workflow and branch/PR ref with `cancel-in-progress: true`, replacing
 older queued and running revisions. A source SHA or run ID in that group retains
 obsolete runs. Keeping a larger pending queue does not add runner capacity.

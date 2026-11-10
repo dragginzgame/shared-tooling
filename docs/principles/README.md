@@ -8,7 +8,7 @@ The [engineering baseline](../../TOKO-TOOLING.md) is mandatory for all `dragginz
 repositories; every consumer must adopt a reviewed revision and identify its
 local overlay. These principles explain the baseline's decision tests. Product
 architecture, validation gates, release metadata and deployment identities remain
-local. Release commands follow the [common contract](../releases.md). Conflicts
+local. Release commands follow the [common contract](../releases/releases.md). Conflicts
 with common rules require maintainer-approved exceptions with scope and reason.
 
 Current principles:

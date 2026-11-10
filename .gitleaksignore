@@ -1,5 +1,5 @@
 # Generated Mermaid dependency node IDs, not credentials. Scope each exception
 # to the exact historical commit, file, rule and line; retain all other findings.
 a50b3e99da132e697c66e1b016991fe8e8f686f1:README.md:generic-api-key:54
-a50b3e99da132e697c66e1b016991fe8e8f686f1:docs/stack.md:generic-api-key:229
-2bfe9cd0ae8926b43e347ff2bdf8aa1e44d329ee:docs/stack.md:generic-api-key:365
+a50b3e99da132e697c66e1b016991fe8e8f686f1:docs/fleet/stack.md:generic-api-key:229
+2bfe9cd0ae8926b43e347ff2bdf8aa1e44d329ee:docs/fleet/stack.md:generic-api-key:365

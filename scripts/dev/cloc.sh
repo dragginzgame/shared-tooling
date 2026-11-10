@@ -30,7 +30,7 @@ Examples:
   cloc.sh -d 2 .. Sibling crates with two module levels
   cloc.sh -d 1 my-crate::parser  Drill into one module
 
-??? = unclassified LOC. Counting details: docs/fleet-tools.md
+??? = unclassified LOC. Counting details: docs/fleet/fleet-tools.md
 EOF
 }
 

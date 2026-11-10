@@ -1,8 +1,8 @@
 # Shared snapshot integrity and adoption
-<!-- Shared companions: docs/tool-catalog-bindings.md rules/agent-maintenance.md tasks/README.md -->
+<!-- Shared companions: docs/tools/tool-catalog-bindings.md rules/agent-maintenance.md tasks/README.md -->
 
 Apply the [common run contract](README.md) and the
-[snapshot contract](../docs/consuming-snapshots.md).
+[snapshot contract](../docs/adoption/consuming-snapshots.md).
 
 Inventory every maintained `.toko-tooling*.snapshot`, including nested bundles
 and explicit custom manifests. Resolve each manifest's consumer root from its
@@ -32,7 +32,7 @@ their documented reason and native qualification. These selections are
 independent; a host exception does not select Rust pins. Compare complete
 version/digest records, not just filenames or displayed versions.
 
-Use the optional [caller catalog checker](../docs/tool-catalog-bindings.md) when
+Use the optional [caller catalog checker](../docs/tools/tool-catalog-bindings.md) when
 the consumer has explicit bindings or recorded CLI selections:
 
 ```bash

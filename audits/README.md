@@ -115,7 +115,7 @@ evidence, or move consumer reports into Toko Tooling during consolidation.
 ## Consumer overlay and adoption
 
 Adopt a reviewed committed revision through the
-[snapshot procedure](../docs/consuming-snapshots.md#audit-method-adoption).
+[snapshot procedure](../docs/adoption/consuming-snapshots.md#audit-method-adoption).
 Keep shared files unchanged at `audits/`. A local method should contain only:
 
 - the selected shared method and its snapshot identity;

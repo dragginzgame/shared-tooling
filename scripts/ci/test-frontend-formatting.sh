@@ -120,8 +120,8 @@ git add Makefile Cargo.toml crates package.json package-lock.json .prettierrc.js
 cp package-lock.json "$fixture/lock-before"
 # A closer untracked config must neither control snapshot formatting nor get staged.
 printf '{"semi": true, "singleQuote": false}\n' > docs/.prettierrc.json
-printf 'unselected working edit\n' > docs/ic-tools.md
-cp docs/ic-tools.md "$fixture/unselected-before"
+printf 'unselected working edit\n' > docs/tools/ic-tools.md
+cp docs/tools/ic-tools.md "$fixture/unselected-before"
 printf 'const untracked={leave:"alone"};\n' > docs/untracked.ts
 cp docs/untracked.ts "$fixture/untracked-before"
 bash .githooks/pre-commit > "$fixture/format.log" 2>&1
@@ -148,8 +148,8 @@ RUST
 rustc --edition 2021 "$fixture/use-macros.rs" \
     --extern "formatter_macros=$fixture/libformatter_macros.rlib" -o "$fixture/use-macros"
 "$fixture/use-macros"
-[[ "$(git show :docs/ic-tools.md)" == "$(git show HEAD:docs/ic-tools.md)" ]] || exit 1
-cmp docs/ic-tools.md "$fixture/unselected-before"
+[[ "$(git show :docs/tools/ic-tools.md)" == "$(git show HEAD:docs/tools/ic-tools.md)" ]] || exit 1
+cmp docs/tools/ic-tools.md "$fixture/unselected-before"
 cmp docs/untracked.ts "$fixture/untracked-before"
 cmp docs/generated.ts "$fixture/ignored-before"
 cmp package-lock.json "$fixture/lock-before"

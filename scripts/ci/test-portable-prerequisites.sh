@@ -30,7 +30,7 @@ PATH="$fixture/missing" "$BASH" "$ROOT/scripts/ci/test-portable-tools.sh" > "$fi
 [[ "$status" == 1 ]] || exit 1
 grep -Fx 'Missing portable-test prerequisite: cloc' "$fixture/missing.log"
 grep -Fx 'Missing portable-test prerequisite: yq' "$fixture/missing.log"
-grep -F 'docs/local-setup.md' "$fixture/missing.log"
+grep -F 'docs/adoption/local-setup.md' "$fixture/missing.log"
 if grep -F 'fixture started' "$fixture/missing.log"; then exit 1; fi
 
 # Real available tools plus an unprepared formatter must fail offline before tests.

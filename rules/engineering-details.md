@@ -1,5 +1,5 @@
 # Engineering contracts by task
-<!-- Shared companions: .github/actions/cache-tool-downloads/action.yml docs/candid-boundary.md docs/release-batches.md docs/principles/rust-code-hygiene.md docs/tool-store-maintenance.md rules/agent-maintenance.md rules/change-reporting.md rules/contributions.md rules/rust-workspaces.md tasks/README.md tasks/cargo-tool-versions.md -->
+<!-- Shared companions: .github/actions/cache-tool-downloads/action.yml docs/validation/candid-boundary.md docs/releases/release-batches.md docs/principles/rust-code-hygiene.md docs/tools/tool-store-maintenance.md rules/agent-maintenance.md rules/change-reporting.md rules/contributions.md rules/rust-workspaces.md tasks/README.md tasks/cargo-tool-versions.md rules/rpc-budgets.md -->
 
 These contracts supplement the [engineering baseline](../TOKO-TOOLING.md).
 Read the applicable sections when the task touches their subject. This file is
@@ -216,7 +216,7 @@ to include siblings; cross-repository delivery requires an explicit request.
 ## IC application encoding
 
 - Enforce the lexical application-type boundary with the shared
-  [Candid source check](../docs/candid-boundary.md), using reviewed declaration
+  [Candid source check](../docs/validation/candid-boundary.md), using reviewed declaration
   allowances for named external protocols and codec comparisons. Review macro
   expansion and cross-module aliases separately; the check is not type resolution.
 - **Use `ic-wire` for all application endpoints we own**, including public
@@ -499,7 +499,7 @@ contracts; ordinary development does not require rereading these mechanics.
   remain when they establish different contracts. Keep early fail-closed lint.
 - A later release or publication step must freshly admit its inputs, but need
   not automatically repeat every earlier check. Reuse only through the qualified
-  [stage evidence contract](../docs/release-validation-reuse.md); missing or
+  [stage evidence contract](../docs/releases/release-validation-reuse.md); missing or
   changed evidence requires execution. Neither a successful earlier group nor
   a version-only diff proves reuse is safe. Preserve actual archive verification,
   registry/source identity and recovery checks at their owning boundaries.
@@ -517,7 +517,7 @@ contracts; ordinary development does not require rereading these mechanics.
   preparation and dependency updates need no repeated network permission;
   explicit offline settings and execution-environment restrictions still apply.
   Prepare selected executable tools separately through the
-  [release/setup contract](../docs/releases.md), before dependent validation.
+  [release/setup contract](../docs/releases/releases.md), before dependent validation.
   Offline checks and standalone read helpers must not install or fetch implicitly.
 - Test maintained observable behavior, typed failures and genuine architectural
   boundaries. Delete tests that only prohibit a removed name or remember an old
@@ -577,12 +577,12 @@ blind retries.
   `RELEASE_GROUP` selects one group, and multiple groups require an explicit roster.
   Keep publication on that captured source so concurrent
   normal-checkout lock updates belong to the next batch. Use Shared's
-  [batch setup, recovery and custody interfaces](../docs/release-batches.md),
+  [batch setup, recovery and custody interfaces](../docs/releases/release-batches.md),
   rather than adding local orchestration wrappers. Qualify the consumer's real
   hooks before activation; an imported helper alone does not complete adoption.
 - Every `dragginzgame` repository, including Toko Tooling, must expose
   `make release-patch`, `make release-minor` and `make release-major`.
-  All three use the same [release contract and Makefile pattern](../docs/releases.md):
+  All three use the same [release contract and Makefile pattern](../docs/releases/releases.md):
   preflight, validate, bump and finalize the changelog, stage and commit, then
   deliver and tag through the repository's explicitly selected direct or PR policy.
   Only the selected semantic-version component differs between the three targets.
@@ -594,14 +594,14 @@ blind retries.
   commit afresh before tagging. Never select another policy to bypass a rejected
   push or branch protection.
 - Independent release groups may select a complete, consumer-owned gate under
-  the [group validation contract](../docs/release-group-validation.md). Account
+  the [group validation contract](../docs/releases/release-group-validation.md). Account
   for every stage, including affected consumers, public identities, generated
   inputs, native hosts and installed behavior. Shared changes broaden the plan;
   unknown scope refuses or uses the existing full gate. Keep full repository CI,
   source/archive admission and recovery intact. Group selection alone grants no
   omission; qualify the mapping before enabling it in a release adapter.
 - Keep group validation modular under the
-  [shared-mechanics boundary](../docs/release-group-validation.md#shared-mechanics-and-local-policy).
+  [shared-mechanics boundary](../docs/releases/release-group-validation.md#shared-mechanics-and-local-policy).
   Consumers own product mappings and one full-stage roster; Shared owns reusable
   dispatch, checkpoint and evidence mechanics. Raise missing shared capabilities
   at their owner instead of multiplying local frameworks. Full CI must not loop
@@ -696,7 +696,7 @@ blind retries.
   evidence. Successful builds discard their private compiler scratch after byte
   admission, while installation custody is still held. Historical selectors and
   automatic previous-version fallbacks are not permanent liveness roots. Use the
-  producer's [store maintenance contract](../docs/tool-store-maintenance.md),
+  producer's [store maintenance contract](../docs/tools/tool-store-maintenance.md),
   including expiring failed attempts, recovery pins, preview, physical-byte
   accounting and explicit quiescence where executable users cannot be leased.
   Updating one consumer must not upgrade or reclaim another consumer's selection.
@@ -816,9 +816,9 @@ blind retries.
   normalizing them; never silently select a different path. Deliberate negative
   test fixtures may contain forbidden names. Preserve existing artifacts and
   evidence with those names; this rule does not authorize renaming or deletion.
-- Provide [local developer setup](../docs/local-setup.md) through explicit
+- Provide [local developer setup](../docs/adoption/local-setup.md) through explicit
   `make install-tools` and offline `make tools-check`, following the
-  [required tool inventory](../docs/local-setup.md#required-tool-inventory).
+  [required tool inventory](../docs/tools/tool-inventory.md#required-tool-inventory).
   Every repository prepares the same common host and Cargo-tool sets. IC
   executables are product selections through the existing ordered local target
   lists; repositories without an IC executable caller need not install them.
@@ -834,7 +834,7 @@ blind retries.
   `make/tools.mk`, not unordered aggregate prerequisites. Make/CI callers select
   their own checkout's local paths; document interactive shell PATH setup,
   prepared Rust toolchains and system bootstrap packages separately.
-  Adopt the [consumer Make interface](../docs/make-interface.md) from the reviewed
+  Adopt the [consumer Make interface](../docs/adoption/make-interface.md) from the reviewed
   snapshot for common commands and LOC reporting, replacing copied recipes;
   CI calls the same targets. Keep product inputs and adapters local. Use
   declarative Rust formatter inputs for extra workspaces, derive sorting and
@@ -852,12 +852,12 @@ blind retries.
   tool-build environment and exact build identities; application compiler flags
   and wrappers remain repository-owned and do not configure these tool builds. Consumers
   must not create independent stores or new bespoke `.tools` installers. Follow
-  the [shared storage adoption boundary](../docs/local-setup.md#shared-executable-storage)
+  the [shared storage adoption boundary](../docs/adoption/local-setup.md#shared-executable-storage)
   through reviewed canonical tooling; `.tools/host` and `.tools/ic` select shared
   bundles without storing new executable copies in the checkout. This does not
   authorize deleting
   existing installations or replacing them with a mutable sibling PATH.
-- Repositories using IC executables select the [local IC setup](../docs/ic-tools.md) through
+- Repositories using IC executables select the [local IC setup](../docs/tools/ic-tools.md) through
   `make install-ic-tools` and offline `make ic-tools-check`, declaring the needed
   executable names in `IC_TOOLS` before including the shared Make interface.
   Standalone callers supply repeated `--tool NAME` arguments; no complete bundle
@@ -953,7 +953,7 @@ blind retries.
   or normalizing them, and check resolved directory aliases as well. Never repair
   an invalid path by stripping characters: that can select a different directory.
   This restriction does not prohibit ordinary spaces in paths.
-- CI/release tools use [reviewed snapshots](../docs/consuming-snapshots.md), not symlinks
+- CI/release tools use [reviewed snapshots](../docs/adoption/consuming-snapshots.md), not symlinks
   or mutable sibling/network sources. Do not patch vendored copies; fix upstream
   or keep an explicit consumer-owned adapter outside the snapshot.
 - Portable scripts use Bash strict mode and preserve Bash 3.2 compatibility unless
@@ -980,14 +980,14 @@ blind retries.
 - Qualify supported hosts through native CI or recorded native execution of the
   relevant workflows. Linux passes, cross-compilation and installer branches
   alone do not prove macOS behavior. Align evidence with
-  [the host guidance](../docs/supported-hosts.md) and the consumer's matrix; report
+  [the host guidance](../docs/tools/supported-hosts.md) and the consumer's matrix; report
   outstanding qualification without weakening the support requirement.
 - Routine CI keeps only the newest run per workflow and branch/PR ref. Use a
   stable workflow/ref concurrency group with `cancel-in-progress: true`, without
   source SHA or run ID, so newer revisions cancel queued and running older checks.
   Preserve all required hosts on the retained run. Cancelled checks do not qualify
   their source; release, publication and deployment workflows retain separate
-  effect/recovery obligations. See [the CI policy](../docs/supported-hosts.md).
+  effect/recovery obligations. See [the CI policy](../docs/tools/supported-hosts.md).
 
 ## Feedback and handoff
 

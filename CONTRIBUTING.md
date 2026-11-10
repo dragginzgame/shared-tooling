@@ -48,7 +48,7 @@ Code, prose, and automation do not belong here merely because they could be
 reused. Keep product architecture, deployment identity, accepted release plans,
 release validation gates, network identity, and repository-specific inputs local
 within the common baseline. Release command names and sequencing follow the
-[common release contract](docs/releases.md).
+[common release contract](docs/releases/releases.md).
 
 ## Baseline and overlay
 
@@ -137,7 +137,7 @@ expanding them.
 Contributions must preserve required macOS support. Document host-specific
 dependency setup, CI and deployment prerequisites, and qualify the affected
 behavior on the declared native hosts. Follow the
-[host guidance](docs/supported-hosts.md); a Linux-only pass does not qualify
+[host guidance](docs/tools/supported-hosts.md); a Linux-only pass does not qualify
 macOS behavior.
 
 ## Validation
