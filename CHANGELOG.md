@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 44630)
-Total output lines: 3517
-
 # Changelog
 
 ## [0.39.1] - Unreleased
@@ -1278,7 +1275,1126 @@ Total output lines: 3517
 
 ### 🩹 Fixed
 
-- Keep single-tool freshness checks independent …14630 tokens truncated…xture diagnostic replay](https://github.com/dragginzgame/toko-tooling/pull/221)).
+- Keep single-tool freshness checks independent of unrelated Cargo installations,
+  while preserving refusal for unsupported selected identities and invalid receipts.
+- Correct release help to distinguish fresh releases from explicit saved-attempt
+  recovery with `release-resume VERSION=X.Y.Z`.
+
+## [0.27.5]
+
+### 🩹 Fixed
+
+- Admit maintenance permissions with a no-model sandbox preflight before recording
+  dispatch. Reuse the same settings for execution, carry one completed prior
+  report, and scope scheduled work to the checks its offline permissions support.
+
+### ♻️ Changed
+
+- Run one documentation-only CI job while retaining all native hosts for code
+  changes. Build real-helper test fixtures from their declared dependency roots.
+- Select failed-target excerpts once for retained reports and replay them only
+  in the outer runner's final console summary, preserving complete raw logs.
+
+## [0.27.4]
+
+### 🩹 Fixed
+
+- Serialize maintenance filesystem permissions as one table so Codex admits
+  literal paths containing dots and slashes. Qualify the report-only runner
+  through the installed host environment before unattended execution
+  ([#320](https://github.com/dragginzgame/toko-tooling/issues/320)).
+
+## [0.27.3]
+
+### 🔒 Security
+
+- Make unattended maintenance report-only, with explicit source-read/evidence-write
+  permissions, no network or connected apps, no approval escalation and a cleared
+  launch environment. Requalify the installed host configuration before resuming
+  scheduled runs ([#320](https://github.com/dragginzgame/toko-tooling/issues/320)).
+
+### ➕ Added
+
+- Compare snapshot payloads against an independently reviewed source commit at
+  adoption, while retaining offline local integrity checks for ordinary builds
+  ([#321](https://github.com/dragginzgame/toko-tooling/issues/321)).
+- Supply optional sccache 0.19.0 through the existing catalog and installer, with
+  maintenance-only freshness inspection and explicit compatibility exceptions
+  ([#319](https://github.com/dragginzgame/toko-tooling/issues/319)).
+
+### 🩹 Fixed
+
+- Build consumer formatting-hook fixtures from explicit roots and their declared
+  companion closure, including new unstaged helpers, instead of requiring each
+  consumer to repeat the transitive file list. Preserve opaque Git submodules
+  and newline-bearing consumer paths while retaining relative-path admission.
+
+## [0.27.2]
+
+### 📚 Documentation
+
+- Clarify native/system bootstrap before Cargo-tool preparation, including the
+  release editor, and explicit re-preparation after build-environment changes.
+  Document complete release-prerequisite coverage and consumer ordering fixtures
+  without changing installer ownership or receipt admission
+  ([#317 — Document native bootstrap ordering before Cargo tool preparation](https://github.com/dragginzgame/toko-tooling/issues/317)).
+
+## [0.27.1]
+
+### 🥾 Governance
+
+- Require one remediation issue at the supplying owner for shared dependency
+  defects and advisories, including crypto/Agent findings at IC Platform.
+  Retain consumer evidence there; separate consumer issues need distinct
+  actionable work. Keep security gates and scoped risk decisions intact
+  ([#50 — Resolve RUSTSEC-2026-0387 at the IC Platform crypto/Agent boundary](https://github.com/dragginzgame/ic-platform/issues/50)).
+
+## [0.27.0]
+
+### ➕ Added
+
+- Maintain a Toko stack dependency diagram in the README, with an offline
+  regeneration/check command and linked workspace and manifest evidence.
+  Distinguish declared dependencies from resolved builds and runtime deployment.
+- Add an opt-in daily local refresh that keeps the generated diagram and
+  dependency evidence current, leaving changes for the next normal commit.
+  No automatic staging, commits, dependency downloads or GitHub credentials.
+
+### 📚 Documentation
+
+- Shorten the README to orientation, ownership and supported entry points.
+  Consolidate fleet-report and validation-runner references in dedicated guides,
+  correcting the dashboard description and linking canonical setup and formatting
+  instructions instead of repeating stale examples.
+
+## [0.26.26]
+
+### 🩹 Fixed
+
+- Keep formatting reuse enabled for ordinary conditional attributes followed by
+  unrelated path text. Inspect balanced Rust attributes through the shared lexer,
+  retaining uncached execution for actual module overrides or incomplete syntax
+  ([#315](https://github.com/dragginzgame/toko-tooling/issues/315)).
+
+## [0.26.25]
+
+### 🩹 Fixed
+
+- Qualify non-UTF8 scanner arguments without requiring the host filesystem to
+  create invalid-UTF8 filenames. Preserve successful scans where those names are
+  supported and source-IO diagnostics where they are rejected, fixing native
+  macOS qualification ([#310](https://github.com/dragginzgame/toko-tooling/issues/310)).
+
+## [0.26.24]
+
+### 🩹 Fixed
+
+- Allow formatting commits in repositories with tracked submodules. Keep each
+  child checkout opaque, preserve staged gitlink identities, and format only
+  selected regular files without reading or changing child contents.
+- Include the Node prerequisite guide in governance exports and declare its
+  documentation dependency without enabling Node setup
+  ([#311](https://github.com/dragginzgame/toko-tooling/issues/311)).
+- Keep CI-inspection fixtures concise on success and replay their last observation
+  and command trace on failure, retaining exact status and fixture evidence
+  ([#313](https://github.com/dragginzgame/toko-tooling/issues/313)).
+
+### ➕ Added
+
+- Format explicitly selected standalone Rust files with a declared edition and
+  visible pass timing. Keep these selections uncached so module/configuration
+  inputs cannot be skipped by an incomplete proof
+  ([#314](https://github.com/dragginzgame/toko-tooling/issues/314)).
+- Use Clap for runtime-scanner help and argument handling while preserving
+  source diagnostics, non-UTF8 paths and exit-status contracts. Consumers compiling
+  the source must add Clap to their private compiler package
+  ([#310](https://github.com/dragginzgame/toko-tooling/issues/310)).
+
+## [0.26.23]
+
+### ➕ Added
+
+- Own Rust formatting orchestration for extra workspaces, optional derive sorting
+  and manifest order through declarative consumer inputs, replacing copied
+  workspace adapters while preserving custom formatter commands.
+
+### 🔧 Changed
+
+- Show progress and elapsed time for each Rust formatting pass. Reuse successful
+  results only for unchanged inputs, with prepared tools still checked; retain
+  failed logs and provide an explicit option to run every pass.
+
+### 📊 Audit
+
+- Trace unreadable Canic release output to expected-error assertions in Shared's
+  generic CI-inspection tests. **Pending cleanup:** give those tests concise
+  success summaries with detailed failure evidence
+  ([#313](https://github.com/dragginzgame/toko-tooling/issues/313)).
+- Track removal of unnecessary generic CI-inspection tests from routine
+  [Canic](https://github.com/dragginzgame/canic/issues/461) and
+  [IcyDB](https://github.com/dragginzgame/icydb/issues/474) gates separately,
+  retaining snapshot integrity and consumer integration checks.
+
+### 🥾 Governance
+
+- Make IC Tooling's bounded artifact encoder the gzip owner for production and
+  fixtures. Prefer fast compression for ordinary fixtures and production settings
+  for byte-contract tests. Keep compression policy with consumers, independent
+  interoperability controls explicit, and retained compressed-byte hashes qualified
+  across backend changes; no Platform migration is required.
+
+### 🧭 Migration Notes
+
+- Consumers with paired formatter overrides must explicitly migrate their local
+  inputs and caller fixtures; a snapshot refresh alone preserves the overrides.
+  Follow-through is tracked for
+  [Canic](https://github.com/dragginzgame/canic/issues/455) and
+  [IcyDB](https://github.com/dragginzgame/icydb/issues/473).
+- Preserve complete standalone-source adapters in Platform and Persistence;
+  shared support for those extra Rustfmt passes remains
+  [follow-up work](https://github.com/dragginzgame/toko-tooling/issues/314).
+
+## [0.26.22]
+
+### 🥾 Governance
+
+- Make the owned-type `CandidType` prohibition explicit. Prefer IC Wire for
+  application payloads; isolate unavoidable Candid projections at named external
+  protocol or retained-data boundaries, including in tests and generators.
+- Require the existing `thiserror` dependency for mechanical native error
+  implementations while preserving messages, conversions, source identity and
+  meaningful recovery projections.
+- Strengthen coding rules and audit checkpoints for complete source inspections,
+  strict machine-output decoding, bounded subprocess capture and safe terminal
+  diagnostics. Require focused negative regression cases in the owning normal
+  test/CI path; adopting the rules alone does not install executable enforcement.
+
+## [0.26.21]
+
+### 🔧 Changed
+
+- Use IcyDB-style emoji sections for latest/current and future root release
+  notes. Include only relevant categories, with one `📝 Summary` section for
+  small entries; preserve older history, release identities and dates.
+
+## [0.26.20]
+
+### ➕ Added
+
+- Offer an opt-in npm SDK boundary check for direct SDK declarations, aliases
+  and literal imports, supporting adoption of `@tokostudios/ic-platform` without
+  requiring npm in Rust-only repositories.
+
+### 🔧 Changed
+
+- Reduce routine agent overhead with a compact baseline, task-specific detailed
+  rules, batched focused validation and opt-in change accounting.
+- Use documentation-only CI for reviewed root documentation and developer guides;
+  unknown paths, executable inputs and policy changes retain full qualification.
+- Make the separate `@tokostudios/ic-platform` npm package explicit in the
+  JavaScript/TypeScript SDK boundary rules, with independent Rust/npm release
+  identities and consumer-owned provider qualification.
+
+### 🩹 Fixed
+
+- Reject optional and peer dependency drift between npm manifests and lock roots
+  during Node prerequisite checks.
+
+## [0.26.19]
+
+### Fixed
+
+- Preserve archived Draft labels inside historical changelog sections without
+  blocking a new release. Current draft and candidate conflicts still refuse.
+
+## [0.26.18]
+
+### Fixed
+
+- Start normal release commands fresh from current committed metadata without
+  scanning historical plans or replaying old release effects. Use
+  `release-resume VERSION=X.Y.Z` for explicit recovery; current source, lock,
+  candidate-ref and destination checks still apply
+  ([#309 — Fresh normal releases without historical-plan blockers](https://github.com/dragginzgame/toko-tooling/issues/309)).
+
+## [0.26.17]
+
+### Fixed
+
+- Explain rejected assertion selections and initialization layouts in retention
+  probes, clearing stale or partial generated scripts before refusing execution.
+- Diagnose unsupported fixture-retention EXIT trap layouts and leave no partial
+  generated probe when the required boundary is missing. Document the supported
+  one-line trap convention
+  ([#308 — Diagnose unsupported EXIT-trap shapes in fixture_probe_prefix](https://github.com/dragginzgame/toko-tooling/issues/308)).
+
+### Changed
+
+- Treat edits confined to the reviewed RPC-budget guide as documentation-only
+  CI changes. Snapshot catalogs, release versions and executable changes still
+  require full qualification.
+
+## [0.26.16]
+
+### Added
+
+- Require one product owner for generated RPC budgets, with a qualification
+  recipe for browser/server policy drift, intentional asymmetry and runtime
+  boundary behavior. Numeric defaults and consumer qualification remain local
+  ([#307 — Require one policy owner and boundary qualification for browser RPC budgets](https://github.com/dragginzgame/toko-tooling/issues/307)).
+
+## [0.26.15]
+
+### Changed
+
+- Preserve established workspace groupings and coordinated versions. Prefer
+  batching related breaking changes over repeated downstream migrations, and
+  classify dependency upgrades by their actual impact on each consumer's public
+  contract.
+- Clarify dependency-adoption checks: verify the selected consumer graphs and
+  important type identities without treating temporary migration states or
+  whole-lockfile duplicates as defects.
+
+## [0.26.14]
+
+### Fixed
+
+- Distinguish admitted Cargo-tool contention from missing installation with exit
+  status 75. Allow explicit bounded read-only admission waits during release
+  recovery, rechecking selection and inputs without installation or lock cleanup
+  ([#306 — Busy tool admission during release recovery](https://github.com/dragginzgame/toko-tooling/issues/306)).
+
+## [0.26.13]
+
+### Fixed
+
+- Allow a normal release to advance from clean, manually committed candidate
+  metadata despite missing earlier tags or incomplete Git delivery. Preserve the
+  earlier plan without claiming completion, validate the next version afresh,
+  and retain conflicting-source/ref refusals ([#305 — Make committed-preparation recovery actionable when the release tag is missing](https://github.com/dragginzgame/toko-tooling/issues/305)).
+
+## [0.26.12]
+
+### Fixed
+
+- Fetch complete history for the portable CI matrix so snapshot-impact
+  qualification can inspect the previous committed source on every host.
+- Align the recorded snapshot source version with the delivered 0.26.11
+  implementation ([#304 — Reconcile committed VERSION with the delivered 0.26.11 snapshot source](https://github.com/dragginzgame/toko-tooling/issues/304)).
+
+## [0.26.11]
+
+### Added
+
+- Report Cargo-tool setup phases, durations and outcomes on stderr while
+  preserving path-only stdout, offline checks, build identities and failure
+  evidence ([#303 — Report Cargo tool setup phases and durations](https://github.com/dragginzgame/toko-tooling/issues/303)).
+
+## [0.26.10]
+
+### Added
+
+- Opt-in common external IC dependency guards, composed with stricter local
+  ownership rules; existing consumers select adoption explicitly.
+- Optional exact Cargo-tool caching in common CI setup, plus aggregate offline
+  tool diagnostics and read-only installer selection reports.
+- Snapshot upgrade impact previews and structured dependency-graph failures with
+  representative introducing paths, preserving consumer selection policy.
+- Reusable parallel-Make lint-order qualification for consumer release and
+  deployment pipelines, using substituted effects.
+
+### Fixed
+
+- Formatting now reads the same literal tool catalog as installation and caching,
+  refusing duplicate assignments and executable configuration.
+- Keep the remaining standalone CI fixture bootstraps independent of inherited
+  `CDPATH` and invocation style. Preserve physical checkout paths before loading
+  helpers, including spaces and trailing newlines in isolated path fixtures.
+- Reuse shared allocation in the allocation, jobserver, dependency-boundary,
+  publication-attempt, Rust-tool and release-receipt fixtures. Keep scratch paths and cleanup
+  anchored to the caller rather than a `CDPATH` lookup.
+- Direct current Build, Host and Testkit contributions to their consolidated
+  IC Tooling workspace while preserving historical qualification references.
+- Ignore the retired checkout-local build directory during Cargo-tool setup and
+  checks, preserving old evidence and all current shared-store path checks.
+
+### Changed
+
+- Reuse fixture lifecycle and companion-copy helpers, remove duplicate IC receipt
+  membership checks and evidence-test cases, and select the compact-evidence CI
+  step by its stable ID through the existing workflow extractor.
+
+## [0.26.9]
+
+### Fixed
+
+- Keep Cargo graph and changelog fixtures working with inherited `CDPATH` and
+  relative entrypoints. Anchor Cargo failure-fixture preparation to its physical
+  destination, preserving spaces and refusing empty or CR/LF paths.
+
+## [0.26.8] - Unreleased
+
+### Fixed
+
+- Keep explicit Cargo setup waiting through an admitted owner's lock cleanup.
+  A disappearing directory is rechecked before atomic acquisition; a missing
+  record is tolerated only for the same previously admitted physical lock.
+  Invalid claims, timeouts and atomic acquisition failures still refuse.
+  This fixes the Intel macOS contention regression in 0.26.7 ([#301](https://github.com/dragginzgame/toko-tooling/issues/301)).
+
+### Changed
+
+- Initialize the Cargo source cache without a global installation lock. Concurrent
+  creators use idempotent private directory creation with existing path admission;
+  Cargo continues to own downloads and selected-tool slots still serialize builds.
+  After adopting this build-policy change, rerun explicit Cargo-tool setup once.
+  Previous generations and old source-preparation slots remain retained.
+
+## [0.26.7]
+
+### Fixed
+
+- Let explicit Cargo-tool setup wait briefly for an admitted shared-slot owner,
+  then recheck inputs and reuse its verified result. Keep offline checks
+  immediate and never remove another owner's lock. Setup waits up to 60 seconds
+  per occupied slot; set `TOKO_TOOLING_SETUP_WAIT_SECONDS=0` for immediate refusal
+  ([#301 — Bound cross-checkout tool setup contention](https://github.com/dragginzgame/toko-tooling/issues/301)).
+
+## [0.26.6]
+
+### Changed
+
+- Clarify asynchronous merge guidance when agent-runtime approval blocks an
+  otherwise authorized action. Keep GitHub requirements and runtime restrictions
+  distinct, with one canonical policy for reporting and handling the blocker
+  ([#300 — Clarify runtime approval boundaries](https://github.com/dragginzgame/toko-tooling/issues/300)).
+
+### Fixed
+
+- Reuse shared temporary-directory allocation in native-host, formatter-evidence
+  and tool-version fixtures, preserving evidence and cleanup with relative or
+  aliased scratch directories and inherited `CDPATH`.
+- Include the required tag-maintenance helper when copying fixture companions,
+  so isolated checks do not depend on files outside their selected bundle.
+- Derive validation-runner child bundles from declared script roots instead of
+  repeated helper lists, and include verification helpers in isolated fixtures.
+
+## [0.26.5]
+
+### Added
+
+- Share CI/release trust and artifact review guidance, and focused boundary-handoff
+  proof within flow audits. Keep product invariants and historical evidence local.
+
+### Fixed
+
+- Resolve retained validation logs from the caller's directory, independently of
+  inherited `CDPATH`, and support relative log directories with a leading dash.
+- Keep digest fixtures working with relative or aliased temporary directories,
+  reusing shared allocation and cleanup to preserve failure evidence paths.
+
+## [0.26.4]
+
+### Fixed
+
+- Preserve independent parent errors alongside nested validation diagnostics in
+  highlighted logs and GitHub summaries, without adding duplicate annotations.
+- Limit failure excerpts before capturing them in shell memory, preserving full
+  raw logs while avoiding excessive memory use for large diagnostic output.
+- Publish latest failure logs atomically without following symlinks or copying
+  into directories; report unique retained evidence when a latest update fails.
+- Preserve target failure statuses through GitHub summary and temporary-cleanup
+  errors; retain complete local summaries and evidence when publication fails.
+- Reject NUL-bearing checksum-tool output before shell capture can discard bytes,
+  preserving backend failure handling in digest generation and verification.
+- Preserve existing diagnostic checksum files and symlink targets, including
+  checksum destinations introduced while the archive is being created.
+- Require one artifact metadata document before downloading retained evidence;
+  reject concatenated responses without requesting the ZIP.
+
+## [0.26.3]
+
+### Fixed
+
+- Accept Cargo's command-line feature annotations when selected dependency roots
+  overlap, preserving package identity counts and forbidden-feature checks
+  ([#299 — Cargo graph feature checks reject command-line root annotations](https://github.com/dragginzgame/toko-tooling/issues/299)).
+
+## [0.26.2]
+
+### Fixed
+
+- Enable Testkit's required `cli` feature in lockfile-selected server setup and
+  offline-check examples; keep `cli` out of library-only dependencies
+  ([#297 — Add required cli feature to lockfile-selected Testkit setup example](https://github.com/dragginzgame/toko-tooling/issues/297)).
+- Accept padded BSD `wc` output in IC fixture download-count assertions and
+  exercise that padding on Linux as well.
+
+## [0.26.1]
+
+### Added
+
+- Document focused dependency-adoption checks across independent consumer graphs,
+  reusing existing checks while keeping package, identity and artifact policy local
+  ([#295 — Provide a focused dependency-adoption check contract](https://github.com/dragginzgame/toko-tooling/issues/295)).
+
+### Fixed
+
+- Include selected IC-tool preflight in release-editor setup and recovery
+  fixture expectations
+  ([#296 — Update release-editor setup fixture for selected IC preflight](https://github.com/dragginzgame/toko-tooling/issues/296)).
+- Keep IC tool-selection arguments to awk on one line so macOS can prepare
+  multiple selected tools; preserve canonical selections and store identities
+  ([#294 — Make multi-tool IC selection portable to macOS awk](https://github.com/dragginzgame/toko-tooling/issues/294)).
+
+## [0.26.0]
+
+### Breaking
+
+- Require explicit IC executable selections: set `IC_TOOLS` for Make callers
+  or pass repeated `--tool NAME` arguments to the installer. Only requested tools
+  are downloaded and admitted; subset identities, offline checks and retained
+  receipts use the same selection. Prepare tools explicitly after adoption;
+  prior bundles and failed candidates remain retained.
+- Pass the IC tool selection to compact evidence collection. The failure action
+  accepts `ic-tools`; omitted or mismatched selections retain full IC payloads.
+  Direct compact-selector and compact-collector callers must supply the new list
+  argument; full-retention calls keep their existing interface.
+  IC version reports likewise require an explicit list and probe only selected tools.
+
+## [0.25.9]
+
+### Fixed
+
+- Use the source checkout's declared compiler in native cross-checkout tool
+  reuse qualification, so the probe compares the same prepared build identities.
+- Refuse a second release increment after committing failed preparation until
+  the saved candidate's Git delivery is confirmed. Retain the plan and evidence
+  when delivery is missing or uncertain
+  ([#292 — Prevent committed release preparation from silently incrementing twice](https://github.com/dragginzgame/toko-tooling/issues/292)).
+
+## [0.25.8]
+
+### Fixed
+
+- Accept numbered `- Unreleased` changelog headings during release preflight
+  and replace the marker with the saved UTC release date during preparation,
+  before the release commit, tag and push.
+
+## [0.25.7]
+
+### Changed
+
+- Require Rust release and deployment entrypoints to pass their existing Clippy
+  gate before expensive builds, tests, packaging or new external effects, with
+  failure stopping later stages even under parallel Make. Consumers retain the
+  selected lint scope and must apply the ordering in their own entrypoints.
+
+## [0.25.6]
+
+### Fixed
+
+- Retain Cargo metadata failure diagnostics, root inputs and separate command/
+  logger statuses, preserving the original failure without automatic retries
+  ([#291 — Retain failed Cargo metadata diagnostics and root inputs](https://github.com/dragginzgame/toko-tooling/issues/291)).
+
+## [0.25.5]
+
+### Changed
+
+- Qualify focused fixture exports from one entrypoint each, deriving helpers
+  through declared companions instead of selecting a second helper roster.
+  Independent exports prevent one fixture from masking another's missing dependency.
+- Derive installer, tooling-report and failure-retention fixture inputs from
+  declared companions rather than copied helper rosters. Failure-evidence checks
+  use the shared step reader to reject ambiguous or incomplete run selections,
+  reusing one parsed action for collection and policy assertions.
+- Prepare installer fixture checksums through the shared digest reader, removing
+  a separate backend-selection and checksum-output parser.
+
+## [0.25.4]
+
+### Fixed
+
+- Clarify failure-evidence collection: use the existing orchestrator, treat failed
+  selector output as diagnostics and retain redirected parent links without
+  traversing them. Keep product log selections and hosted transport checks local.
+
+## [0.25.3]
+
+### Added
+
+- Enable explicit Cargo features when preparing and checking selected tools,
+  including Host's `ic-host-file` CLI. Bind canonical feature sets to immutable
+  selections and Cargo receipts; offline checks never install or repair tools
+  ([#289 — Support explicit Cargo features in selected-tool installation and admission](https://github.com/dragginzgame/toko-tooling/issues/289)).
+  After adoption, rerun explicit tool setup for the updated build policy;
+  previous installations and failed attempts remain retained.
+
+## [0.25.2]
+
+### Fixed
+
+- Use the shared fixture lifecycle for remaining plain cleanup handlers, keeping
+  failed inputs and cleanup diagnostics consistent across metadata, registry,
+  Make, release and snapshot checks.
+- Prepare installer and tool-report fixtures from their entrypoints' declared
+  companions, so helper changes propagate without separate copied file lists.
+  Keep fixture-specific catalogs and effect substitutes explicit.
+
+## [0.25.1]
+
+### Changed
+
+- Require Wire for owned application endpoints, including public and third-party
+  callers. Reserve Candid for required independent protocols and existing
+  checkpoint compatibility; qualify actual frames and bindings during migration.
+- Clarify maintenance of imported runtime and cryptographic code: preserve
+  provenance, review applicable upstream fixes and qualify intentional source
+  changes. Require isolated recovery evidence before claiming build independence.
+
+### Fixed
+
+- Prepare Shared's selected tools during admitted fresh release preflight and
+  merged-source qualification. Keep saved preparation and standalone preflight
+  checks offline, with setup failures stopping before validation or version writes.
+- Retain Perl fixture inputs when setup crashes, execution ends early or cleanup
+  fails, preserving the original failure status and diagnostic evidence.
+- Preserve Shared release-preparation originals and candidates on failure while
+  keeping VERSION-last replacement and retry behavior. Report retained evidence
+  when scratch cleanup fails.
+- Use shared lifecycle handling in Cargo freshness and release-metadata fixtures
+  so cleanup failures identify retained inputs and preserve their failure status.
+- Pin Shared's own development compiler and prepare it before CI computes Cargo
+  cache identity or builds tools, preserving the runtime scanner's separate floor.
+- Refuse missing or malformed release-editor inputs before portable fixtures
+  start. Use `make test-portable` to supply the admitted editor and byte allowance.
+- Explain Cargo-tool admission failures with the rejected source or receipt path
+  and an explicit setup command retaining the requested selection. Rerun setup
+  after adopting the updated build-helper policy; prior generations stay retained.
+
+## [0.25.0]
+
+### Breaking
+
+- Delegate Cargo manifest and lock candidate rendering to released IC Build.
+  Cargo adapters must supply the prepared editor's absolute path and a positive
+  input byte allowance to the renderer. The standalone Perl editors
+  `render-cargo-workspace-version.pl` and `rewrite-local-lock-versions.pl` are
+  removed; direct callers must adopt the owner command. See
+  [Cargo candidate rendering](docs/releases/releases.md#cargo-release-candidate-rendering)
+  and [#273 — Adopt released IC Build Cargo editor and retire Perl renderers](https://github.com/dragginzgame/toko-tooling/issues/273).
+
+### Added
+
+- Check indexed and tracked/nonignored working paths for repository symlinks,
+  including dangling links and redirected parent directories. Shared CI and
+  release validation run this check without following targets or changing Git state.
+
+- Share selected Cargo graph checks for canonical package identities, optional
+  identity caps and forbidden dependency-feature edges. Consumers keep their
+  roots, targets, feature selections and policy; failed or malformed Cargo
+  observations cannot pass admission.
+- Retain child user/system CPU observations alongside paired snapshot export
+  timings, preserving the elapsed-time format and payload checks. This supports
+  native investigation of
+  [#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/toko-tooling/issues/219).
+
+### Changed
+
+- Prohibit symlinks in maintained source and package assets.
+  Keep narrowly admitted tool-store selection pointers and isolated rejection
+  fixtures; use regular package-local copies where needed.
+- Prefer IC Wire for supported controlled application messages. Require a concrete
+  reason for retained Candid use, and audit actual exports and codec consumers
+  across both protocols while preserving required interoperability.
+- Allow production and test/tooling package headers inside `workspace.members`,
+  distinct from dependency-role headers in `workspace.dependencies`.
+- Require Clap for Rust CLI argument handling, using its existing parsing,
+  validation and help capabilities before adding custom CLI mechanics.
+
+### Fixed
+
+- Require release adapters to select admitted tool paths themselves, preserving
+  the one-shot release commands without per-shell environment exports. Keep
+  fresh setup after source admission and recovery bound to saved selections.
+- Prepare Shared's required release editor through local setup and use the same
+  offline-admitted selection in Make and CI. Missing tools stop before fixture
+  dispatch; consumers retain their own release-tool choices.
+- Prepare governance snapshot fixtures from their complete companion closure,
+  so exported guides retain newly linked documentation without extra roots.
+
+## [0.24.3]
+
+### Changed
+
+- Require external IC-specific dependencies, including DFINITY packages, to go
+  through `ic-platform` in production, build, test and tooling code. Keep product
+  policy with its owning crate and track missing Platform capabilities and
+  existing direct dependencies under the
+  [dependency boundary](rules/cargo-dependencies.md#external-ic-dependency-boundary).
+
+### Fixed
+
+- Use the shared preparation transaction for coordinated Cargo releases. Finish
+  rendering every candidate before installation and preserve originals and
+  candidates when rendering, installation, validation or restoration fails.
+
+## [0.24.2]
+
+### Added
+
+- Share selected-file release preparation and previous-attempt evidence archives.
+  Admit every candidate before installation, restore bytes and modes on caught
+  failure, and retain originals when preparation or restoration fails. Consumers
+  keep rendering, source qualification, receipt schemas and recovery policy
+  ([PR #283 — Share release metadata preparation and retained evidence custody](https://github.com/dragginzgame/toko-tooling/pull/283)).
+
+## [0.24.1]
+
+### Added
+
+- Share exact validation and prepared-file receipts with atomic replacement.
+  Consumers retain selected files, trusted state custody and release policy
+  ([#278 — Share release validation and prepared receipt mechanics](https://github.com/dragginzgame/toko-tooling/issues/278)).
+- Share prepared-package provenance checks and saved-source member context.
+  Require exact source identities and one parser observation per selected member;
+  retain failure evidence without taking over package eligibility or publication.
+
+### Changed
+
+- Replay retained formatting-adoption logs on failure without an outer consumer
+  fixture, preserving the original status and evidence custody.
+- Permit fixture scratch beneath its source only when the complete copy plan
+  preserves every selected input; reject source/output collisions, including
+  hard-linked aliases, before copying.
+- Preserve dependency sections in the default Cargo formatter and check command.
+  Consumers can remove paired overrides that only repeat grouped sorting and
+  rustfmt; adapters for additional formatting steps remain consumer-owned.
+
+### Fixed
+
+- Point exported capability-map links at their Shared owner rather than a
+  consumer-owned README ([#284 — Keep exported capability-map links at Shared](https://github.com/dragginzgame/toko-tooling/issues/284)).
+- Check current dependency declarations after unstaged tracked deletions without
+  changing the consumer index. Keep dangling symlinks and failed filesystem
+  observations as refusals, including inaccessible or non-directory parents
+  ([#271 — Dependency pin checker rejects tracked manifest and workflow deletions](https://github.com/dragginzgame/toko-tooling/issues/271)).
+- Follow the common-tool setup action when qualifying CI cache ordering and
+  retained installer failure evidence, replacing stale inline-step assumptions.
+- Reject fixture outputs that hard-link to selected inputs or each other before
+  copying. Prepare checker-retention fixtures with their complete companion
+  closure so intended
+  child/assertion failures run and retain their evidence
+  ([#274 — Prepare script fixtures from their declared companion closure](https://github.com/dragginzgame/toko-tooling/issues/274)).
+
+## [0.24.0]
+
+### Breaking
+
+- **Common Rust tools:** setup selects cargo-sort and cargo-sort-derives only.
+  Candid extraction consumers must explicitly prepare/check their selected
+  extractor and publish its admitted PATH. Integrate
+  [Canic PR #597 — Own explicit Candid extractor setup](https://github.com/dragginzgame/canic/pull/597)
+  before Canic adopts this snapshot. Existing retained installations remain intact.
+- **IC catalog output:** direct AWK admission emits complete validated records.
+  Replace version-only and validation-only calls with `tool-catalog-records.pl ic
+  CATALOG [TOOL]`; discard output explicitly when only admission is required.
+- **Diagnostic checksums:** native archive sidecars contain a bare digest.
+  Verify against the explicitly selected archive with the shared checksum helper;
+  replace calls that pass the sidecar directly to `shasum -c`.
+- **Release adoption checks:** fixture preparation follows selected inputs'
+  declared companion closure. Refresh partial snapshots with the shared fixture
+  preparer and required companions; release execution remains substituted.
+
+### Changed
+
+- Support grouped Cargo manifest ordering in current and committed-source release
+  checks. Adoption guidance pairs formatter/release policies and distinguishes
+  production dependencies from tests/tooling without implying publication or
+  automated deployment enforcement.
+- Verify compact evidence for the caller-selected host/IC bundles, requiring all
+  selected receipts and preserving IC-specific admission when IC is selected
+  ([#282 — Verify compact evidence for caller-selected tool bundles](https://github.com/dragginzgame/toko-tooling/issues/282)).
+- Release preflight and increment calculation share canonical version/date
+  admission and exact u64 arithmetic, rejecting overflow without rounding.
+  The public increment command retains its invocation and invalid-input status.
+- IC installation and retained-bundle checks consume canonical catalog records,
+  preserving archive authentication and checking versions only after the complete
+  set is authenticated. Tool catalogs share stable-version grammar while retaining
+  CLOC's two-component versions and separate release numeric bounds.
+- CI reuses the common preparation action while publishing its selected IC PATH
+  explicitly. Cargo binary qualification removes unused example handling after
+  Blob's extraction; current setup guidance identifies the capability owners.
+
+### Fixed
+
+- Native CI reuse checks derive the common Rust selection from its catalog and
+  reject missing or non-executable tools before comparing physical paths.
+- Align the hook fixture's Prettier substitute with the maintained invocation,
+  preserving selected-file and failure-isolation checks
+  ([PR #281 — Fix hook fixture Prettier argument admission](https://github.com/dragginzgame/toko-tooling/pull/281)).
+
+## [0.23.0]
+
+### Breaking
+
+- Move the frozen Blob example-installation assessment to
+  [IC Blob Storage PR #80 — Own frozen published-example installation qualification](https://github.com/dragginzgame/ic-blob-storage/pull/80).
+  Integrate that owner before adoption; Shared keeps common Cargo binary
+  qualification and installer mechanics
+  ([#280 — Retire frozen Blob example assessment after native owner qualification](https://github.com/dragginzgame/toko-tooling/issues/280)).
+- Frontend formatting delegates language recognition to pinned Prettier. Review
+  `.prettierignore` before adoption: supported formats such as `.mjs` and `.vue`
+  now participate without a Toko Tooling extension allowlist.
+- Catalog ownership checks require the canonical snapshot manifest grammar.
+  Refresh incomplete or malformed ownership receipts before adoption; selected
+  catalog hashing remains separate from whole-snapshot verification.
+- Remove the separate Make-fixture copier. Select Make roots through the script
+  companion-closure preparer, then apply consumer-owned adapters and substitutions.
+- Remove the local semantic Wasm qualification command and CI step. Integrate
+  [IC Build PR #62 — Own native Wasm optimizer qualification](https://github.com/dragginzgame/ic-build/pull/62)
+  before adopting this snapshot; its native matrix owns the optimizer/cache/reply
+  oracle. Shared retains archive integrity and executable installation checks
+  ([#277 — Retire semantic Wasm qualification after IC Build native coverage](https://github.com/dragginzgame/toko-tooling/issues/277)).
+
+### Changed
+
+- Normalize installer OS/architecture aliases through one read-only observer,
+  retaining each toolset's asset matrix and rejecting failed host observations
+  before installation or download.
+- Carry the GitHub dashboard's displayed closed-PR count directly through rows,
+  totals and layout, preserving merge timestamps, pagination and partial errors.
+- Common Rust setup projects validated catalog records directly into tool
+  selections, removing the reconstructed variables and duplicate default roster.
+- CI binary installation reuses the host/IC downloader's bounded transient-retry
+  policy while retaining checksum admission, atomic publication and failed stages.
+
+## [0.22.1]
+
+### Added
+
+- Prepare disposable script fixtures from explicit roots and their declared
+  companion closure, reusing snapshot distribution's nonexecuting reader. Keep
+  export measurements bound to frozen helper blobs, including that reader
+  ([#274 — Prepare script fixtures from their declared companion closure](https://github.com/dragginzgame/toko-tooling/issues/274)).
+
+### Changed
+
+- Update the canonical evidence and snapshot-comparison uploaders to the exact
+  7.0.2 source, preserving archive preparation and failure policy
+  ([#275 — Update the canonical artifact uploader to 7.0.2](https://github.com/dragginzgame/toko-tooling/issues/275)).
+
+## [0.22.0]
+
+### Changed
+
+- Select common CI binary pins directly from the reviewed tool catalog. Linux
+  x86-64 callers need only a tool and installation directory; explicit catalog
+  exceptions and paired version/checksum inputs remain available. Reuse the
+  shared fixture lifecycle for formatting adoption, installer and download checks,
+  preserving failed evidence and cleanup failures.
+
+### Breaking
+
+- Remove the raw catalog `values` projection. Consume validated `host`, `rust`,
+  `ic` or `ci` records, optionally selecting a tool after complete group admission.
+- Move the temporary public-documentation debt checker, guide and dedicated
+  fixtures to IC Query. Integrate
+  [Query PR #76 — Own public documentation debt tooling](https://github.com/dragginzgame/ic-query/pull/76)
+  before adopting this snapshot; other consumers must own any local debt policy
+  ([Query #75 — Own temporary public-documentation debt policy](https://github.com/dragginzgame/ic-query/issues/75)).
+  The common section-style type checker and Rust tokenizer remain shared.
+
+## [0.21.0]
+
+### Added
+
+- Compare repeated snapshot exports on Linux and both native macOS hosts through
+  an opt-in workflow. Both exporters use one frozen payload, retain alternating
+  timing samples and verify matching receipts and files. Routine CI stays focused
+  on correctness; native performance acceptance still requires observed results
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/toko-tooling/issues/219)).
+- Package comparison evidence through the canonical archiver so downloads retain
+  hidden snapshot receipts, logs and incomplete attempts. Exclude source clones
+  and Git stores, and preserve packaging failures
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/toko-tooling/issues/219)).
+
+### Changed
+
+- Consume validated host-tool records directly during installation, preserving
+  payload authentication and offline checks without reconstructing catalog
+  environment variables or repeating catalog admission.
+- Select ICP CLI 1.7.0 for the three supported IC-tool hosts using official
+  release-asset digests. Other tool pins and explicit setup policy are unchanged;
+  adopters run IC-tool setup before offline checks with the new catalog
+  ([#268 — Adopt ICP CLI 1.7.0](https://github.com/dragginzgame/toko-tooling/issues/268)).
+
+### Fixed
+
+- Require one complete Rust policy observation before publishing a workspace
+  compiler floor or preparing a toolchain. Reject ambiguous parser streams before
+  Rustup while preserving valid bootstrap inputs and parser failure statuses
+  ([#270 — Reject ambiguous Rust bootstrap policy observations](https://github.com/dragginzgame/toko-tooling/issues/270)).
+
+### Breaking
+
+- Remove the complete Cargo publication preflight command. Consumers own package,
+  registry and release-tag policy while reusing the shared source, version, tag
+  and registry observers. IC Jobs adopts its local policy in
+  [PR #67 — Own publication admission locally](https://github.com/dragginzgame/ic-jobs/pull/67);
+  integrate that caller before adopting this snapshot.
+
+## [0.20.0]
+
+### Added
+
+- Check consumer-owned Cargo dependency boundaries across canonical package names,
+  including renamed, target-specific, build and development dependencies. Refuse
+  failed, incomplete or mismatched metadata before reporting success; run locked
+  and offline without changing dependency selection
+  ([PR #257 — Add declarative Cargo dependency boundaries](https://github.com/dragginzgame/toko-tooling/pull/257),
+  [Storage #4 — Adopt fail-closed dependency-boundary admission](https://github.com/dragginzgame/ic-storage/issues/4)).
+- Declare supported release-delivery modes once in a consumer-owned data file.
+  Common Make admission and standalone metadata entrypoints reuse the same
+  read-only check, rejecting unsupported selections before effects while leaving
+  unrelated goals unchanged
+  ([#258 — Declare consumer-supported release delivery once](https://github.com/dragginzgame/toko-tooling/issues/258)).
+
+### Fixed
+
+- Keep installer CLI smoke checks with their owning fixture instead of a second
+  portable-runner roster. Remove the stale YQ call that made 0.19 Linux CI exit
+  after all named shell fixtures had passed
+  ([#266 — Retire standalone YQ installation](https://github.com/dragginzgame/toko-tooling/issues/266)).
+
+### Breaking
+
+- Common setup, offline checks and action PATH publication now cover host/Cargo
+  tools. Repositories using IC executables must select `install-ic-tools` and
+  `ic-tools-check` in their ordered local target lists and publish `.tools/ic/bin`
+  explicitly. Existing installations and reviewed tool pins are retained.
+- Formatting hooks and their adoption checks expose only common host/Cargo
+  paths by default. Product formatters requiring IC tools must select their
+  prepared IC PATH explicitly, including the original tool root for index exports.
+- Version reporting defaults to host/Cargo selections. Pass both the version
+  catalog and IC pin catalog to include IC admission and observations
+  ([#253 — Make the IC executable bundle an explicit product selection](https://github.com/dragginzgame/toko-tooling/issues/253),
+  [PR #254](https://github.com/dragginzgame/toko-tooling/pull/254)).
+
+## [0.19.0]
+
+### Breaking
+
+- Retire standalone `install-ci-tool.sh yq`; prepare and check YQ through the
+  common host bundle instead. Other CI installers retain authenticated atomic
+  publication and failure preservation
+  ([#266 — Retire standalone YQ installation](https://github.com/dragginzgame/toko-tooling/issues/266)).
+- Move full native recovery-archive packaging and its fixtures into IC Metrics.
+  Remove the former `collect-native-evidence.sh` snapshot entrypoint on adoption;
+  preserve hidden Git recovery state through Metrics' local helper and keep
+  sanitized diagnostics on the shared exporter
+  ([Metrics #89 — Own native recovery-archive packaging](https://github.com/dragginzgame/ic-metrics/issues/89),
+  [Metrics PR #88](https://github.com/dragginzgame/ic-metrics/pull/88)).
+- Require literal Host/Rust tool catalogs for installation, inspection and cache
+  keys. Replace computed catalogs and duplicate assignments with complete literal
+  selections before adoption
+  ([#263 — Require literal data-only tool catalogs](https://github.com/dragginzgame/toko-tooling/issues/263)).
+- Retire the release-prose heuristic and its fixture; remove consumer invocations
+  and snapshot entrypoints while retaining metadata and receipt checks
+  ([#264 — Retire the release-prose heuristic](https://github.com/dragginzgame/toko-tooling/issues/264)).
+- Count every selected Rust source path in LOC reports, including identical file
+  contents. Runtime and test totals share one per-file count instead of separate
+  duplicate-suppressing passes
+  ([#265 — Count Rust LOC from one per-file projection](https://github.com/dragginzgame/toko-tooling/issues/265)).
+- Retire the README dependency-example version renderer and its fixture. Consumers
+  must remove its snapshot entrypoint and automatic README rewriting before
+  adoption; IC Memory tracks that update separately
+  ([#260 — Retire the README version renderer](https://github.com/dragginzgame/toko-tooling/issues/260),
+  [Memory #119 — Retire README version rendering](https://github.com/dragginzgame/ic-memory/issues/119)).
+
+### Changed
+
+- Reuse canonical stable-version comparison in tag maintenance while preserving
+  minor-only cutoffs, arbitrary-size components, tag-spelling ordering and the
+  existing deletion authorization, lease and recovery boundaries
+  ([#267 — Reuse stable-version comparison in tag maintenance](https://github.com/dragginzgame/toko-tooling/issues/267)).
+- Share literal/comment masking between documentation checkers while preserving
+  source offsets, Unicode identifiers and separate documentation policies
+  ([#261 — Share Rust lexical masking](https://github.com/dragginzgame/toko-tooling/issues/261)).
+- Use canonical stable-version admission across Cargo release helpers, retaining
+  exact large components and separate release bounds
+  ([#262 — Use canonical stable-version admission](https://github.com/dragginzgame/toko-tooling/issues/262)).
+
+- Reject signal-terminated version-ordering and tool-catalog fixture checks even
+  when they emit valid output, preserving normal checker exit classifications
+  ([#256 — Reject signal-terminated ordering and catalog checks](https://github.com/dragginzgame/toko-tooling/issues/256)).
+
+## [0.17.2] - 2026-10-16
+
+## [0.17.1]
+
+- Keep expected type-documentation rejections out of passing CI output, replay
+  unexpected failures from retained case logs, reject signal-terminated checks
+  and print Unicode diagnostic names without encoding warnings
+  ([#255 — Retain type-doc diagnostics and reject signal-terminated checks](https://github.com/dragginzgame/toko-tooling/issues/255)).
+- Avoid external comparisons for empty snapshot index records while retaining
+  every Git re-observation, staged-change refusal and publication recheck
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/toko-tooling/issues/219)).
+- Identify invalid pending changelog headings with their source line and the
+  expected numbered spelling before release preparation; retain strict candidate
+  and exact-date recovery checks
+  ([#252 — Explain unsupported pending changelog headings](https://github.com/dragginzgame/toko-tooling/issues/252)).
+
+## [0.17.0]
+
+### Breaking
+
+- Require `--consumer <repository>` for hook installation. Update direct setup
+  callers before snapshot adoption; `make install-hooks` already supplies it.
+- Require `SCCACHE_BIN` to select an absolute executable file for the stable
+  compiler-cache launcher. Remove implicit PATH discovery; consumers select
+  the binary or their own cache-failure adapter explicitly before launch.
+
+### Changed
+
+- Qualify repeated validation-log retention and Cargo/logger status combinations
+  at their Shared owners. Earlier failure bytes survive retries and unusable
+  evidence destinations; consumers retain their adapter and lock-cleanup checks
+  ([PR #249 — Repeated logger failures](https://github.com/dragginzgame/toko-tooling/pull/249),
+  [PR #250 — Publication logger status](https://github.com/dragginzgame/toko-tooling/pull/250)).
+- Require a commit object when proving prior snapshot ownership, including
+  takeover receipts. Refuse tree/tag identities and failed type observations
+  before changing consumer files
+  ([#248 — Require commit objects for prior snapshot ownership proofs](https://github.com/dragginzgame/toko-tooling/issues/248)).
+- Avoid repeated directory-creation commands for existing snapshot payload
+  parents, retaining manifest admission, drift checks and atomic replacement
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/toko-tooling/issues/219)).
+- Qualify release preflight refusals at the shared runner/helper boundary,
+  preserving source, index and existing tools before version preparation.
+  Shared fixtures also own reporter partial output and archive diagnostic
+  checksum preservation, keeping consumer checks focused on their own adapters
+  ([PR #247 — Keep generic release and evidence qualification at Shared owners](https://github.com/dragginzgame/toko-tooling/pull/247)).
+
+## [0.16.1]
+
+- Read snapshot companion headers with Bash instead of launching a parser for
+  each payload, preserving literal second-line selection and EOF handling
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/toko-tooling/issues/219)).
+- Share the read-only workspace Rust-floor projection between explicit Rust
+  setup and consumer validation. It uses prepared TOML/JSON parsers without
+  requiring Cargo/Rust or performing installation; failed parser observations
+  publish no selection
+  ([PR #246 — Share read-only workspace Rust floor selection](https://github.com/dragginzgame/toko-tooling/pull/246)).
+- Qualify exact working-file and Git index preservation when release-source
+  checks admit an allowed metadata edit or refuse an unapproved rename source
+  ([PR #242 — Own release-source allowance and rename preservation checks](https://github.com/dragginzgame/toko-tooling/pull/242)).
+- Qualify release-source refusal of failed Git observations even when they emit
+  plausible output, and invalid selections before Git dispatch, with input
+  preservation and scratch cleanup.
+
+## [0.16.0]
+
+### Breaking
+
+- Require `--install-dir` for CI binary installation, removing environment and
+  home-directory destination selection. Update installer invocations before
+  adopting this release
+  ([#244 — Require explicit CI tool installation destinations](https://github.com/dragginzgame/toko-tooling/issues/244)).
+- Require explicit assertion source, prefix and contradictory bindings for
+  retention probes. The probe executes only owner initialization and the selected
+  assertion; migrate inferred-assertion callers to `--selected` before refresh
+  ([#245 — Require explicit assertion selection in retention probes](https://github.com/dragginzgame/toko-tooling/issues/245)).
+- Keep `make cloc-tooling` and `CLOC_PARENT` in Toko Tooling's own Makefile.
+  Consumer includes no longer export the fleet command; run it centrally or
+  explicitly select and invoke the Perl reporter when adopting this release
+  ([#243 — Keep fleet tooling Make command at its Toko Tooling owner](https://github.com/dragginzgame/toko-tooling/issues/243)).
+- Remove the exported exhaustive Make execution-mode probe. Consumers must use
+  `make_probe_target_admission` for target admission when adopting this release;
+  parallel-dispatch checks remain available. The complete flag matrix stays in
+  the producer fixture
+  ([PR #241 — Keep exhaustive qualification at Shared owners](https://github.com/dragginzgame/toko-tooling/pull/241)).
+
+## [0.15.10]
+
+- Qualify standalone formatting success and cleanup at the wrapper owner,
+  preserving earlier failure logs byte-for-byte
+  ([PR #240 — Standalone formatting and retained-log qualification](https://github.com/dragginzgame/toko-tooling/pull/240)).
+- Qualify missing workspace versions and duplicate TOML tables at the Cargo
+  version-reader owner, keeping release-adapter checks focused on their boundary
+  ([PR #241 — Keep exhaustive qualification at Shared owners](https://github.com/dragginzgame/toko-tooling/pull/241)).
+
+## [0.15.9]
+
+- Read Rust setup selections from existing toolchain or workspace TOML policy,
+  rejecting invalid selections and directory paths before installation
+  ([PR #239 — Read Rust setup selections from TOML policy](https://github.com/dragginzgame/toko-tooling/pull/239)).
+- Qualify common publication eligibility with real local Git histories and bare
+  destinations, keeping package selection and upload recovery consumer-owned
+  ([PR #238 — Real-Git publication eligibility qualification](https://github.com/dragginzgame/toko-tooling/pull/238)).
+
+## [0.15.8]
+
+- Include cleanup refusal in the standard fixture exit probes, preserving
+  caller-specific diagnostic checks without a duplicate injection
+  ([PR #237 — Include cleanup refusal in standard exit probes](https://github.com/dragginzgame/toko-tooling/pull/237)).
+- Qualify nested workflow discovery and failed Git inventories at the dependency
+  checker owner, including partial output and scratch cleanup
+  ([PR #236 — Qualify dependency workflow inventory failures](https://github.com/dragginzgame/toko-tooling/pull/236)).
+- Keep scanner semantic-fixture evidence and cleanup anchored when temporary
+  directory aliases change. Native qualification retains and checksums the
+  shared lifecycle companion with its source inputs
+  ([#225 — Structural Rust runtime panic scanner](https://github.com/dragginzgame/toko-tooling/issues/225)).
+
+## [0.15.7]
+
+- Qualify real Cargo environment and configuration offline refusal on a frozen
+  minimal graph before tool dispatch, preserving its manifest and lock
+  ([PR #235 — Qualify real Cargo offline policy](https://github.com/dragginzgame/toko-tooling/pull/235)).
+- Reuse exit-retention checks across caller-selected completion variables and
+  physical scratch roots, including relative paths and aliases. Require a fresh
+  child receipt on repeated probes while preserving earlier retained evidence
+  ([PR #234 — Reuse fixture exit qualification](https://github.com/dragginzgame/toko-tooling/pull/234)).
+- Accept padded BSD line counts in scanner qualification so native macOS
+  refusal checks reach the full retained-failure matrix
+  ([#225 — Structural Rust runtime panic scanner](https://github.com/dragginzgame/toko-tooling/issues/225)).
+
+## [0.15.6]
+
+- Refuse failed Git file-mode observations during snapshot refresh even when
+  they emit a complete row, before publishing payloads or a manifest
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/toko-tooling/issues/219)).
+- Preserve the release adapter's selected Make executable during Cargo preflight,
+  including paths with spaces and exact failure propagation
+  ([PR #233 — Honor selected Make during Cargo release preflight](https://github.com/dragginzgame/toko-tooling/pull/233)).
+- Avoid external path-utility launches during snapshot refresh, reusing each
+  output parent while retaining source, consumer and index drift checks
+  ([#219 — Reduce repeated snapshot work](https://github.com/dragginzgame/toko-tooling/issues/219)).
+- Compile and exercise the shared Rust panic scanner in each native CI lane,
+  using a locked producer-only fixture without changing consumer dependency
+  selection. Retain exact source inputs, compiler identity and failure logs
+  ([#225 — Structural Rust runtime panic scanner](https://github.com/dragginzgame/toko-tooling/issues/225)).
+- Qualify selected-source release metadata refusals and retained inputs,
+  including invalid Git identities and Git commands that emit output then fail
+  ([PR #232 — Selected-source metadata qualification](https://github.com/dragginzgame/toko-tooling/pull/232)).
+
+## [0.15.5]
+
+- Share structural Rust runtime-panic scanning as snapshot source, including
+  raw identifiers and generic method calls inside macro tokens. Consumers retain
+  their selected dependencies and production-source inventories
+  ([#225 — Structural Rust runtime panic scanner](https://github.com/dragginzgame/toko-tooling/issues/225),
+  [PR #226 — Shared scanner source](https://github.com/dragginzgame/toko-tooling/pull/226)).
+- Share hosted common-tool preparation and disposable Make fixture setup,
+  preserving ordered setup/check logs, failure status and PATH publication.
+  Reject forbidden directory paths before copying fixture inputs
+  ([PR #227 — Common preparation and fixtures](https://github.com/dragginzgame/toko-tooling/pull/227)).
+- Offer focused per-target Make admission checks while keeping exhaustive flag
+  and installer-failure permutations with the shared producer
+  ([PR #231 — Producer qualification matrices](https://github.com/dragginzgame/toko-tooling/pull/231)).
+- Replay explicitly selected fixture diagnostics without replacing the original
+  failure status or taking over retention policy
+  ([PR #221 — Fixture diagnostic replay](https://github.com/dragginzgame/toko-tooling/pull/221)).
 - Upload caller-prepared failure archives and collection logs without collecting
   tools again; retain available diagnostics before reporting incomplete inputs.
   Ordinary collection still refuses missing roots before any collection effects
@@ -2398,4 +3514,3 @@ These notes are pending PR integration; the changes below are not yet on `main`.
 ## [0.1.0] - 2026-10-05
 
 - Initial shared engineering baseline, development commands, CI helpers and reviewed snapshots. [Detailed notes](docs/changelog/0.1.md).
-

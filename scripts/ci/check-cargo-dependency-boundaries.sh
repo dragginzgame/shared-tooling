@@ -161,4 +161,3 @@ CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0 perl -MJSON::PP -e '
             if keys %violations;
         print "Cargo dependency boundaries passed.\n";
     ' "$policy" "$PWD" "$common" "$cbor" "$hashes"
-

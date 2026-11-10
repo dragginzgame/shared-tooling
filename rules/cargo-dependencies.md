@@ -520,4 +520,3 @@ Remove obsolete tooling metadata tables, `toko-tooling.lock` and selection-only
 packages while preserving real tools/tests. Follow
 [the migration procedure](../docs/adoption/consuming-snapshots.md#migration-from-cargo-dependencies)
 for source-archive bootstrap, independent workspaces and non-Cargo repositories.
-

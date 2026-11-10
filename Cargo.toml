@@ -22,4 +22,3 @@ include = [
 # make toko-tooling-install refreshes scripts and prepares the pinned tools.
 [lib]
 path = "src/lib.rs"
-

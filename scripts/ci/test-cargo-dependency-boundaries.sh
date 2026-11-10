@@ -396,4 +396,3 @@ for dependency in ic-platform-types ic-platform-runtime ic-platform; do
 done
 fixture_complete=true
 echo 'Dependency boundaries, failed/malformed observations and actual offline Cargo declarations passed'
-
