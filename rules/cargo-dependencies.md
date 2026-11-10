@@ -162,6 +162,14 @@ exception preserves the transferred client and native-only graph; it grants no
 server ownership, other IC dependencies, portable/Wasm declarations or build/dev
 exception. Consumer dependency policies can restrict it further.
 
+The maintainer-approved return to the published upstream `pocket-ic` client
+also permits that one normal dependency under `cfg(not(target_family = "wasm"))`
+in `ic-testkit` and its private (`publish = false`) `ic-testkit-dev` qualification
+package. Upstream owns its Candid/management types, transport panics and deletion
+behavior. This admits no direct SDK dependencies for other consumers, no portable,
+Wasm, development or build declaration, and no second client implementation.
+Aliases use the same canonical package admission; consumer policies can tighten it.
+
 All IC-specific dependencies maintained outside `dragginzgame`, including DFINITY
 packages, must be consumed through explicit `ic-platform` features and interfaces.
 The canonical identity owner is `ic-platform-types` for `ic_principal`: conversion
@@ -512,3 +520,4 @@ Remove obsolete tooling metadata tables, `toko-tooling.lock` and selection-only
 packages while preserving real tools/tests. Follow
 [the migration procedure](../docs/adoption/consuming-snapshots.md#migration-from-cargo-dependencies)
 for source-archive bootstrap, independent workspaces and non-Cargo repositories.
+

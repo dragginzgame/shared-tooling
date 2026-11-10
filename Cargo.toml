@@ -1,6 +1,6 @@
 [package]
 name = "toko-tooling"
-version = "0.39.0"
+version = "0.39.1"
 edition = "2024"
 rust-version = "1.99.1"
 license-file = "LICENSE.md"
@@ -22,3 +22,4 @@ include = [
 # make toko-tooling-install refreshes scripts and prepares the pinned tools.
 [lib]
 path = "src/lib.rs"
+
