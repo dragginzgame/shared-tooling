@@ -4,6 +4,11 @@ Use the [portfolio register](index.md) for overall status and one file in
 `repositories/` for each repository. This is a legal evidence workflow, not a
 source-code quality audit.
 
+Use the [contributor register](contributors.md) once for portfolio-wide alias
+normalisation and relationship status. Repository records should link or apply
+that classification to the contributors actually observed at the frozen commit,
+then record repository-specific agreement evidence and conclusions.
+
 ## Why the hybrid structure
 
 A single file is useful for portfolio decisions but becomes unsafe for detailed
@@ -18,7 +23,8 @@ For every repository:
 
 1. Freeze the reviewed commit and record all relevant predecessor repositories.
 2. Reconcile Git identities to legal persons or entities without publishing
-   private identity documents.
+   private identity documents. Keep exact email variants and identity evidence
+   in the private system; the public register uses display aliases only.
 3. Establish whether each contribution was created by an employee within scope,
    assigned by a contractor, covered by a signed CLA, or separately licensed.
 4. Review historical commits, vendored code, generated output, copied snippets,

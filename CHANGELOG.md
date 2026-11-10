@@ -28,6 +28,53 @@
 
 - State that the crate's Rust 1.99.1 minimum applies to every adopting member's
   dev-dependency/test graph, including consumers previously testing with 1.91.
+- Require independently authored in-house implementations instead of copied or
+  adapted third-party code, including DFINITY forks. Define clean-room evidence,
+  preserve separately licensed external dependencies and cryptographic safeguards,
+  and require recorded migration plans or exceptions for existing imports without
+  stripping their licences or notices.
+- Adopt the first Toko Studios Network Licence as TSNL-1.0, effective 10 November
+  2026. Preserve canonical-IC production and verifiable ICP-burn conditions
+  while strengthening neutral protection against network, economic and rights
+  appropriation; retain Toko Studios Limited's permanent freedom to operate,
+  migrate and separately license covered material. Record the supplied Bahamian
+  company identity, address and legal notice email, with Monaco law and the
+  exclusive jurisdiction of Monaco's competent courts.
+- Permit private, sovereign, government, enterprise and disconnected IC-based
+  production only with advance canonical-mainnet ICP burn coverage for 100% of
+  canonical-equivalent operational resource charges. Remove the separate 20%
+  infrastructure-value surcharge and valuation machinery; retain dedicated
+  retirement of resulting cycles, public allocation and metering evidence,
+  monthly reconciliation and no reuse or double counting. Unrelated blockchains
+  remain outside the public permission.
+- Make source reciprocity explicit for Covered Modifications used in internal or
+  external production while preserving proprietary Independent Applications and
+  private non-production work. Public source requires neither a pull request nor
+  the Organisation's acceptance.
+- Close identified burn-avoidance routes in the proposed licence with a fixed
+  resource-equivalence schedule for free, subsidised and unmetered resources;
+  aggregation of split, sidecar, off-chain and Related Party operation; objective
+  cycle retirement; tamper-evident evidence and proportionate audit rights; and
+  suspension or termination for missing, concealed or falsified evidence.
+  Strengthen the Independent Application boundary without capturing ordinary
+  use of documented public interfaces.
+- Add a proposed Toko Studios contribution agreement that assigns copyright to
+  the exact supplied Company entity, retains an irrevocable fallback licence,
+  and covers future rights, historical contribution schedules, contributor
+  authority, third-party and generated material, moral rights and patents.
+- Add a portfolio title-audit register and one evidence record per repository
+  returned by the GitHub organisation listing or found as an additional local
+  checkout. Record preliminary missing-licence, old-licence, Apache/GNU metadata,
+  repository-presence and contributor-evidence risks without claiming title or
+  overwriting prior grants.
+- Add the maintainer-supplied contributor alias and rights register. Separate
+  identity matching from ownership clearance, flag unsigned contractor work,
+  require review of the Mana Point-to-Toko chain, and keep personal identity and
+  signed-agreement evidence outside the repository.
+- Install TSNL-1.0 as the root licence, replace the stale Cargo MIT declaration
+  with the custom `license-file`, and validate that source snapshots and Cargo
+  archives preserve the adopted licence byte-for-byte. Remove the unadopted
+  development drafts and the broken legacy MIT/Dragginz validation paths.
 
 ## [0.38.3] - Unreleased
 

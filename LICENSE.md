@@ -13,7 +13,8 @@
 
 **Licence notice email:** legal@toko.ltd
 
-**Status:** Adopted repository source-available software licence.
+**Status:** Adopted unified source-available software licence, effective
+10 November 2026.
 
 **Licence identifier:** TSNL-1.0
 
@@ -234,13 +235,20 @@ Previously completed qualifying conversions may count. This Licence does not
 require a second ICP destruction merely because qualifying cycles are later
 transferred or consumed.
 
-### 2.10 Public production boundary
+### 2.10 Qualifying Private IC Deployment
 
-The public production permission applies only to the Canonical Internet
-Computer. A private, sovereign, enterprise, permissioned or disconnected
-IC-based network, fork or replica does not qualify, even if it burns ICP.
-The Organisation's separate rights and written permissions under Section 11
-remain unaffected.
+"Qualifying Private IC Deployment" means a private, sovereign, dedicated,
+government, enterprise, permissioned or disconnected Production Operation
+using the Internet Computer Protocol, or a functional fork or adaptation of
+that protocol, that satisfies Sections 5.2 and 6 through 9.
+
+It may use private governance, locally issued resource credits or infrastructure
+outside the Canonical Internet Computer, but those arrangements do not reduce
+or replace its canonical-mainnet ICP burn obligations.
+
+A private deployment is not qualifying merely because it uses Internet
+Computer technology, is operated by an ecosystem participant, burns some ICP,
+or describes itself as a subnet, sovereign network or Cloud Engine.
 
 ### 2.11 Canonical-Equivalent Resource Charges
 
@@ -264,7 +272,7 @@ binding Resource Equivalence Schedule for this version of the Licence.
 ### 2.12 Resource Equivalence Schedule
 
 "Resource Equivalence Schedule" means the versioned rules in Section 18 for
-measuring canonical operational resource use and mapping it to canonical cycle
+measuring private-deployment resource use and mapping it to canonical cycle
 charges. The schedule forms part of this Licence and cannot be replaced for
 already licensed material merely by publishing a different external document.
 
@@ -285,7 +293,7 @@ other recoverable economic value to the operator or a Related Party;
 c. is independently verifiable from canonical records; and
 
 d. preserves evidence connecting the retired cycles to their originating
-Qualifying ICP Burn and supplemental canonical-resource allocation.
+Qualifying ICP Burn and private-deployment allocation.
 
 Sending cycles to a canister, account or service does not qualify while any
 person retains a technical, contractual or governance path to recover, redirect,
@@ -340,7 +348,8 @@ executable form;
 
 e. develop and commercialise Independent Applications;
 
-f. perform Production Operation on the Canonical Internet Computer in accordance with Sections 5 through 9; and
+f. perform Production Operation on the Canonical Internet Computer or a
+Qualifying Private IC Deployment in accordance with Sections 5 through 9; and
 
 g. perform activities expressly permitted by Section 4.
 
@@ -349,7 +358,8 @@ licensing fee is owed solely for compliant Production Operation.
 
 Network, funding, source and evidence requirements are express conditions and
 limitations of the grant. No permission for another network or production
-environment is granted except through written permission under Section 11.
+environment is granted except for a Qualifying Private IC Deployment or a
+written permission under Section 11.
 
 ## 4. Development, testing and ancillary use
 
@@ -370,7 +380,8 @@ operational workloads constitute Production Operation.
 
 Covered Software may execute outside its authorised production network where
 reasonably necessary to build, deploy, administer, monitor, secure, back up,
-restore or interact with an authorised deployment on the Canonical Internet Computer.
+restore or interact with an authorised Canonical Internet Computer or
+Qualifying Private IC Deployment.
 This includes workstations, CI systems, administrative servers, browsers and
 supporting clients.
 
@@ -385,34 +396,58 @@ Isolated recovery tests remain permitted by Section 4.1.
 
 ### 5.1 Permitted Production Operation
 
-Subject to Sections 6 through 9, Production Operation is permitted only on
-the Canonical Internet Computer.
+Subject to Sections 6 through 9, Production Operation is permitted on:
+
+a. the Canonical Internet Computer; and
+
+b. a Qualifying Private IC Deployment.
 
 Section 4.3 permits related ancillary execution. Any other Production Operation
 requires a written permission under Section 11.
 
-### 5.2 No private-network permission
+### 5.2 Conditions for a Qualifying Private IC Deployment
 
-Private, sovereign, government, enterprise, permissioned and disconnected
-IC-based deployments are not authorised by the public grant. Technical
-compatibility, equivalent resource funding or burning ICP does not change
-that restriction. Section 11 preserves the Organisation's separate authority.
+A private deployment qualifies only while all of the following are satisfied:
+
+a. it uses the Internet Computer Protocol or a functional fork or adaptation
+of that protocol;
+
+b. its Canonical-Equivalent Resource Charges are measured and documented under
+Sections 2.11 and 18;
+
+c. it maintains advance Qualifying ICP Burn coverage required by Sections 6
+and 7;
+
+d. qualifying burns and resulting cycles are dedicated, retired and evidenced
+as required by Sections 6 and 9;
+
+e. it publishes Covered Modifications and notices required by Section 8;
+
+f. it completes timely reconciliation and preserves the required records; and
+
+g. no permission has been suspended or terminated under Section 14.
+
+Private governance, government or enterprise operation, disconnected
+infrastructure and local resource accounting do not remove these conditions.
 
 ### 5.3 Prohibited production environments
 
 Without written permission under Section 11, You must not use Covered Software
 for Production Operation on:
 
-a. a blockchain or distributed execution network other than the Canonical
-Internet Computer;
+a. a blockchain or distributed execution network that is neither the Canonical
+Internet Computer nor a Qualifying Private IC Deployment;
 
-b. a private or permissioned IC-based deployment;
+b. a private or permissioned IC-based deployment that does not satisfy Section
+5.2;
 
 c. an unrelated alternative WebAssembly execution platform;
 
-d. a replacement network using Covered Software, regardless of ICP burn; or
+d. a replacement network using Covered Software without the applicable
+canonical-mainnet burn coverage; or
 
-e. an off-chain or hybrid substitute outside the ancillary-use exception.
+e. an off-chain or hybrid substitute that is neither permitted ancillary use
+nor a Qualifying Private IC Deployment.
 
 The prohibition applies regardless of whether the environment is commercial,
 charitable, governmental, decentralised, publicly funded, privately owned or
@@ -434,14 +469,15 @@ ICP holders, node providers, investors or contributors;
 e. is operated by a foundation, government, investor, shareholder, node
 provider, infrastructure provider, affiliate or ecosystem participant;
 
-f. burns ICP, regardless of amount; or
+f. burns an amount of ICP below the coverage required by Sections 6 and 7; or
 
 g. has access to repositories, internal knowledge or development processes.
 
-### 5.5 Burn does not authorise another network
+### 5.5 Burn authorises only a qualifying deployment
 
 A Qualifying ICP Burn contributes to permission only when allocated to an
-otherwise compliant Canonical Internet Computer deployment. A nominal, unallocated, reused or insufficient burn does
+otherwise compliant Canonical Internet Computer deployment or Qualifying
+Private IC Deployment. A nominal, unallocated, reused or insufficient burn does
 not authorise an environment or cure another breach.
 
 ### 5.6 No automatic successor or ecosystem rights
@@ -451,7 +487,7 @@ provider, infrastructure operator, purchaser, successor corporation or network
 participant acquires additional rights merely by succeeding to, acquiring,
 administering, funding or replacing part of an ecosystem.
 
-## 6. Canonical ICP funding and resource coverage
+## 6. ICP funding and private-deployment resource coverage
 
 ### 6.1 Canonical deployment funding
 
@@ -469,30 +505,32 @@ non-zero imputed charge required by Section 18 and, before the use, establish an
 equivalent Qualifying ICP Burn and Qualifying Cycle Retirement. An actual
 canonical charge and its funding must not also be counted as an imputed charge.
 
-### 6.2 Supplemental canonical-resource coverage
+### 6.2 Private-deployment resource coverage
 
-For canonical operational resource use subject to the supplemental condition
-in Section 6.1, each Accounting Period requires advance Qualifying ICP Burns
-sufficient to mint cycles equal to the applicable Canonical-Equivalent Resource
-Charges under Section 18. Directly charged and qualifying-funded resources
-must not be charged a second time. This requirement grants no off-network
-production permission.
+For each Accounting Period, a Qualifying Private IC Deployment must establish
+Qualifying ICP Burns whose value is at least the value of the ICP required, at
+the actual applicable canonical ICP/XDR conversion rate, to mint cycles equal
+to its Canonical-Equivalent Resource Charges.
 
-### 6.3 Dedicated retirement of supplemental cycles
+This requirement applies even where the private deployment uses local cycles,
+fabricated credits, internal accounting, flat-rate infrastructure or no local
+resource charge.
+
+### 6.3 Dedicated retirement of private-deployment cycles
 
 Cycles minted by a conversion counted toward Section 6.2 must be specifically
 identified and must not be sold, transferred for value, allocated to another
 deployment, used to satisfy another licence obligation or counted again.
 
 Those cycles must undergo Qualifying Cycle Retirement before the corresponding
-supplementally covered canonical resource use begins. A promise of later retirement, an ordinary transfer
+private resource use begins. A promise of later retirement, an ordinary transfer
 or consumption that supplies useful operation to another deployment is
 insufficient.
 
 Destruction of cycles without evidence of the qualifying originating ICP burn
 does not satisfy this Section. An originating ICP burn without the required
-dedication and retirement of its resulting cycles does not satisfy supplemental
-canonical coverage.
+dedication and retirement of its resulting cycles does not satisfy private
+deployment coverage.
 
 ### 6.4 Transfers and pools
 
@@ -520,12 +558,12 @@ unmetered operational resources. A claimed zero charge is permitted only where
 the schedule expressly produces zero after all material resource use is
 included and the evidence required by Section 9 supports that result.
 
-## 7. Supplemental canonical-coverage administration
+## 7. Private-deployment coverage administration
 
 ### 7.1 Complete operational-resource coverage
 
-A Canonical Internet Computer deployment must maintain Qualifying ICP Burn
-coverage for one hundred percent (100%) of its supplemental resource charges
+A Qualifying Private IC Deployment must maintain Qualifying ICP Burn coverage
+for one hundred percent (100%) of its Canonical-Equivalent Resource Charges
 under Section 6.2.
 
 No infrastructure-value surcharge, application-revenue charge or percentage of
@@ -535,8 +573,8 @@ business turnover applies under this public Licence.
 
 A Qualifying ICP Burn and its resulting cycles must not be allocated to another
 deployment, Accounting Period or licence obligation. The same value must not be
-used both as supplemental canonical coverage and as operational funding for a
-different deployment.
+used both as private-deployment coverage and as operational funding for a
+different canonical or private deployment.
 
 Only demonstrably unused, dedicated and unretired advance coverage may be
 carried forward, and it remains subject to Section 6.3 before being counted for
@@ -544,7 +582,7 @@ actual Production Operation.
 
 ### 7.3 Advance coverage
 
-Projected supplementally covered canonical resource use must have qualifying coverage before Production
+Projected private resource use must have qualifying coverage before Production
 Operation. Additional or variable consumption must remain within a documented
 prepaid coverage limit, with further coverage established before that limit is
 exceeded.
@@ -632,7 +670,10 @@ discoverable public notice identifying their source location and version.
 ### 9.1 Verifiable evidence
 
 Each Production Operation must maintain evidence reasonably sufficient to
-demonstrate Sections 6 and 7 compliance. Canonical deployments may use identified protocol and reconciled pool records.
+demonstrate Sections 6 and 7 compliance. Shared canonical deployments may use
+identified protocol and reconciled pool records. Private deployments must
+publish independently reviewable resource-equivalence, burn-allocation and
+cycle-retirement records.
 
 A canonical deployment subject to the supplemental burn and retirement
 condition in Section 6.1 must publish independently reviewable measurement,
@@ -642,9 +683,9 @@ Possessing, retaining and providing the evidence required by this Section is a
 condition of Production Operation. A provider assertion, invoice, balance
 screenshot or unexplained summary is not independently reviewable evidence.
 
-### 9.2 Supplemental canonical-resource records
+### 9.2 Private-deployment records
 
-A canonical deployment subject to Section 6.2 must identify:
+Qualifying Private IC Deployment records must identify:
 
 a. the protocol and material execution configuration;
 
@@ -915,11 +956,11 @@ rights.
 
 ### 14.1 Conditions and unauthorised networks
 
-Network eligibility, ICP funding, reciprocal source and
+Network eligibility, ICP funding, private-deployment coverage, reciprocal source and
 Organisation grants are express conditions limiting permission.
 
 Alternative-network Production Operation outside Section 11 is unauthorised
-from commencement. Later
+from commencement unless it is a Qualifying Private IC Deployment. Later
 payment, burning, migration or cessation does not retroactively authorise an
 unqualified deployment.
 
@@ -1024,10 +1065,11 @@ later version for the applicable material.
 
 ### 17.4 Governing law and forum
 
-This Licence is governed by the laws of `{{GOVERNING_LAW_JURISDICTION}}`,
-excluding conflict-of-laws rules to the extent permitted.
+This Licence is governed by the laws of the Principality of Monaco, excluding
+conflict-of-laws rules to the extent permitted.
 
-Disputes are subject to `{{DISPUTE_FORUM_AND_VENUE}}`, subject to mandatory
+The competent courts of the Principality of Monaco have exclusive jurisdiction
+over disputes arising out of or relating to this Licence, subject to mandatory
 applicable law.
 
 ### 17.5 Notices
@@ -1049,7 +1091,7 @@ additional permissions to its identified recipient.
 
 This schedule is part of TSNL-1.0. It applies to each Accounting Period and to
 all material operational resource use covered by Sections 6 and 7. It must be
-applied to Canonical Internet Computer Production Operation wherever a
+applied consistently to canonical and private Production Operation wherever a
 resource is subsidised, bundled, free or not directly metered.
 
 ### 18.2 Directly charged canonical resources
@@ -1131,39 +1173,7 @@ Copyright Holders under Section 2.12.
 
 **End of Toko Studios Network Licence — Version 1.0**
 
+**Adopted by Toko Studios Limited on 10 November 2026.**
+
 Copyright © the respective Copyright Holders identified in the applicable
 Licensed Material. All rights not expressly granted are reserved.
-
----
-
-## Repository scope and prior permissions
-
-This repository selects TSNL-1.0 for its first-party material, subject to the
-rights of the applicable Copyright Holders. Separately licensed dependencies
-retain their own terms.
-
-Material previously released under MIT remains available under that grant.
-The following original notice is preserved for that material only; it does not
-offer later additions under MIT or revoke earlier permissions.
-
-MIT License
-
-Copyright (c) 2026 Toko Studios Ltd
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.

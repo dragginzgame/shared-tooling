@@ -19,6 +19,7 @@
 - Root licence and notices:
 - Package licence metadata:
 - Git identities observed:
+- Contributor-register classifications applied:
 - Signed assignment/CLA references:
 - Employee/contractor ownership references:
 - Patent records:

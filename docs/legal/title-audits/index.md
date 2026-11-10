@@ -8,6 +8,10 @@ This register covers the 59 repositories returned for the `dragginzgame` GitHub 
 
 Detailed findings are kept one file per repository so each title chain can be reviewed, signed and updated independently. The register is the portfolio-level view and must remain consistent with those records.
 
+The [contributor identity and rights register](contributors.md) normalises the
+Git aliases identified by the maintainer and records the present agreement gaps.
+It is a routing aid for the repository audits, not proof of ownership.
+
 ## Status meanings
 
 - **Red — discrepancy:** a material licence, repository or title-record issue is already visible.
@@ -94,7 +98,13 @@ No repository is green until authorised legal review verifies every material con
    leave package or distribution terms unclear.
 4. Apache or GNU metadata remains in `ic-platform`, `ic-storage`, `ic-tooling` and `toko`. Those entries may reflect third-party or previously granted rights and must be traced rather than overwritten.
 5. `ic-relay` and `ic-wire` use an earlier Dragginz burn licence, while `icydb` uses the prior Toko Studios burn licence. Existing grants cannot be erased by adopting TSNL-1.0 prospectively.
-6. Git author names are aliases or asserted identities, not verified legal rights holders. Every identity must be reconciled to employment, contractor, assignment or signed CLA evidence.
+6. Maintainer-supplied mappings now reconcile the observed display aliases for
+   Adam, Donna Powell, Don Adriano, Gabriel, Remco, Selami, Phil Harvey, Emanuel
+   Caravan, Joey Spencer and the other named individuals in the
+   [contributor register](contributors.md). These mappings identify people but
+   do not clear rights. Several current and former contractors have no recorded
+   agreement, and the reported Mana Point employee agreements still require
+   scope review and a verified chain into Toko Studios Limited.
 7. Maintainer-supplied portfolio history identifies `shared-tooling` as the predecessor of `toko-tooling` and identifies `ic-scheduling` as a combination including `ic-timers`. The predecessor histories and rights must be included in the successor audits even if the old repositories are later removed.
 8. One remote-only repository, `toko-miner-web`, reports size zero and did not
    return a root listing. Its title record remains unreviewed rather than being

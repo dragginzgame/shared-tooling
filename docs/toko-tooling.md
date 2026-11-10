@@ -4,10 +4,11 @@ The actual source distribution of Dragginzgame development tooling: scripts,
 Make interfaces, CI actions, catalogs, rules, licenses and guides. Its empty
 Rust library is dependency-free and `no_std`, with no build script.
 
-The package selects the Toko Studios Network Licence 1.0 (TSNL-1.0), provided
-in its `LICENSE` file together with the preserved notice for previously
-MIT-licensed material. This source-available licence permits canonical IC production use and
-preserves Toko Studios' separate migration rights. See [the licensing guide](licenses.md).
+The package selects the adopted Toko Studios Network Licence 1.0 (TSNL-1.0),
+provided in its `LICENSE.md` file. This is a source-available licence. Material
+previously released under MIT and third-party material retain their applicable
+terms; later Toko-owned additions are not offered under MIT. See
+[the licensing guide](licenses.md).
 
 Select an exact release once in repository-root Cargo.toml:
 

@@ -13,28 +13,31 @@ remain separately licensed, and existing imports retain their terms and notices
 during an explicitly recorded migration or exception. Removing a notice is not
 a migration.
 
-## TSNL-1.0: repository licence
+## Adopted TSNL-1.0
 
-The [Toko Studios Network Licence 1.0](../licenses/Toko-Studios-1.0.md) is
-this repository's licence. Its complete text is included in the root
-[LICENSE](../LICENSE), selected by Cargo's `license-file`. The current text
-replaces the unpublished earlier draft; the working 1.1 text was renumbered
-1.0 before publication. There is no separately maintained 1.1 licence.
+The [Toko Studios Network Licence 1.0](../LICENSE.md) was adopted by Toko
+Studios Limited on 10 November 2026. It is the first adopted TSNL version; the
+superseded development drafts have been removed from the working tree. Its
+governing law is the law of the Principality of Monaco and disputes are subject
+to the exclusive jurisdiction of Monaco's competent courts, subject to
+mandatory applicable law.
 
-The public grant permits production only on the canonical Internet Computer.
-Private, sovereign, enterprise, permissioned and disconnected IC-based networks,
-forks and other blockchains are excluded even if they burn ICP. Development,
-testing and genuine ancillary clients, CI and administration remain permitted.
-Toko Studios Limited retains its separate Section 11 rights to migrate and
-license the covered software on other networks. Those rights do not transfer
-automatically to public users or investors.
+Except where a file or notice states otherwise, the repository notice offers
+material under TSNL-1.0 by each applicable Copyright Holder only to the extent
+that holder owns or is authorised to license the relevant rights. Adoption does
+not transfer contributor copyright to Toko Studios Limited, cure a missing
+assignment or override an earlier or third-party grant.
 
-Canonical operation must satisfy the ICP-origin funding and evidence conditions.
-The existing supplemental resource coverage and Section 18 schedule still apply
-to subsidised, free or unmetered canonical resources. No private-network burn
-scheme creates production permission. Covered modifications distributed or used
-in production require public corresponding source; independent applications
-may remain proprietary. Publication does not require an official contribution.
+TSNL-1.0 permits compliant use on the canonical IC and on private, sovereign,
+government, enterprise or disconnected IC-based deployments that provide
+advance canonical-mainnet ICP burn coverage. Private deployments must cover
+100% of canonical-equivalent operational resource charges, dedicate and retire
+the resulting cycles, and publish independently reviewable evidence. No
+separate infrastructure-value surcharge applies.
+
+The Licence preserves Toko's separate licensing and freedom-to-operate rights
+and identifies Toko Studios Limited, IBC No. 1503915, as the Organisation. It
+does not implement holding-company, insolvency or founder-control protection.
 
 This selection does not relicense consumers or external dependencies. The root
 licence preserves the original MIT notice for previously MIT-licensed material;
@@ -42,21 +45,43 @@ that notice does not offer later additions under MIT.
 
 ## Outstanding legal and operational review
 
-The licence no longer carries draft labels. Section 17.4 still contains explicit
-placeholders for governing law and dispute forum: neither has been selected.
-Monaco law and courts have been suggested, but not authorised as the final choice.
-Removing draft labels does not resolve those fields or establish enforceability.
+The query treatment is deliberate: the current official
+[cycles overview](https://docs.internetcomputer.org/concepts/cycles/) and
+[cycle-cost table](https://docs.internetcomputer.org/references/cycle-costs/)
+describe query calls as free even though they consume node resources. TSNL-1.0
+nevertheless includes the supplemental resource-equivalence condition. Legal
+and technical reviewers should continue testing its enforceability and whether
+operators can measure it predictably; a later revision cannot retract grants
+already made under TSNL-1.0.
 
-Before publication, complete those fields, verify copyright and patent authority,
-and validate funding, supplemental resource measurement, evidence and correction
-requirements against actual deployments. The licence identifies Toko Studios
-Limited, IBC No. 1503915; it does not itself establish ownership, contributor
-consent, holding-company arrangements or founder-control protection.
+The Licence conditions Production Operation on tamper-evident measurement,
+allocation, burn and retirement evidence. Missing data requires a conservative
+upper-bound estimate; provider assertions and screenshots alone are
+insufficient. Proportionate supporting-record requests and independent
+confidential audits are available for documented material compliance concerns.
 
-Official [cycles documentation](https://docs.internetcomputer.org/concepts/cycles/)
-and [cycle costs](https://docs.internetcomputer.org/references/cycle-costs/)
-are operational references for this review. Confirm that the supplemental
-requirements can be measured and enforced, including for free queries.
+Post-adoption review and rollout:
+
+- Verify employee, contractor and contributor copyright and patent authority for
+  every designated release. Company membership and repository access are not
+  evidence of assignment.
+- Establish the repository contribution-eligibility and signed-acceptance
+  process. The Licence does not itself establish contributor consent or transfer
+  ownership of a contribution.
+- Validate private-deployment resource classification, transferred credits,
+  pooled balances, measurement and funding evidence against real deployments.
+- Test Section 18 against free queries, later protocol subsidies, bundled
+  services, authoritative sidecars, off-chain storage and split Related Party
+  deployments.
+- Validate the mechanism for dedicating and irreversibly retiring cycles and
+  proving no sale, reuse or double counting without exposing protected data.
+- Confirm that evidence requests, confidential audits, cost allocation,
+  suspension and correction rules are enforceable and proportionate.
+- Preserve earlier public grants and independently licensed dependencies in
+  every publication artifact.
+- Obtain Monaco-qualified advice on forum wording, service, conflict-of-laws
+  treatment and enforcement. Record any amendment as a new licence version;
+  never silently change TSNL-1.0 after publication.
 
 ## Proposed Toko Studios CLA 1.0
 
@@ -83,6 +108,12 @@ first evidence pass across the repositories returned by the GitHub organisation
 listing and additional local-only checkouts. The accompanying
 [method](legal/title-audits/README.md) uses a central register plus one record per
 repository.
+
+The [contributor identity and rights register](legal/title-audits/contributors.md)
+records maintainer-supplied alias mappings separately from legal clearance. It
+flags unsigned current and former contractors, uncertain small contributions and
+the unverified Mana Point-to-Toko chain so a matched name is never mistaken for
+an assignment.
 
 These records identify evidence and discrepancies; they do not declare
 ownership or authority to relicense. Signed agreements, employment records and
