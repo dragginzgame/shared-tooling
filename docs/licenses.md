@@ -1,217 +1,120 @@
-# Canonical software licenses
-<!-- Shared companions: scripts/ci/check-license.pl -->
+# Toko Studios licensing work
 
-Toko Tooling owns the master wording for the two selected licenses:
-
-- [MIT](../licenses/MIT.txt): the other sibling libraries and tools, including
-  Toko Tooling.
-- [Toko Studios Source Available License — Verifiable ICP Burn 1.1](../licenses/Dragginz-ICP-Burn-1.1.txt), referred to here as Dragginz:
-  IcyDB, Canic and IC Relay. Third-party Live Deployments require verifiable mainnet
-  burning: 100% of ordinary resource funding or at least 20% of Cloud Engine
-  infrastructure value. Toko Studios Ltd has the permanent section 7 exception
-  and section 11.2 patent rights.
-
-The Cloud Engine base includes comparable market value for free or affiliated
-infrastructure. Advance burn coverage and public deployment-linked evidence are
-required; monthly reconciliation is not permission to operate without burning.
-Contributor acceptance must expressly include the organization exception.
-The named beneficiary is part of the fixed terms, not a consumer-editable field.
-
-Toko Tooling itself uses the [root MIT license](../LICENSE). These templates
-do not retroactively change consumer releases or third-party license grants.
-Previously granted rights and third-party licenses remain intact.
+Toko Tooling no longer carries the retired MIT, Dragginz burn-licence or
+Dragginz CLA master copies removed in the 0.39.0 work. Their removal does not
+revoke earlier grants, erase third-party terms or establish authority to
+relicense existing material. Consumer repositories must preserve every licence
+and notice already applicable to their code and releases.
 
 New in-house code must follow the
 [independent implementation rule](../TOKO-TOOLING.md#independently-owned-implementations).
-Our selected licence requires documented rights in the implementation; maintaining
-an upstream fork does not establish those rights. External dependencies remain
-separately licensed, and existing imports retain their terms and notices during
-an explicitly recorded migration or exception. Removing a notice is not a migration.
+Maintaining an upstream fork does not establish ownership. External dependencies
+remain separately licensed, and existing imports retain their terms and notices
+during an explicitly recorded migration or exception. Removing a notice is not
+a migration.
 
-## Proposed TRNL-1.0: release review
+## Proposed TSNL-1.1: legal and release review
 
-The [Toko Reciprocal Network Licence draft](../licenses/Toko-Studios-1.0.md)
-is not an adopted master and is not approved for publication or consumer
-relicensing. The MIT and Dragginz selections above remain unchanged. This
-checklist is release documentation, not part of the proposed legal instrument.
+The [Toko Studios Network Licence 1.1 draft](../licenses/Toko-Studios-1.1.md)
+develops the earlier
+[Toko Reciprocal Network Licence 1.0 draft](../licenses/Toko-Studios-1.0.md).
+Neither draft is adopted or approved for publication or consumer relicensing.
+This checklist is review documentation, not part of either proposed legal
+instrument.
 
-The draft permits compliant corporate use on the canonical IC, preserves Toko's
-separate licensing rights, and retains Toko Studios Ltd as the Organisation.
-It does not implement a holding-company transfer or founder-control protection.
-The selected policy permits timely cure of eligible inadvertent source defects
-without claims based solely on the cured defect; a bounded, documented
-good-faith valuation true-up; and exact-source access for unchanged binary
-redistribution, with fallback responsibility when upstream hosting fails.
+The 1.1 draft permits compliant use on the canonical IC and on private,
+sovereign, government, enterprise or disconnected IC-based deployments that
+provide advance canonical-mainnet ICP burn coverage. Private deployments must
+cover 100% of canonical-equivalent operational resource charges, dedicate and
+retire the resulting cycles, and publish independently reviewable evidence. No
+separate infrastructure-value surcharge applies.
+
+The draft preserves Toko's separate licensing and freedom-to-operate rights and
+identifies Toko Studios Limited, IBC No. 1503915, as the Organisation. It does
+not implement holding-company, insolvency or founder-control protection.
+
+The selected source-reciprocity policy requires public Corresponding Source for
+Covered Modifications distributed or used in Production Operation, including
+internal business operation. Independent Applications may remain proprietary,
+private non-production modification alone does not trigger publication, and
+publication requires neither a pull request nor the Organisation's acceptance.
+
+The fixed Section 18 Resource Equivalence Schedule addresses subsidised, free,
+bundled and unmetered production resources, including query execution. It also
+aggregates Related Parties, sidecars, authoritative off-chain stores and split
+deployments according to operational substance. Qualifying private burns require
+objectively verifiable cycle retirement with no recovery or economic benefit.
+
+The query treatment is deliberate: the current official
+[cycles overview](https://docs.internetcomputer.org/concepts/cycles/) and
+[cycle-cost table](https://docs.internetcomputer.org/references/cycle-costs/)
+describe query calls as free even though they consume node resources. Counsel
+must decide whether a private licence may and should impose this supplemental
+burn condition on canonical operation, and technical review must confirm that
+operators can measure it predictably.
+
+The draft conditions Production Operation on tamper-evident measurement,
+allocation, burn and retirement evidence. Missing data requires a conservative
+upper-bound estimate; provider assertions and screenshots alone are
+insufficient. Proportionate supporting-record requests and independent
+confidential audits are available for documented material compliance concerns.
+
+Governing-law shortlist:
+
+- Laws of the Principality of Monaco, with disputes subject to the courts of
+  Monaco. This is a candidate only; counsel must confirm the appropriate court
+  wording, jurisdiction, service, conflict-of-laws treatment and enforcement
+  before replacing the draft placeholders.
 
 Before adoption:
 
 - Confirm the Organisation's exact registered identity and select governing law
-  and forum with counsel. The draft's jurisdiction placeholders remain open.
+  and forum with counsel.
 - Verify employee, contractor and contributor copyright and patent authority for
   every designated release. Company membership and repository access are not
-  evidence of assignment. Do not trim the draft's ownership cautions until the
-  required procedures and rights records exist.
-- Establish the repository contribution-eligibility policy and acceptance
-  process. The draft does not itself impose company-member-only acceptance.
-- Validate Cloud Engine classification and funding evidence against intended
-  deployments, transferred credits, pools and mixed balances. A licence clause
-  does not prove that operators can obtain the required records.
-- Exercise the 30-day valuation true-up and source-correction rules against
-  realistic disputes, outages and missed deadlines. Confirm enforcement,
-  notices, exceptions and remedies under the selected law.
-- Preserve earlier licence grants and independently licensed dependencies, and
-  verify the actual licensed material and notices in each publication artifact.
+  evidence of assignment.
+- Establish the repository contribution-eligibility and signed-acceptance
+  process. The draft does not itself establish contributor consent.
+- Validate private-deployment resource classification, transferred credits,
+  pooled balances, measurement and funding evidence against real deployments.
+- Test Section 18 against free queries, later protocol subsidies, bundled
+  services, authoritative sidecars, off-chain storage and split Related Party
+  deployments.
+- Validate the mechanism for dedicating and irreversibly retiring cycles and
+  proving no sale, reuse or double counting without exposing protected data.
+- Confirm that evidence requests, confidential audits, cost allocation,
+  suspension and correction rules are enforceable and proportionate.
+- Preserve earlier public grants and independently licensed dependencies in
+  every publication artifact.
 
-## Patent protection: Dragginz 1.1
+## Proposed Toko Studios CLA 1.0
 
-The ICP burn requirements are economic conditions for Live Deployment, separate
-from the patent protections below. They do not restrict access to courts or
-provide immunity from litigation. Operator conditions use neutral terms; the
-express Toko Studios exceptions remain distinct.
+The [Toko Studios Contributor Licence and Copyright Assignment Agreement 1.0
+draft](../licenses/Toko-Studios-CLA-1.0.md) is the proposed contribution
+agreement for TSNL-covered projects. It uses the supplied Company identity and
+assigns copyright to Toko Studios Limited, with a broad irrevocable fallback
+licence if an assignment is ineffective.
 
-Section 11 grants covered contributor patent rights and terminates section 11.1
-permissions when the recipient initiates or directs the patent claims described
-in section 11.3. It is not a general prohibition on lawsuits or license
-enforcement. The exact grant and termination scope are defined by the license.
+It also addresses future rights, employer and contractor authority, historical
+contribution schedules, third-party and generated material, moral-rights consent,
+and patent licensing and non-assertion.
 
-Toko Studios' section 11.2 patent rights are permanent, sublicensable and exempt
-from section 11.3 termination. Its section 7 copyright exception does not itself
-exempt independently operated downstream deployments from sections 3 through 6.
-No contributor grants patents it lacks authority to license. Existing patent
-licenses, including earlier Apache grants, remain unaffected.
+The draft is not approved for signature. Governing-law and forum placeholders
+remain open, and counsel must confirm consideration, execution, future-rights,
+moral-rights, patent, insolvency, privacy and recording requirements in every
+relevant jurisdiction. Existing contributors are not bound without individual
+signed acceptance.
 
-Version 1.1 is the current master. The [original 1.0 text](../licenses/Dragginz-ICP-Burn-1.0.txt)
-is retained unchanged for historical copies. Promotion does not automatically
-replace consumer licenses or establish rights-holder acceptance.
+## Software title audits
 
-## Contributor agreements and relicensing
+The [portfolio title-audit register](legal/title-audits/index.md) records the
+first evidence pass across the repositories returned by the GitHub organisation
+listing and additional local-only checkouts. The accompanying
+[method](legal/title-audits/README.md) uses a central register plus one record per
+repository.
 
-The [Dragginz CLA 1.0](../licenses/Dragginz-CLA-1.0.md) is a separate
-agreement with Toko Studios Ltd, not another software license. Contributors
-retain ownership while granting explicit copyright sublicensing and alternative
-licensing rights, including proprietary/commercial terms. This is broader than
-the more-permissive-only relicensing provision in
-[IC license section 3(J)](https://github.com/dfinity/ic/blob/master/licenses/IC-1.0.txt).
-Its permanent patent grant aligns with the Company's protection under section
-11.2 of Dragginz 1.1, including survival and sublicensing rights.
-
-For adoption, record the fixed agreement version, covered repositories,
-company signatory and private signature custodian.
-Provide the exact text and record informed acceptance; merely adding a CLA file,
-opening a PR, adding a checkbox or using a Git sign-off is not a signed CLA.
-An agent cannot sign for a human, employer or copyright holder.
-
-For each adopting repository, document the signing route in its contribution
-guide. Before merging covered contributions, verify an executed agreement for
-each relevant rights holder and its repository, account and contribution scope.
-For employer-owned work, verify corporate authority or obtain the owner's
-agreement. Keep signatures and contact details privately; the PR needs only a
-minimal reviewed acceptance reference, bound to the contributor and agreement
-version. A bot may check an approved acceptance registry; it cannot infer consent.
-No signing service, registry, CI gate or branch protection is installed here yet.
-
-Audit existing contributions separately. Obtain express retrospective grants for
-identified material where needed, rely on rights already sufficient for the
-proposed use, preserve separately licensed material under its own terms, or
-remove/replace it with properly authorized work. A new CLA cannot retroactively
-bind previous contributors, revoke recipients' existing grants or relicense
-third-party dependencies. Do not claim blanket relicensing clearance from a
-clean future-contributor checklist.
-
-## Consumer copies
-
-Replace `{{COPYRIGHT_NOTICES}}` with the repository's existing copyright lines.
-Preserve every applicable holder and year; do not replace ownership notices with
-a blanket organization name. Where no notice exists, use Toko Studios Ltd
-and the applicable year. Copy the complete terms into the consumer's
-`LICENSE`. Package copies must carry the same terms and applicable notices.
-Do not edit the terms in consumers. Changes to the Dragginz terms require a new
-versioned master and deliberate consumer adoption; preserve version 1.0 once
-adopted. MIT stays the standard MIT text.
-
-Canic and IcyDB additionally retain their prior MIT grants: append the exact
-[prior-material notice](../licenses/prior-mit-notice.txt), followed by MIT with
-the original copyright notices. This is not an MIT alternative for later
-contributions offered exclusively under Dragginz. IcyDB also preserves its
-original Apache-2.0 and MIT notices for previously covered material, including
-in published packages. Relay has no such appendix.
-
-For Cargo, use `license = "MIT"` at the workspace root and inherit it in members.
-For Dragginz, use `license-file = "LICENSE"` in `workspace.package` and
-`license-file.workspace = true` in members. Do not retain an alternative MIT
-declaration for newly restricted code. Check package file lists to ensure the
-license ships; root metadata alone does not establish archive contents.
-
-Apply inherited metadata to unpublished workspace members too. For every
-publishable package, inspect `cargo package --list --locked -p PACKAGE` and
-verify that the applicable license text and preserved notices are present.
-A root MIT declaration does not automatically include a root license outside
-the package directory; add an unchanged package-local regular file where needed,
-never a symlink to the root license. Preserve the complete terms and notices.
-Cargo can include the workspace-inherited `license-file` automatically, so
-check the actual file list before duplicating it. Repeat this focused check
-when changing package layout, include/exclude rules or licensing metadata.
-
-## Drift checks
-
-Run centrally against explicit consumer paths:
-
-```bash
-perl scripts/ci/check-license.pl --kind mit --file /path/to/library/LICENSE
-perl scripts/ci/check-license.pl --kind dragginz --file /path/to/ic-relay/LICENSE
-perl scripts/ci/check-license.pl --kind dragginz --prior-mit --file /path/to/canic/LICENSE
-# Explicit historical verification; not a claim of 1.1 adoption:
-perl scripts/ci/check-license.pl --kind dragginz --license-version 1.0 --file /path/to/old/LICENSE
-```
-
-The Dragginz checker defaults to 1.1; `--license-version 1.1` may make that
-selection explicit. Historical copies require `--license-version 1.0`.
-When updating the checker snapshot, update its consumer license deliberately or
-select the historical version explicitly; do not mistake a mismatch for a
-corrupt historical grant.
-
-The checker permits repository-specific opening copyright lines, line wrapping
-and whitespace. It rejects altered, missing or additional terms and undeclared
-appendices. It does not establish ownership, legal enforceability, completeness
-of copyright attribution, Cargo metadata consistency or deployment compliance.
-
-### Prepared package archives
-
-Check each explicitly selected prepared `.crate` before publication, using that
-package's admitted license file as the byte reference:
-
-```sh
-perl scripts/ci/check-license.pl --kind mit --file LICENSE \
-  --archive target/package/example-0.1.0.crate --member example-0.1.0/LICENSE
-```
-
-Both source and archive must be regular non-symlink files. `--archive` and
-`--member` are paired; the member is an exact canonical archive path, including
-the package/version directory. The complete source terms and optional prior-MIT
-appendix are checked as above, then exactly one regular license entry must match
-the source bytes, including notices, wrapping and final newlines. Select the
-package-local reference instead when its complete applicable notices differ.
-
-The read-only check validates gzip integrity and parses tar records through
-Perl's `Archive::Tar`, retaining only the selected license payload. It refuses
-missing/duplicate licenses, changed bytes, malformed archives, escaping paths
-and symlink/hardlink or special-file members. It never extracts or publishes,
-and leaves failed archives and inputs intact. `gzip` and `Archive::Tar` must be
-prepared explicitly; Shared's portable prerequisites check the Perl module.
-
-Consumers keep package selection and their publication gate. This does not
-establish archive source provenance, registry availability or that every required
-notice was selected; pair it with the existing source/package qualification.
-
-For offline consumer CI, adopt `scripts/ci/check-license.pl` as an entrypoint
-through the [reviewed snapshot workflow](consuming-snapshots.md). Its companion
-declaration includes MIT, both versioned Dragginz texts and the prior-material
-notice. The CLA is a separately selected agreement, not an appendix to a software
-license. Pin a committed Toko
-Tooling revision; do not point CI at a moving sibling checkout. Wire the explicit
-command into the consumer's existing checks when adopting the snapshot.
-Snapshot integrity detects edits to the masters; this checker detects drift in
-the consumer's distributed license. This addition does not activate consumer CI
-or change existing snapshots automatically.
-
-Run the focused checker fixtures with `make test-licenses`.
+These records identify evidence and discrepancies; they do not declare
+ownership or authority to relicense. Signed agreements, employment records and
+identity documents must remain in a private legal evidence system. Repository
+audit records should contain only an immutable digest, custodian and opaque
+evidence reference.

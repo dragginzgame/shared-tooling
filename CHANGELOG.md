@@ -23,6 +23,8 @@
   `ic-platform-runtime`, allowing Platform to retire copied System API bindings.
   Other owners, SDK dependencies, dev/build/target-specific edges and local
   policy refusals remain enforced.
+- Remove dangling README and package-include references to the retired root
+  licence file while directing readers to the maintained licensing guide.
 
 ### 📝 Documentation
 
@@ -33,6 +35,41 @@
   preserve separately licensed external dependencies and cryptographic safeguards,
   and require recorded migration plans or exceptions for existing imports without
   stripping their licences or notices.
+- Add the proposed Toko Studios Network Licence 1.1 for legal review without
+  changing any adopted licence. Preserve canonical-IC production and verifiable
+  ICP-burn conditions while strengthening neutral protection against network,
+  economic and rights appropriation; retain Toko Studios Limited's permanent
+  freedom to operate, migrate and separately license covered material. Record
+  the supplied Bahamian company identity, address and legal notice email.
+  Shortlist Monaco law and Monaco courts for counsel review while leaving
+  governing law and dispute forum explicitly unresolved in the draft.
+- Permit private, sovereign, government, enterprise and disconnected IC-based
+  production only with advance canonical-mainnet ICP burn coverage for 100% of
+  canonical-equivalent operational resource charges. Remove the separate 20%
+  infrastructure-value surcharge and valuation machinery; retain dedicated
+  retirement of resulting cycles, public allocation and metering evidence,
+  monthly reconciliation and no reuse or double counting. Unrelated blockchains
+  remain outside the public permission.
+- Make source reciprocity explicit for Covered Modifications used in internal or
+  external production while preserving proprietary Independent Applications and
+  private non-production work. Public source requires neither a pull request nor
+  the Organisation's acceptance.
+- Close identified burn-avoidance routes in the proposed licence with a fixed
+  resource-equivalence schedule for free, subsidised and unmetered resources;
+  aggregation of split, sidecar, off-chain and Related Party operation; objective
+  cycle retirement; tamper-evident evidence and proportionate audit rights; and
+  suspension or termination for missing, concealed or falsified evidence.
+  Strengthen the Independent Application boundary without capturing ordinary
+  use of documented public interfaces.
+- Add a proposed Toko Studios contribution agreement that assigns copyright to
+  the exact supplied Company entity, retains an irrevocable fallback licence,
+  and covers future rights, historical contribution schedules, contributor
+  authority, third-party and generated material, moral rights and patents.
+- Add a portfolio title-audit register and one evidence record per repository
+  returned by the GitHub organisation listing or found as an additional local
+  checkout. Record preliminary missing-licence, old-licence, Apache/GNU metadata,
+  repository-presence and contributor-evidence risks without claiming title or
+  overwriting prior grants.
 
 ## [0.38.3] - Unreleased
 

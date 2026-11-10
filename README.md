@@ -230,4 +230,5 @@ aggregate gates for releases or explicit full-check requests.
 entry describes pending work and does not prove publication. Tags establish
 release identity. Releases and recovery follow the [release contract](docs/releases.md).
 
-Licensed under [MIT](LICENSE).
+Current and proposed licensing work is documented in
+[the licensing guide](docs/licenses.md).

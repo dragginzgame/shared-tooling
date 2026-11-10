@@ -13,7 +13,7 @@ include = [
     "/rules/**", "/tasks/**", "/audits/**", "/licenses/**",
     "/.github/**", "/.githooks/**", "/Makefile", "/rust-toolchain.toml",
     "/AGENTS.md", "/TOKO-TOOLING.md", "/CONTRIBUTING.md", "/README.md",
-    "/CHANGELOG.md", "/LICENSE", "!/ci/frontend/node_modules/**",
+    "/CHANGELOG.md", "!/ci/frontend/node_modules/**",
     "!/docs/code-review/**",
 ]
 
