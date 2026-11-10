@@ -2,7 +2,9 @@
 <!-- Shared companions: tasks/cargo-machete.md tasks/code-audit.md tasks/dependency-security.md tasks/maintenance-prompt.md tasks/msrv.md tasks/readme-freshness.md tasks/rust-toolchain.md tasks/tooling-duplication.md tasks/cargo-tool-versions.md audits/README.md -->
 
 Toko Tooling owns this catalog and its reusable instructions. Open this file
-from the repository README or run `make tasks`. Task IDs are their filenames
+from the Toko Tooling repository README or run `make tasks` in that repository.
+Consumer Makefiles do not install a `tasks` target; use the catalog's reviewed
+commit-pinned upstream link from the adopted baseline. Task IDs are their filenames
 without `.md`; people and agents use the same definitions.
 
 ## Catalog

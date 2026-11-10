@@ -10,15 +10,16 @@ owned APIs, canister identities, validation gates and deployment configuration.
 
 Apply the baseline's
 [canonical licence policy](../TOKO-TOOLING.md#canonical-licence-and-contribution-policy)
-through Cargo workspace inheritance. In the product root `Cargo.toml`:
+through Cargo workspace inheritance for packages covered by the repository's
+Toko licence. In the product root `Cargo.toml`:
 
 ```toml
 [workspace.package]
 license-file = "LICENSE.md"
 ```
 
-Every member's manifest, including a root package when present and unpublished
-packages, inherits it under `[package]`:
+Every covered member's manifest, including a root package when present and
+unpublished helpers, inherits it under `[package]`:
 
 ```toml
 [package]
@@ -33,6 +34,12 @@ Do not use `workspace.license-file` (the `package` table is required), repeat
 relative paths in children, add a `license` expression or copy the licence into
 member directories. Packaging may include the canonical file in an archive
 without creating another maintained source copy.
+
+Confidential proprietary repositories omit first-party licence files and Cargo
+`license`/`license-file` metadata. Set every private package to `publish = false`
+(directly or through explicit workspace inheritance). Tooling adoption does not
+require granting a public licence. An unpublished package in a licensed
+repository remains covered; `publish = false` only blocks registry publication.
 
 ### Package locations
 

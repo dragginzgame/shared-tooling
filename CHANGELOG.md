@@ -1,6 +1,18 @@
 # Changelog
 
+## [0.39.7] - Unreleased
+
+### 🐛 Fixed
+
+- Clarify consumer documentation retirement and the producer-only `make tasks`
+  command; align retired release-setting diagnostics on a pinned online guide.
+  Qualify the reported entrypoint migration ([#376](https://github.com/dragginzgame/toko-tooling/issues/376)).
+
 ## [0.39.6] - 2026-11-10
+
+### 📝 Notes
+
+- This release was published with an empty changelog entry.
 
 ## [0.39.5] - 2026-11-10
 

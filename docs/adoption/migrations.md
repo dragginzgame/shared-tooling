@@ -17,6 +17,15 @@ files and verify the resulting receipt. Adding entrypoints alone does not remove
 old selections. No exporter relocation feature or upstream directory move is
 needed. This policy does not automatically refresh sibling repositories.
 
+For example, a consumer selecting `make/consumer.mk`, `TOKO-TOOLING.md`,
+`scripts/ci/verify-file-checksum.sh`, `.githooks/pre-commit`, `rules/git-hooks.md`
+and `rules/cargo-dependencies.md` retains the first four entrypoints and removes
+the two rule documents from its selection. Read those rules through the baseline's
+pinned upstream links. Do not expand the snapshot to follow the reference
+library's relative links: those links are resolved in the upstream repository.
+Check local Markdown links in the resulting consumer, alongside receipt integrity;
+the receipt verifier checks owned bytes, not arbitrary documentation links.
+
 ## Documentation organisation clarification in 0.39.4
 
 Every repository should organise product-owned docs by meaningful topic. That
