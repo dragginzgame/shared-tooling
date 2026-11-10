@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.39.9] - Unreleased
+
+### 🐛 Fixed
+
+- Admit upstream PocketIC as a native dev-dependency for consumer simulator tests,
+  enabling Testkit 0.98 adoption. Keep consumer normal/build edges, portable/Wasm
+  declarations and other direct IC SDK dependencies forbidden; stricter consumer
+  policies still apply.
+
 ## [0.39.8] - 2026-11-10
 
 ### 📝 Notes

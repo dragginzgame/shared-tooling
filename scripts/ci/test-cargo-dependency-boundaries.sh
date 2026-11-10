@@ -36,9 +36,9 @@ chmod +x "$FIXTURE/bin/cargo"
 export PATH="$FIXTURE/bin:$PATH"
 perl -MJSON::PP -e 'print encode_json({version => 1, workspace_root => $ARGV[0], workspace_members => ["consumer"], packages => [{id => "consumer", name => "consumer", dependencies => [{name => "substrate", rename => "hidden", kind => "dev", target => "cfg(windows)"}]}]})' "$FIXTURE" > "$FIXTURE/metadata.json"
 cp "$FIXTURE/metadata.json" "$FIXTURE/valid-metadata.json"
-# The direct upstream client is admitted only for its reviewed native owners.
+# Native dev clients are admitted; normal clients retain their reviewed owners.
 if [[ $selection == all || $selection == upstream-client ]]; then
-    for mode in native renamed private-driver dev build portable wasm other-owner other-sdk published-driver tightened driver-portable driver-dev; do
+    for mode in native renamed private-driver dev build portable wasm other-owner other-sdk published-driver tightened driver-portable driver-dev consumer-dev consumer-renamed consumer-build consumer-portable-dev consumer-wasm-dev consumer-other-sdk-dev consumer-tightened-dev; do
         perl -MJSON::PP -e '
           my ($root,$mode)=@ARGV;
           my $dependency={name=>"pocket-ic",kind=>undef,target=>q{cfg(not(target_family = "wasm"))}};
@@ -55,21 +55,33 @@ if [[ $selection == all || $selection == upstream-client ]]; then
           }
           $package->{publish}=["crates-io"] if $mode eq "published-driver";
           $dependency->{kind}="dev" if $mode eq "driver-dev";
+          if ($mode =~ /\Aconsumer-/) {
+              $package->{name}="consumer";
+              $dependency->{kind}="dev";
+              $dependency->{rename}="simulator" if $mode eq "consumer-renamed";
+              $dependency->{kind}="build" if $mode eq "consumer-build";
+              $dependency->{target}=undef if $mode eq "consumer-portable-dev";
+              $dependency->{target}=q{cfg(target_family = "wasm")} if $mode eq "consumer-wasm-dev";
+              $dependency->{name}="ic-agent" if $mode eq "consumer-other-sdk-dev";
+          }
           print encode_json({version=>1,workspace_root=>$root,workspace_members=>["member"],packages=>[$package]});
         ' "$FIXTURE" "$mode" > "$FIXTURE/metadata.json"
         printf '[{"dependency":"pocket-ic","allowed_packages":["ic-testkit","ic-testkit-dev","consumer"]}]\n' > "$FIXTURE/ci/cargo-dependency-boundaries.json"
-        if [[ $mode == tightened ]]; then
+        if [[ $mode == tightened || $mode == consumer-tightened-dev ]]; then
             printf '[{"dependency":"pocket-ic","allowed_packages":[]}]\n' > "$FIXTURE/ci/cargo-dependency-boundaries.json"
         fi
+        expected=reject
+        case "$mode" in native|renamed|private-driver|dev|driver-dev|consumer-dev|consumer-renamed) expected=pass ;; esac
+        actual=reject
         if (cd "$FIXTURE" && bash "$root/scripts/ci/check-cargo-dependency-boundaries.sh" --consumer "$FIXTURE" --external-ic) > "$FIXTURE/upstream-$mode.log" 2>&1; then
-            [[ $mode == native || $mode == renamed || $mode == private-driver ]] || { echo "unexpected upstream client admission: $mode" >&2; exit 1; }
+            actual=pass
         else
-            [[ $mode != native && $mode != renamed && $mode != private-driver ]] || { cat "$FIXTURE/upstream-$mode.log" >&2; exit 1; }
             grep -q 'Forbidden direct Cargo dependencies' "$FIXTURE/upstream-$mode.log"
         fi
+        [[ $actual == "$expected" ]] || { cat "$FIXTURE/upstream-$mode.log" >&2; echo "unexpected upstream client admission: $mode ($actual, expected $expected)" >&2; exit 1; }
     done
     cp "$FIXTURE/valid-metadata.json" "$FIXTURE/metadata.json"
-    echo 'Upstream PocketIC: native owners admitted; aliases, kinds, targets, private custody and tightened policies checked'
+    echo 'Upstream PocketIC: native dev clients and normal owners admitted; aliases, SDK refusals, targets, private custody and tightened policies checked'
     if [[ $selection == upstream-client ]]; then fixture_complete=true; exit 0; fi
 fi
 # Runtime owns optional, portable raw IC0; the exception adds no SDK/executor owner.

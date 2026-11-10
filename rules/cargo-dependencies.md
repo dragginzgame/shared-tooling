@@ -166,8 +166,12 @@ The maintainer-approved return to the published upstream `pocket-ic` client
 also permits that one normal dependency under `cfg(not(target_family = "wasm"))`
 in `ic-testkit` and its private (`publish = false`) `ic-testkit-dev` qualification
 package. Upstream owns its Candid/management types, transport panics and deletion
-behavior. This admits no direct SDK dependencies for other consumers, no portable,
-Wasm, development or build declaration, and no second client implementation.
+behavior. Native consumers may also select `pocket-ic` as a dev-dependency under
+that same target condition for simulator tests. Normal/build dependencies outside
+those two owners, portable/Wasm declarations and other direct IC SDK dependencies
+remain forbidden. Testkit continues to own managed server setup and custody;
+fixtures convert upstream identities explicitly and qualify production codecs
+through their actual owners. No second client implementation is introduced.
 Aliases use the same canonical package admission; consumer policies can tighten it.
 
 All IC-specific dependencies maintained outside `dragginzgame`, including DFINITY
