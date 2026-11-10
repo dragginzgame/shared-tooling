@@ -216,8 +216,7 @@ from the deterministic stack-diagram timer.
 Read the [baseline](TOKO-TOOLING.md) and local overlay first. [Engineering
 principles](docs/principles/README.md), focused policies in `rules/` and the
 [shared audit methods](audits/README.md) support that baseline; product-specific
-choices and historical reports remain with consumers. [Provenance](docs/provenance.md)
-records earlier extractions rather than defining today's ownership.
+choices and historical reports remain with consumers.
 
 ## Contributing and validation
 

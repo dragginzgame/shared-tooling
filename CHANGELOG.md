@@ -7,21 +7,25 @@
 - Admit the maintainer-approved native `pocket-ic` dependency in IC Tooling's
   Testkit and its private qualification driver. Keep canonical alias checks,
   target/kind restrictions, other-owner refusals and stricter consumer policies.
+- Make release-metadata fixtures independent of a main branch in detached CI
+  checkouts.
 
-## [0.39.0] - Unreleased
+## [0.39.0] - 2026-11-10
 
 ### 🔧 Changed
 
-- Group documentation into adoption, tools, validation, releases and fleet
-  guides, with a central index and separate migration history. Update explicit
-  snapshot entrypoint paths when adopting this layout; directory link checks
-  now include nested guides.
+
 - **Licence:** This release uses the Toko Studios Network Licence 1.0. See
   [LICENSE.md](LICENSE.md) for its terms. Earlier grants remain unchanged.
 
 - **Breaking:** `make/consumer.mk` exposes shared release and empty-source cleanup
   targets only with `TOKO_TOOLING_RELEASE := 1`. Existing shared-release consumers
   must set it before the include; direct `make/release.mk` includes remain opt-in.
+
+- Group documentation into adoption, tools, validation, releases and fleet
+  guides, with a central index and separate migration history. Update explicit
+  snapshot entrypoint paths when adopting this layout; directory link checks
+  now include nested guides.
 
 ### 🩹 Fixed
 

@@ -243,58 +243,7 @@ IC-based network, fork or replica does not qualify, even if it burns ICP.
 The Organisation's separate rights and written permissions under Section 11
 remain unaffected.
 
-### 2.11 Canonical-Equivalent Resource Charges
-
-"Canonical-Equivalent Resource Charges" means the quantity of cycles that the
-Canonical Internet Computer would charge for materially equivalent compute,
-storage, bandwidth, messages, calls, threshold services and other metered
-resources during the applicable Accounting Period, using the canonical prices
-applicable to a reasonably comparable subnet and workload.
-
-Where exact equivalence is unavailable, the operator must use a reasonable,
-contemporaneously documented and independently reviewable methodology that does
-not understate the closest measurable canonical charges. Private pricing,
-locally fabricated credits and a decision not to meter a resource do not make
-its Canonical-Equivalent Resource Charges zero.
-
-A canonical resource is not assigned zero Canonical-Equivalent Resource Charges
-merely because the Canonical Internet Computer subsidises it, does not separately
-meter it or does not directly charge an end user for it. Section 18 supplies the
-binding Resource Equivalence Schedule for this version of the Licence.
-
-### 2.12 Resource Equivalence Schedule
-
-"Resource Equivalence Schedule" means the versioned rules in Section 18 for
-measuring canonical operational resource use and mapping it to canonical cycle
-charges. The schedule forms part of this Licence and cannot be replaced for
-already licensed material merely by publishing a different external document.
-
-An operator may use a later schedule only where the applicable Copyright
-Holders expressly offer that schedule for the relevant Covered Software.
-
-### 2.13 Qualifying Cycle Retirement
-
-"Qualifying Cycle Retirement" means irreversible destruction of cycles minted
-by a Qualifying ICP Burn through a canonical protocol operation or other
-objectively verifiable mechanism that:
-
-a. permanently removes the cycles from every transferable or spendable balance;
-
-b. provides no refund, withdrawal, controller recovery, claim, credit, rebate or
-other recoverable economic value to the operator or a Related Party;
-
-c. is independently verifiable from canonical records; and
-
-d. preserves evidence connecting the retired cycles to their originating
-Qualifying ICP Burn and supplemental canonical-resource allocation.
-
-Sending cycles to a canister, account or service does not qualify while any
-person retains a technical, contractual or governance path to recover, redirect,
-spend or receive value from them. Consumption by an unrelated deployment,
-transfer to another operator and abandonment without verifiable destruction do
-not qualify.
-
-### 2.14 Corresponding Source
+### 2.11 Corresponding Source
 
 "Corresponding Source" means complete human-readable source necessary to
 understand, modify, compile and reproduce Covered Software or a Covered
@@ -310,11 +259,7 @@ covered components without requiring disclosure of the complete Independent
 Application. Replacements such as interface descriptions or minimal build
 harnesses must not conceal Covered Modifications.
 
-### 2.15 Accounting Period
-
-"Accounting Period" means one UTC calendar month, including a partial month.
-
-### 2.16 Control and Related Party
+### 2.12 Control and Related Party
 
 "Control" means direct or indirect power to direct management, policies,
 deployment or material technical operation, whether through equity, tokens,
@@ -452,127 +397,51 @@ provider, infrastructure operator, purchaser, successor corporation or network
 participant acquires additional rights merely by succeeding to, acquiring,
 administering, funding or replacing part of an ecosystem.
 
-## 6. Canonical ICP funding and resource coverage
+## 6. Verifiable ICP-origin funding
 
-### 6.1 Canonical deployment funding
+### 6.1 Actual protocol charges
 
-Production Operation on the Canonical Internet Computer is conditional on all
-protocol resource credits used for the deployment's execution and
-infrastructure charges being funded through Qualifying ICP Burns.
+For Production Operation on the Canonical Internet Computer,
+one hundred percent (100%) of the cycles or other protocol resource credits applied to
+actual protocol charges must originate from Qualifying ICP Burns. Where those
+charges use cycles, the cycles must originate from qualifying canonical
+ICP-to-cycles conversion. Section 9 governs evidence of that origin.
 
-Where charges use cycles, all cycles applied to those charges must originate
-from qualifying canonical ICP-to-cycles conversion.
-
-Operational resource use that the Canonical Internet Computer subsidises, does
-not separately meter or supplies without a direct cycle charge does not escape
-the economic-alignment condition. For that use, the Licensee must calculate the
-non-zero imputed charge required by Section 18 and, before the use, establish an
-equivalent Qualifying ICP Burn and Qualifying Cycle Retirement. An actual
-canonical charge and its funding must not also be counted as an imputed charge.
-
-### 6.2 Supplemental canonical-resource coverage
-
-For canonical operational resource use subject to the supplemental condition
-in Section 6.1, each Accounting Period requires advance Qualifying ICP Burns
-sufficient to mint cycles equal to the applicable Canonical-Equivalent Resource
-Charges under Section 18. Directly charged and qualifying-funded resources
-must not be charged a second time. This requirement grants no off-network
-production permission.
-
-### 6.3 Dedicated retirement of supplemental cycles
-
-Cycles minted by a conversion counted toward Section 6.2 must be specifically
-identified and must not be sold, transferred for value, allocated to another
-deployment, used to satisfy another licence obligation or counted again.
-
-Those cycles must undergo Qualifying Cycle Retirement before the corresponding
-supplementally covered canonical resource use begins. A promise of later retirement, an ordinary transfer
-or consumption that supplies useful operation to another deployment is
-insufficient.
-
-Destruction of cycles without evidence of the qualifying originating ICP burn
-does not satisfy this Section. An originating ICP burn without the required
-dedication and retirement of its resulting cycles does not satisfy supplemental
-canonical coverage.
-
-### 6.4 Transfers and pools
+### 6.2 Transfers and pools
 
 Conversions by a Licensee, provider or legitimate funding source may qualify.
 Transfers through canonical mechanisms do not create a second burn obligation.
 
 Pooled records must account for qualifying inflows, other inflows, transfers,
-consumption, retirement, allocations and closing balances sufficiently to
-prevent reuse or double counting. Physical identification of fungible units is
-not required where independently reviewable quantitative accounting proves the
-same result.
+consumption and closing balances sufficiently to prevent reuse or double
+counting. Allocations of qualifying funding must not exceed qualifying credits
+actually received and still available. Physical identification of fungible
+units is not required where independently reviewable quantitative accounting
+proves the same result.
 
-### 6.5 Mixed and non-qualifying funding
+### 6.3 Mixed and non-qualifying funding
 
 Synthetic issuance, alternative-network credits and unsupported balances do not
 qualify. Mixing qualifying and other credits does not make other credits
-qualifying. Later burns do not retrospectively qualify earlier operation.
+qualifying. Qualifying funding must exist when the protocol charges are paid;
+later burns do not retrospectively qualify earlier use of non-qualifying credits.
 
-### 6.6 Scope
+## 7. Funding scope
 
-The requirement applies to resource funding and equivalent resource use, not
-total revenue, transaction volume, token supply, user assets or unrelated
-turnover. Section 18 determines the charge for subsidised, free, bundled or
-unmetered operational resources. A claimed zero charge is permitted only where
-the schedule expressly produces zero after all material resource use is
-included and the evidence required by Section 9 supports that result.
+The funding requirement applies to actual protocol charges, not imputed resource
+value, infrastructure cost, application revenue, business profits or turnover.
+No supplemental burn, cycle retirement, equivalent-resource valuation or monthly
+resource reconciliation is required by this Licence.
 
-## 7. Supplemental canonical-coverage administration
+Where the canonical protocol makes a resource free or subsidises its charge,
+only the actual remaining protocol charge, if any, is subject to Section 6.
+Free queries and other zero-charge operations incur no additional burn
+requirement under this Licence. Charges that are actually imposed remain
+subject to Section 6 even when a provider or another party pays them.
 
-### 7.1 Complete operational-resource coverage
-
-A Canonical Internet Computer deployment must maintain Qualifying ICP Burn
-coverage for one hundred percent (100%) of its supplemental resource charges
-under Section 6.2.
-
-No infrastructure-value surcharge, application-revenue charge or percentage of
-business turnover applies under this public Licence.
-
-### 7.2 No reuse or double counting
-
-A Qualifying ICP Burn and its resulting cycles must not be allocated to another
-deployment, Accounting Period or licence obligation. The same value must not be
-used both as supplemental canonical coverage and as operational funding for a
-different deployment.
-
-Only demonstrably unused, dedicated and unretired advance coverage may be
-carried forward, and it remains subject to Section 6.3 before being counted for
-actual Production Operation.
-
-### 7.3 Advance coverage
-
-Projected supplementally covered canonical resource use must have qualifying coverage before Production
-Operation. Additional or variable consumption must remain within a documented
-prepaid coverage limit, with further coverage established before that limit is
-exceeded.
-
-### 7.4 Resource reconciliation
-
-Within thirty (30) days after each Accounting Period, reconcile actual
-Canonical-Equivalent Resource Charges, allocated burns, retired cycles, unused
-coverage and corrections.
-
-Reconciliation is not a funding grace period. Later funding permits prospective
-resumption but does not authorise an earlier deficit.
-
-### 7.5 Good-faith measurement correction
-
-A discrepancy in Canonical-Equivalent Resource Charges receives a thirty-day
-correction period only where the original measurement method was reasonable,
-contemporaneously documented, independently supportable on information then
-available, accurately disclosed and fully funded on that original basis.
-
-Within thirty days after discovery or substantiated written notice, publish the
-corrected measurement, fund and retire the complete resulting deficit, and
-update Section 9 evidence. Deliberate or reckless understatement, concealed or
-unmetered use, or consumption beyond prepaid coverage does not qualify.
-
-Timely correction protects operation based solely on the eligible measurement
-discrepancy. It does not excuse another breach or operation outside Section 5.
+This Section does not permit Production Operation on a private network, fork
+or other blockchain. The network restriction in Section 5 and the Organisation's
+separate authority under Section 11 remain unchanged.
 
 ## 8. Reciprocal source obligations
 
@@ -630,52 +499,34 @@ discoverable public notice identifying their source location and version.
 
 ## 9. Evidence and records
 
-### 9.1 Verifiable evidence
+### 9.1 Verifiable funding evidence
 
 Each Production Operation must maintain evidence reasonably sufficient to
-demonstrate Sections 6 and 7 compliance. Canonical deployments may use identified protocol and reconciled pool records.
-
-A canonical deployment subject to the supplemental burn and retirement
-condition in Section 6.1 must publish independently reviewable measurement,
-allocation, burn and retirement records for that supplemental coverage.
+establish the qualifying origin of the credits used for actual protocol charges.
+Canonical ledger, conversion and reconciled pool records may be used, including
+records of funding supplied by a provider or another party.
 
 Possessing, retaining and providing the evidence required by this Section is a
-condition of Production Operation. A provider assertion, invoice, balance
-screenshot or unexplained summary is not independently reviewable evidence.
+condition of Production Operation, subject to the correction protection in
+Section 14.3. A provider assertion, invoice, balance screenshot or unexplained
+summary alone does not establish qualifying origin.
 
-### 9.2 Supplemental canonical-resource records
+### 9.2 Funding records
 
-A canonical deployment subject to Section 6.2 must identify:
+Records must identify the relevant deployment, qualifying ICP conversion
+references, resulting credit quantities, material transfers and pool allocations,
+and consumption and balances sufficient to demonstrate Section 6 compliance.
+Stable canonical records may be referenced rather than copied. The same credits
+must not be counted as available for more than one expenditure or allocation.
 
-a. the protocol and material execution configuration;
-
-b. the methodology and measurements used to calculate Canonical-Equivalent
-Resource Charges;
-
-c. the complete resource-coverage calculation required by Section 7.1;
-
-d. canonical ICP ledger and cycles-minting references for each qualifying burn;
-
-e. quantitative allocation of each burn to the deployment and Accounting
-Period; and
-
-f. independently reviewable evidence that resulting cycles were dedicated and
-underwent Qualifying Cycle Retirement as required by Section 6.3.
-
-Initial resource measurement, methodology and coverage must be published before
-Production Operation. Reconciliations must be published within Section 7.4's
-deadline.
-
-Records must include tamper-evident raw measurements, material configuration,
-software and schedule versions, calculation inputs and cryptographic hashes or
-equivalent integrity evidence sufficient to reproduce each published result.
-Where exact data is unavailable, the Licensee must use and disclose a
-conservative upper-bound estimate. A failure to meter or retain data within the
-Licensee's or a Related Party's control must not reduce the required coverage.
+No resource-equivalence measurements, imputed query charges, cycle-retirement
+proofs or monthly resource reports are required. A zero-charge operation does
+not require evidence of a burn for a charge that the protocol did not impose.
 
 ### 9.3 Retention, privacy and corrections
 
-Required records must remain available for at least three years. Stable
+Required funding records must remain available for at least three years after
+the last expenditure or transfer they substantiate. Stable
 pseudonymous identifiers and proportionate confidentiality protections are
 permitted, but must not prevent verification. Corrections must preserve an
 auditable history.
@@ -706,19 +557,17 @@ service boundary, artificial allocation or accounting arrangement.
 Technical, operational and economic substance prevails over labels and formal
 ownership.
 
-Production Operation and its measured resource use include every coordinated
+Production Operation includes every coordinated
 component that materially performs, stores or supports the operational workload,
 including an authoritative off-chain database or index, hosted execution engine,
 sidecar holding canonical state, relay performing substantive business logic,
 or backup promoted to live service. The ancillary-use exception in Section 4.3
 does not apply to such a substitute production component.
 
-Resource use, burns and retirements must be aggregated across Related Parties
-and coordinated deployments where they form one operational service or share
-workloads, state, control, funding or infrastructure. Splitting a service among
-entities, deployment identifiers, components, accounts or measurement windows
-must not reduce or defer the charge, coverage or evidence that would apply to
-the service in substance.
+Funding records must account for coordinated deployments and Related Parties
+where they share credits or funding pools. Splitting a service among entities,
+deployment identifiers, components or accounts must not disguise non-qualifying
+funding, permit double counting or authorise off-network Production Operation.
 
 ### 10.2 No rights through investment or position
 
@@ -924,30 +773,30 @@ from commencement. Later
 payment, burning, migration or cessation does not retroactively authorise an
 unqualified deployment.
 
-### 14.2 Economic suspension
+### 14.2 Funding suspension
 
-Except for an eligible Section 7.5 measurement correction, permission for
-affected Production Operation is suspended when required funding or coverage
-is absent. Operation may resume
-prospectively after complete correction if no other condition remains unmet and
-permissions have not separately terminated.
+Subject to Section 14.3 for eligible documentary defects, permission for affected
+Production Operation is suspended when non-qualifying credits are used to pay
+actual protocol charges or the required funding evidence is absent. Operation
+may resume prospectively after correction if no other condition remains unmet
+and permissions have not separately terminated.
 
-Permission is also suspended while the Licensee lacks the required measurement,
-allocation, burn, retirement or publication evidence. Later reconstruction of
-records may cure an eligible documentary defect under Section 14.3 only where
-the Licensee establishes that the required burn and retirement occurred on time.
-Reconstructed evidence cannot create retroactive coverage.
+Reconstructed records may establish that qualifying funding already existed
+when charges were paid. Later burns cannot retrospectively qualify actual use
+of non-qualifying credits. No suspension arises solely from the absence of a
+supplemental burn, valuation or retirement that Sections 6 and 7 do not require.
 
 ### 14.3 Administrative correction
 
 An inadvertent documentary or source-publication defect may be corrected within
 thirty days after discovery or written notice if the use was otherwise
-authorised, required funding existed, the breach was not deliberate and the
-Licensee acts promptly and in good faith.
+authorised apart from that eligible defect itself, required qualifying funding
+existed when actual protocol charges were paid, the breach was not deliberate
+and the Licensee acts promptly and in good faith.
 
 Timely complete correction prevents suspension, termination or claims based
 solely on that eligible defect. It does not excuse an unqualified deployment,
-missing burn or retirement coverage, concealment or deliberate withholding.
+actual use of non-qualifying funding, concealment or deliberate withholding.
 Further executable distribution during a known source outage remains prohibited.
 
 ### 14.4 Deliberate or material violations
@@ -1044,90 +893,6 @@ Organisation in a durable public record.
 This Licence states the public permissions for Covered Software. A separate
 written agreement issued by parties with sufficient authority may grant
 additional permissions to its identified recipient.
-
-## 18. Resource Equivalence Schedule
-
-### 18.1 Application and measurement period
-
-This schedule is part of TSNL-1.0. It applies to each Accounting Period and to
-all material operational resource use covered by Sections 6 and 7. It must be
-applied to Canonical Internet Computer Production Operation wherever a
-resource is subsidised, bundled, free or not directly metered.
-
-### 18.2 Directly charged canonical resources
-
-For a resource directly charged by the Canonical Internet Computer, use the
-actual published canonical-mainnet cycle rate in effect when the resource was
-used for the closest reasonably comparable production subnet and workload.
-Actual cycle charges already funded through a Qualifying ICP Burn are not
-charged again.
-
-### 18.3 Subsidised, free and unmetered resources
-
-A resource is not assigned a zero charge merely because it is subsidised,
-bundled, free to an end user, omitted from local accounting or not separately
-metered by the Canonical Internet Computer.
-
-Query execution and comparable non-consensus execution must be measured by
-instructions, messages, bytes, memory, duration and other material consumption
-available to the operator. It must be priced using the closest charged execution
-class, adjusted only to remove resource functions demonstrably not performed.
-The same rule applies to free ingress, bundled bandwidth and any later free or
-subsidised resource class.
-
-Where no directly comparable charged class exists, use the lowest published
-combination of canonical rates that reasonably represents the resources actually
-consumed. An adjustment must be technically justified, contemporaneously
-documented and must not understate those resources.
-
-### 18.4 Included resource classes
-
-The calculation must include, where material: compute and instructions; memory
-and storage duration; ingress and egress bandwidth; inter-canister and external
-messages; HTTP outcalls; threshold cryptography and other system services;
-consensus and replication; reserved or committed capacity; and authoritative
-off-chain or sidecar resources included under Section 10.1.
-
-An authoritative off-chain or sidecar resource must be converted to the closest
-canonical resource class by actual measured consumption. Its private hosting
-price, internal transfer price or absence of a bill does not determine the
-cycle charge.
-
-### 18.5 Measurement gaps and conservative estimates
-
-Use actual tamper-evident measurements where reasonably available. If an exact
-measurement or mapping is unavailable, use a disclosed conservative upper-bound
-estimate derived from capacity, request limits, runtime observations or another
-independently reviewable input. Missing measurement created or tolerated by the
-Licensee or a Related Party must not reduce the charge.
-
-### 18.6 Aggregation and allocation
-
-Apply the schedule to the complete operational service in substance. Aggregate
-coordinated components, split workloads, deployment identifiers, Related Party
-operation and common-control infrastructure as required by Section 10.1.
-
-Allocations among services or Accounting Periods must be quantitative,
-consistent and independently reviewable. An allocation must not omit use, move
-it to a non-production label or count the same burn, retirement or funded cycle
-more than once.
-
-### 18.7 Rate and method changes
-
-Use rates effective when consumption occurs. If a canonical rate changes during
-an Accounting Period, apply the respective rates to the corresponding use or a
-documented weighted method that does not materially understate the result.
-
-Changes in method, classification, estimation or configuration must be versioned
-and disclosed with their effective dates and quantitative effect. A later method
-must not retrospectively reduce an earlier obligation.
-
-### 18.8 Fixed licence schedule
-
-No Licensee, provider or Organisation publication may unilaterally replace this
-schedule for Covered Software already offered under TSNL-1.0. A revised schedule
-applies only through a new licence version or an express offer by the applicable
-Copyright Holders under Section 2.12.
 
 ---
 

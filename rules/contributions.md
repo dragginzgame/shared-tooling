@@ -28,7 +28,6 @@ authors and provenance before accepting changes through an eligible account.
 
 For repositories that adopt an approved contributor agreement, verify executed
 acceptance and rights-holder authority before merging covered contributions.
-Follow the canonical [CLA and relicensing guidance](https://github.com/dragginzgame/toko-tooling/blob/main/docs/licenses.md#contributor-agreements-and-relicensing).
 A PR, DCO sign-off or agent-generated checkbox does not establish a signed CLA;
 agents must not sign on another person's or entity's behalf. Publishing an
 agreement does not establish acceptance or configure fleet-wide signing checks.
