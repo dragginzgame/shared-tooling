@@ -263,6 +263,13 @@ This section supersedes older linked guidance permitting new maintained imports.
   snapshots. Package metadata points to the root licence; a standalone package
   archive may include the canonical licence where its packaging requires it,
   without creating a second maintained source copy.
+- Rust workspaces declare `license-file` in `[workspace.package]`; every member,
+  including private and qualification packages, uses
+  `[package] license-file.workspace = true`. The product workspace selects
+  `"LICENSE.md"`; an independent `qualification/Cargo.toml` selects
+  `"../LICENSE.md"`, pointing to the same repository-root file. Resolve the path
+  from the owning workspace, never by repeating member-relative paths or adding
+  nested licence copies. Use `license-file`, not a separate `license` expression.
 - Apart from these canonical files, required notices and factual metadata or
   links to them, do not retain legal material in repository files. This includes
   legal audits, opinions, exposure assessments, drafting history, superseded

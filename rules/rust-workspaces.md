@@ -6,6 +6,36 @@ owned APIs, canister identities, validation gates and deployment configuration.
 
 ## Standard layout
 
+### Workspace licence metadata
+
+Apply the baseline's
+[canonical licence policy](../TOKO-TOOLING.md#canonical-licence-and-contribution-policy)
+through Cargo workspace inheritance. In the product root `Cargo.toml`:
+
+```toml
+[workspace.package]
+license-file = "LICENSE.md"
+```
+
+Every member's manifest, including a root package when present and unpublished
+packages, inherits it under `[package]`:
+
+```toml
+[package]
+license-file.workspace = true
+```
+
+An independent `qualification/Cargo.toml` declares its own
+`[workspace.package] license-file = "../LICENSE.md"`; its members use the same
+inheritance syntax. Cargo resolves inherited licence paths relative to the owning
+workspace root, so member directory depth does not change the declaration.
+Do not use `workspace.license-file` (the `package` table is required), repeat
+relative paths in children, add a `license` expression or copy the licence into
+member directories. Packaging may include the canonical file in an archive
+without creating another maintained source copy.
+
+### Package locations
+
 Every repository containing maintained Rust packages uses a virtual root,
 including repositories with only one package. The standard package locations
 are `crates/` for product packages, `apps/<fleet-name>/` for Canic fleets and
