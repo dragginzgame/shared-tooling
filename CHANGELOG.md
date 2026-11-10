@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.39.1] - Unreleased
+
+### 🐛 Fixed
+
+- Admit the maintainer-approved native `pocket-ic` dependency in IC Tooling's
+  Testkit and its private qualification driver. Keep canonical alias checks,
+  target/kind restrictions, other-owner refusals and stricter consumer policies.
+- Make release-metadata fixtures independent of a main branch in detached CI
+  checkouts.
+
 ## [0.39.0] - 2026-11-10
 
 ### 🔧 Changed
