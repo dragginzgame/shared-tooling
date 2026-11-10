@@ -13,6 +13,6 @@ provides the short Cargo installation overview.
 | Fleet | [Reports and commands](fleet/fleet-tools.md), [generated stack overview](fleet/stack.md) |
 | Engineering | [Principles](principles/README.md), [baseline](../TOKO-TOOLING.md), [contribution guide](../CONTRIBUTING.md) |
 
-[Provenance](provenance.md), [historical audit reports](reports/audits/) and
+[Historical audit reports](reports/audits/) and
 [archived changelogs](changelog/) retain historical context.
 [Licensing](licenses.md) points to the authoritative documents.

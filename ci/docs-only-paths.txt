@@ -22,7 +22,6 @@ docs/principles/decision-artifact-discipline.md
 docs/principles/reviewable-changes.md
 docs/principles/rust-code-hygiene.md
 docs/principles/simplicity-and-maintainability.md
-docs/provenance.md
 docs/validation/rust-source-checks.md
 docs/tools/rust-toolchains.md
 docs/releases/tag-maintenance.md

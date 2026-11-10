@@ -47,7 +47,6 @@ docs/principles/reviewable-changes.md
 docs/principles/rust-code-hygiene.md
 docs/principles/simplicity-and-maintainability.md
 docs/adoption/consuming-snapshots.md
-docs/provenance.md
 docs/validation/verification-helpers.md
 docs/tools/ic-tools.md
 docs/adoption/local-setup.md

@@ -1,5 +1,5 @@
 # Shared audit methods
-<!-- Shared companions: audits/ci-release-integrity.md audits/code-hygiene.md audits/complexity-and-technical-debt.md audits/flow-convergence-and-duplication.md audits/ic-canister-applications.md audits/module-cleanup.md audits/module-surface-hardening.md docs/provenance.md -->
+<!-- Shared companions: audits/ci-release-integrity.md audits/code-hygiene.md audits/complexity-and-technical-debt.md audits/flow-convergence-and-duplication.md audits/ic-canister-applications.md audits/module-cleanup.md audits/module-surface-hardening.md -->
 
 These methods apply the [engineering baseline](../TOKO-TOOLING.md) to a named
 review scope. Toko Tooling owns the common questions and evidence contract;
@@ -136,5 +136,3 @@ domain method before retiring an old definition. Update catalogs, callers and
 method identity records together; preserve historical definitions where needed
 to reproduce frozen reports, marking them ineligible for new runs. Do not claim
 old score histories are comparable to these finding-based methods.
-
-Sources and deliberate differences are recorded in [provenance](../docs/provenance.md).
