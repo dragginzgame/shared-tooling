@@ -30,6 +30,13 @@ an explicitly recorded migration or exception. Removing a notice is not a migrat
 
 ## Proposed TRNL-1.0: release review
 
+The selected source-reciprocity policy requires public Corresponding Source for
+covered modifications distributed or used in production, including internal
+business operations. Network/burn compliance does not replace that obligation.
+Independent applications may remain proprietary; private non-production work
+alone does not trigger publication. Publication need not be a pull request or
+accepted upstream contribution. Separate permissions remain governed by §11.7.
+
 The [Toko Reciprocal Network Licence draft](../licenses/Toko-Studios-1.0.md)
 is not an adopted master and is not approved for publication or consumer
 relicensing. The MIT and Dragginz selections above remain unchanged. This
@@ -38,10 +45,13 @@ checklist is release documentation, not part of the proposed legal instrument.
 The draft permits compliant corporate use on the canonical IC, preserves Toko's
 separate licensing rights, and retains Toko Studios Ltd as the Organisation.
 It does not implement a holding-company transfer or founder-control protection.
-The selected policy permits timely cure of eligible inadvertent source defects
-without claims based solely on the cured defect; a bounded, documented
-good-faith valuation true-up; and exact-source access for unchanged binary
-redistribution, with fallback responsibility when upstream hosting fails.
+The selected funding rule requires 100% of operational cycles or other protocol
+resource credits to originate from verifiable canonical ICP conversion. It applies
+equally to shared and dedicated capacity, without a separate infrastructure-value
+percentage, valuation exercise or monthly valuation report. Transferred or pooled
+qualifying credits need no second burn; records must prevent double counting.
+The source-correction protection and exact-source access for unchanged binaries
+remain, including fallback responsibility when upstream hosting fails.
 
 Before adoption:
 
@@ -53,11 +63,11 @@ Before adoption:
   required procedures and rights records exist.
 - Establish the repository contribution-eligibility policy and acceptance
   process. The draft does not itself impose company-member-only acceptance.
-- Validate Cloud Engine classification and funding evidence against intended
+- Validate qualifying-origin and quantity evidence against intended
   deployments, transferred credits, pools and mixed balances. A licence clause
   does not prove that operators can obtain the required records.
-- Exercise the 30-day valuation true-up and source-correction rules against
-  realistic disputes, outages and missed deadlines. Confirm enforcement,
+- Exercise the source-correction and funding-suspension rules against
+  realistic missing records, outages and nonqualifying credits. Confirm enforcement,
   notices, exceptions and remedies under the selected law.
 - Preserve earlier licence grants and independently licensed dependencies, and
   verify the actual licensed material and notices in each publication artifact.

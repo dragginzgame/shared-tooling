@@ -149,33 +149,7 @@ f. Accounting entries, promises, token locks or simulated transactions.
 
 Burns previously completed to fund qualifying resource credits may be counted. This Licence does not require ICP to be destroyed a second time merely because qualifying cycles are transferred or consumed.
 
-### 2.10 Cloud Engine
-
-"Cloud Engine" means a qualifying Production Operation within the Canonical Internet Computer that uses dedicated, reserved or separately controlled execution capacity for an identifiable customer, enterprise or affiliated group.
-
-Classification depends on actual infrastructure allocation, operational control and commercial arrangements rather than product names.
-
-An ordinary shared public subnet does not become a Cloud Engine merely because an application stores private data.
-
-Ordinary per-canister compute or memory allocations, reserved cycles, freezing thresholds and prepaid cycle balances on a shared public subnet do not, by themselves, constitute dedicated or separately controlled infrastructure capacity. Cloud Engine treatment requires an arrangement reserving or separately controlling infrastructure execution capacity for the identified customer or group beyond those ordinary per-canister settings.
-
-An independently operated or private blockchain is not eligible for Cloud Engine treatment merely because it uses Internet Computer technology or performs Qualifying ICP Burns.
-
-### 2.11 Covered Capacity and Infrastructure Base
-
-"Covered Capacity" means the smallest objectively identifiable, separately metered and genuinely priced infrastructure capacity unit hosting or executing Covered Software within a Cloud Engine.
-
-Where capacity is commercially supplied only as an indivisible reservation, the entire reservation constitutes Covered Capacity.
-
-"Infrastructure Base" means the gross consideration payable, or an independently supportable arm's-length value, for Covered Capacity during the applicable accounting period.
-
-It includes compute, storage, reserved nodes, bandwidth, infrastructure availability and related infrastructure services.
-
-It excludes genuinely separate application revenue, user assets, customer deposits, statutory taxes and unrelated services.
-
-Artificial allocations, related-party discounts and nominal resource boundaries must not reduce the Infrastructure Base below its objectively supportable value.
-
-### 2.12 Corresponding Source
+### 2.10 Corresponding Source
 
 "Corresponding Source" means the complete human-readable source necessary to understand, modify, compile and reproduce the relevant Covered Software or Covered Modification.
 
@@ -184,10 +158,6 @@ It includes applicable source files, build definitions, dependency specification
 It does not require disclosure of credentials, private keys, user information, production databases, proprietary business data or independently authored application code covered by Section 2.6.
 
 For a combined build containing an Independent Application, Corresponding Source must permit reconstruction and compilation of the covered components, not reproduction of the complete proprietary application or its deployed binary. Application-specific inputs may be replaced by documented interface descriptions, non-proprietary fixtures or a minimal build harness sufficient to compile those components. Such replacements must not omit or conceal Covered Modifications. Macro-generated or other generated output containing protected implementation material remains covered to that extent; independently authored application material does not become covered merely because it appears in the same output.
-
-### 2.13 Accounting Period
-
-"Accounting Period" means one UTC calendar month, including partial months.
 
 ## 3. General Grant of Rights
 
@@ -235,7 +205,7 @@ Covered Software may execute outside the Canonical Internet Computer when reason
 
 This includes development workstations, administrative servers, browsers and supporting client systems.
 
-This is an express exception to Section 5.1 for the ancillary execution described here, including when it supports live operational workloads. Sections 6 and 7 continue to apply to the authorised Canonical Internet Computer deployment, but impose no separate ICP-burn requirement on the ancillary host's compute, storage or network costs. Those host costs do not become Cloud Engine Covered Capacity solely because of this ancillary use. Section 9 requires evidence for the supported deployment's applicable funding obligations, not a separate host-infrastructure burn account. Section 8 remains applicable to source access for distributions and to Covered Modifications operated in production on an ancillary host.
+This is an express exception to Section 5.1 for the ancillary execution described here, including when it supports live operational workloads. Section 6 continues to apply to the authorised Canonical Internet Computer deployment, but imposes no separate ICP-burn requirement on the ancillary host's compute, storage or network costs. Section 9 requires evidence for the supported deployment's applicable funding obligations, not a separate host-infrastructure burn account. Section 8 remains applicable to source access for distributions and to Covered Modifications operated in production on an ancillary host.
 
 Such permission does not authorise the operation of a competing production execution network using Covered Software.
 
@@ -287,9 +257,9 @@ g. Burns ICP or pays other consideration.
 
 Qualifying ICP Burns do not independently authorise use of Covered Software on an alternative network.
 
-The economic requirements of Sections 6 and 7 apply only to Production Operations otherwise permitted under this Licence.
+The funding requirements of Section 6 apply only to Production Operations otherwise permitted under this Licence.
 
-Payment, burn coverage or economic reconciliation cannot cure a violation of this Section.
+Payment or subsequent ICP conversion cannot cure a violation of this Section.
 
 ### 5.5 No automatic successor rights
 
@@ -301,7 +271,7 @@ Any materially separate successor network requires express authorisation.
 
 ### 6.1 Mandatory economic alignment
 
-Permission for Production Operation on the Canonical Internet Computer is conditional on the protocol resource credits used to pay the relevant deployment's execution and infrastructure charges being funded through Qualifying ICP Burns.
+Permission for Production Operation on the Canonical Internet Computer is conditional on one hundred percent (100%) of the cycles or other protocol resource credits used to pay the relevant deployment's operational charges originating from Qualifying ICP Burns.
 
 Where charges are denominated in cycles, the cycles applied to those charges must originate from qualifying canonical ICP-to-cycles conversion.
 
@@ -325,81 +295,13 @@ The requirement applies to resource funding, not to total application revenue, t
 
 It does not create an obligation to burn ICP for a request or operation for which the canonical network imposes no resource charge.
 
-## 7. Cloud Engine Economic Requirements
+## 7. Uniform Funding Rule
 
-### 7.1 Minimum infrastructure burn
+Section 6 applies equally to shared, dedicated, reserved and separately controlled capacity within the Canonical Internet Computer. Product names, infrastructure ownership and commercial arrangements do not create a different funding threshold.
 
-In addition to Section 6, Production Operation using Cloud Engine capacity is conditional on Qualifying ICP Burns equal in value to at least **twenty percent (20%) of the applicable Infrastructure Base**.
+There is no additional burn calculated as a percentage of infrastructure cost or value. This Licence requires no infrastructure valuation, market-price comparison, currency-value reconciliation or minimum spend beyond the qualifying origin of the protocol resource credits actually used. Operations for which the canonical network imposes no resource charge incur no separate burn requirement.
 
-This threshold applies to gross infrastructure consideration or objectively supportable value, not merely net profit or a provider's retained margin.
-
-### 7.2 Recognising existing burns
-
-Qualifying ICP Burns already performed to fund the relevant Cloud Engine capacity may count toward the required coverage.
-
-Burns must be specifically allocated, independently verifiable and not counted more than once.
-
-A separate additional burn is required only to the extent that previously qualifying, unallocated burn coverage is insufficient.
-
-The same burn may establish the origin of resource funding under Section 6 and contribute its qualifying XDR value toward the Section 7 threshold for the same attributable Cloud Engine capacity and period. This concurrent satisfaction of two requirements is permitted; it is not two separate allocations of burn value. Value already allocated toward the Section 7 threshold cannot also cover another capacity allocation or Accounting Period. Only the demonstrably unused remainder may be carried forward under Section 7.6.
-
-### 7.3 Infrastructure valuation
-
-Free, subsidised, discounted, affiliated or internally operated infrastructure must be valued using an objectively supportable arm's-length basis.
-
-Where an independently published comparable infrastructure tariff exists, that tariff provides the reference valuation after reasonable documented adjustments.
-
-Where no reasonably comparable tariff exists, a written independent valuation must be obtained before Production Operation.
-
-Artificial resource segmentation, related-party pricing or accounting adjustments must not be used to reduce the applicable value.
-
-### 7.4 Currency and valuation
-
-Infrastructure Base and Qualifying ICP Burn coverage must be reconciled in Special Drawing Rights (XDR).
-
-Applicable independent currency-conversion rates and actual canonical ICP/XDR conversion values must be documented.
-
-### 7.5 Advance coverage
-
-Before commencing Cloud Engine Production Operation, the Licensee must establish qualifying burn coverage of at least 20% of the Infrastructure Base attributable to initial reserved or prepaid capacity.
-
-Additional reserved capacity must be covered before becoming operational.
-
-Variable consumption must remain within a documented prepaid coverage limit.
-
-The operator must obtain additional coverage before exceeding that limit. Except for a qualifying valuation adjustment under Section 7.8, if actual consumption or a corrected Infrastructure Base exceeds the coverage available for it, permission for the affected operation is suspended from the point the required coverage is absent under Section 14.3. Discovery during reconciliation does not postpone that suspension point.
-
-### 7.6 Monthly reconciliation
-
-Within thirty (30) days after each Accounting Period, the Licensee must reconcile:
-
-a. Actual Covered Capacity and Infrastructure Base.
-
-b. Qualifying ICP Burns allocated to the period.
-
-c. Previously available unused coverage.
-
-d. Additional qualifying burn requirements.
-
-e. Any changes in valuation or allocation.
-
-Unused qualifying coverage may be carried forward only if it remains independently verifiable, unallocated elsewhere and specifically attributable.
-
-Reconciliation is an accounting deadline, not a general grace period for funding shortfalls. Valuation adjustments must be recorded when discovered. Section 7.8 supplies the sole valuation true-up exception; otherwise any resulting deficit must be funded before the affected operation resumes. Outside that exception, later funding permits prospective resumption once all applicable requirements are satisfied; it does not retrospectively authorise operation during a deficit or extinguish any accrued liability. A correction demonstrating that sufficient eligible coverage already existed is a documentary correction, not a new burn or retrospective funding.
-
-### 7.7 No alternative-network exception
-
-The provisions of this Section do not grant permission to use Covered Software on an independently operated private network, protocol fork or alternative blockchain.
-
-### 7.8 Good-faith valuation adjustments
-
-A correction or genuine dispute concerning the arm's-length valuation of Covered Capacity qualifies for a bounded true-up only if the original valuation complied with Section 7.3, was reasonable on the information then available, was documented contemporaneously, and had sufficient advance burn coverage on that basis. The operator must have disclosed relevant facts accurately and acted promptly and in good faith. Deliberate or reckless understatement, concealed capacity, unsupported related-party pricing, absence of burns required on the original valuation basis, or consumption exceeding the funded capacity or prepaid usage limit does not qualify.
-
-Within thirty (30) days after discovering a substantiated valuation error or receiving substantiated written notice of a valuation discrepancy, whichever occurs first, the operator must obtain and document an updated independently supportable valuation under Section 7.3, fund the full resulting coverage deficit, and publish the correction and qualifying-burn allocation under Section 9. An unsupported assertion alone does not start this period. Continuing disagreement does not extend it; pending final resolution, the operator must meet an updated valuation supported by independent evidence under Section 7.3 within that deadline. Additional capacity and consumption remain subject to advance coverage on the updated basis.
-
-For an eligible adjustment, historical operation covered by the original reasonable valuation and operation during that thirty-day period remain authorised as regards that valuation discrepancy. Timely completion prevents suspension, termination or claims under this Licence based solely on the eligible valuation shortfall. If the operator fails to complete the true-up by the deadline, permission for the affected operation is suspended from that deadline until the required valuation, coverage and publication are complete. That failure does not itself remove protection for earlier operation that genuinely met this Section's eligibility requirements.
-
-False statements, material omissions, deliberate or reckless undervaluation, or other failures of eligibility receive no protection under this Section. Neither a repeated notice nor a continuing dispute restarts the period for the same discrepancy. This Section does not waive claims for unrelated breaches or permit alternative-network operation.
+Qualifying funding does not authorise an alternative network or substitute off-network production runtime. Sections 4.3, 5 and 11 continue to govern ancillary execution, network eligibility and separate permissions.
 
 ## 8. Reciprocal Source-Code Obligations
 
@@ -408,6 +310,10 @@ False statements, material omissions, deliberate or reckless undervaluation, or 
 A Licensee that distributes Covered Modifications, or performs Production Operation using Covered Modifications, must make their Corresponding Source publicly available under this same Licence.
 
 This obligation applies whether the Covered Modifications are distributed directly, embedded in compiled software or operated without distributing executable copies.
+
+Production Operation includes internal business operations under Section 2.8, even where access is restricted to employees, contractors or other authorised internal users. Required Corresponding Source must be publicly available; providing it only to those users is insufficient. Compliance with the network and qualifying-burn requirements does not replace this source-publication obligation.
+
+Private creation and use of Covered Modifications solely for non-production activities permitted by Section 4.1 do not, by themselves, trigger publication. Distribution of those modifications or their use in Production Operation triggers this Section. Independently authored application code remains subject to the exceptions in Sections 2.6, 2.10 and 8.5, and is not subject to mandatory disclosure merely because it uses a modified covered component.
 
 The Organisation's separate rights, and permissions expressly granted under a separate written licence, are governed by Section 11.7. Receipt of Covered Software from the Organisation does not by itself create an exception to this Section.
 
@@ -424,6 +330,8 @@ c. With reasonably complete instructions necessary to build the covered componen
 d. Under this Licence, without additional restrictions inconsistent with its terms.
 
 e. No later than the commencement of Production Operation using those modifications, or their first distribution in source or executable form, whichever occurs first.
+
+Publication may be made through a publicly accessible repository or another source-distribution location meeting this Section. It does not require submission of a pull request, delivery through an official Organisation repository, or the Organisation's review, acceptance, merger or maintenance of the modifications. Publication does not transfer copyright ownership; the express grants elsewhere in this Licence remain applicable. Section 12.5 governs official contribution acceptance.
 
 ### 8.3 Availability period
 
@@ -467,7 +375,7 @@ The notice may be supplied through documentation, a service interface, deploymen
 
 ### 8.8 Source access for unmodified executables
 
-A Licensee distributing Covered Software in unmodified executable form, including as a component of a combined application, must provide public access to the exact Corresponding Source for that covered version no later than its first distribution. The access conditions in Sections 8.2(a) through 8.2(d) and the availability period in Section 8.3 apply. The distribution must identify the covered version and give a reasonably accessible source location. The Independent Application exception and combined-build boundary in Sections 2.6, 2.12 and 8.5 continue to apply.
+A Licensee distributing Covered Software in unmodified executable form, including as a component of a combined application, must provide public access to the exact Corresponding Source for that covered version no later than its first distribution. The access conditions in Sections 8.2(a) through 8.2(d) and the availability period in Section 8.3 apply. The distribution must identify the covered version and give a reasonably accessible source location. The Independent Application exception and combined-build boundary in Sections 2.6, 2.10 and 8.5 continue to apply.
 
 The distributor may use a stable upstream link identifying the exact source version while that source remains publicly available on those terms. The distributor must retain a copy or another reliable means of supplying that exact source throughout the required period. If the upstream source becomes unavailable, the distributor must promptly provide a replacement source location or host the exact source itself. From discovery or written notice of the outage, whichever occurs first, it must not make further executable distributions until access is restored. Reliance on upstream hosting does not transfer this responsibility to the upstream provider. An inadvertent availability defect may qualify for Section 14.4's correction protection, but that protection does not permit further executable distribution after that discovery or notice while the required source is unavailable.
 
@@ -475,41 +383,21 @@ The distributor may use a stable upstream link identifying the exact source vers
 
 ### 9.1 Verifiable funding
 
-Each Production Operation must maintain evidence reasonably sufficient to demonstrate compliance with Sections 6 and 7.
+Each Production Operation subject to Section 6 must maintain evidence reasonably sufficient to demonstrate the qualifying origin and available quantity of its operational resource credits.
 
-For shared canonical deployments, appropriately identified canonical protocol funding records and verifiable pooled funding evidence may satisfy this requirement without reconstructing every individual cycle transfer.
+Appropriately identified canonical protocol funding records and verifiable pooled funding evidence may satisfy this requirement without reconstructing every individual cycle transfer.
 
-### 9.2 Cloud Engine records
+### 9.2 Funding records
 
-Cloud Engine operators must make independently verifiable records publicly accessible, identifying:
-
-a. The relevant deployment and Covered Capacity.
-
-b. The accounting period.
-
-c. The Infrastructure Base and valuation method.
-
-d. Qualifying ICP Burn references and amounts.
-
-e. Applicable XDR conversions.
-
-f. Allocation of qualifying coverage.
-
-g. Remaining unused coverage and reconciliation adjustments.
+Records must identify the relevant deployment, qualifying conversion references and quantities of resource credits obtained, together with any transfer or pool-allocation evidence needed under Section 6.2. Records must distinguish qualifying credits available for use from credits already consumed, transferred or allocated elsewhere. No valuation of hardware, hosting contracts, reserved capacity or affiliated services is required.
 
 ### 9.3 Timing and retention
 
-Initial Cloud Engine capacity valuation and qualifying burn coverage must be established and published before Production Operation.
-
-Monthly reconciliation records must be published within the deadline in Section 7.6.
-
-Required records must remain accessible for at least three years after the relevant Accounting Period.
+Qualifying credits must be available before they are used to meet operational charges. Keep the supporting records current as funding is received, allocated, transferred or consumed. Retain evidence for at least three years after the last expenditure or transfer it supports, and provide the relevant records on a reasonable verification request from an applicable Copyright Holder, subject to Section 9.5. Publicly accessible protocol records may be supplied by reference; no separate monthly valuation report is required.
 
 ### 9.4 Pooled funding
 
-Qualifying Burns may be pooled across deployments provided their allocation is independently traceable and reconciled.
-
-The aggregate allocated value must not exceed the verified qualifying value of the underlying burns.
+Qualifying credits may be pooled across deployments if the records required by Section 6.2 establish their origin, available quantity and allocation without double counting. The aggregate quantity attributed to expenditure, transfers and remaining balances must not exceed the verified qualifying credits received. Moving credits between accounts or deployments does not require another ICP conversion.
 
 ### 9.5 Privacy and confidentiality
 
@@ -706,7 +594,7 @@ No patent licence is granted for claims the relevant grantor does not control, f
 
 ### 14.1 Scope of permission
 
-The restrictions on Production Operation, network eligibility, ICP funding, Cloud Engine coverage and source reciprocity are express conditions of the permissions granted.
+The restrictions on Production Operation, network eligibility, ICP funding and source reciprocity are express conditions of the permissions granted.
 
 Use outside those permissions is not authorised by this Licence.
 
@@ -716,19 +604,17 @@ Unauthorised Production Operation on an alternative execution network is outside
 
 Subsequent payment, burn activity, migration or cessation does not retrospectively authorise the earlier activity.
 
-### 14.3 Economic noncompliance
+### 14.3 Funding noncompliance
 
-Except for an eligible valuation adjustment within Section 7.8, permission for an affected Production Operation is suspended if required qualifying funding or burn coverage is absent.
+Permission for an affected Production Operation is suspended when it uses resource credits that do not meet Section 6. Operation must not resume until qualifying funding is available and the other applicable conditions are satisfied.
 
-Operation must not resume until the applicable requirements have been satisfied.
-
-Outside Section 7.8's express protection, suspension begins when the required funding or coverage is absent, whether discovered immediately or through later reconciliation. Restoration of adequate coverage restores operational permission prospectively, provided no other condition remains unsatisfied and the applicable permissions have not separately terminated. It does not erase the earlier shortfall or retrospectively authorise the affected operation.
+Later conversion of ICP does not retrospectively qualify earlier nonqualifying expenditure. Restoring qualifying funding restores operational permission prospectively, provided the applicable permissions have not separately terminated. A correction demonstrating that sufficient qualifying credits were already available and properly attributable is a documentary correction, not retrospective funding, and may qualify under Section 14.4.
 
 ### 14.4 Administrative correction
 
 An inadvertent documentary omission or source-publication defect may be remedied within thirty (30) days after discovery or written notice, whichever occurs first, provided the affected distribution or operation was otherwise authorised, the breach was not deliberate and the Licensee acts promptly and in good faith. "Otherwise authorised" means that all applicable requirements apart from the eligible defect itself were satisfied; the defect does not circularly disqualify its own correction.
 
-This correction period does not authorise alternative-network operation or excuse missing qualifying funding or burn coverage; valuation adjustments are governed separately by Section 7.8. The restriction on further executable distribution during a source outage in Section 8.8 remains applicable.
+This correction period does not authorise alternative-network operation or excuse the use of nonqualifying resource credits. The restriction on further executable distribution during a source outage in Section 8.8 remains applicable.
 
 Permission is not suspended or terminated solely for an eligible defect during that correction period, subject to Section 8.8's express restriction on further distribution. If the Licensee fully corrects the defect within the period, the Copyright Holders granting permissions under this Licence will not suspend or terminate those permissions or pursue claims or remedies based solely on that defect, including for the period before correction. This protection includes an eligible inadvertent failure to publish required source on time.
 

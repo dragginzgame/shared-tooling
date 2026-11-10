@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.39.1] - Unreleased
+
+### 📝 Documentation
+
+- Confirm the TRNL draft's public-source reciprocity for modified covered
+  components used in production, including internal business use. Preserve
+  independent proprietary applications and private non-production work, and
+  distinguish public source availability from official contribution acceptance.
+  This does not adopt the draft as a repository licence.
+- Simplify the TRNL draft to one funding rule: all operational cycles/resource
+  credits originate from verifiable canonical ICP conversion. Remove the Cloud
+  Engine surcharge, capacity valuations, monthly valuation reports and valuation
+  true-up; retain transfer/pool provenance, source reciprocity and network limits.
+
 ## [0.39.0] - Unreleased
 
 ### 🔧 Changed
