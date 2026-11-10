@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.39.8] - Unreleased
+
+### 📝 Notes
+
+- No changelog details are recorded for this release.
+
 ## [0.39.7] - 2026-11-10
 
 ### 🐛 Fixed
