@@ -46,11 +46,14 @@ crate or vendoring this file grants no exception and does not activate audits.
 
 ## Documentation ownership boundary
 
-The standard layout separates ownership before topic:
+Every repository must organise its documentation by topic and make ownership
+clear. Keep product-owned documentation under `docs/`; use meaningful directories
+as the collection grows rather than accumulating unrelated files at its root.
+The topics below are examples, not mandatory empty directories:
 
 ```text
 docs/
-  toko-tooling/       # Snapshot-managed documentation only
+  toko-tooling/       # Only when Toko Tooling docs are installed
     adoption/
     releases/
     tools/
@@ -65,7 +68,10 @@ docs/
 ```
 
 - Toko Tooling's installed reference docs, rules, audit procedures and task
-  guides belong under `docs/toko-tooling/`. Keep `TOKO-TOOLING.md` at the
+  guides belong together under `docs/toko-tooling/`, separate from product docs.
+  Install only the shared guides the repository needs; pinned upstream links
+  can serve the others. Do not create this directory when no shared docs are
+  installed. Keep `TOKO-TOOLING.md` at the
   repository root as the baseline entrypoint. Root licence and contribution
   files retain their separate canonical-file contract below.
 - Product documentation stays outside that reserved directory, organised by
@@ -73,8 +79,10 @@ docs/
   merely to accommodate shared files. Consumer-specific overlays and audit
   results belong to the consumer, not the managed namespace.
 - Establish the canonical paths in Toko Tooling itself and export them unchanged.
-  Do not introduce consumer-specific path rewriting or manually move installed
-  files. The snapshot receipt remains the authority for installed ownership.
+  This is an upstream source-path migration, not a requirement for a new exporter
+  relocation feature. Consumers must not implement their own path translation.
+  The snapshot receipt remains the authority for installed ownership; do not
+  manually move its files or rewrite it to conceal a local relocation.
 - A layout migration must update upstream links, companion declarations, entrypoint
   catalogs, affected callers and fixtures together. Preview the refresh, retire
   only unchanged receipt-owned predecessors, and preserve native files and edits.
@@ -82,11 +90,14 @@ docs/
   is inside the namespace and every file there is snapshot-managed. Apply it to
   the installed file set, not a hard-coded document count or prose match.
 
-This establishes the required destination, not a claim that existing exports
-already use it. Until a release supplies and qualifies the upstream path migration,
-keep its existing snapshot paths intact; installing this policy alone must not
-trigger consumer moves or the new boundary gate. Adopt the migrated layout through
-an explicitly scoped tooling refresh once available.
+Organising product-owned docs does not depend on a Toko Tooling update. During
+authorised documentation cleanup, improve their topic layout and update local
+links now, preserving snapshot-managed files. For shared docs still exported at
+older paths, the remaining work belongs to Toko Tooling: migrate the canonical
+paths, qualify refresh and publish the mapping. Consumers then adopt that release
+through a scoped refresh and enable the boundary check. Until then, keep those
+managed paths intact and report only that shared-doc migration as outstanding;
+do not describe the whole repository's documentation cleanup as blocked.
 
 ## Scope and authorization
 

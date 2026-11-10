@@ -1,5 +1,19 @@
 # Consumer migration history
 
+## Documentation organisation clarification in 0.39.4
+
+Every repository should organise product-owned docs by meaningful topic. That
+cleanup can proceed independently during authorised documentation work; no Toko
+Tooling update is needed to move native files and repair their local links.
+
+Install shared reference docs only when needed, and keep them separately under
+`docs/toko-tooling/` once the canonical upstream paths are migrated. Otherwise,
+use pinned upstream links without creating an empty managed directory. The
+remaining shared-doc work is a Toko Tooling source-path and reference migration,
+not missing exporter relocation support. This patch clarifies the policy; it
+does not move exported files. Preserve current receipt-owned paths until the
+qualified upstream migration is released, then adopt it through the exporter.
+
 ## Documentation ownership policy in 0.39.3
 
 The baseline now specifies a reserved `docs/toko-tooling/` namespace for installed

@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.39.4] - Unreleased
+
+### 🔧 Changed
+
+- Require clear topic organisation for every repository's native docs, with a
+  separate directory only for installed Toko Tooling docs. Clarify that native
+  cleanup can proceed now; shared-file relocation requires an upstream path
+  migration, not a new exporter feature. Installed paths remain unchanged.
+
 ## [0.39.3] - 2026-11-10
 
 ### 🔧 Changed
