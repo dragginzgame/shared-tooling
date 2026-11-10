@@ -21,6 +21,11 @@ write access or authorized bot identity; hold contributions whose authorization
 cannot be established. A display name, commit email or historical contribution
 does not establish current access or authorship of every included commit.
 
+Repository contribution eligibility applies in addition to these access checks.
+Collaborator access, organisation membership, a signed CLA or an authorised bot
+does not override a company-only contribution policy. Check the underlying
+authors and provenance before accepting changes through an eligible account.
+
 For repositories that adopt an approved contributor agreement, verify executed
 acceptance and rights-holder authority before merging covered contributions.
 Follow the canonical [CLA and relicensing guidance](https://github.com/dragginzgame/toko-tooling/blob/main/docs/licenses.md#contributor-agreements-and-relicensing).

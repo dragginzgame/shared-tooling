@@ -1,25 +1,5 @@
 # Changelog
 
-## [0.40.0] - Unreleased
-
-### 🔧 Changed
-
-- Prepare the repository and Cargo package to use Toko Studios Network Licence
-  1.1 instead of MIT, with the complete text and the prior MIT notice included
-  in `LICENSE`. Legal finalisation remains pending; earlier grants are preserved.
-
-### 📝 Documentation
-
-- Confirm the TRNL draft's public-source reciprocity for modified covered
-  components used in production, including internal business use. Preserve
-  independent proprietary applications and private non-production work, and
-  distinguish public source availability from official contribution acceptance.
-  This does not adopt the draft as a repository licence.
-- Simplify the TRNL draft to one funding rule: all operational cycles/resource
-  credits originate from verifiable canonical ICP conversion. Remove the Cloud
-  Engine surcharge, capacity valuations, monthly valuation reports and valuation
-  true-up; retain transfer/pool provenance, source reciprocity and network limits.
-
 ## [0.39.0] - Unreleased
 
 ### 🔧 Changed
@@ -43,53 +23,11 @@
   `ic-platform-runtime`, allowing Platform to retire copied System API bindings.
   Other owners, SDK dependencies, dev/build/target-specific edges and local
   policy refusals remain enforced.
-- Remove dangling README and package-include references to the retired root
-  licence file while directing readers to the maintained licensing guide.
 
 ### 📝 Documentation
 
 - State that the crate's Rust 1.99.1 minimum applies to every adopting member's
   dev-dependency/test graph, including consumers previously testing with 1.91.
-- Require independently authored in-house implementations instead of copied or
-  adapted third-party code, including DFINITY forks. Define clean-room evidence,
-  preserve separately licensed external dependencies and cryptographic safeguards,
-  and require recorded migration plans or exceptions for existing imports without
-  stripping their licences or notices.
-- Add the proposed Toko Studios Network Licence 1.1 for legal review without
-  changing any adopted licence. Preserve canonical-IC production and verifiable
-  ICP-burn conditions while strengthening neutral protection against network,
-  economic and rights appropriation; retain Toko Studios Limited's permanent
-  freedom to operate, migrate and separately license covered material. Record
-  the supplied Bahamian company identity, address and legal notice email.
-  Shortlist Monaco law and Monaco courts for counsel review while leaving
-  governing law and dispute forum explicitly unresolved in the draft.
-- Permit private, sovereign, government, enterprise and disconnected IC-based
-  production only with advance canonical-mainnet ICP burn coverage for 100% of
-  canonical-equivalent operational resource charges. Remove the separate 20%
-  infrastructure-value surcharge and valuation machinery; retain dedicated
-  retirement of resulting cycles, public allocation and metering evidence,
-  monthly reconciliation and no reuse or double counting. Unrelated blockchains
-  remain outside the public permission.
-- Make source reciprocity explicit for Covered Modifications used in internal or
-  external production while preserving proprietary Independent Applications and
-  private non-production work. Public source requires neither a pull request nor
-  the Organisation's acceptance.
-- Close identified burn-avoidance routes in the proposed licence with a fixed
-  resource-equivalence schedule for free, subsidised and unmetered resources;
-  aggregation of split, sidecar, off-chain and Related Party operation; objective
-  cycle retirement; tamper-evident evidence and proportionate audit rights; and
-  suspension or termination for missing, concealed or falsified evidence.
-  Strengthen the Independent Application boundary without capturing ordinary
-  use of documented public interfaces.
-- Add a proposed Toko Studios contribution agreement that assigns copyright to
-  the exact supplied Company entity, retains an irrevocable fallback licence,
-  and covers future rights, historical contribution schedules, contributor
-  authority, third-party and generated material, moral rights and patents.
-- Add a portfolio title-audit register and one evidence record per repository
-  returned by the GitHub organisation listing or found as an additional local
-  checkout. Record preliminary missing-licence, old-licence, Apache/GNU metadata,
-  repository-presence and contributor-evidence risks without claiming title or
-  overwriting prior grants.
 
 ## [0.38.3] - Unreleased
 
@@ -99,20 +37,6 @@
   summaries. Deduplicate shared source paths, preserve product attribution and
   reject failed or inconsistent combined scans; explicit manifest selections
   still count one workspace.
-
-### 📝 Documentation
-
-- Clarify in the proposed TRNL-1.0 draft that Toko's reserved rights permit
-  private modifications and separate proprietary licensing, with explicit
-  written exceptions for recipients and preservation of third-party rights.
-  The draft remains unapproved and does not change any adopted licence.
-- Resolve draft host-operation exceptions, combined-build source boundaries,
-  funding allocations, advance-coverage shortfalls and correction deadlines.
-  Record ownership, governing-law and practical evidence checks still required
-  before adoption; preserve the current entity and permitted corporate IC use.
-- Add timely-cure protection, a bounded good-faith valuation true-up and source
-  access for unchanged binaries to the draft. Clarify objective host-use limits
-  and temporary network outages; move the release checklist into licensing docs.
 
 ## [0.38.2] - 2026-11-09
 
@@ -309,7 +233,7 @@
 ### 🔧 Changed
 
 - Distribute the complete tooling source bundle through crates.io: scripts, Make
-  interfaces, CI actions, pin catalogs, engineering rules, licenses and guides.
+  interfaces, CI actions, pin catalogs, engineering rules and guides.
   Replace Git marker selections with ordinary `toko-tooling = "0.33"` private
   dev-dependencies. The root package points at `dragginzgame/toko-tooling`.
 - Install and update the exact registry version and archive SHA-256 selected by
@@ -1938,8 +1862,6 @@
 
 ### Breaking
 
-- License admission requires regular non-symlink source files. Replace license
-  aliases with complete regular copies before checking source or package archives.
 - Delegate Cargo manifest and lock candidate rendering to released IC Build.
   Cargo adapters must supply the prepared editor's absolute path and a positive
   input byte allowance to the renderer. The standalone Perl editors
@@ -1953,9 +1875,7 @@
 - Check indexed and tracked/nonignored working paths for repository symlinks,
   including dangling links and redirected parent directories. Shared CI and
   release validation run this check without following targets or changing Git state.
-- Verify licenses inside explicitly selected prepared Cargo archives against
-  canonical terms and the source's exact bytes. Refuse missing, duplicate, linked
-  or altered entries and corrupt archives without extraction or publication.
+
 - Share selected Cargo graph checks for canonical package identities, optional
   identity caps and forbidden dependency-feature edges. Consumers keep their
   roots, targets, feature selections and policy; failed or malformed Cargo
@@ -1967,7 +1887,7 @@
 
 ### Changed
 
-- Prohibit symlinks in maintained source and package assets, including licenses.
+- Prohibit symlinks in maintained source and package assets.
   Keep narrowly admitted tool-store selection pointers and isolated rejection
   fixtures; use regular package-local copies where needed.
 - Prefer IC Wire for supported controlled application messages. Require a concrete
@@ -2484,11 +2404,6 @@
 
 ## [0.15.3]
 
-- Promote Dragginz 1.1 and CLA 1.0 as the current texts, including permanent
-  Toko Studios patent rights and the narrowed downstream copyright exception.
-  License checks default to 1.1; historical copies require explicit 1.0 selection.
-  Consumer adoption and contributor signatures remain separate recorded actions.
-
 - Reuse immutable committed payloads and modes during snapshot refresh instead
   of reading them again after companion discovery. Consumer and index drift
   checks remain independent
@@ -2505,13 +2420,6 @@
 
 ## [0.15.2]
 
-- Add a contributor agreement granting Toko Studios explicit alternative
-  licensing rights, with contributor/employer authority and signed-scope records.
-  Acceptance and existing-contribution clearance remain separately recorded.
-
-- Prepare Dragginz license 1.1 with contributor patent grants and defensive
-  patent termination. The current text preserves permanent Toko Studios rights;
-  existing licenses and grants remain unchanged without deliberate adoption.
 - Separate optional maintenance runner/systemd selection roots from the governance
   catalog. Keep task guidance available without operational payloads; explicit
   opt-in and guarded retirement use the existing snapshot exporter contract.
@@ -2522,7 +2430,6 @@
 - Add read-only changelog preflight using the canonical candidate selector.
 - Support explicit verified snapshot ownership handover during consumer refresh,
   preserving source proof, local edits, index custody and selected entrypoints.
-
 
 - Complete saved-source Cargo dependency projection, previously noted as pending
   in 0.15.1. Archived manifests now use recorded workspace identity without
@@ -2590,10 +2497,6 @@
   run-body extraction; callers retain preparation authority and execution policy
   ([PR #207 — Workflow extraction and release preflight](https://github.com/dragginzgame/toko-tooling/pull/207)).
 
-- Add Toko Tooling’s MIT license and clarify the fleet license selection:
-  Dragginz for IcyDB, Canic and IC Relay; MIT for other sibling libraries and
-  tools, preserving existing notices and earlier grants.
-
 - Qualify caller-selected assertions without executing the remaining fixture
   body; require proof that the assertion was reached
   ([PR #203 — Selected assertion probes](https://github.com/dragginzgame/toko-tooling/pull/203)).
@@ -2632,11 +2535,6 @@ and required native CI remain pending. The earlier 0.13.1/0.13.3 descriptions
 remain historical pending notes.
 
 ### Added
-
-- Own canonical MIT and Dragginz Verifiable ICP Burn license templates with an
-  opt-in drift checker, preserving consumer copyright and prior-license notices.
-  Third-party live use requires verifiable mainnet burning; the named organization
-  receives an express operational exception.
 
 - Prepare item-level rustdoc debt comparison and opt-in type-documentation
   layout checks, preserving caller-owned source selection and policy

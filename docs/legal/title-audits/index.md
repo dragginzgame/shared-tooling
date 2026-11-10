@@ -93,7 +93,7 @@ No repository is green until authorised legal review verifies every material con
    their records. Absence of a licence does not prove Company ownership and can
    leave package or distribution terms unclear.
 4. Apache or GNU metadata remains in `ic-platform`, `ic-storage`, `ic-tooling` and `toko`. Those entries may reflect third-party or previously granted rights and must be traced rather than overwritten.
-5. `ic-relay` and `ic-wire` use an earlier Dragginz burn licence, while `icydb` uses the prior Toko Studios burn licence. Existing grants cannot be erased by adopting TSNL-1.1 prospectively.
+5. `ic-relay` and `ic-wire` use an earlier Dragginz burn licence, while `icydb` uses the prior Toko Studios burn licence. Existing grants cannot be erased by adopting TSNL-1.0 prospectively.
 6. Git author names are aliases or asserted identities, not verified legal rights holders. Every identity must be reconciled to employment, contractor, assignment or signed CLA evidence.
 7. Maintainer-supplied portfolio history identifies `shared-tooling` as the predecessor of `toko-tooling` and identifies `ic-scheduling` as a combination including `ic-timers`. The predecessor histories and rights must be included in the successor audits even if the old repositories are later removed.
 8. One remote-only repository, `toko-miner-web`, reports size zero and did not

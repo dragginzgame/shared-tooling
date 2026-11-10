@@ -1,705 +1,1135 @@
-# TOKO RECIPROCAL NETWORK LICENCE
-## Version 1.0 — Draft for Legal Review
+# TOKO STUDIOS NETWORK LICENCE
+## Version 1.0
 
-**Toko Studios Ltd**
+**Licensing Organisation:** Toko Studios Limited
 
-**Status:** Proposed unified source-available software licence  
-**Licence identifier:** TRNL-1.0  
-**Intended scope:** All expressly designated Toko Studios software products, libraries, frameworks, databases, runtime components, development tools and associated materials.
+**Company number or registration identifier:** IBC No. 1503915
+
+**Place and date of incorporation:** Commonwealth of The Bahamas, 9 July 2026
+
+**Registered office:** Bayside Executive Park, Building 3, West Bay Street and Blake Road, Nassau, Bahamas
+
+**Licence notice address:** Bayside Executive Park, Building 3, West Bay Street and Blake Road, Nassau, Bahamas
+
+**Licence notice email:** legal@toko.ltd
+
+**Status:** Adopted repository source-available software licence.
+
+**Licence identifier:** TSNL-1.0
+
+**Intended scope:** Software and associated materials expressly designated by
+their applicable Copyright Holders as licensed under TSNL-1.0.
 
 ---
 
-## 1. Purpose and Scope
+## 1. Purpose, application and nature
 
 ### 1.1 Purpose
 
-The Toko Reciprocal Network Licence ("Licence") permits the use, inspection, modification, distribution and commercial exploitation of covered software while preserving:
+This Licence permits access to, development of and commercial use of Covered
+Software while preserving:
 
-a. The economic alignment of production deployments with the canonical Internet Computer network and its native ICP token.
+a. production use on the Canonical Internet Computer with resource funding
+economically aligned to native ICP destruction;
 
-b. Public access to modifications of the covered software distributed or operated in production.
+b. public access to Covered Modifications used in production or distributed;
 
-c. The intellectual property rights of the relevant copyright holders.
+c. the intellectual-property rights of the applicable Copyright Holders;
 
-d. The ability of Toko Studios Ltd to develop, commercialise, migrate and separately license the software on other execution networks.
+d. the Organisation's permanent freedom to use, develop, distribute,
+commercialise, migrate and separately license the Covered Software; and
 
-e. Protection against unauthorised appropriation of the covered software for competing blockchain networks, proprietary execution platforms and privately controlled infrastructure.
+e. protection against appropriation of Covered Software for an unauthorised
+blockchain, protocol fork, private execution network or substitute production
+platform.
 
 ### 1.2 Application
 
-This Licence applies to source code, documentation, tools, libraries, WebAssembly modules and other copyrightable material expressly identified as being distributed under TRNL-1.0 ("Licensed Material").
+This Licence applies only to source code, documentation, tools, libraries,
+generated materials, WebAssembly modules and other copyrightable material
+expressly identified as distributed under TSNL-1.0 ("Licensed Material").
 
-It applies to the Licensed Material regardless of its programming language, compilation target, distribution format or execution environment.
+It applies regardless of programming language, compilation target,
+distribution format, package structure or execution environment.
 
-The Licence does not automatically apply to independently licensed third-party dependencies or other material merely because they are distributed in the same repository.
+It does not automatically apply to third-party dependencies or other material
+merely because that material is distributed with Licensed Material.
 
 ### 1.3 Nature of Licence
 
-This is a source-available software licence with reciprocal source-disclosure and network-use restrictions.
+This is a source-available licence containing reciprocal source and
+production-network restrictions. It is not the GNU GPL, GNU AGPL, MIT Licence
+or an Open Source Initiative-approved open-source licence.
 
-It is not the GNU GPL, GNU AGPL, MIT Licence or an Open Source Initiative-approved open-source licence.
-
-Permissions not expressly granted remain reserved to their respective rights holders.
+Permissions not expressly granted are reserved. Statutory exceptions and other
+rights that applicable law does not permit a licence to restrict remain
+unaffected.
 
 ## 2. Definitions
 
-### 2.1 Licensing Organisation
+### 2.1 Organisation
 
-"Organisation" means Toko Studios Ltd, the specifically identified legal entity, acting to the extent that it owns or is authorised to license the relevant intellectual property.
+"Organisation" means Toko Studios Limited, IBC No. 1503915, incorporated in
+the Commonwealth of The Bahamas on 9 July 2026, acting only to the extent it
+owns or is authorised to license the relevant rights.
 
-The Organisation does not include its shareholders, parent companies, subsidiaries, purchasers, investors or affiliated entities merely because of that relationship.
+The Organisation does not include a shareholder, investor, creditor, parent,
+subsidiary, fund, portfolio company, node provider, infrastructure provider,
+governance participant, purchaser, contractor, adviser or affiliate merely
+because of that status or relationship.
 
 ### 2.2 Copyright Holder
 
-"Copyright Holder" means a person or legal entity owning or lawfully controlling copyright in the relevant Licensed Material.
-
-Each Copyright Holder grants permissions only to the extent of the rights it lawfully controls.
+"Copyright Holder" means a person or legal entity owning or lawfully
+controlling copyright in relevant Licensed Material or a Covered Modification.
+Each Copyright Holder grants permissions only to the extent of rights it
+lawfully controls.
 
 ### 2.3 Licensee
 
-"You" or "Licensee" means any individual or legal entity exercising rights under this Licence.
+"You" or "Licensee" means any individual or legal entity exercising rights
+under this Licence. Entities under common control are separate Licensees unless
+applicable law requires otherwise. Permission held by one entity does not pass
+to another merely through control, investment, contract or affiliation.
 
 ### 2.4 Covered Software
 
-"Covered Software" means the Licensed Material and copyright-protected portions of any modifications, adaptations, translations, reproductions or derivative works of that material.
+"Covered Software" means Licensed Material and copyright-protected portions of
+modifications, adaptations, translations, reproductions and derivative works of
+that material.
 
-Covered Software includes relevant source code and compiled forms, including WebAssembly, native binaries, embedded runtime components and other executable formats.
+Covered Software includes source and compiled forms, WebAssembly, native
+binaries, embedded runtime components, generated implementations and material
+moved between packages, services, repositories, languages, modules or
+processes.
 
-A change in programming language, compilation target, packaging, module boundaries or execution architecture does not remove copyright-protected material from the scope of this Licence.
-
-Independently created software that does not reproduce or adapt protected expression from the Licensed Material is not Covered Software merely because it performs equivalent functions.
+Independently created software that does not reproduce or adapt protected
+expression from Licensed Material is not Covered Software merely because it
+performs equivalent functions or interoperates with Covered Software.
 
 ### 2.5 Covered Modification
 
-"Covered Modification" means any alteration, replacement, extension or adaptation of copyright-protected implementation code originating from the Covered Software.
+"Covered Modification" means any alteration, replacement, extension,
+translation or adaptation of copyright-protected implementation material from
+Covered Software.
 
-This includes changes to covered runtime logic, database implementation, framework machinery, orchestration, storage components, internal macros and other protected implementation material.
-
-A Covered Modification does not cease to be covered because it is moved to another package, service, process, repository, programming language or WebAssembly module.
+A Covered Modification remains covered when reorganised, renamed, translated,
+generated, compiled, split across modules or services, or combined with other
+software. Independently authored application code is governed by Section 2.6.
 
 ### 2.6 Independent Application
 
-"Independent Application" means independently authored application-specific software that uses the Covered Software through its documented interfaces, APIs, macros, schemas, generated bindings or other intended integration mechanisms without constituting a Covered Modification.
+"Independent Application" means independently authored application-specific
+software that uses Covered Software through documented interfaces, APIs,
+macros, schemas, generated bindings or intended integration mechanisms without
+constituting a Covered Modification.
 
-An Independent Application may be proprietary and may be distributed without publishing its independently authored source code.
+An Independent Application may remain private and proprietary. Static linking,
+compilation into the same WebAssembly module, use of procedural macros or
+ordinary generation of bindings does not by itself remove this exception.
 
-Static linking, compilation into the same WebAssembly module, use of procedural macros or ordinary generation of application bindings does not, by itself, eliminate this exception.
+This exception does not convert copied or adapted Covered Software into an
+Independent Application or permit Independent Application code to conceal a
+Covered Modification.
 
-However, independently authored application code must not be used to conceal a modification of the Covered Software itself.
+Software is not an Independent Application to the extent that it:
 
-Copyright-protected implementation material copied or adapted from Covered Software remains covered to the extent applicable.
+a. replaces, overrides or relocates internal Covered Software behaviour;
+
+b. copies or adapts covered schemas, storage engines, runtime logic, macros,
+generated implementations or internal orchestration;
+
+c. uses a hook, adapter, sidecar, service or separate canister primarily to
+perform behaviour moved out of a Covered Modification; or
+
+d. divides one Covered Modification across applications, processes, canisters,
+services, modules or generated output.
+
+Ordinary use of documented public interfaces remains within the Independent
+Application exception where it does not reproduce or relocate protected
+implementation material.
 
 ### 2.7 Canonical Internet Computer
 
-"Canonical Internet Computer" means the continuously operating public Internet Computer mainnet existing when this Licence is first published, operating under its Network Nervous System governance architecture and retaining native ICP-based economic resource funding.
+"Canonical Internet Computer" means the continuously operating public Internet
+Computer mainnet identified at first publication of this Licence, governed
+through its Network Nervous System, preserving continuity of its public state
+history and using native ICP-based economic resource funding.
 
-Ordinary protocol upgrades, system-canister replacements and governance-approved technical improvements do not create a new network where the same public network continues with its established state history, native ICP economics and governance continuity.
+Ordinary governance-approved upgrades, system-canister replacements and
+technical improvements do not create a new network while that public state,
+governance and economic continuity remain.
 
-Temporary outages, maintenance or interruptions of service do not, by themselves, end canonical status. Resumption of the same network with that state history, native ICP economics and governance continuity remains within this definition; an interruption does not grant canonical status to a separate replacement network.
+Temporary outages or maintenance do not end canonical status. Resumption of the
+same network does not confer canonical status on a separate replacement.
 
-The following are not automatically part of the Canonical Internet Computer:
+The following are not the Canonical Internet Computer merely by reason of
+technical similarity, branding, copied history or economic arrangements:
 
-a. Forks or copies of the protocol.
+a. a fork or copy of the protocol or network;
 
-b. Independent networks created from Internet Computer source code.
+b. a network created from exported, copied or reconstructed state;
 
-c. Privately operated or permissioned replacement networks.
+c. a private, sovereign, enterprise or permissioned replacement network;
 
-d. Networks created by exporting, copying or migrating Internet Computer state.
+d. a competing or substitute WebAssembly execution network;
 
-e. Competing WebAssembly execution networks.
+e. a network governed through materially separate governance;
 
-f. Replacement networks operating under a materially separate governance or economic system.
+f. a network using a separate native asset or materially separate resource
+funding; or
 
-g. Successor networks that replace native ICP-based resource funding with an alternative economic mechanism.
+g. a network that copies ICP balances, identities, neurons, governance
+positions, node-provider positions or other economic state.
 
-Using the Internet Computer name, software, technology, canister interfaces or historical state does not independently establish canonical status.
+If a protocol split creates competing continuations and the criteria above do
+not identify one unambiguously, no competing continuation obtains permission
+merely by claiming canonical status. The Organisation may publish a good-faith
+designation for licensing administration, without claiming governance authority
+over the protocol. A Licensee needing certainty before that designation must
+obtain written permission under Section 11.
 
 ### 2.8 Production Operation
 
-"Production Operation" means use of Covered Software to execute, store, coordinate, administer or otherwise support genuine operational workloads.
+"Production Operation" means use of Covered Software to execute, store,
+coordinate, administer or materially support genuine operational workloads.
 
-This includes commercial services, enterprise systems, internal business operations, publicly accessible applications and operational infrastructure, whether or not fees are charged.
+It includes commercial services, internal business systems, enterprise
+systems, publicly accessible applications and operational infrastructure,
+whether or not consideration is charged.
 
-It also includes the use of Covered Software as a material component of tooling that provisions, manages or operates a production execution network.
+It also includes material use of Covered Software to provision, administer or
+operate a production blockchain or execution network.
 
-Production Operation does not include isolated non-operational development, testing, benchmarking, security research or validation permitted under Section 4.
-
-Ancillary operational use outside the Canonical Internet Computer is permitted only within Section 4.3 or a separate permission under Section 11; its operational character does not by itself disqualify it from the Section 4.3 exception.
+It excludes the isolated non-operational development, testing, research and
+validation permitted by Section 4.
 
 ### 2.9 Qualifying ICP Burn
 
-"Qualifying ICP Burn" means the actual, irreversible destruction of native ICP through the canonical Internet Computer's recognised ICP-to-cycles conversion mechanism.
+"Qualifying ICP Burn" means actual, irreversible destruction of native ICP
+through the Canonical Internet Computer's recognised ICP-to-cycles conversion
+mechanism.
 
-A Qualifying ICP Burn must be independently verifiable from appropriate canonical ledger, cycles-minting and supporting protocol records.
+It must be independently verifiable using appropriate canonical ICP ledger,
+cycles-minting and supporting protocol records.
 
 The following do not independently constitute Qualifying ICP Burns:
 
-a. Transfers or staking of ICP.
+a. transfers, escrows, staking or locking of ICP;
 
-b. Burning a wrapped or synthetic representation of ICP.
+b. destruction of wrapped, synthetic or substitute assets;
 
-c. Destruction of cycles without evidence of qualifying original ICP conversion.
+c. destruction or consumption of cycles without evidence of qualifying
+originating ICP conversion;
 
-d. Locally fabricated cycles or resource credits.
+d. locally fabricated cycles or resource credits;
 
-e. Resource credits issued by an alternative network without qualifying ICP destruction.
+e. credits issued by an alternative network;
 
-f. Accounting entries, promises, token locks or simulated transactions.
+f. accounting entries, promises or simulated transactions; or
 
-Burns previously completed to fund qualifying resource credits may be counted. This Licence does not require ICP to be destroyed a second time merely because qualifying cycles are transferred or consumed.
+g. token, equity, revenue-sharing or infrastructure arrangements.
 
-### 2.10 Corresponding Source
+Previously completed qualifying conversions may count. This Licence does not
+require a second ICP destruction merely because qualifying cycles are later
+transferred or consumed.
 
-"Corresponding Source" means the complete human-readable source necessary to understand, modify, compile and reproduce the relevant Covered Software or Covered Modification.
+### 2.10 Public production boundary
 
-It includes applicable source files, build definitions, dependency specifications, interface definitions, generated-source inputs, relevant patches and necessary build instructions.
+The public production permission applies only to the Canonical Internet
+Computer. A private, sovereign, enterprise, permissioned or disconnected
+IC-based network, fork or replica does not qualify, even if it burns ICP.
+The Organisation's separate rights and written permissions under Section 11
+remain unaffected.
 
-It does not require disclosure of credentials, private keys, user information, production databases, proprietary business data or independently authored application code covered by Section 2.6.
+### 2.11 Canonical-Equivalent Resource Charges
 
-For a combined build containing an Independent Application, Corresponding Source must permit reconstruction and compilation of the covered components, not reproduction of the complete proprietary application or its deployed binary. Application-specific inputs may be replaced by documented interface descriptions, non-proprietary fixtures or a minimal build harness sufficient to compile those components. Such replacements must not omit or conceal Covered Modifications. Macro-generated or other generated output containing protected implementation material remains covered to that extent; independently authored application material does not become covered merely because it appears in the same output.
+"Canonical-Equivalent Resource Charges" means the quantity of cycles that the
+Canonical Internet Computer would charge for materially equivalent compute,
+storage, bandwidth, messages, calls, threshold services and other metered
+resources during the applicable Accounting Period, using the canonical prices
+applicable to a reasonably comparable subnet and workload.
 
-## 3. General Grant of Rights
+Where exact equivalence is unavailable, the operator must use a reasonable,
+contemporaneously documented and independently reviewable methodology that does
+not understate the closest measurable canonical charges. Private pricing,
+locally fabricated credits and a decision not to meter a resource do not make
+its Canonical-Equivalent Resource Charges zero.
 
-Subject to the conditions and restrictions of this Licence, each Copyright Holder grants You a worldwide, non-exclusive, royalty-free copyright licence to:
+A canonical resource is not assigned zero Canonical-Equivalent Resource Charges
+merely because the Canonical Internet Computer subsidises it, does not separately
+meter it or does not directly charge an end user for it. Section 18 supplies the
+binding Resource Equivalence Schedule for this version of the Licence.
 
-a. Access, inspect, study and reproduce the Covered Software.
+### 2.12 Resource Equivalence Schedule
 
-b. Modify the Covered Software and create Covered Modifications.
+"Resource Equivalence Schedule" means the versioned rules in Section 18 for
+measuring canonical operational resource use and mapping it to canonical cycle
+charges. The schedule forms part of this Licence and cannot be replaced for
+already licensed material merely by publishing a different external document.
 
-c. Compile the Covered Software to native, WebAssembly or other executable forms.
+An operator may use a later schedule only where the applicable Copyright
+Holders expressly offer that schedule for the relevant Covered Software.
 
-d. Distribute copies of Covered Software and Covered Modifications in source or executable form.
+### 2.13 Qualifying Cycle Retirement
 
-e. Develop and commercialise Independent Applications using the Covered Software.
+"Qualifying Cycle Retirement" means irreversible destruction of cycles minted
+by a Qualifying ICP Burn through a canonical protocol operation or other
+objectively verifiable mechanism that:
 
-f. Operate Covered Software in production on the Canonical Internet Computer in accordance with Sections 5 through 9.
+a. permanently removes the cycles from every transferable or spendable balance;
 
-g. Perform the development, testing, research and ancillary activities expressly permitted under Section 4.
+b. provides no refund, withdrawal, controller recovery, claim, credit, rebate or
+other recoverable economic value to the operator or a Related Party;
 
-These permissions continue for the applicable copyrighted material while You comply with this Licence.
+c. is independently verifiable from canonical records; and
 
-No application-revenue royalty, percentage of business profits or direct licensing fee is payable to the Organisation solely by reason of permitted Canonical Internet Computer use.
+d. preserves evidence connecting the retired cycles to their originating
+Qualifying ICP Burn and supplemental canonical-resource allocation.
 
-The network and economic restrictions in this Licence are express conditions of the operational permissions granted.
+Sending cycles to a canister, account or service does not qualify while any
+person retains a technical, contractual or governance path to recover, redirect,
+spend or receive value from them. Consumption by an unrelated deployment,
+transfer to another operator and abandonment without verifiable destruction do
+not qualify.
 
-No permission for unauthorised alternative-network Production Operation is granted by this Section.
+### 2.14 Corresponding Source
 
-## 4. Development, Testing and Ancillary Use
+"Corresponding Source" means complete human-readable source necessary to
+understand, modify, compile and reproduce Covered Software or a Covered
+Modification. It includes source files, build definitions, dependency
+specifications, interface definitions, generated-source inputs, patches and
+necessary build instructions.
 
-### 4.1 Permitted non-production use
+It does not require credentials, private keys, user information, production
+data, unrelated trade secrets or Independent Application source.
 
-You may operate Covered Software in local development environments, simulations, disposable test networks, continuous integration systems, security laboratories and benchmarking environments.
+For a combined build, Corresponding Source must permit reconstruction of the
+covered components without requiring disclosure of the complete Independent
+Application. Replacements such as interface descriptions or minimal build
+harnesses must not conceal Covered Modifications.
 
-Such environments may use fabricated cycles, synthetic accounts, simulated consensus or non-production infrastructure.
+### 2.15 Accounting Period
+
+"Accounting Period" means one UTC calendar month, including a partial month.
+
+### 2.16 Control and Related Party
+
+"Control" means direct or indirect power to direct management, policies,
+deployment or material technical operation, whether through equity, tokens,
+governance rights, contract, debt, infrastructure custody, keys or another
+arrangement.
+
+"Related Party" means an entity or person controlling, controlled by or under
+common control with a Licensee, or acting as its nominee, agent or coordinated
+operator in relation to Covered Software.
+
+## 3. General grant
+
+Subject to this Licence, each Copyright Holder grants You a worldwide,
+non-exclusive, royalty-free copyright licence to:
+
+a. access, inspect, study and reproduce Covered Software;
+
+b. modify Covered Software and create Covered Modifications;
+
+c. compile Covered Software into executable forms;
+
+d. distribute Covered Software and Covered Modifications in source or
+executable form;
+
+e. develop and commercialise Independent Applications;
+
+f. perform Production Operation on the Canonical Internet Computer in accordance with Sections 5 through 9; and
+
+g. perform activities expressly permitted by Section 4.
+
+No application-revenue royalty, percentage of business profits or direct
+licensing fee is owed solely for compliant Production Operation.
+
+Network, funding, source and evidence requirements are express conditions and
+limitations of the grant. No permission for another network or production
+environment is granted except through written permission under Section 11.
+
+## 4. Development, testing and ancillary use
+
+### 4.1 Non-production use
+
+You may operate Covered Software in isolated local development, simulations,
+disposable test networks, continuous integration, security laboratories,
+audits, benchmarks and non-operational validation. These environments may use
+fabricated cycles and synthetic infrastructure.
 
 ### 4.2 Operational boundary
 
-An environment is not exempt merely because it is labelled a test network, research network, staging system or experimental deployment.
+An environment is not excluded merely because it is called a test, staging,
+research, preview or experimental environment. Genuine internal or third-party
+operational workloads constitute Production Operation.
 
-An environment supporting genuine third-party or internal operational workloads constitutes Production Operation regardless of its description.
+### 4.3 Ancillary host tools and clients
 
-### 4.3 Host tools and client software
+Covered Software may execute outside its authorised production network where
+reasonably necessary to build, deploy, administer, monitor, secure, back up,
+restore or interact with an authorised deployment on the Canonical Internet Computer.
+This includes workstations, CI systems, administrative servers, browsers and
+supporting clients.
 
-Covered Software may execute outside the Canonical Internet Computer when reasonably necessary to build, deploy, administer, monitor, secure, back up, restore or interact with authorised Canonical Internet Computer applications.
+Ancillary host costs do not independently require ICP burn merely because of
+that use.
 
-This includes development workstations, administrative servers, browsers and supporting client systems.
+This exception does not authorise a competing runtime, live off-network
+application database, substitute production platform or alternative blockchain.
+Isolated recovery tests remain permitted by Section 4.1.
 
-This is an express exception to Section 5.1 for the ancillary execution described here, including when it supports live operational workloads. Section 6 continues to apply to the authorised Canonical Internet Computer deployment, but imposes no separate ICP-burn requirement on the ancillary host's compute, storage or network costs. Section 9 requires evidence for the supported deployment's applicable funding obligations, not a separate host-infrastructure burn account. Section 8 remains applicable to source access for distributions and to Covered Modifications operated in production on an ancillary host.
+## 5. Production network authorisation
 
-Such permission does not authorise the operation of a competing production execution network using Covered Software.
+### 5.1 Permitted Production Operation
 
-This exception does not permit Covered Software to execute substantive application workloads, serve as a live application database, or provide a substitute production runtime or execution platform outside the Canonical Internet Computer, regardless of motive. Genuine client interaction, deployment administration, monitoring, security operations, backup storage and restoration to an authorised deployment remain permitted ancillary activities. Operating a backup as a live off-network application database or using administrative tooling as a substitute application execution platform is not ancillary use. Isolated recovery tests remain subject to Section 4.1; separate permissions may be granted under Section 11.
+Subject to Sections 6 through 9, Production Operation is permitted only on
+the Canonical Internet Computer.
 
-## 5. Exclusive Production Network Authorisation
+Section 4.3 permits related ancillary execution. Any other Production Operation
+requires a written permission under Section 11.
 
-### 5.1 Exclusive permission
+### 5.2 No private-network permission
 
-Except for ancillary execution expressly permitted by Section 4.3 and permissions under Section 11, Production Operation of Covered Software is permitted only on the Canonical Internet Computer. Third-party alternative-network permissions under Section 11 require the separate written authorisation specified there.
+Private, sovereign, government, enterprise, permissioned and disconnected
+IC-based deployments are not authorised by the public grant. Technical
+compatibility, equivalent resource funding or burning ICP does not change
+that restriction. Section 11 preserves the Organisation's separate authority.
 
-### 5.2 Prohibited alternative networks
+### 5.3 Prohibited production environments
 
-Without separate written authorisation, You must not deploy, operate or materially use Covered Software to establish, support or administer:
+Without written permission under Section 11, You must not use Covered Software
+for Production Operation on:
 
-a. A competing blockchain or decentralised execution network.
+a. a blockchain or distributed execution network other than the Canonical
+Internet Computer;
 
-b. A functional fork or adaptation of the Internet Computer operated as a separate production network.
+b. a private or permissioned IC-based deployment;
 
-c. A privately controlled, permissioned, sovereign or enterprise blockchain outside the Canonical Internet Computer.
+c. an unrelated alternative WebAssembly execution platform;
 
-d. An alternative WebAssembly-based distributed execution platform.
+d. a replacement network using Covered Software, regardless of ICP burn; or
 
-e. A replacement network intended to supersede the Canonical Internet Computer.
+e. an off-chain or hybrid substitute outside the ancillary-use exception.
 
-f. An off-chain or hybrid production execution environment used as a substitute for the permitted network's substantive runtime functions.
+The prohibition applies regardless of whether the environment is commercial,
+charitable, governmental, decentralised, publicly funded, privately owned or
+free of charge.
 
-This prohibition applies whether the alternative platform is commercial, charitable, decentralised, publicly funded, privately owned or operated without fees.
+### 5.4 No permission through status or nominal similarity
 
-### 5.3 No technical circumvention
+Permission is not created merely because another environment:
 
-Permission is not created merely because a competing platform:
+a. executes compatible WebAssembly or system APIs;
 
-a. Executes compatible WebAssembly modules.
+b. reproduces canister identifiers, governance, consensus, state or balances;
 
-b. Implements Internet Computer system APIs.
+c. uses compatible libraries, tooling or interfaces;
 
-c. Reuses canister identifiers or network state.
+d. allocates tokens, shares, governance rights or infrastructure interests to
+ICP holders, node providers, investors or contributors;
 
-d. Reproduces the Internet Computer's consensus architecture.
+e. is operated by a foundation, government, investor, shareholder, node
+provider, infrastructure provider, affiliate or ecosystem participant;
 
-e. Uses compatible Rust libraries or developer tooling.
+f. burns ICP, regardless of amount; or
 
-f. Provides equivalent multi-canister or multi-Wasm execution.
+g. has access to repositories, internal knowledge or development processes.
 
-g. Burns ICP or pays other consideration.
+### 5.5 Burn does not authorise another network
 
-### 5.4 Burn payments do not confer network rights
+A Qualifying ICP Burn contributes to permission only when allocated to an
+otherwise compliant Canonical Internet Computer deployment. A nominal, unallocated, reused or insufficient burn does
+not authorise an environment or cure another breach.
 
-Qualifying ICP Burns do not independently authorise use of Covered Software on an alternative network.
+### 5.6 No automatic successor or ecosystem rights
 
-The funding requirements of Section 6 apply only to Production Operations otherwise permitted under this Licence.
+No foundation, protocol developer, governing body, government, investor, node
+provider, infrastructure operator, purchaser, successor corporation or network
+participant acquires additional rights merely by succeeding to, acquiring,
+administering, funding or replacing part of an ecosystem.
 
-Payment or subsequent ICP conversion cannot cure a violation of this Section.
+## 6. Canonical ICP funding and resource coverage
 
-### 5.5 No automatic successor rights
+### 6.1 Canonical deployment funding
 
-No foundation, protocol developer, governing body, successor corporation, infrastructure operator or network participant acquires additional rights to Covered Software merely by succeeding to, acquiring, administering or replacing part of the Internet Computer ecosystem.
+Production Operation on the Canonical Internet Computer is conditional on all
+protocol resource credits used for the deployment's execution and
+infrastructure charges being funded through Qualifying ICP Burns.
 
-Any materially separate successor network requires express authorisation.
+Where charges use cycles, all cycles applied to those charges must originate
+from qualifying canonical ICP-to-cycles conversion.
 
-## 6. Canonical Network ICP Funding Requirement
+Operational resource use that the Canonical Internet Computer subsidises, does
+not separately meter or supplies without a direct cycle charge does not escape
+the economic-alignment condition. For that use, the Licensee must calculate the
+non-zero imputed charge required by Section 18 and, before the use, establish an
+equivalent Qualifying ICP Burn and Qualifying Cycle Retirement. An actual
+canonical charge and its funding must not also be counted as an imputed charge.
 
-### 6.1 Mandatory economic alignment
+### 6.2 Supplemental canonical-resource coverage
 
-Permission for Production Operation on the Canonical Internet Computer is conditional on one hundred percent (100%) of the cycles or other protocol resource credits used to pay the relevant deployment's operational charges originating from Qualifying ICP Burns.
+For canonical operational resource use subject to the supplemental condition
+in Section 6.1, each Accounting Period requires advance Qualifying ICP Burns
+sufficient to mint cycles equal to the applicable Canonical-Equivalent Resource
+Charges under Section 18. Directly charged and qualifying-funded resources
+must not be charged a second time. This requirement grants no off-network
+production permission.
 
-Where charges are denominated in cycles, the cycles applied to those charges must originate from qualifying canonical ICP-to-cycles conversion.
+### 6.3 Dedicated retirement of supplemental cycles
 
-### 6.2 Existing burns and transfers
+Cycles minted by a conversion counted toward Section 6.2 must be specifically
+identified and must not be sold, transferred for value, allocated to another
+deployment, used to satisfy another licence obligation or counted again.
 
-Qualifying conversions performed by the Licensee, infrastructure providers, service operators or other legitimate funding sources may satisfy this condition.
+Those cycles must undergo Qualifying Cycle Retirement before the corresponding
+supplementally covered canonical resource use begins. A promise of later retirement, an ordinary transfer
+or consumption that supplies useful operation to another deployment is
+insufficient.
 
-Transfers through the canonical cycles ledger, canisters or verifiably qualifying funding pools do not create an additional burn obligation.
+Destruction of cycles without evidence of the qualifying originating ICP burn
+does not satisfy this Section. An originating ICP burn without the required
+dedication and retirement of its resulting cycles does not satisfy supplemental
+canonical coverage.
 
-Compliance may be established through identifiable conversion records together with transfer records or reconciled pool records connecting a quantified share of the qualifying credits to the deployment. Pool records must account for opening balances, qualifying inflows, other inflows, transfers, consumption and closing balances, with allocations sufficient to prevent the same credits being attributed to more than one expenditure. Physical identification of individual fungible cycles is not required; documented quantitative attribution is required. A balance or provider assertion unsupported by those records does not establish qualifying origin.
+### 6.4 Transfers and pools
 
-### 6.3 Non-qualifying funding
+Conversions by a Licensee, provider or legitimate funding source may qualify.
+Transfers through canonical mechanisms do not create a second burn obligation.
 
-No portion of the resource charges subject to Section 6.1 may be funded through unauthorised synthetic issuance, independent alternative-network credits or mechanisms without qualifying canonical ICP destruction.
+Pooled records must account for qualifying inflows, other inflows, transfers,
+consumption, retirement, allocations and closing balances sufficiently to
+prevent reuse or double counting. Physical identification of fungible units is
+not required where independently reviewable quantitative accounting proves the
+same result.
 
-Mixing qualifying and other credits does not make the other credits qualifying. An operator using a mixed balance must maintain the quantitative allocation records required by Section 6.2 and attribute covered expenditures only to its demonstrated qualifying balance, reducing that balance as credits are spent or transferred. Any amount whose qualifying origin or remaining availability cannot be established must be treated as nonqualifying for this purpose. Later qualifying inflows cannot retrospectively qualify earlier expenditures.
+### 6.5 Mixed and non-qualifying funding
 
-### 6.4 Scope
+Synthetic issuance, alternative-network credits and unsupported balances do not
+qualify. Mixing qualifying and other credits does not make other credits
+qualifying. Later burns do not retrospectively qualify earlier operation.
 
-The requirement applies to resource funding, not to total application revenue, transaction volume, token supply, customer assets or unrelated business turnover.
+### 6.6 Scope
 
-It does not create an obligation to burn ICP for a request or operation for which the canonical network imposes no resource charge.
+The requirement applies to resource funding and equivalent resource use, not
+total revenue, transaction volume, token supply, user assets or unrelated
+turnover. Section 18 determines the charge for subsidised, free, bundled or
+unmetered operational resources. A claimed zero charge is permitted only where
+the schedule expressly produces zero after all material resource use is
+included and the evidence required by Section 9 supports that result.
 
-## 7. Uniform Funding Rule
+## 7. Supplemental canonical-coverage administration
 
-Section 6 applies equally to shared, dedicated, reserved and separately controlled capacity within the Canonical Internet Computer. Product names, infrastructure ownership and commercial arrangements do not create a different funding threshold.
+### 7.1 Complete operational-resource coverage
 
-There is no additional burn calculated as a percentage of infrastructure cost or value. This Licence requires no infrastructure valuation, market-price comparison, currency-value reconciliation or minimum spend beyond the qualifying origin of the protocol resource credits actually used. Operations for which the canonical network imposes no resource charge incur no separate burn requirement.
+A Canonical Internet Computer deployment must maintain Qualifying ICP Burn
+coverage for one hundred percent (100%) of its supplemental resource charges
+under Section 6.2.
 
-Qualifying funding does not authorise an alternative network or substitute off-network production runtime. Sections 4.3, 5 and 11 continue to govern ancillary execution, network eligibility and separate permissions.
+No infrastructure-value surcharge, application-revenue charge or percentage of
+business turnover applies under this public Licence.
 
-## 8. Reciprocal Source-Code Obligations
+### 7.2 No reuse or double counting
 
-### 8.1 General obligation
+A Qualifying ICP Burn and its resulting cycles must not be allocated to another
+deployment, Accounting Period or licence obligation. The same value must not be
+used both as supplemental canonical coverage and as operational funding for a
+different deployment.
 
-A Licensee that distributes Covered Modifications, or performs Production Operation using Covered Modifications, must make their Corresponding Source publicly available under this same Licence.
+Only demonstrably unused, dedicated and unretired advance coverage may be
+carried forward, and it remains subject to Section 6.3 before being counted for
+actual Production Operation.
 
-This obligation applies whether the Covered Modifications are distributed directly, embedded in compiled software or operated without distributing executable copies.
+### 7.3 Advance coverage
 
-Production Operation includes internal business operations under Section 2.8, even where access is restricted to employees, contractors or other authorised internal users. Required Corresponding Source must be publicly available; providing it only to those users is insufficient. Compliance with the network and qualifying-burn requirements does not replace this source-publication obligation.
+Projected supplementally covered canonical resource use must have qualifying coverage before Production
+Operation. Additional or variable consumption must remain within a documented
+prepaid coverage limit, with further coverage established before that limit is
+exceeded.
 
-Private creation and use of Covered Modifications solely for non-production activities permitted by Section 4.1 do not, by themselves, trigger publication. Distribution of those modifications or their use in Production Operation triggers this Section. Independently authored application code remains subject to the exceptions in Sections 2.6, 2.10 and 8.5, and is not subject to mandatory disclosure merely because it uses a modified covered component.
+### 7.4 Resource reconciliation
 
-The Organisation's separate rights, and permissions expressly granted under a separate written licence, are governed by Section 11.7. Receipt of Covered Software from the Organisation does not by itself create an exception to this Section.
+Within thirty (30) days after each Accounting Period, reconcile actual
+Canonical-Equivalent Resource Charges, allocated burns, retired cycles, unused
+coverage and corrections.
 
-### 8.2 Publication
+Reconciliation is not a funding grace period. Later funding permits prospective
+resumption but does not authorise an earlier deficit.
 
-Corresponding Source must be made available:
+### 7.5 Good-faith measurement correction
 
-a. Without a licensing fee or access charge.
+A discrepancy in Canonical-Equivalent Resource Charges receives a thirty-day
+correction period only where the original measurement method was reasonable,
+contemporaneously documented, independently supportable on information then
+available, accurately disclosed and fully funded on that original basis.
 
-b. In a commonly usable, machine-readable source format.
+Within thirty days after discovery or substantiated written notice, publish the
+corrected measurement, fund and retire the complete resulting deficit, and
+update Section 9 evidence. Deliberate or reckless understatement, concealed or
+unmetered use, or consumption beyond prepaid coverage does not qualify.
 
-c. With reasonably complete instructions necessary to build the covered components.
+Timely correction protects operation based solely on the eligible measurement
+discrepancy. It does not excuse another breach or operation outside Section 5.
 
-d. Under this Licence, without additional restrictions inconsistent with its terms.
+## 8. Reciprocal source obligations
 
-e. No later than the commencement of Production Operation using those modifications, or their first distribution in source or executable form, whichever occurs first.
+### 8.1 Covered Modifications
 
-Publication may be made through a publicly accessible repository or another source-distribution location meeting this Section. It does not require submission of a pull request, delivery through an official Organisation repository, or the Organisation's review, acceptance, merger or maintenance of the modifications. Publication does not transfer copyright ownership; the express grants elsewhere in this Licence remain applicable. Section 12.5 governs official contribution acceptance.
+A Licensee distributing Covered Modifications or performing Production
+Operation with them must make their Corresponding Source publicly available
+under this same Licence.
 
-### 8.3 Availability period
+Production Operation includes internal business operation under Section 2.8,
+even where access is restricted to employees, contractors or other authorised
+internal users. Providing Corresponding Source only to those users is
+insufficient; the required source must be publicly available.
 
-The relevant source must remain available throughout Production Operation and for at least three years after the last distribution or Production Operation of the applicable version.
+Publication is required no later than first distribution or commencement of
+Production Operation, whichever occurs first, without licensing fee, in a
+usable machine-readable form, with build instructions and no additional
+inconsistent restrictions.
 
-Where unmodified upstream source remains available at a stable, identifiable location, the Licensee may reference that exact upstream version and publish the complete modifications and information necessary to reconstruct the covered result.
+Private modification and use solely for the non-production activities permitted
+by Section 4.1 do not trigger publication unless the Covered Modification is
+distributed.
 
-### 8.4 Identification of modifications
+### 8.2 Availability and identification
 
-Material changes to Covered Software must be clearly identified, including sufficient version and build information to distinguish modified implementations from official releases.
+Corresponding Source must remain available throughout Production Operation and
+for at least three years after the last distribution or operation of that
+version. Material changes and deployed versions must be clearly identifiable.
 
-### 8.5 Independent Application exception
+### 8.3 Independent Applications
 
-This Licence does not require publication of independently created application source code solely because that application:
+Independently authored application source need not be published merely because
+it links, invokes, embeds unmodified Covered Software, uses generated bindings
+or communicates through inter-canister calls. Embedded Covered Modifications
+remain subject to this Section.
 
-a. Uses a Covered Software library.
+Publication does not require submitting a pull request, contributing a
+modification to an Organisation repository or obtaining the Organisation's
+acceptance. The Organisation has no obligation to review, merge, maintain or
+distribute a published modification.
 
-b. Calls Covered Software APIs.
+### 8.4 Unmodified executables
 
-c. Includes generated bindings or macro expansions.
+A distributor of unmodified Covered Software in executable form must provide
+public access to the exact Corresponding Source and identify its version. A
+stable exact upstream source may be referenced while available, but the
+distributor remains responsible for access during the required period and must
+stop further executable distribution after discovering an outage until access
+is restored.
 
-d. Links Covered Software statically or dynamically.
+### 8.5 Network-service notice
 
-e. Is compiled into a WebAssembly module containing unmodified Covered Software.
+An operator using Covered Modifications as a service must provide a reasonably
+discoverable public notice identifying their source location and version.
 
-f. Communicates with Covered Software through inter-canister calls.
+## 9. Evidence and records
 
-This exception does not extend to Covered Modifications embedded within such applications.
+### 9.1 Verifiable evidence
 
-### 8.6 No proprietary relicensing of Covered Modifications
+Each Production Operation must maintain evidence reasonably sufficient to
+demonstrate Sections 6 and 7 compliance. Canonical deployments may use identified protocol and reconciled pool records.
 
-A Licensee may not distribute Covered Modifications exclusively under a proprietary licence that denies recipients the reciprocal source-code permissions required by this Section.
+A canonical deployment subject to the supplemental burn and retirement
+condition in Section 6.1 must publish independently reviewable measurement,
+allocation, burn and retirement records for that supplemental coverage.
 
-Separate licensing of independently authored application code remains permitted.
+Possessing, retaining and providing the evidence required by this Section is a
+condition of Production Operation. A provider assertion, invoice, balance
+screenshot or unexplained summary is not independently reviewable evidence.
 
-### 8.7 Source-access notice
+### 9.2 Supplemental canonical-resource records
 
-Where Covered Modifications are operated as a network service, the operator must provide a reasonably accessible public notice identifying the applicable source location and version.
+A canonical deployment subject to Section 6.2 must identify:
 
-The notice may be supplied through documentation, a service interface, deployment metadata or another publicly discoverable mechanism appropriate to the deployment.
+a. the protocol and material execution configuration;
 
-### 8.8 Source access for unmodified executables
+b. the methodology and measurements used to calculate Canonical-Equivalent
+Resource Charges;
 
-A Licensee distributing Covered Software in unmodified executable form, including as a component of a combined application, must provide public access to the exact Corresponding Source for that covered version no later than its first distribution. The access conditions in Sections 8.2(a) through 8.2(d) and the availability period in Section 8.3 apply. The distribution must identify the covered version and give a reasonably accessible source location. The Independent Application exception and combined-build boundary in Sections 2.6, 2.10 and 8.5 continue to apply.
+c. the complete resource-coverage calculation required by Section 7.1;
 
-The distributor may use a stable upstream link identifying the exact source version while that source remains publicly available on those terms. The distributor must retain a copy or another reliable means of supplying that exact source throughout the required period. If the upstream source becomes unavailable, the distributor must promptly provide a replacement source location or host the exact source itself. From discovery or written notice of the outage, whichever occurs first, it must not make further executable distributions until access is restored. Reliance on upstream hosting does not transfer this responsibility to the upstream provider. An inadvertent availability defect may qualify for Section 14.4's correction protection, but that protection does not permit further executable distribution after that discovery or notice while the required source is unavailable.
+d. canonical ICP ledger and cycles-minting references for each qualifying burn;
 
-## 9. Evidence, Verification and Recordkeeping
+e. quantitative allocation of each burn to the deployment and Accounting
+Period; and
 
-### 9.1 Verifiable funding
+f. independently reviewable evidence that resulting cycles were dedicated and
+underwent Qualifying Cycle Retirement as required by Section 6.3.
 
-Each Production Operation subject to Section 6 must maintain evidence reasonably sufficient to demonstrate the qualifying origin and available quantity of its operational resource credits.
+Initial resource measurement, methodology and coverage must be published before
+Production Operation. Reconciliations must be published within Section 7.4's
+deadline.
 
-Appropriately identified canonical protocol funding records and verifiable pooled funding evidence may satisfy this requirement without reconstructing every individual cycle transfer.
+Records must include tamper-evident raw measurements, material configuration,
+software and schedule versions, calculation inputs and cryptographic hashes or
+equivalent integrity evidence sufficient to reproduce each published result.
+Where exact data is unavailable, the Licensee must use and disclose a
+conservative upper-bound estimate. A failure to meter or retain data within the
+Licensee's or a Related Party's control must not reduce the required coverage.
 
-### 9.2 Funding records
+### 9.3 Retention, privacy and corrections
 
-Records must identify the relevant deployment, qualifying conversion references and quantities of resource credits obtained, together with any transfer or pool-allocation evidence needed under Section 6.2. Records must distinguish qualifying credits available for use from credits already consumed, transferred or allocated elsewhere. No valuation of hardware, hosting contracts, reserved capacity or affiliated services is required.
+Required records must remain available for at least three years. Stable
+pseudonymous identifiers and proportionate confidentiality protections are
+permitted, but must not prevent verification. Corrections must preserve an
+auditable history.
 
-### 9.3 Timing and retention
+On a reasonable, documented concern about material compliance, the Organisation
+may request the supporting records reasonably necessary to verify Sections 6
+through 9 or an independent audit of those records. The request must be
+proportionate and must permit reasonable protection of personal data, security
+secrets, government information and unrelated trade secrets, including review
+by an independent professional under confidentiality where appropriate.
 
-Qualifying credits must be available before they are used to meet operational charges. Keep the supporting records current as funding is received, allocated, transferred or consumed. Retain evidence for at least three years after the last expenditure or transfer it supports, and provide the relevant records on a reasonable verification request from an applicable Copyright Holder, subject to Section 9.5. Publicly accessible protocol records may be supplied by reference; no separate monthly valuation report is required.
+The Licensee must respond within thirty days or another reasonable period agreed
+in writing. If the review establishes a material shortfall or deliberate
+misstatement, the Licensee bears its reasonable cost; otherwise the Organisation
+bears the cost of an audit it required. Neither confidentiality nor use of an
+auditor permits withholding the quantitative evidence necessary to establish
+compliance.
 
-### 9.4 Pooled funding
-
-Qualifying credits may be pooled across deployments if the records required by Section 6.2 establish their origin, available quantity and allocation without double counting. The aggregate quantity attributed to expenditure, transfers and remaining balances must not exceed the verified qualifying credits received. Moving credits between accounts or deployments does not require another ICP conversion.
-
-### 9.5 Privacy and confidentiality
-
-Evidence may use stable pseudonymous identifiers and omit information not reasonably necessary to verify compliance.
-
-Disclosure of private keys, credentials, customer data, application contents and unrelated commercially sensitive information is not required.
-
-Confidentiality measures must not make the relevant economic compliance claims impossible to verify.
-
-## 10. Anti-Circumvention
+## 10. Anti-circumvention and non-appropriation
 
 ### 10.1 Substance over form
 
-A Licensee must not knowingly evade the restrictions of this Licence through:
+You must not knowingly evade this Licence through a Related Party, contractor,
+proxy, nominee, wrapper, relay, corporate restructuring, fund, portfolio
+company, repackaging, renaming, translation, code generation, module split,
+service boundary, artificial allocation or accounting arrangement.
 
-a. Corporate restructuring or affiliated entities.
+Technical, operational and economic substance prevails over labels and formal
+ownership.
 
-b. Contractors, intermediaries or proxy operators.
+Production Operation and its measured resource use include every coordinated
+component that materially performs, stores or supports the operational workload,
+including an authoritative off-chain database or index, hosted execution engine,
+sidecar holding canonical state, relay performing substantive business logic,
+or backup promoted to live service. The ancillary-use exception in Section 4.3
+does not apply to such a substitute production component.
 
-c. Wrappers, relays or nominally separate services.
+Resource use, burns and retirements must be aggregated across Related Parties
+and coordinated deployments where they form one operational service or share
+workloads, state, control, funding or infrastructure. Splitting a service among
+entities, deployment identifiers, components, accounts or measurement windows
+must not reduce or defer the charge, coverage or evidence that would apply to
+the service in substance.
 
-d. Repackaging or renaming Covered Software.
+### 10.2 No rights through investment or position
 
-e. Translating copyright-protected implementation code into another programming language.
+Holding or acquiring equity, debt, tokens, governance power, node-provider
+status, infrastructure, repository access, confidential access, employment,
+contract rights or another relationship does not grant ownership of Covered
+Software, authority to license it, the Organisation's reserved rights or
+permission for an otherwise prohibited use.
 
-f. Compiling Covered Software into different executable formats.
+### 10.3 No exclusive appropriation
 
-g. Dividing protected implementation code across multiple Wasm modules, canisters, services or processes.
+A Licensee must not represent that it owns the Organisation's or another
+Copyright Holder's underlying Covered Software, or grant an exclusive interest
+in Covered Software that conflicts with rights already granted under this
+Licence.
 
-h. Artificial infrastructure allocation or accounting arrangements.
+Copyright in a Licensee's original modification does not create ownership of
+underlying Covered Software, abstract ideas, protocol governance, tokens or
+independently owned material.
 
-The technical and commercial substance of an arrangement determines whether the conditions apply.
+### 10.4 No duty to surveil unrelated users
 
-### 10.2 Responsibility
+An ordinary distributor or general-purpose service provider is not responsible
+solely because an unrelated party later acts without its knowledge, direction
+or control. This Licence creates no general duty to monitor unrelated users.
 
-A person knowingly directing or controlling prohibited Production Operation cannot avoid responsibility merely by interposing another entity.
+## 11. Organisation freedom to operate and separate licensing
 
-An independent distributor or ordinary service provider is not responsible solely because an unrelated third party subsequently performs an unauthorised act without the distributor's direction, control or knowing participation.
+### 11.1 Permanent Organisation grant
 
-### 10.3 Limits
+Each Copyright Holder who expressly makes Licensed Material or a Covered
+Modification available under this Licence grants the Organisation, to the
+extent of rights that holder controls, a perpetual, worldwide, non-exclusive,
+royalty-free, irrevocable, transferable and sublicensable licence to:
 
-This Section does not prohibit independently implemented software merely because it provides similar functionality.
+a. use, reproduce, modify, adapt and create derivative works;
 
-It does not create ownership over abstract algorithms, ideas, protocols, interface specifications or technical concepts that are not protected by applicable intellectual property law.
+b. compile, distribute, sublicense and commercially exploit the material;
 
-## 11. Reserved Organisation Rights and Network Migration
+c. operate it on public, private, permissioned, sovereign, dedicated or
+alternative infrastructure;
 
-### 11.1 Express Organisation grant
+d. migrate it to or authorise it on another blockchain or execution network;
 
-Each Copyright Holder who expressly makes copyright-protected material available under this Licence grants Toko Studios Ltd, to the extent of rights the holder lawfully controls, a perpetual, worldwide, non-exclusive, royalty-free, irrevocable, transferable and sublicensable licence to:
+e. combine it with proprietary or separately licensed material;
 
-a. Use and reproduce that material.
+f. keep the Organisation's modifications private; and
 
-b. Modify, adapt and create derivative works.
+g. offer it under proprietary, commercial, source-available, open-source or
+other terms selected by the Organisation.
 
-c. Distribute, sublicense and commercially exploit the material.
+This is a separate grant to the Organisation and is not conditional on the
+Organisation satisfying Sections 5 through 9.
 
-d. Operate the material on public, private, permissioned or alternative execution networks.
+### 11.2 Covered Modification grant
 
-e. Authorise use on blockchains other than the Canonical Internet Computer.
+By distributing a Covered Modification under this Licence or commencing
+Production Operation that requires its publication under Section 8, its
+Copyright Holder expressly offers that modification under this Licence and
+grants the Organisation the rights in Section 11.1, to the extent the holder
+controls those rights.
 
-f. Make the material available under separate commercial or other licensing arrangements.
+No grant is implied for third-party material the holder does not control.
 
-This grant applies to the rights expressly controlled by the granting holder and does not override independently licensed third-party material.
+### 11.3 Preservation against conflicting rights
 
-### 11.2 Independent migration authority
+A person exercising rights under this Licence must not grant, assign, pledge,
+encumber or enforce rights in Covered Software or a Covered Modification in a
+way that purports to revoke, narrow or prevent the Organisation's exercise of
+Sections 11 or 13.
 
-The Organisation may exercise its rights under Section 11.1 at any time.
+An assignment or transfer by a granting holder must preserve the Organisation's
+existing rights to the maximum extent permitted by law. The granting holder
+must not knowingly represent transferred rights as free of this Licence.
 
-Such exercise is not conditional on the Canonical Internet Computer becoming unavailable, being discontinued, losing economic viability or suffering a technical failure.
+### 11.4 Independent migration authority
 
-### 11.3 Strategic alternative-network licensing
+The Organisation may exercise its reserved rights at any time. It need not wait
+for the Canonical Internet Computer to fail, end or become uneconomic.
 
-The Organisation may enter into separately negotiated arrangements authorising deployment of Covered Software on additional networks.
+### 11.5 Written permissions for others
 
-Such arrangements may include financial consideration, token ownership, equity participation, revenue sharing, protocol economic commitments or other negotiated terms.
+The Organisation may issue a separate written licence authorising identified
+parties, software, networks and uses, including exceptions to public-licence
+conditions. An alternative-network permission must be express and signed by the
+Organisation acting with sufficient authority from relevant rights holders.
 
-No particular equity percentage, token allocation or financial arrangement independently creates authorisation.
+Informal statements, investments, token or equity arrangements, burns,
+technical compatibility and commercial relationships are not authorisation.
 
-### 11.4 Written authorisation
+### 11.6 No automatic benefit
 
-Any third-party permission to perform Production Operation on an alternative network must be granted in a separate written instrument, signed by the Organisation acting with sufficient authority from the applicable rights holders.
+The Organisation's rights do not automatically extend to investors,
+shareholders, directors, employees acting independently, affiliates, customers,
+funds, portfolio companies, node providers, infrastructure providers,
+contractors, purchasers or recipients. An agent acting solely for the
+Organisation may exercise only the authority delegated to it.
 
-That instrument must identify the authorised party, applicable software, permitted network and scope of the permission.
+### 11.7 Survival and priority
 
-An informal statement, technical compatibility, payment or investment does not constitute authorisation.
+The Organisation's grants survive termination of other permissions,
+contributor withdrawal, later cessation of distribution and, to the maximum
+extent permitted by law, assignment or transfer of the granting holder's
+rights.
 
-### 11.5 No automatic third-party benefit
+Sections 8, 10, 12.6 and 14 must not be interpreted to reimpose a condition
+expressly displaced for the Organisation or a separately licensed recipient.
+Third-party rights and notices remain unaffected.
 
-The Organisation's reserved rights do not automatically extend to:
+## 12. Distribution, ownership and contributions
 
-a. Independent operators of an alternative network.
+### 12.1 Ownership
 
-b. Companies in which the Organisation holds shares or tokens.
+Copyright remains with applicable Copyright Holders. Publication, receipt,
+repository access, contribution, operation and investment do not transfer
+ownership.
 
-c. Investors or shareholders of the Organisation.
+The Organisation must establish its authority through ownership, assignment,
+employment or contractor terms, contributor agreements or express grants.
+This Licence does not acquire rights a grantor does not control.
 
-d. Affiliates, customers or commercial partners.
-
-e. Purchasers or recipients of software distributed by the Organisation.
-
-Such parties require their own applicable permissions unless acting strictly as authorised agents of the Organisation within the scope of its rights.
-
-### 11.6 Preservation of Organisation rights
-
-The rights expressly granted under Section 11.1 survive termination of other permissions under this Licence to the maximum extent permitted by applicable law.
-
-The Organisation's reserved permissions do not diminish the separate rights of other parties under valid prior licences.
-
-### 11.7 Separate licensing and priority of reserved rights
-
-The grant in Section 11.1 is a separate basis of permission for the Organisation. Its exercise is not conditional on compliance with the public-licence network, funding, source-disclosure or recordkeeping requirements in Sections 5 through 9.
-
-In particular, the Organisation may keep its Covered Modifications private, operate them without publishing Corresponding Source, and distribute or sublicense covered material under proprietary, commercial or other terms without the source-publication, source-access notice or same-Licence requirements in Section 8. Section 8.6 does not prohibit the Organisation from exercising these rights.
-
-The Organisation may expressly grant corresponding exceptions to identified third parties through a separate written licence signed by the Organisation acting with sufficient authority from the applicable rights holders. That instrument must identify the authorised party, covered material, scope of permission and public-licence conditions that it replaces or disapplies. Alternative-network permissions must also satisfy Section 11.4.
-
-A recipient relying only on this public Licence remains subject to its applicable conditions, including Section 8. Neither receipt of Covered Software from the Organisation nor investment, affiliation or a commercial relationship creates an exception. A separately licensed recipient obtains only the exceptions expressly granted by its written instrument; no exception extends automatically to other material, uses or recipients.
-
-Sections 10, 12.6 and 14 must not be interpreted to reimpose the conditions expressly displaced by this Section or a valid separate written licence. Exercising such an exception is not, by itself, circumvention or noncompliance with this Licence. This does not excuse conduct outside the scope of the separate permission or change the enforcement terms of a separate agreement.
-
-These reserved rights and exceptions extend only to intellectual property the relevant grantor is authorised to license. They do not remove applicable copyright or third-party notices, override independently licensed third-party material, expand the patent grants in Section 13, or diminish rights already granted to others under this or an earlier licence.
-
-## 12. Distribution, Ownership and Contributions
-
-### 12.1 Copyright ownership
-
-Copyright remains with the applicable Copyright Holders.
-
-This Licence transfers no ownership merely through publication, receipt, use or distribution.
-
-Employment, company membership, repository access or contribution acceptance does not itself establish that the Organisation owns or may relicense the relevant material. Section 11.1 applies only where the relevant holder has authority and expressly makes that material available under this Licence; it does not acquire rights in unpublished external modifications or independently licensed dependencies. The Organisation must establish sufficient rights through applicable ownership rules, assignments or express grants before offering separate permissions. Copyright authority does not establish patent authority; the trigger and scope of Section 13.3 must be satisfied separately.
 ### 12.2 Notices
 
-Redistributed copies of Covered Software must preserve applicable copyright notices, licence notices and required third-party attributions.
+Redistributed Covered Software must include this complete Licence and applicable
+copyright, attribution and third-party notices. Material modifications must be
+identified prominently.
 
-### 12.3 Third-party material
+### 12.3 Contributions
 
-Nothing in this Licence grants rights to third-party intellectual property beyond those lawfully controlled by the respective Copyright Holders.
+A contribution is covered only where its contributor has authority and
+expressly offers it under this Licence or a separate agreement sufficient for
+the Organisation's intended use. Employment, repository membership and pull
+request submission alone do not prove authority.
 
-Independent third-party dependencies remain subject to their own licence terms.
+### 12.4 Third-party material and earlier grants
 
-### 12.4 Existing licences
+Third-party material retains its own terms. This Licence does not revoke or
+restrict rights already granted for earlier releases under MIT, Apache or
+another licence. Later material may be offered exclusively under this Licence.
 
-Nothing in this Licence revokes, cancels or retroactively restricts permissions validly granted under earlier software licences.
+### 12.5 No entitlement to official development
 
-Previously acquired MIT, Apache or other valid permissions remain governed by their applicable terms.
-
-New copyrightable material released exclusively under this Licence does not automatically become subject to an earlier permissive licence merely because it is distributed alongside previously licensed material.
-
-### 12.5 Official development
-
-This Licence creates no entitlement to submit, merge, maintain or publish modifications through an official Organisation repository.
-
-The Organisation may restrict official development and contribution acceptance to authorised personnel.
-
-A third party's independent right to create and distribute permitted Covered Modifications does not create a right to have those modifications incorporated into official releases.
+This Licence creates no right to merge, maintain or publish modifications in an
+official repository. The Organisation may control its official development and
+contribution process.
 
 ### 12.6 No unrestricted sublicensing
 
-Except where expressly authorised, distributors cannot remove this Licence's restrictions or grant additional production-network permissions on behalf of the applicable Copyright Holders.
+Except through Section 11 or a separate written licence, a distributor cannot
+remove these conditions or grant additional production-network permissions on
+behalf of relevant Copyright Holders.
 
-Recipients obtain their relevant public-licence permissions directly from those Copyright Holders.
+## 13. Patent rights and protection of Organisation use
 
-## 13. Patent Rights and Defensive Protection
+### 13.1 Public patent grant
 
-### 13.1 Limited patent grant
+Each contributor or Copyright Holder controlling applicable patent claims
+("Patent Grantor") grants You a worldwide, non-exclusive, royalty-free patent
+licence for claims necessarily infringed by its covered contribution alone or
+in authorised combination with Covered Software.
 
-Each Copyright Holder granting rights under this Licence also grants, to the extent it controls applicable patent claims, a worldwide, non-exclusive, royalty-free patent licence for use of its Covered Software contribution as expressly authorised by this Licence.
+The grant does not cover unrelated products, independent implementations or
+claims the Patent Grantor cannot license. Production use remains subject to
+Sections 5 through 9.
 
-This grant extends only to claims necessarily infringed by the relevant contribution itself or its authorised combination with the Covered Software.
+### 13.2 Permanent Organisation patent grant
 
-No independently implemented technology or unrelated product is licensed by this Section.
+Each Patent Grantor grants the Organisation a perpetual, worldwide,
+non-exclusive, royalty-free, irrevocable, transferable and sublicensable
+licence under the claims described in Section 13.1 for the Organisation's
+products, services, modifications, combinations, migrations and commercial
+activities on any infrastructure.
 
-### 13.2 Defensive patent termination
+This grant survives termination of other permissions and, to the maximum
+extent permitted by law, later assignment of the patents.
 
-If You initiate, direct or maintain patent proceedings alleging that Covered Software, or another person's use of Covered Software as authorised by this Licence, infringes a patent controlled by You, the patent permissions granted to You under Section 13.1 terminate upon assertion of that claim.
+### 13.3 Defensive termination
 
-To the extent permitted by applicable law, the relevant Copyright Holders may also terminate Your permissions to the affected Covered Software where the proceedings constitute a material breach of an applicable defensive condition.
+If You initiate, direct, finance, control or maintain a patent claim
+alleging that Covered Software, a covered contribution, or the Organisation's
+exercise of Sections 11 or 13 infringes a patent controlled by You, patent
+permissions granted to You under Section 13.1 terminate upon assertion.
 
-Defensive counterclaims responding to proceedings first brought against You, and challenges solely to patent validity, do not independently trigger this provision.
-
-### 13.3 Organisation patent rights
-
-Each patent grantor who expressly distributes a contribution under this Licence also grants the Organisation a perpetual, worldwide, non-exclusive, royalty-free, irrevocable and sublicensable licence to the patent claims described in Section 13.1, for use with that contribution.
-
-This permission is not limited to the Canonical Internet Computer.
+This does not apply solely to a defensive counterclaim responding to proceedings
+first brought against You, a validity challenge, or an unrelated product claim.
+It does not affect the Organisation's Section 13.2 rights.
 
 ### 13.4 Reservation
 
-No patent licence is granted for claims the relevant grantor does not control, for unrelated technologies or for independently developed implementations beyond the express scope of the grant.
+No patent rights are granted beyond this Section. No contributor grants patents
+it does not control, and no grant removes independently applicable third-party
+rights.
 
-## 14. Noncompliance, Suspension and Termination
+## 14. Noncompliance, suspension and termination
 
-### 14.1 Scope of permission
+### 14.1 Conditions and unauthorised networks
 
-The restrictions on Production Operation, network eligibility, ICP funding and source reciprocity are express conditions of the permissions granted.
+Network eligibility, ICP funding, reciprocal source and
+Organisation grants are express conditions limiting permission.
 
-Use outside those permissions is not authorised by this Licence.
+Alternative-network Production Operation outside Section 11 is unauthorised
+from commencement. Later
+payment, burning, migration or cessation does not retroactively authorise an
+unqualified deployment.
 
-### 14.2 Unauthorised network operation
+### 14.2 Economic suspension
 
-Unauthorised Production Operation on an alternative execution network is outside the scope of the public licence from its commencement.
+Except for an eligible Section 7.5 measurement correction, permission for
+affected Production Operation is suspended when required funding or coverage
+is absent. Operation may resume
+prospectively after complete correction if no other condition remains unmet and
+permissions have not separately terminated.
 
-Subsequent payment, burn activity, migration or cessation does not retrospectively authorise the earlier activity.
+Permission is also suspended while the Licensee lacks the required measurement,
+allocation, burn, retirement or publication evidence. Later reconstruction of
+records may cure an eligible documentary defect under Section 14.3 only where
+the Licensee establishes that the required burn and retirement occurred on time.
+Reconstructed evidence cannot create retroactive coverage.
 
-### 14.3 Funding noncompliance
+### 14.3 Administrative correction
 
-Permission for an affected Production Operation is suspended when it uses resource credits that do not meet Section 6. Operation must not resume until qualifying funding is available and the other applicable conditions are satisfied.
+An inadvertent documentary or source-publication defect may be corrected within
+thirty days after discovery or written notice if the use was otherwise
+authorised, required funding existed, the breach was not deliberate and the
+Licensee acts promptly and in good faith.
 
-Later conversion of ICP does not retrospectively qualify earlier nonqualifying expenditure. Restoring qualifying funding restores operational permission prospectively, provided the applicable permissions have not separately terminated. A correction demonstrating that sufficient qualifying credits were already available and properly attributable is a documentary correction, not retrospective funding, and may qualify under Section 14.4.
+Timely complete correction prevents suspension, termination or claims based
+solely on that eligible defect. It does not excuse an unqualified deployment,
+missing burn or retirement coverage, concealment or deliberate withholding.
+Further executable distribution during a known source outage remains prohibited.
 
-### 14.4 Administrative correction
+### 14.4 Deliberate or material violations
 
-An inadvertent documentary omission or source-publication defect may be remedied within thirty (30) days after discovery or written notice, whichever occurs first, provided the affected distribution or operation was otherwise authorised, the breach was not deliberate and the Licensee acts promptly and in good faith. "Otherwise authorised" means that all applicable requirements apart from the eligible defect itself were satisfied; the defect does not circularly disqualify its own correction.
+Deliberate evasion, deliberate concealment or destruction of required evidence,
+material evidence falsification, intentional source withholding, attempted
+appropriation contrary to Section 10.3, interference with the Organisation's
+granted rights, or repeated material breach may
+terminate the responsible Licensee's permissions for the affected use and
+material.
 
-This correction period does not authorise alternative-network operation or excuse the use of nonqualifying resource credits. The restriction on further executable distribution during a source outage in Section 8.8 remains applicable.
+Reinstatement requires express written authorisation from relevant Copyright
+Holders.
 
-Permission is not suspended or terminated solely for an eligible defect during that correction period, subject to Section 8.8's express restriction on further distribution. If the Licensee fully corrects the defect within the period, the Copyright Holders granting permissions under this Licence will not suspend or terminate those permissions or pursue claims or remedies based solely on that defect, including for the period before correction. This protection includes an eligible inadvertent failure to publish required source on time.
+### 14.5 Independent recipients and remedies
 
-If the defect remains uncorrected at the deadline, permission for the affected distribution or operation is suspended until correction, unless it has separately terminated under Section 14.5. The protection against claims based solely on the defect is conditional on timely complete correction and does not apply after a failure to meet that deadline. These provisions do not protect deliberate withholding, concealment or unrelated breaches, waive independently arising third-party rights, or reinstate permissions already terminated for deliberate misconduct.
+Termination of one Licensee does not terminate independently compliant
+recipients or the Organisation's rights. Rights holders may pursue remedies
+available under applicable law; this Licence creates no automatic penalty or
+remedy beyond applicable law.
 
-### 14.5 Deliberate violations
+## 15. Independence, tokens and non-affiliation
 
-Deliberate evasion, material falsification of compliance evidence, intentional withholding of required Covered Modification source or repeated material noncompliance may result in termination of the responsible Licensee's applicable permissions.
+References to Internet Computer, ICP, cycles, governance, system canisters and
+protocol economics are technical and economic conditions. They do not imply
+sponsorship, endorsement, partnership or approval by a foundation, association,
+governance body, node provider or infrastructure provider.
 
-Reinstatement following termination for deliberate material misconduct requires express written authorisation from the relevant Copyright Holders.
+This Licence grants the Organisation no ownership of the Internet Computer,
+ICP, its governance or independently developed protocol software. A Qualifying
+ICP Burn transfers no token, governance or network ownership to the
+Organisation.
 
-### 14.6 Independent recipients
+No trademark or trade-name rights are granted.
 
-Termination of one Licensee's permissions does not automatically terminate the independent permissions of other recipients who remain compliant.
+## 16. Disclaimer and limitation of liability
 
-### 14.7 Remedies
+THE COVERED SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT
+WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, SECURITY, AVAILABILITY OR
+ACCURACY.
 
-Rights holders may pursue remedies available under applicable law.
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, NO COPYRIGHT HOLDER OR CONTRIBUTOR IS
+LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY OR PUNITIVE
+DAMAGES ARISING FROM THE COVERED SOFTWARE OR ITS USE.
 
-Nothing in this Licence creates an automatic monetary penalty or authorises remedies beyond those permitted by law.
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, NO COPYRIGHT HOLDER OR CONTRIBUTOR IS
+LIABLE FOR ANOTHER CLAIM, LOSS OR DAMAGE ARISING FROM THE COVERED SOFTWARE OR
+ITS USE, WHETHER IN CONTRACT, TORT OR OTHERWISE.
 
-## 15. Independence and Non-Affiliation
+NOTHING EXCLUDES OR LIMITS LIABILITY THAT APPLICABLE LAW DOES NOT PERMIT TO BE
+EXCLUDED OR LIMITED.
 
-References to the Internet Computer, ICP, cycles, governance systems, system canisters or protocol economics identify technical and economic conditions of this Licence.
+## 17. Interpretation, governing law and notices
 
-They do not imply sponsorship, endorsement, affiliation or approval by DFINITY, the Internet Computer Association, any governance organisation, network participant or infrastructure provider.
+### 17.1 Limited grant and essential conditions
 
-This Licence does not grant the Organisation ownership of the Internet Computer network, its governance, its token supply or independently developed protocol software.
+This Licence grants only rights expressly stated and legally authorised.
+Network eligibility, economic alignment, reciprocal source and preservation of
+the Organisation's rights are essential conditions. Invalidity of one condition
+must not be interpreted as affirmative permission for an otherwise unauthorised
+use except where applicable law requires it.
 
-No trademark rights are granted except by separate written permission.
+### 17.2 Severability and no waiver
 
-## 16. Disclaimer and Limitation of Liability
+If a provision is invalid or unenforceable, remaining provisions continue to
+the extent permitted by law. Delay or failure to enforce is not permanent
+waiver.
 
-THE COVERED SOFTWARE IS PROVIDED "AS IS" AND "AS AVAILABLE", WITHOUT WARRANTIES OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, SECURITY, AVAILABILITY OR ACCURACY.
+### 17.3 Versions
 
-TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, NO COPYRIGHT HOLDER OR CONTRIBUTOR SHALL BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, EXEMPLARY OR PUNITIVE DAMAGES ARISING FROM THE COVERED SOFTWARE OR ITS USE.
+Each numbered version is a separate legal instrument. A later version does not
+alter an earlier grant unless relevant Copyright Holders expressly offer that
+later version for the applicable material.
 
-TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, NO COPYRIGHT HOLDER OR CONTRIBUTOR SHALL BE LIABLE FOR OTHER CLAIMS, LOSSES OR DAMAGES ARISING FROM THE COVERED SOFTWARE OR ITS USE, WHETHER IN CONTRACT, TORT OR OTHERWISE.
+### 17.4 Governing law and forum
 
-NOTHING IN THIS SECTION EXCLUDES OR LIMITS LIABILITY THAT APPLICABLE LAW DOES NOT PERMIT TO BE EXCLUDED OR LIMITED.
+This Licence is governed by the laws of `{{GOVERNING_LAW_JURISDICTION}}`,
+excluding conflict-of-laws rules to the extent permitted.
 
-## 17. Interpretation, Governing Law and Severability
+Disputes are subject to `{{DISPUTE_FORUM_AND_VENUE}}`, subject to mandatory
+applicable law.
 
-### 17.1 Limited grant
+### 17.5 Notices
 
-This Licence grants rights only to the extent expressly stated and legally authorised.
+Formal notices to the Organisation under this Licence must be sent to Bayside
+Executive Park, Building 3, West Bay Street and Blake Road, Nassau, Bahamas,
+and legal@toko.ltd, or a replacement address published by the
+Organisation in a durable public record.
 
-It does not restrict statutory exceptions or other rights that applicable law does not permit a copyright licence to restrict.
+### 17.6 Entire public permission
 
-### 17.2 Severability
+This Licence states the public permissions for Covered Software. A separate
+written agreement issued by parties with sufficient authority may grant
+additional permissions to its identified recipient.
 
-If any provision is determined to be invalid or unenforceable, the remaining provisions remain effective to the extent permitted by applicable law.
+## 18. Resource Equivalence Schedule
 
-The limits on network eligibility, source reciprocity and economic funding are essential conditions of the operational grant.
+### 18.1 Application and measurement period
 
-Invalidity of one such provision must not be interpreted as affirmative permission for otherwise unauthorised uses, except where applicable law requires that result.
+This schedule is part of TSNL-1.0. It applies to each Accounting Period and to
+all material operational resource use covered by Sections 6 and 7. It must be
+applied to Canonical Internet Computer Production Operation wherever a
+resource is subsidised, bundled, free or not directly metered.
 
-### 17.3 No waiver
+### 18.2 Directly charged canonical resources
 
-Failure or delay in enforcing a provision does not constitute permanent waiver of that provision.
+For a resource directly charged by the Canonical Internet Computer, use the
+actual published canonical-mainnet cycle rate in effect when the resource was
+used for the closest reasonably comparable production subnet and workload.
+Actual cycle charges already funded through a Qualifying ICP Burn are not
+charged again.
 
-### 17.4 Licence versions
+### 18.3 Subsidised, free and unmetered resources
 
-Each numbered version of this Licence is a distinct legal instrument.
+A resource is not assigned a zero charge merely because it is subsidised,
+bundled, free to an end user, omitted from local accounting or not separately
+metered by the Canonical Internet Computer.
 
-Publication of a later version does not automatically alter permissions already granted under an earlier version.
+Query execution and comparable non-consensus execution must be measured by
+instructions, messages, bytes, memory, duration and other material consumption
+available to the operator. It must be priced using the closest charged execution
+class, adjusted only to remove resource functions demonstrably not performed.
+The same rule applies to free ingress, bundled bandwidth and any later free or
+subsidised resource class.
 
-A Licensee may rely on a later version only where the relevant Copyright Holders expressly make that later version available for the applicable material.
+Where no directly comparable charged class exists, use the lowest published
+combination of canonical rates that reasonably represents the resources actually
+consumed. An adjustment must be technically justified, contemporaneously
+documented and must not understate those resources.
 
-### 17.5 Governing law
+### 18.4 Included resource classes
 
-This Licence shall be governed by the laws of **[jurisdiction to be selected following legal review]**, excluding conflict-of-laws rules to the extent permitted.
+The calculation must include, where material: compute and instructions; memory
+and storage duration; ingress and egress bandwidth; inter-canister and external
+messages; HTTP outcalls; threshold cryptography and other system services;
+consensus and replication; reserved or committed capacity; and authoritative
+off-chain or sidecar resources included under Section 10.1.
 
-Disputes shall be subject to **[designated courts or dispute-resolution mechanism]**, subject to mandatory applicable law.
+An authoritative off-chain or sidecar resource must be converted to the closest
+canonical resource class by actual measured consumption. Its private hosting
+price, internal transfer price or absence of a bill does not determine the
+cycle charge.
 
-### 17.6 Entire permission
+### 18.5 Measurement gaps and conservative estimates
 
-This Licence states the public permissions offered for the Covered Software.
+Use actual tamper-evident measurements where reasonably available. If an exact
+measurement or mapping is unavailable, use a disclosed conservative upper-bound
+estimate derived from capacity, request limits, runtime observations or another
+independently reviewable input. Missing measurement created or tolerated by the
+Licensee or a Related Party must not reduce the charge.
 
-Separate written agreements issued by parties holding sufficient intellectual property rights may grant additional permissions to their expressly identified recipients.
+### 18.6 Aggregation and allocation
+
+Apply the schedule to the complete operational service in substance. Aggregate
+coordinated components, split workloads, deployment identifiers, Related Party
+operation and common-control infrastructure as required by Section 10.1.
+
+Allocations among services or Accounting Periods must be quantitative,
+consistent and independently reviewable. An allocation must not omit use, move
+it to a non-production label or count the same burn, retirement or funded cycle
+more than once.
+
+### 18.7 Rate and method changes
+
+Use rates effective when consumption occurs. If a canonical rate changes during
+an Accounting Period, apply the respective rates to the corresponding use or a
+documented weighted method that does not materially understate the result.
+
+Changes in method, classification, estimation or configuration must be versioned
+and disclosed with their effective dates and quantitative effect. A later method
+must not retrospectively reduce an earlier obligation.
+
+### 18.8 Fixed licence schedule
+
+No Licensee, provider or Organisation publication may unilaterally replace this
+schedule for Covered Software already offered under TSNL-1.0. A revised schedule
+applies only through a new licence version or an express offer by the applicable
+Copyright Holders under Section 2.12.
 
 ---
 
-**End of Toko Reciprocal Network Licence — Version 1.0**
+**End of Toko Studios Network Licence — Version 1.0**
 
-**Draft status: Not approved for publication.**
-
-Copyright © the respective Copyright Holders identified in the applicable licensed materials. All rights not expressly granted are reserved.
+Copyright © the respective Copyright Holders identified in the applicable
+Licensed Material. All rights not expressly granted are reserved.

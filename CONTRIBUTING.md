@@ -1,11 +1,26 @@
 # Contributing
 
-Toko Tooling accepts reusable engineering principles, portable developer
-tools, and CI building blocks for Dragginz Game repositories.
+Toko Tooling is developed by Toko Studios Limited. Contributions are accepted
+only from authorised Toko Studios personnel acting on the company's behalf.
+Outside contributions are not accepted, including code, patches, tests,
+documentation and assets. Repository access, organisation membership or a signed
+CLA alone does not make an outside contributor eligible.
+
+Company-authorised agents and automation may assist eligible personnel, who
+remain responsible for the contribution and its provenance. Do not merge,
+cherry-pick or copy an outside contribution through an internal account or bot.
+External dependencies remain subject to the separate dependency policy.
+
+Before accepting a contribution, verify company affiliation, authorisation and
+the company's rights to the submitted material. Hold acceptance if any of these
+is unverified. This policy does not assert ownership of earlier contributions.
+
+Bug reports and feature requests may be considered as feedback; they do not
+make an accompanying implementation eligible for acceptance.
 
 ## Pull requests
 
-People and agents normally contribute through a topic branch and pull request.
+Eligible personnel and their authorised agents may use a topic branch and pull request.
 Under the [contribution rules](rules/contributions.md), asking an agent to open
 a PR authorizes its scoped commits, branch push and PR creation. You do not need
 to commit on the agent's behalf. Direct pushes to the default branch, merges and

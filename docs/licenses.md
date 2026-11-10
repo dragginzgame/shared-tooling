@@ -13,85 +13,50 @@ remain separately licensed, and existing imports retain their terms and notices
 during an explicitly recorded migration or exception. Removing a notice is not
 a migration.
 
-## Proposed TSNL-1.1: legal and release review
+## TSNL-1.0: repository licence
 
-The [Toko Studios Network Licence 1.1 draft](../licenses/Toko-Studios-1.1.md)
-develops the earlier
-[Toko Reciprocal Network Licence 1.0 draft](../licenses/Toko-Studios-1.0.md).
-Toko Tooling selects TSNL-1.1 as its repository licence and carries the complete
-text in the root [LICENSE](../LICENSE), selected by Cargo's `license-file`.
-The switch is prepared locally; finalisation and publication remain pending the
-Section 17.4 governing-law and forum decision and the review below. The master
-text retains its draft status until then. TRNL-1.0 remains an unadopted draft.
-This selection does not relicense consumer repositories or external dependencies.
-The original MIT notice is preserved in the root licence for material already
-offered under MIT; that does not offer later additions under MIT.
-This checklist is review documentation, not part of either legal instrument.
+The [Toko Studios Network Licence 1.0](../licenses/Toko-Studios-1.0.md) is
+this repository's licence. Its complete text is included in the root
+[LICENSE](../LICENSE), selected by Cargo's `license-file`. The current text
+replaces the unpublished earlier draft; the working 1.1 text was renumbered
+1.0 before publication. There is no separately maintained 1.1 licence.
 
-The 1.1 draft permits compliant use on the canonical IC and on private,
-sovereign, government, enterprise or disconnected IC-based deployments that
-provide advance canonical-mainnet ICP burn coverage. Private deployments must
-cover 100% of canonical-equivalent operational resource charges, dedicate and
-retire the resulting cycles, and publish independently reviewable evidence. No
-separate infrastructure-value surcharge applies.
+The public grant permits production only on the canonical Internet Computer.
+Private, sovereign, enterprise, permissioned and disconnected IC-based networks,
+forks and other blockchains are excluded even if they burn ICP. Development,
+testing and genuine ancillary clients, CI and administration remain permitted.
+Toko Studios Limited retains its separate Section 11 rights to migrate and
+license the covered software on other networks. Those rights do not transfer
+automatically to public users or investors.
 
-The draft preserves Toko's separate licensing and freedom-to-operate rights and
-identifies Toko Studios Limited, IBC No. 1503915, as the Organisation. It does
-not implement holding-company, insolvency or founder-control protection.
+Canonical operation must satisfy the ICP-origin funding and evidence conditions.
+The existing supplemental resource coverage and Section 18 schedule still apply
+to subsidised, free or unmetered canonical resources. No private-network burn
+scheme creates production permission. Covered modifications distributed or used
+in production require public corresponding source; independent applications
+may remain proprietary. Publication does not require an official contribution.
 
-The selected source-reciprocity policy requires public Corresponding Source for
-Covered Modifications distributed or used in Production Operation, including
-internal business operation. Independent Applications may remain proprietary,
-private non-production modification alone does not trigger publication, and
-publication requires neither a pull request nor the Organisation's acceptance.
+This selection does not relicense consumers or external dependencies. The root
+licence preserves the original MIT notice for previously MIT-licensed material;
+that notice does not offer later additions under MIT.
 
-The fixed Section 18 Resource Equivalence Schedule addresses subsidised, free,
-bundled and unmetered production resources, including query execution. It also
-aggregates Related Parties, sidecars, authoritative off-chain stores and split
-deployments according to operational substance. Qualifying private burns require
-objectively verifiable cycle retirement with no recovery or economic benefit.
+## Outstanding legal and operational review
 
-The query treatment is deliberate: the current official
-[cycles overview](https://docs.internetcomputer.org/concepts/cycles/) and
-[cycle-cost table](https://docs.internetcomputer.org/references/cycle-costs/)
-describe query calls as free even though they consume node resources. Counsel
-must decide whether a private licence may and should impose this supplemental
-burn condition on canonical operation, and technical review must confirm that
-operators can measure it predictably.
+The licence no longer carries draft labels. Section 17.4 still contains explicit
+placeholders for governing law and dispute forum: neither has been selected.
+Monaco law and courts have been suggested, but not authorised as the final choice.
+Removing draft labels does not resolve those fields or establish enforceability.
 
-The draft conditions Production Operation on tamper-evident measurement,
-allocation, burn and retirement evidence. Missing data requires a conservative
-upper-bound estimate; provider assertions and screenshots alone are
-insufficient. Proportionate supporting-record requests and independent
-confidential audits are available for documented material compliance concerns.
+Before publication, complete those fields, verify copyright and patent authority,
+and validate funding, supplemental resource measurement, evidence and correction
+requirements against actual deployments. The licence identifies Toko Studios
+Limited, IBC No. 1503915; it does not itself establish ownership, contributor
+consent, holding-company arrangements or founder-control protection.
 
-Governing-law shortlist:
-
-- Laws of the Principality of Monaco, with disputes subject to the courts of
-  Monaco. This is a candidate only; counsel must confirm the appropriate court
-  wording, jurisdiction, service, conflict-of-laws treatment and enforcement
-  before replacing the draft placeholders.
-
-Before adoption:
-
-- Confirm the Organisation's exact registered identity and select governing law
-  and forum with counsel.
-- Verify employee, contractor and contributor copyright and patent authority for
-  every designated release. Company membership and repository access are not
-  evidence of assignment.
-- Establish the repository contribution-eligibility and signed-acceptance
-  process. The draft does not itself establish contributor consent.
-- Validate private-deployment resource classification, transferred credits,
-  pooled balances, measurement and funding evidence against real deployments.
-- Test Section 18 against free queries, later protocol subsidies, bundled
-  services, authoritative sidecars, off-chain storage and split Related Party
-  deployments.
-- Validate the mechanism for dedicating and irreversibly retiring cycles and
-  proving no sale, reuse or double counting without exposing protected data.
-- Confirm that evidence requests, confidential audits, cost allocation,
-  suspension and correction rules are enforceable and proportionate.
-- Preserve earlier public grants and independently licensed dependencies in
-  every publication artifact.
+Official [cycles documentation](https://docs.internetcomputer.org/concepts/cycles/)
+and [cycle costs](https://docs.internetcomputer.org/references/cycle-costs/)
+are operational references for this review. Confirm that the supplemental
+requirements can be measured and enforced, including for free queries.
 
 ## Proposed Toko Studios CLA 1.0
 

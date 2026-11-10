@@ -106,7 +106,10 @@ fixtures, docs and cleanup. Split independent outcomes, not compiler fallout or
 each proof of the same change. Stop at new independent scope or a release boundary.
 Maintain meaningful [changelog notes](https://github.com/dragginzgame/toko-tooling/blob/626da7cd9626cc2e152594862a2d82ea82ef51da/rules/changelogs.md) once per completed batch;
 governance-only edits need no note unless they change a maintained surface or one
-is requested. Report outcome, relevant evidence and actionable blockers.
+is requested. Legal and licensing changes must never appear in changelogs;
+keep them in their authoritative legal documents. This exclusion overrides
+general changelog coverage and fixed-issue-link requirements.
+Report outcome, relevant evidence and actionable blockers.
 Detailed line metrics and symbol inventories are optional under the
 [reporting rules](https://github.com/dragginzgame/toko-tooling/blob/626da7cd9626cc2e152594862a2d82ea82ef51da/rules/change-reporting.md), not a routine completion step.
 See [contract-change details](https://github.com/dragginzgame/toko-tooling/blob/626da7cd9626cc2e152594862a2d82ea82ef51da/rules/engineering-details.md#complete-reviewable-changes)
@@ -343,7 +346,8 @@ for exceptions, historical cleanup and protected release/recovery records.
 
 Use IcyDB-style emoji category sections in the owning release changelog; read the
 [changelog rules](https://github.com/dragginzgame/toko-tooling/blob/626da7cd9626cc2e152594862a2d82ea82ef51da/rules/changelogs.md) when updating them. Every issue fixed must
-have a direct link in that changelog before handoff: root `CHANGELOG.md` for a
+have a direct link in that changelog before handoff, except legal and licensing
+changes, which are excluded from all changelogs: root `CHANGELOG.md` for a
 workspace without independent release groups, or `releases/<group>/CHANGELOG.md`
 for the owning group. A grouped workspace's root remains a navigation index;
 it does not need duplicate issue links. Preserve selected

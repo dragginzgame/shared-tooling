@@ -8,6 +8,14 @@ this contract; the [release contract](../docs/releases.md) owns release executio
 
 ## Content and writing
 
+- Never record legal or licensing changes in any changelog, including root,
+  package, release-group and archived or detailed changelogs. This includes
+  licence adoption, terms, drafts, notices, contributor agreements, legal
+  contribution eligibility, rights ownership and legal audits. Keep these in
+  their authoritative legal documents instead. This exclusion overrides the
+  usual meaningful-change, breaking-change and fixed-issue-link requirements;
+  do not add a changelog entry merely to describe this policy or such cleanup.
+  It does not authorise removing legal notices, required provenance or Git history.
 - Root `CHANGELOG.md` is the concise release ledger for a single release group.
   Independently versioned groups use the
   [group ledger and history rules](#release-group-changelogs-and-shared-history)

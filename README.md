@@ -220,6 +220,8 @@ records earlier extractions rather than defining today's ownership.
 ## Contributing and validation
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) and this repository's [AGENTS.md](AGENTS.md).
+Only authorised Toko Studios personnel may contribute; outside contributions
+are not accepted.
 Prepare [Shared's pinned compiler](docs/local-setup.md#toko-toolings-own-compiler)
 before installing Cargo tools. For ordinary changes, select the affected
 fixtures and checks; documentation-only changes use `make check-doc-links` and
@@ -232,9 +234,9 @@ release identity. Releases and recovery follow the [release contract](docs/relea
 
 ## Licence
 
-Toko Tooling selects the [Toko Studios Network Licence 1.1](LICENSE)
-(TSNL-1.1), a source-available licence. Finalisation remains pending the
-governing-law and forum decision; the text retains its legal-review status.
+Toko Tooling selects the [Toko Studios Network Licence 1.0](LICENSE)
+(TSNL-1.0), a source-available licence for canonical IC production use, with
+separate migration rights reserved to Toko Studios.
 Earlier MIT grants remain available for material previously released under MIT;
 the original notice is preserved in `LICENSE`. See
 [the licensing guide](docs/licenses.md) for scope and outstanding review.
