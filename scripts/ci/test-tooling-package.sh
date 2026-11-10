@@ -16,7 +16,7 @@ version="$(perl "$ROOT/scripts/ci/shared-package-version.pl" "$ROOT/Cargo.toml")
 archive="$ROOT/target/package/toko-tooling-$version.crate"
 checksum="$(bash "$ROOT/scripts/ci/verify-file-checksum.sh" --print sha256 "$archive")"
 perl "$ROOT/scripts/distribution/registry-package.pl" extract "$archive" "$checksum" "$version" "$fixture/package"
-for path in make/consumer.mk scripts/dev/toko-tooling.sh .github/actions/cache-tool-downloads/action.yml licenses/MIT.txt ci/tool-versions.env; do
+for path in make/consumer.mk scripts/dev/toko-tooling.sh .github/actions/cache-tool-downloads/action.yml LICENSE.md ci/tool-versions.env; do
     [[ -f "$fixture/package/$path" ]] || { echo "missing published tooling file: $path" >&2; exit 1; }
 done
 [[ ! -e "$fixture/package/ci/frontend/node_modules" && ! -e "$fixture/package/docs/code-review" ]]

@@ -236,9 +236,9 @@ release identity. Releases and recovery follow the [release contract](docs/relea
 
 ## Licence
 
-Toko Tooling selects the [Toko Studios Network Licence 1.0](LICENSE)
-(TSNL-1.0), a source-available licence for canonical IC production use, with
-separate migration rights reserved to Toko Studios.
-Earlier MIT grants remain available for material previously released under MIT;
-the original notice is preserved in `LICENSE`. See
-[the licensing guide](docs/licenses.md) for scope and outstanding review.
+Except where a file or notice states otherwise, material in this repository is
+offered by each applicable Copyright Holder, to the extent of that holder's
+authority, under the [Toko Studios Network Licence 1.0](LICENSE.md). Third-party
+material and material previously released under an earlier public grant retain
+their applicable terms. See
+[the licensing guide](docs/licenses.md).

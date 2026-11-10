@@ -5,7 +5,7 @@ Make interfaces, CI actions, catalogs, rules, licenses and guides. Its empty
 Rust library is dependency-free and `no_std`, with no build script.
 
 The package selects the Toko Studios Network Licence 1.0 (TSNL-1.0), provided
-in its `LICENSE` file together with the preserved notice for previously
+in its `LICENSE.md` file together with the preserved notice for previously
 MIT-licensed material. This source-available licence permits canonical IC production use and
 preserves Toko Studios' separate migration rights. See
 [the licensing guide](https://github.com/dragginzgame/toko-tooling/blob/main/docs/licenses.md).

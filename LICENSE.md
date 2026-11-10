@@ -13,7 +13,8 @@
 
 **Licence notice email:** legal@toko.ltd
 
-**Status:** Adopted repository source-available software licence.
+**Status:** Adopted unified source-available software licence, effective
+10 November 2026.
 
 **Licence identifier:** TSNL-1.0
 
@@ -1024,10 +1025,11 @@ later version for the applicable material.
 
 ### 17.4 Governing law and forum
 
-This Licence is governed by the laws of `{{GOVERNING_LAW_JURISDICTION}}`,
-excluding conflict-of-laws rules to the extent permitted.
+This Licence is governed by the laws of the Principality of Monaco, excluding
+conflict-of-laws rules to the extent permitted.
 
-Disputes are subject to `{{DISPUTE_FORUM_AND_VENUE}}`, subject to mandatory
+The competent courts of the Principality of Monaco have exclusive jurisdiction
+over disputes arising out of or relating to this Licence, subject to mandatory
 applicable law.
 
 ### 17.5 Notices
@@ -1130,6 +1132,8 @@ Copyright Holders under Section 2.12.
 ---
 
 **End of Toko Studios Network Licence — Version 1.0**
+
+**Adopted by Toko Studios Limited on 10 November 2026.**
 
 Copyright © the respective Copyright Holders identified in the applicable
 Licensed Material. All rights not expressly granted are reserved.

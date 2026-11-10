@@ -9,7 +9,7 @@
   snapshot entrypoint paths when adopting this layout; directory link checks
   now include nested guides.
 - **Licence:** This release uses the Toko Studios Network Licence 1.0. See
-  [LICENSE](LICENSE) for its terms. Earlier grants remain unchanged.
+  [LICENSE.md](LICENSE.md) for its terms. Earlier grants remain unchanged.
 
 - **Breaking:** `make/consumer.mk` exposes shared release and empty-source cleanup
   targets only with `TOKO_TOOLING_RELEASE := 1`. Existing shared-release consumers

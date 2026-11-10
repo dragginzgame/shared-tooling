@@ -3,17 +3,17 @@ name = "toko-tooling"
 version = "0.39.0"
 edition = "2024"
 rust-version = "1.99.1"
-license-file = "LICENSE"
+license-file = "LICENSE.md"
 description = "Shared development tools, CI helpers and engineering rules for Dragginzgame"
 repository = "https://github.com/dragginzgame/toko-tooling"
 publish = ["crates-io"]
 readme = "docs/toko-tooling.md"
 include = [
     "/src/**", "/scripts/**", "/make/**", "/ci/**", "/docs/**",
-    "/rules/**", "/tasks/**", "/audits/**", "/licenses/**",
+    "/rules/**", "/tasks/**", "/audits/**", "/licenses/**", "/LICENSE.md",
     "/.github/**", "/.githooks/**", "/Makefile", "/rust-toolchain.toml",
     "/AGENTS.md", "/TOKO-TOOLING.md", "/CONTRIBUTING.md", "/README.md",
-    "/CHANGELOG.md", "/LICENSE", "!/ci/frontend/node_modules/**",
+    "/CHANGELOG.md", "!/ci/frontend/node_modules/**",
     "!/docs/code-review/**",
 ]
 
