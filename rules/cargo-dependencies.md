@@ -313,6 +313,10 @@ availability is separate evidence; a cached offline build or a `version` beside
   unchanged consumers. Raise minimums when the delivered contract actually needs
   the newer fix/capability, and qualify that requirement. This does not relax the
   exact current-version catalog rule for local workspace members.
+  Deferring adoption does not defer the baseline's
+  [freshness review](../TOKO-TOOLING.md#current-dependencies-and-upstream-independence):
+  review first-party qualification/tool suppliers too, and give newer releases
+  an explicit disposition. Declaration and pin checks do not establish freshness.
 - Release/deployment preparation for an already selected graph uses
   `cargo fetch --locked` before dependent builds or checks. That preparation is
   included in the authorized release/deployment workflow. A plain deployment

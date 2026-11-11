@@ -57,7 +57,7 @@ export RELEASE_TEST_EVENTS="$fixture/include-events"
 # Minimal snapshots need a usable remote guide in retired-setting diagnostics.
 if make --no-print-directory -C "$fixture/included" release-patch RELEASE_FROZEN_GROUPS=old \
     > "$fixture/retired-settings.log" 2>&1; then exit 1; fi
-grep -Eq 'https://github.com/dragginzgame/toko-tooling/blob/[0-9a-f]{40}/docs/release-batches.md' \
+grep -Eq 'https://github.com/dragginzgame/toko-tooling/blob/[0-9a-f]{40}/docs/releases/release-batches.md' \
     "$fixture/retired-settings.log"
 [[ ! -e "$RELEASE_TEST_EVENTS" ]] || exit 1
 make --no-print-directory -C "$fixture/included" release-patch

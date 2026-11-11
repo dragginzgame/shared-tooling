@@ -104,7 +104,8 @@ jobs:
             --redact=100 \
             --no-banner \
             --no-color \
-            --log-level error \
+            --verbose \
+            --log-level warn \
             "$GITHUB_WORKSPACE"
 
   portable-regression:

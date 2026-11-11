@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.39.12] - Unreleased
+
+### 🐛 Fixed
+
+- Correct the release fixture's relocated guide path and historical Mermaid
+  secret-scan exceptions. Show redacted findings when the CI secret scan fails.
+
+- Require explicit supplier freshness reviews and dispositions, including native
+  tools and qualification workspaces; extend dependency maintenance to detect
+  newer releases outside existing version requirements.
+
 ## [0.39.11] - 2026-11-11
 
 ### 🐛 Fixed

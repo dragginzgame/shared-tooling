@@ -1,4 +1,4 @@
-# Dependency advisory review
+# Dependency advisory and freshness review
 <!-- Shared companions: rules/engineering-details.md -->
 
 Apply the [common run contract](README.md). This initial task covers Rust
@@ -22,6 +22,25 @@ target/feature reachability, available correction and any reviewed exemption.
 Distinguish an advisory match from proven exploitability, and audit completion
 from current-feed coverage. Do not upgrade packages, edit exemptions or refresh
 lockfiles as part of the check.
+
+## Supplier freshness
+
+Also apply the baseline's [dependency freshness rule](../TOKO-TOOLING.md#current-dependencies-and-upstream-independence).
+Inventory direct normal, build, dev, optional and target-specific dependencies
+across product and maintained qualification/fixture workspaces. Resolve renamed
+packages through Cargo metadata; compare actual lock selections as well as
+requirements. Observe current stable, non-yanked registry versions outside the
+declared range too. Do not use `cargo update` for this read-only review.
+
+Report supplier, consumer workspace/role, requirement, locked version, latest
+published version and observation time. Distinguish direct selections from
+upstream-only transitive versions, compatible minimums from stale locks, and
+path candidates from published releases. Check existing adoption work and
+approved holds before recommending changes. Each newer selection needs an
+explicit adoption, bounded deferral or approved blocker disposition; an old
+passing qualification suite is not a freshness decision. Missing registry or
+graph evidence is incomplete coverage. Do not infer compatibility or upgrade
+siblings from version distance alone.
 
 ## Remediation ownership
 

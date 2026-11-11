@@ -179,7 +179,14 @@ dependency path or contract; do not expand a scoped update into unrelated
 package refreshes. Within the selected update scope, use the baseline's latest
 stable selection rule and document any required older-version exception.
 
-Optional refreshes are deferred by default and batched with requested maintenance
+Apply the baseline's [freshness review](../../TOKO-TOOLING.md#current-dependencies-and-upstream-independence)
+before treating retained suppliers as current. Pin checks, successful resolution
+and passing qualification establish different facts; none discovers newer
+releases outside the selected requirement. Include independent qualification and
+native tool suppliers, not just deployed dependencies. A reviewed frozen graph
+is reproducible, not permanently exempt from this review.
+
+Optional refreshes are explicitly deferred and batched with requested maintenance
 or a natural release boundary. Do not start an update-everything pass because a
 supplier published another version. Keep compatible minimum requirements where
 they still describe the supported contract; a newer tested lock selection does

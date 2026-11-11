@@ -7,6 +7,16 @@ Consumers use their local release adapter and validation gate. Toko Tooling's ow
 gate is `make release-basic`; its long regression suite stays in CI. Read the
 authorization and version-selection contract below before delivery.
 
+Before freezing candidate inputs, perform the baseline's
+[first-party supplier freshness review](../../TOKO-TOOLING.md#current-dependencies-and-upstream-independence)
+for the release's product and required qualification graphs. Include native
+testing/build tools and independent locks. Report newer published selections
+and their adoption, bounded deferral or approved hold in the existing release
+notes; passing pin checks and tests do not establish freshness. This review does
+not authorize upgrading dependencies during a deployment or replaying supplier
+test suites. Reuse the observation within the same preparation batch while its
+inputs remain unchanged; do not add network lookups to every build or pin check.
+
 | Need | Read |
 | --- | --- |
 | Release an existing consumer | [Required workflow](#required-workflow) |

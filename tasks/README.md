@@ -17,7 +17,7 @@ without `.md`; people and agents use the same definitions.
 | [cargo-tool-versions](cargo-tool-versions.md) | Are pinned and installed Cargo tools current with stable registry releases? | Every 3 days |
 | [ci-health](ci-health.md) | Which CI failures, persistent queues or repeated gates need attention? | Every 3 days |
 | [snapshot-drift](snapshot-drift.md) | Are shared snapshots intact and relevant fixes adopted? | Every 3 days |
-| [dependency-security](dependency-security.md) | Does the selected dependency graph have new advisories? | Every 3 days |
+| [dependency-security](dependency-security.md) | Are dependencies advisory-free, and have newer supplier releases been reviewed? | Every 3 days |
 | [readme-freshness](readme-freshness.md) | Do maintained README claims and examples match their owners? | Every 3 days |
 | [code-audit](code-audit.md) | What concrete correctness or complexity problems exist in one selected area? | Rotate one audit per pass |
 | [tooling-duplication](tooling-duplication.md) | Are shared capabilities wired correctly, and which local tooling can be consolidated? | Alternate with code-audit |
