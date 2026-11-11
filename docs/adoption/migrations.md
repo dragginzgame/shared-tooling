@@ -26,6 +26,37 @@ library's relative links: those links are resolved in the upstream repository.
 Check local Markdown links in the resulting consumer, alongside receipt integrity;
 the receipt verifier checks owned bytes, not arbitrary documentation links.
 
+For that selection, run this from the consumer root after selecting and locking
+the reviewed tooling crate:
+
+```bash
+bash scripts/dev/toko-tooling.sh update --preview \
+  --entrypoint make/consumer.mk \
+  --entrypoint TOKO-TOOLING.md \
+  --entrypoint scripts/ci/verify-file-checksum.sh \
+  --entrypoint .githooks/pre-commit
+```
+
+After reviewing the retirements, repeat the same command with `--snapshot-only`
+instead of `--preview`, then run `make toko-tooling-check` and affected consumer
+checks. Include any additional executable entrypoints the consumer actually uses
+in both commands. This is a complete replacement selection, not an addition.
+
+Plain `make toko-tooling-preview` and `make toko-tooling-update` reuse recorded
+entrypoints. If those still include `rules/cargo-dependencies.md`, its declared
+companions bring back `rules/engineering-details.md`, contributions, tasks and
+audits. “Required” means required by the selected roots; it does not mean those
+documents are mandatory for every consumer. Remove the reference roots from the
+selection, not their derived records from the receipt. The exporter preserves
+canonical bytes rather than rewriting Markdown links in exported copies.
+
+Consumers retaining their own release commands leave `TOKO_TOOLING_RELEASE`
+unset (the default is `0`). The shared Make include then provides tooling and
+formatting without activating shared release targets. Installed release helper
+files do not enable those targets or override the consumer's local release
+authority. The common contribution rules describe authorization, not which
+release implementation a consumer has enabled.
+
 ## Documentation organisation clarification in 0.39.4
 
 Every repository should organise product-owned docs by meaningful topic. That

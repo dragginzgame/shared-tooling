@@ -50,7 +50,7 @@ reports require explicit selection.
 | `tools-report` | Aggregate existing offline checks and retain all failures | Same ordered local check targets; no setup or release admission |
 | `fmt`, `fmt-check`, `format-tools-check` | Prerequisite check, compact output, retained failure logs | Cargo environment and complete custom formatter commands when needed |
 | `install-hooks` | Safe repository-local activation | Tracked root `.githooks/pre-commit` and its companions |
-| `toko-tooling-status`, `toko-tooling-update`, `toko-tooling-install` | Report installed/locked registry identities; update Cargo selection or install the locked crate, then install/check tools | Optional `TOKO_TOOLING_VERSION` for update, `TOKO_TOOLING_MANIFEST`; `TOKO_TOOLING_SOURCE` only for one-time Git migration proof |
+| `toko-tooling-status`, `toko-tooling-update`, `toko-tooling-install` | Report installed/locked registry identities; install the existing Cargo.lock selection, then install/check tools | Optional `TOKO_TOOLING_VERSION` assertion matching the lock, `TOKO_TOOLING_MANIFEST`; `TOKO_TOOLING_SOURCE` only for one-time Git migration proof |
 | `toko-tooling-check` | Offline snapshot integrity and Cargo selection agreement | `TOKO_TOOLING_MANIFEST`, default `.toko-tooling.snapshot` |
 | `toko-tooling-preview` | Preview the selected crate refresh without changing consumer files or tools | `TOKO_TOOLING_MANIFEST`, optional `TOKO_TOOLING_SOURCE` |
 | `cloc` | Workspace report | Optional report/manifest selection |
@@ -297,7 +297,7 @@ recipe warnings rather than filtering them from every invocation.
 1. Refresh the [recorded snapshot](consuming-snapshots.md), selecting
    `make/consumer.mk` as an entrypoint. The exporter derives its companion closure;
    preview reports all additions, updates and automatic retirements. Include other
-   locally used commands and governance roots; this entrypoint is not their inventory.
+   locally used executable roots and the baseline; read reference docs online; this entrypoint is not their inventory.
 2. Replace the separate shared includes and equivalent local hook/snapshot-check
    recipes. Retain stronger prerequisites, target environment and extra snapshot
    checks. `TOKO_TOOLING_MANIFEST` names one manifest; additional bundles remain

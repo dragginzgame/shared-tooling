@@ -1,6 +1,6 @@
 # Toko stack dependency overview
 
-The [README diagram](../../README.md#toko-stack) is a compact application and library
+The [overview diagram](overview.md) is a compact application and library
 overview. The expandable [full package graph](#full-package-graph) below retains
 individual first-party crates and npm packages, including dependencies within
 one workspace and selected packages not yet used by either application.
@@ -39,15 +39,15 @@ its final published 0.80.0 release and
 remain history, outside the active inventory. The catalog already discovers
 active workspace members; no retired package override is needed.
 
-## README overview
+## Compact overview
 
 The catalog's `overview` crate list selects the library entry points worth showing
-on the README. Each application workspace becomes one rounded node. Other
+on the overview page. Each application workspace becomes one rounded node. Other
 internal crates are traversed to the next displayed dependency; an arrow can
 therefore represent several real declaration steps. A crate never acquires an
 unrelated sibling's dependencies. Browser packages and native tooling are shown
 only in the full graph. Review this list when adding a new application capability;
-new helper crates do not automatically expand the README. Custom catalogs without
+new helper crates do not automatically expand the overview page. Custom catalogs without
 an `overview` list show all selected non-native Rust crates.
 
 The compact overview follows only unconditional normal declarations between
@@ -120,7 +120,7 @@ The command uses Perl core modules and `cargo metadata --no-deps --offline
 --locked`. It keeps the caller's prepared toolchain and Cargo configuration;
 it neither builds nor edits siblings. Prepare the compiler first, as required
 above, so invoking Cargo does not trigger Rustup toolchain installation.
-It updates only the marked blocks in the README and this document after every
+It updates only the marked blocks in the [overview](overview.md) and this document after every
 catalogued workspace has been read successfully. Missing checkouts, invalid
 metadata and ambiguous package owners fail rather than producing a partial graph.
 `--check` is read-only. Review and commit both outputs together after meaningful

@@ -398,7 +398,7 @@ $details .= "\nSelected packages without a normal-dependency path from the appli
     . join(', ', map { "`$nodes{$_}{name}`" } @outside) . ".\n" if @outside;
 
 my @updates;
-for my $selection (['README.md', $overview_diagram], ['docs/fleet/stack.md', $details]) {
+for my $selection (['docs/fleet/overview.md', $overview_diagram], ['docs/fleet/stack.md', $details]) {
     my ($relative, $generated) = @$selection;
     my $file = "$output_root/$relative";
     die "Refusing symlink output: $file\n" if -l $file;

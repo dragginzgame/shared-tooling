@@ -5,8 +5,44 @@ CI and release behavior must not depend on a sibling checkout, a moving Git
 branch, or network availability. Consumers vendor a reviewed file set and
 record its exact Toko Tooling source revision.
 
+## Start here
+
+For a Rust consumer, use this sequence. Select a published, reviewed release;
+the `0.39.9` examples below are a concrete selection, not a latest-version alias.
+
+1. Add the root pin and each member's inherited dev-dependency and cargo-machete
+   exemption under [Cargo selection](#cargo-selection-and-installation). Update
+   each maintained workspace's lock with `cargo update -p toko-tooling`.
+2. For first installation, prepare the [prerequisites](local-setup.md) and use
+   `scripts/dev/toko-tooling.sh` from a reviewed producer checkout or authenticated
+   crate extraction. Run `install --consumer "$PWD" --preview` with the complete
+   selection: `--entrypoint TOKO-TOOLING.md --entrypoint make/consumer.mk`, plus
+   `--entrypoint .githooks/pre-commit` if using the hook. Read the preview before
+   repeating without `--preview`, using `--snapshot-only` to separate installation
+   from tool setup. See [initial snapshot](#initial-snapshot) for archive admission.
+3. Include `make/consumer.mk` in the consumer Makefile with its explicit local
+   inputs, following the [Make interface](make-interface.md). Run
+   `make install-tools`, `make tools-check` and `make toko-tooling-check`.
+   Installing the hook separately requires `make install-hooks`.
+4. For later updates, edit the root pin, run `cargo update -p toko-tooling`, then
+   `make toko-tooling-preview` and `make toko-tooling-update`. These Make commands
+   install the locked selection; they do not choose a version or edit Cargo.lock.
+   To retire copied docs, use the complete selection described under
+   [small baseline snapshots](#small-baseline-snapshots).
+5. Run the affected consumer checks and review the pin, locks, receipt and owned
+   file changes together. See [consumer qualification](#consumer-qualification-selection).
+
+| Task | Section |
+| --- | --- |
+| Inspect update scope or retire exports | [Upgrade impact](#upgrade-impact), [refresh](#refresh) |
+| Check installed bytes | [Drift verification](#drift-verification) |
+| Adopt policy and local exceptions | [Baseline and local instructions](#shared-baseline-and-local-instructions) |
+| Select product checks | [Consumer qualification](#consumer-qualification-selection) |
+| Configure optional tools | [IC tool adoption](#local-ic-tool-adoption), [dependency boundaries](#cargo-dependency-boundaries) |
+
 ## Related guides
 
+- [Online reference documentation in 0.39.5](migrations.md#online-reference-documentation-in-0395)
 - [Documentation paths in 0.39.0](migrations.md#documentation-paths-in-0390)
 - [Consumer Make changes in 0.39.0](migrations.md#consumer-make-changes-in-0390)
 - [Baseline filename migration in 0.37.0](migrations.md#baseline-filename-migration-in-0370)
@@ -66,7 +102,7 @@ newer available releases. Declare the exact version once in root `Cargo.toml`:
 
 ```toml
 [workspace.dependencies]
-toko-tooling = "=0.36.0"
+toko-tooling = "=0.39.9"
 ```
 
 Every real workspace package, including a root package and private/test packages,
@@ -83,7 +119,7 @@ ignored = ["toko-tooling"]
 Merge the cargo-machete exemption with existing entries: the dependency supplies
 installed source tooling, not imported Rust APIs. Do not add an artificial Rust
 import. Do not create a package to hold this dependency. A standalone package
-without `[workspace]` declares `toko-tooling = "=0.36.0"` directly in its root
+without `[workspace]` declares `toko-tooling = "=0.39.9"` directly in its root
 `[dev-dependencies]`, with the same exemption. The producer `toko-tooling` itself
 is exempt from consuming its own package; it validates the packaged payload.
 

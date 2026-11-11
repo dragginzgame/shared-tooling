@@ -67,10 +67,20 @@ if [[ "$consumer_only" == true ]]; then
     for path in make/consumer.mk TOKO-TOOLING.md scripts/ci/verify-file-checksum.sh .githooks/pre-commit; do
         arguments+=(--entrypoint "$path")
     done
+    bash "$source_fixture/scripts/distribution/refresh-consumer.sh" --preview "${arguments[@]}" > "$fixture/retirement-preview.log" 2>&1
+    grep -Fq $'REMOVE\tobsolete\trules/contributions.md' "$fixture/retirement-preview.log"
+    grep -Fq $'REMOVE\tobsolete\ttasks/README.md' "$fixture/retirement-preview.log"
+    [[ -f "$consumer/rules/contributions.md" && -f "$consumer/tasks/README.md" ]]
     bash "$source_fixture/scripts/distribution/refresh-consumer.sh" "${arguments[@]}" > "$fixture/retirement.log" 2>&1
     [[ ! -e "$consumer/rules/git-hooks.md" && ! -e "$consumer/rules/cargo-dependencies.md" ]]
     [[ -f "$consumer/docs/product.md" && -f "$consumer/.githooks/pre-commit" ]]
+    # The baseline is the only owned Markdown in this executable selection.
+    [[ "$(awk -F '\t' '$1 == "file" && $4 ~ /[.]md$/ {print $4}' "$consumer/.toko-tooling.snapshot")" == TOKO-TOOLING.md ]]
     check_exported_docs "$consumer"
+    printf 'include make/consumer.mk\n.PHONY: patch\npatch:\n\t@echo consumer-release\n' > "$consumer/Makefile"
+    make -C "$consumer" patch > "$fixture/local-release.log" 2>&1
+    grep -Fq consumer-release "$fixture/local-release.log"
+    if make -C "$consumer" -n release-patch > "$fixture/shared-release.log" 2>&1; then exit 1; fi
     # Both refusal routes must work without a vendored guide and name the same
     # immutable online migration instructions before any release effects.
     printf 'TOKO_TOOLING_RELEASE := 1\ninclude make/consumer.mk\n' > "$consumer/Makefile"

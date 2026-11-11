@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.39.10] - Unreleased
+
+### 🐛 Fixed
+
+- Correct adoption, version-preparation and validation instructions; move the
+  generated stack overview out of the root README and improve guide navigation.
+
+- Document the complete entrypoint replacement needed to retire reference docs
+  from existing snapshots. Verify previewed retirements and consumer-owned release
+  commands with shared releases disabled ([#376](https://github.com/dragginzgame/toko-tooling/issues/376)).
+
+- Admit the reviewed Platform Digest 0.10 trait adapter for SHA-2 0.11 under
+  exact owner/version/feature constraints. Keep other crypto dependencies and
+  build/dev/target declarations subject to review; consumer policies may tighten
+  the exception.
+
 ## [0.39.9] - 2026-11-10
 
 ### 🐛 Fixed

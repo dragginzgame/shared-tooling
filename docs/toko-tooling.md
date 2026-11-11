@@ -4,17 +4,15 @@ The actual source distribution of Dragginzgame development tooling: scripts,
 Make interfaces, CI actions, catalogs, rules, licenses and guides. Its empty
 Rust library is dependency-free and `no_std`, with no build script.
 
-The package selects the Toko Studios Network Licence 1.0 (TSNL-1.0), provided
-in its `LICENSE.md` file together with the preserved notice for previously
-MIT-licensed material. This source-available licence permits canonical IC production use and
-preserves Toko Studios' separate migration rights. See
+The package's authoritative licence is provided in `LICENSE.md`. See
 [the licensing guide](https://github.com/dragginzgame/toko-tooling/blob/main/docs/licenses.md).
 
-Select an exact release once in repository-root Cargo.toml:
+Select an exact reviewed release once in repository-root Cargo.toml. The
+example below uses published 0.39.9; it is not an automatic latest-version selector:
 
 ```toml
 [workspace.dependencies]
-toko-tooling = "=0.36.0"
+toko-tooling = "=0.39.9"
 ```
 
 Every real workspace package inherits it as a dev-dependency:

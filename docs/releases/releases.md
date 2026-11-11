@@ -1,6 +1,24 @@
 # Common release commands
 <!-- Shared companions: docs/releases/cargo-publication.md docs/releases/release-batches.md docs/releases/release-group-validation.md docs/releases/release-validation-reuse.md rules/contributions.md rules/rust-workspaces.md scripts/ci/check-release-source.sh rules/engineering-details.md -->
 
+## Choose your workflow
+
+Consumers use their local release adapter and validation gate. Toko Tooling's own
+gate is `make release-basic`; its long regression suite stays in CI. Read the
+authorization and version-selection contract below before delivery.
+
+| Need | Read |
+| --- | --- |
+| Release an existing consumer | [Required workflow](#required-workflow) |
+| Decide whether changed packages need publishing | [Publication decision](#decide-whether-publication-is-needed) |
+| Release selected product groups | [Frozen batches](release-batches.md) |
+| Deliver through a pull request | [PR delivery](#pr-delivery) |
+| Recover a specific interrupted attempt | [Authority and recovery](#authority-and-recovery) |
+| Implement or qualify a release adapter | [Makefile example](#makefile-example), [adoption and verification](#adoption-and-verification) |
+| Maintain metadata machinery | [Candidate rendering](#cargo-release-candidate-rendering), [metadata adapter](#coordinated-cargo-metadata-adapter), [preparation helpers](#reusing-metadata-preparation-and-evidence-custody) |
+
+## Release contract
+
 Grouped increment commands use [frozen release batches](release-batches.md) by
 default: `RELEASE_GROUP=engine` captures that group automatically, so
 normal-checkout `cargo update` writes affect the next release, not active delivery.

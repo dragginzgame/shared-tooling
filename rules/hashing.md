@@ -44,6 +44,14 @@ The existing Cargo boundary check with `--external-ic` loads
 general crypto packages, including aliases, optional, target, build and dev
 dependencies. Consumer allowlists cannot relax that common decision, including
 inside Platform. Approved packages still obey stricter consumer ownership rules.
+The reviewed adapter inventory admits Platform’s optional, portable, normal
+`digest` ^0.10.7 dependency with defaults and extra features disabled. It only
+forwards the external BLS curve’s Digest interface into the approved SHA-2 0.11
+provider; it introduces no algorithm. The 2026-11-11 maintainer approval includes
+independent byte/admission comparisons and installed BLS/certificate checks.
+Other owners, versions, build/dev/target edges and consumer relaxations remain
+refused; stricter consumer rules still apply.
+
 Transitive packages used by TLS, signature implementations or upstream protocols
 are not automatically violations and do not require replacement with SHA-256.
 

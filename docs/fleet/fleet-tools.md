@@ -262,7 +262,7 @@ their optional schedule live in the [task catalog](../../tasks/README.md).
 
 ## Stack dependency overview
 
-The [README diagram](../../README.md#toko-stack) and [manifest evidence](stack.md)
+The [overview diagram](overview.md) and [manifest evidence](stack.md)
 have a separate deterministic daily local refresher. It reads existing checkouts
 and leaves generated documentation changes for the next commit; it does not
 launch an agent, stage files or fetch upstream changes.

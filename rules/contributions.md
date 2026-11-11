@@ -6,7 +6,7 @@ Direct local edits are the default; requested or required review contributions
 use a topic branch and PR. Human contributors use their normal repository/fork
 permissions. The agent authority below does not restrict that human workflow.
 
-Use the unmodified canonical root `CONTRIBUTING.md` and `LICENSE.md` under the
+Use the canonical contribution and applicable licence files under the
 baseline's [canonical-file policy](../TOKO-TOOLING.md#canonical-licence-and-contribution-policy).
 Keep repository-specific engineering guidance in the local overlay or its linked
 guides, and signed agreements and legal reviews outside the repository.
@@ -44,13 +44,14 @@ agreement does not establish acceptance or configure fleet-wide signing checks.
 **Prefer direct edits in the normal authorized checkout when a PR is optional.**
 Ordinary fixes end with reviewable working-tree changes, focused checks and
 [pending notes](changelogs.md#automatic-next-version-selection). Toko Tooling
-also prepares its local `VERSION`; other package versions remain unchanged.
+also aligns root `Cargo.toml` package.version and the pending changelog entry
+through `make prepare-work`; other repositories' package versions remain unchanged.
 Use a PR when requested or required by the authorized delivery workflow or branch
 protections. Optional hosted CI is not a reason to add a PR or approval round.
 
 The [authorization table](#agent-authorization) defines Git and release effects.
 Inspect wrappers and Make targets for those effects before running them.
-Beyond the pending notes and Toko Tooling `VERSION` preparation above,
+Beyond the pending notes and Toko Tooling pending-version preparation above,
 implementation and validation alone do not authorize staging file contents, commits, package
 version changes, tags, pushes or publication. Disposable validation fixtures may
 exercise those operations only in their documented test repositories.
@@ -174,7 +175,7 @@ permission for already-authorized steps.
 | Update an existing PR with a fix | Commit the scoped fix and push to that PR's branch within the established authorization. |
 | Merge a PR or push directly to a named integration branch | Perform the specifically authorized action, subject to repository protections and required checks. |
 | Change the repository version to an exact value | Make the named metadata edit and its required consistency updates; no commit, tag, push or release execution. |
-| Run a selected standard release command | Execute its documented release effects under the [release contract](../docs/releases/releases.md); package publication and deployment remain separate. |
+| Run a selected standard release command | Execute its documented release effects under the [release contract](../docs/releases/releases.md); a command-only request retains that command's scope. Release, ship and deploy requests include the full delivery described below. |
 | Release the scoped changes | Select affected approved groups and appropriate semantic-version increments, prepare scoped commits, complete GitHub delivery and publish affected publishable groups to crates.io, without another push/publication approval. |
 | Ship or deploy the scoped crate changes | Complete Git delivery to the established integration branch and registry publication for the affected groups, including validation and verification, without another push/publication approval. |
 | Deploy, without a named repository/group or application target | Deliver only the current repository: push its reviewed changes to `origin/main` (or its established integration branch), and release/publish its affected eligible crate groups to crates.io. Do not discover or include sibling repositories. |
