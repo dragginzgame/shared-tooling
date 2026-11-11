@@ -25,6 +25,7 @@ For a single checkout or an independent workspace:
 bash scripts/dev/cloc.sh /path/to/repository
 bash scripts/dev/cloc.sh -d 0 /path/to/projects
 bash scripts/dev/cloc.sh -d 2 /path/to/projects
+bash scripts/dev/cloc.sh --wide -d 0 /path/to/repository
 bash scripts/dev/cloc.sh --manifest testing/Cargo.toml /path/to/repository
 bash scripts/dev/cloc.sh --manifest qualification/Cargo.toml /path/to/repository
 bash scripts/dev/cloc.sh --json /path/to/repository
@@ -52,6 +53,11 @@ default; `-d 0` adds individual crate rows without changing totals. Terminal nam
 are green for all workspaces (including non-Cargo repositories with `n/a` counts),
 blue for crates and white for modules. Redirected output,
 `TERM=dumb` and a nonempty `NO_COLOR` disable colours.
+The name column is capped at 44 characters and shrinks to fit the terminal,
+using a 120-column fallback for redirected output or unavailable terminal sizing.
+Long names retain their beginning and end around an ellipsis. `--wide` restores
+full names; JSON always retains them. Numeric columns are never truncated; very
+narrow terminals may still overflow because the header and counts stay readable.
 Use `-d N` to include crates and N source-layout levels beneath each one:
 `-d 0` shows crates only, `-d 1` shows top-level modules, and larger values
 expand their children. `src/` is implicit; `foo.rs` and `foo/mod.rs` map to

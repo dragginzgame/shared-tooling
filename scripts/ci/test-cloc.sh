@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/dev/cloc.sh scripts/ci/fixture-lifecycle.sh scripts/ci/test-cloc-workspaces.sh
+# Shared companions: scripts/dev/cloc.sh scripts/ci/fixture-lifecycle.sh scripts/ci/test-cloc-workspaces.sh scripts/ci/test-cloc-table.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 export PATH="$ROOT/.tools/host/bin:$PATH"
 unset CARGO_TARGET_DIR
 case "${1:-}" in
-    '') scopes_only=false; metadata_only=false; bash "$ROOT/scripts/ci/test-cloc-workspaces.sh" ;;
+    '') scopes_only=false; metadata_only=false; bash "$ROOT/scripts/ci/test-cloc-table.sh"; bash "$ROOT/scripts/ci/test-cloc-workspaces.sh" ;;
+    --table-only) exec bash "$ROOT/scripts/ci/test-cloc-table.sh" ;;
     --workspaces-only) exec bash "$ROOT/scripts/ci/test-cloc-workspaces.sh" ;;
     --scopes-only) scopes_only=true; metadata_only=false ;;
     --metadata-only) scopes_only=false; metadata_only=true ;;
-    *) echo 'usage: test-cloc.sh [--scopes-only|--metadata-only|--workspaces-only]' >&2; exit 2 ;;
+    *) echo 'usage: test-cloc.sh [--table-only|--scopes-only|--metadata-only|--workspaces-only]' >&2; exit 2 ;;
 esac
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/shared-cloc-test.XXXXXX")"
 FIXTURE="$(cd "$FIXTURE" && pwd -P)"

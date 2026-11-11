@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.39.11] - Unreleased
+
+### 🐛 Fixed
+
+- Bound LOC report labels to 44 columns and the available terminal width, with
+  middle truncation and a 120-column fallback. Add `--wide` for complete names;
+  preserve numeric columns and full JSON labels.
+
 ## [0.39.10] - 2026-11-11
 
 ### 🐛 Fixed
