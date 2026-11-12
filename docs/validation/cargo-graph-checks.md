@@ -204,7 +204,18 @@ crates.io release, even outside the manifest requirement. It reports path source
 separately, marks other registries/Git sources unsupported, and flags resolved
 source overrides for separate review instead of claiming registry freshness. A compatible older
 minimum with a current lock is current; differing workspace selections are
-reported without enforcing equality. Read-only means no manifest/lock changes:
+reported without enforcing equality. Stable versions with `+build.metadata` are
+included; build metadata does not affect version precedence. Registry requests
+run in one batch with at most six concurrent transfers and per-transfer limits.
+Default output consolidates findings by package and omits current/local-path
+rows. Use `DEPENDENCY_VERBOSE=1` (CLI `--verbose`) to include those rows, or
+`--json` for complete per-member details. Progress identifies workspace inspection,
+updates and registry lookup; the summary includes elapsed time.
+Update compares lockfile bytes and reports changed paths or `No lockfile changes`;
+an unchanged update reuses the admitted metadata. Terminal output uses cyan for
+progress, green for successful checks, amber for review findings and red for
+incomplete findings. Redirected output, JSON, `TERM=dumb` and `NO_COLOR` stay plain.
+Read-only means no manifest/lock changes:
 the command retains command output and registry evidence beneath the consumer's
 `target/dependency-review.*` directories, removable with ordinary build scratch.
 
@@ -218,9 +229,11 @@ Updates run sequentially and are **not atomic**: failure stops and names attempt
 workspaces whose locks may have changed. Inspect those diffs; no automatic rollback
 over local work occurs. The final review can fail after successful lock updates.
 
-Exit 0 means the supported reviewed selections are current (or there are none);
-1 means newer/yanked selections need review, not that updates failed; 2 means
-invalid inputs, incomplete evidence or a failed command. Failed observations
+For `deps-review`, exit 0 means supported selections are current (or there are
+none); exit 1 means newer/yanked selections need review. For `deps-update`, a
+completed update and review exits 0 even when newer/yanked selections remain;
+those findings are still printed and JSON records `review_status: 1`.
+Both modes exit 2 for invalid inputs, incomplete evidence or a failed command. Failed observations
 never emit success JSON. Review findings require the existing adoption/deferral
 decision and focused qualification, not a blanket automatic upgrade.
 

@@ -39,6 +39,7 @@ if ($ARGV[0] eq 'update') {
 }
 my $source = 'registry+https://github.com/rust-lang/crates.io-index';
 my $version = $qualification ? '0.97.0' : '0.100.2';
+$version = '1.2.1+spec-1.1.0' if $ENV{BUILD_METADATA};
 my $dep = { name => 'sample', rename => 'renamed', req => $qualification ? '^0.97.0' : '^0.100.0', kind => 'dev',
  source => $source, optional => JSON::PP::false, target => 'cfg(unix)' };
 my $result = { workspace_root => $root, workspace_members => ['root'],
@@ -53,9 +54,17 @@ write_file('bin/curl', <<'STUB');
 #!/usr/bin/env perl
 use strict; use warnings; use JSON::PP;
 if (grep { $_ eq '--version' } @ARGV) { print "curl 8.10.0\n"; exit 0; }
-open my $log, '>>', "$ENV{FIXTURE}/requests" or die $!; print {$log} "$ARGV[-1]\n"; close $log;
-for my $v ('0.97.0','0.100.2','0.101.0','0.102.0-beta.1') {
- print encode_json({name => 'sample', vers => $v, yanked => $v eq '0.101.0' ? JSON::PP::true : JSON::PP::false}), "\n";
+die 'expected bounded parallel batch' unless grep { $_ eq '--parallel' } @ARGV;
+my @outputs = map { $ARGV[$_+1] } grep { $ARGV[$_] eq '--output' } 0..$#ARGV;
+open my $log, '>>', "$ENV{FIXTURE}/requests" or die $!; print {$log} "$_\n" for @outputs; close $log;
+for my $output (@outputs) {
+ open my $out, '>', $output or die $!;
+ my @versions = $ENV{BUILD_METADATA} ? ('0.9.8','1.2.1+spec-1.1.0','1.2.1+other','1.3.0-beta.1') :
+ ('0.97.0','0.100.2','0.101.0','0.102.0-beta.1');
+ for my $v (@versions) {
+  print {$out} encode_json({name => 'sample', vers => $v, yanked => $v eq '0.101.0' ? JSON::PP::true : JSON::PP::false}), "\n";
+ }
+ close $out or die $!;
 }
 exit 22 if $ENV{FAIL_REGISTRY};
 STUB
@@ -86,6 +95,14 @@ is(scalar @{$report->{differences}}, 1, 'cross-workspace difference reported');
 is(read_file('consumer/Cargo.lock'), "original\n", 'review leaves root lock alone');
 is(read_file('consumer/qualification/Cargo.lock'), "original\n", 'review leaves qualification lock alone');
 is(scalar(split /\n/, read_file('requests')), 1, 'one registry observation for shared supplier');
+{
+ local $ENV{BUILD_METADATA} = 1;
+ is(run('review'), 0, 'stable build metadata does not cause false upgrade or downgrade finding');
+ is(decode_json(read_file('output'))->{rows}[0]{latest}, '1.2.1+spec-1.1.0', 'latest includes stable build metadata');
+ is(run('update','--package','sample','--precise','1.2.1+spec-1.1.0'), 0, 'precise accepts stable build metadata');
+}
+is(run('update'), 0, 'successful updates do not fail for remaining newer releases');
+is(decode_json(read_file('output'))->{review_status}, 1, 'JSON preserves outstanding review findings');
 is(run('review','--manifest','extra/Cargo.toml'), 1, 'extra workspace explicitly selected');
 is(scalar @{decode_json(read_file('output'))->{manifests}}, 3, 'extra workspace included');
 {
@@ -129,6 +146,7 @@ for my $pair (['consumer','product'], ['consumer/qualification','qualification']
 is(run('review'), 0, 'real independent workspaces with no suppliers');
 is(run('update'), 0, 'real Cargo update handles both workspaces');
 is_deeply(decode_json(read_file('output'))->{update_attempts}, ['Cargo.toml','qualification/Cargo.toml'], 'both real updates attempted');
+is_deeply(decode_json(read_file('output'))->{changed_lockfiles}, [], 'real no-op update reports no changed locks');
 
 # Exercise the public Make interface against real independent workspaces.
 write_file('consumer/Makefile', "TOKO_TOOLING_ROOT := $root\nhelp:\n\t\@echo fixture-help\ninclude $root/make/cargo-dependencies.mk\n");
@@ -149,16 +167,24 @@ like(read_file('make-output'), qr/changes locks/, 'help names update effects');
 is(run_make('deps-review'), 0, 'Make review invokes real Cargo');
 like(read_file('make-output'), qr/Workspaces: Cargo.toml, qualification\/Cargo.toml/, 'Make covers both workspaces');
 is(run_make('deps-update'), 0, 'Make update invokes real Cargo');
+like(read_file('make-output'), qr/No lockfile changes\./, 'no-op update is explicit');
+unlike(read_file('make-output'), qr/\e\[/, 'redirected output contains no ANSI escapes');
 is(run_make('-n','deps-update'), 2, 'update execution guard rejects dry-run');
 is(run_make('deps-review','DEPENDENCY_PRECISE=0.100.2'), 2, 'invalid Make selectors propagate failure');
 {
     local $ENV{PATH} = "$fixture/bin:$real_path";
     unlink "$fixture/events";
     is(run_make('deps-update','DEPENDENCY_PACKAGE=sample','DEPENDENCY_PRECISE=0.100.2',
-        'DEPENDENCY_MANIFEST=extra/Cargo.toml'), 2, 'review-needed result propagates through Make');
+        'DEPENDENCY_MANIFEST=extra/Cargo.toml'), 0, 'successful update with review findings succeeds through Make');
     my $events = read_file('events');
     is(scalar(() = $events =~ /^update\t/gm), 3, 'Make dispatches root, qualification and explicit extra workspace');
     like($events, qr/--package\tsample\t--precise\t0.100.2/, 'Make forwards package and precise version');
+    my $output = read_file('make-output');
+    is(scalar(() = $output =~ /^sample /gm), 1, 'default output consolidates findings across workspaces');
+    unlike($output, qr/ current|local-path/, 'default output omits current and local selections');
+    like($output, qr/Lockfiles changed: Cargo.lock, qualification\/Cargo.lock/, 'actual lock changes explicitly reported');
+    is(run_make('deps-review', 'DEPENDENCY_VERBOSE=1'), 2, 'review still returns findings status');
+    like(read_file('make-output'), qr/ current /, 'verbose output includes current selections');
 }
 done_testing();
 $complete = 1;

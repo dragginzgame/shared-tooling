@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.39.14] - Unreleased
+
+### 🐛 Fixed
+
+- Make dependency reports concise, batch registry requests with bounded
+  concurrency, and include stable versions carrying build metadata. Successful
+  `deps-update` runs no longer fail Make solely because newer releases remain;
+  full details stay available through verbose output and JSON.
+- Distinguish unchanged dependency updates from changed lockfiles and add
+  terminal colours respecting redirected output and `NO_COLOR`.
+
 ## [0.39.13] - 2026-11-12
 
 ### ✨ Added

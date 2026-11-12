@@ -11,12 +11,29 @@ use lib "$RealBin/../ci";
 use StableVersion qw(stable version_cmp);
 use JSON::PP;
 use POSIX qw(strftime);
+use Time::HiRes qw(time);
+
+# Registry stable versions may carry build metadata; it has no precedence.
+# Keep the stricter shared tool-pin grammar unchanged.
+sub stable_core {
+    my ($version) = @_;
+    return unless defined $version;
+    $version =~ s/\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*\z//;
+    return stable($version) ? $version : undef;
+}
+sub release_cmp { version_cmp(stable_core($_[0]), stable_core($_[1])) }
+sub colour {
+    my ($code, $text, $stderr) = @_;
+    my $terminal = $stderr ? -t STDERR : -t STDOUT;
+    return $text if !$terminal || exists($ENV{NO_COLOR}) || ($ENV{TERM} // '') eq 'dumb';
+    return "\e[${code}m$text\e[0m";
+}
 
 sub usage {
-    return "Usage: cargo-dependencies.pl review|update [--consumer DIR] [--manifest RELATIVE/Cargo.toml] [--package NAME] [--precise VERSION] [--json]\n" .
+    return "Usage: cargo-dependencies.pl review|update [--consumer DIR] [--manifest RELATIVE/Cargo.toml] [--package NAME] [--precise VERSION] [--json] [--verbose]\n" .
         "Includes root and existing qualification workspaces; --manifest adds explicit workspaces.\n" .
         "Review uses locked offline metadata and online crates.io reads. Update changes locks, never requirements.\n" .
-        "Exit 0: reviewed/current; 1: newer or yanked selections; 2: incomplete/invalid observation or update failure.\n";
+        "Exit 0: update succeeded or review current; 1: review found newer or yanked selections; 2: incomplete/invalid observation or update failure.\n";
 }
 sub read_file {
     open my $fh, '<', $_[0] or die "read $_[0]: $!\n";
@@ -45,11 +62,13 @@ my $status = eval {
     my $mode = shift @ARGV // '';
     if ($mode eq '--help' || $mode eq '-h') { print usage(); exit 0; }
     $mode =~ /\A(?:review|update)\z/ or die usage();
-    my ($consumer, $package, $precise, $json) = (getcwd(), undef, undef, 0);
+    my ($consumer, $package, $precise, $json, $verbose) = (getcwd(), undef, undef, 0, 0);
+    my $started = time();
     my @extra;
     while (@ARGV) {
         my $arg = shift @ARGV;
         if ($arg eq '--json') { $json = 1; next; }
+        if ($arg eq '--verbose') { $verbose = 1; next; }
         @ARGV or die usage();
         my $value = shift @ARGV;
         if ($arg eq '--consumer') { $consumer = $value; }
@@ -59,7 +78,7 @@ my $status = eval {
         else { die usage(); }
     }
     !defined($package) || $package =~ /\A[a-zA-Z0-9][a-zA-Z0-9_-]*\z/ or die "invalid package\n";
-    !defined($precise) || ($mode eq 'update' && defined($package) && stable($precise))
+    !defined($precise) || ($mode eq 'update' && defined($package) && defined(stable_core($precise)))
         or die "--precise requires update, --package and a stable version\n";
     $consumer !~ /[\r\n]/ && -d $consumer or die "invalid consumer directory\n";
     $consumer = abs_path($consumer);
@@ -85,6 +104,7 @@ my $status = eval {
     # owns requirement matching, renamed dependencies and graph resolution.
     my $observe = sub {
         my ($ws) = @_;
+        warn colour('36', "Inspecting $ws->{manifest}...", 1), "\n" unless $json;
         chdir $ws->{root} or die $!;
         my $data = decode_json(capture('cargo', 'metadata', '--locked', '--offline', '--all-features',
             '--format-version', '1', '--manifest-path', "$consumer/$ws->{manifest}"));
@@ -127,6 +147,7 @@ my $status = eval {
     chdir $consumer or die $!;
     $observe->($_) for @workspaces;
     !defined($package) || grep { @{$_->{rows}} } @workspaces or die "no direct dependency named $package\n";
+    my @changed_locks;
     if ($mode eq 'update') {
         for my $ws (@workspaces) {
             next if defined($package) && !@{$ws->{rows}};
@@ -135,9 +156,14 @@ my $status = eval {
             my @args = ('cargo', 'update', '-v', '--manifest-path', "$consumer/$ws->{manifest}");
             push @args, '--package', $package if defined $package;
             push @args, '--precise', $precise if defined $precise;
+            my $before = read_file("$ws->{root}/Cargo.lock");
+            warn colour('36', "Updating $ws->{manifest}...", 1), "\n" unless $json;
             capture(@args);
+            if (read_file("$ws->{root}/Cargo.lock") ne $before) {
+                push @changed_locks, $ws->{manifest} =~ s/Cargo\.toml\z/Cargo.lock/r;
+            }
         }
-        $observe->($_) for @workspaces;
+        if (@changed_locks) { $observe->($_) for @workspaces; }
     }
     my %releases;
     my @rows = map { @{$_->{rows}} } @workspaces;
@@ -145,6 +171,26 @@ my $status = eval {
         my $version = capture('curl', '--disable', '--version');
         $version =~ /^curl (\d+)\.(\d+)\./ && ($1 > 8 || ($1 == 8 && $2 >= 4))
             or die "bounded registry reads require curl >= 8.4\n";
+    }
+    # One bounded curl batch reuses connections instead of serial per-package processes.
+    my %names = map { $_->{package} => 1 } grep {
+        $_->{source} eq 'registry+https://github.com/rust-lang/crates.io-index'
+    } @rows;
+    my @requests = ('curl', '--disable', '--parallel', '--parallel-max', '6', '--fail-early');
+    for my $name (sort keys %names) {
+        $name =~ /\A[a-zA-Z0-9][a-zA-Z0-9_-]*\z/ or die "invalid registry package\n";
+        my $lower = lc $name;
+        my $prefix = length($lower) == 1 ? '1' : length($lower) == 2 ? '2' :
+            length($lower) == 3 ? '3/' . substr($lower, 0, 1) : substr($lower, 0, 2) . '/' . substr($lower, 2, 2);
+        push @requests, '--next' if @requests > 7;
+        push @requests, '--fail', '--silent', '--show-error', '--location',
+            '--proto', '=https', '--proto-redir', '=https', '--connect-timeout', '10',
+            '--max-time', '30', '--max-filesize', '16777216',
+            '--output', "$evidence/registry-$name.ndjson", '--url', "https://index.crates.io/$prefix/$lower";
+    }
+    if (%names) {
+        warn colour('36', 'Checking ' . scalar(keys %names) . ' unique registry packages (up to 6 concurrent requests)...', 1), "\n" unless $json;
+        capture(@requests);
     }
     my $result = 0;
     for my $row (@rows) {
@@ -158,13 +204,8 @@ my $status = eval {
             next;
         }
         if (!exists $releases{$name}) {
-            $name =~ /\A[a-zA-Z0-9][a-zA-Z0-9_-]*\z/ or die "invalid registry package\n";
             my $lower = lc $name;
-            my $prefix = length($lower) == 1 ? '1' : length($lower) == 2 ? '2' :
-                length($lower) == 3 ? '3/' . substr($lower, 0, 1) : substr($lower, 0, 2) . '/' . substr($lower, 2, 2);
-            my $raw = capture('curl', '--disable', '--fail', '--silent', '--show-error', '--location',
-                '--proto', '=https', '--proto-redir', '=https', '--connect-timeout', '10',
-                '--max-time', '30', '--max-filesize', '16777216', "https://index.crates.io/$prefix/$lower");
+            my $raw = read_file("$evidence/registry-$name.ndjson");
             my %versions;
             for my $line (split /\n/, $raw) {
                 my $record = decode_json($line);
@@ -172,7 +213,7 @@ my $status = eval {
                     defined($record->{vers}) && JSON::PP::is_bool($record->{yanked}) or die "invalid registry record for $name\n";
                 $versions{$record->{vers}} = $record->{yanked};
             }
-            my @stable = sort { version_cmp($a, $b) } grep { stable($_) && !$versions{$_} } keys %versions;
+            my @stable = sort { release_cmp($a, $b) || $a cmp $b } grep { defined(stable_core($_)) && !$versions{$_} } keys %versions;
             @stable or die "no stable non-yanked release for $name\n";
             $releases{$name} = { latest => $stable[-1], versions => \%versions };
         }
@@ -183,7 +224,7 @@ my $status = eval {
         for my $version (@{$row->{locked}}) {
             exists $release->{versions}{$version} or die "locked $name $version absent from registry\n";
             if ($release->{versions}{$version}) { $row->{status} = 'yanked'; }
-            elsif ($row->{status} ne 'yanked' && (!stable($version) || version_cmp($version, $row->{latest}) != 0)) {
+            elsif ($row->{status} ne 'yanked' && (!defined(stable_core($version)) || release_cmp($version, $row->{latest}) != 0)) {
                 $row->{status} = 'review';
             }
         }
@@ -204,15 +245,35 @@ my $status = eval {
     }
     my $report = { mode => $mode, observed_at => strftime('%Y-%m-%dT%H:%M:%SZ', gmtime),
         consumer => $consumer, manifests => [map { $_->{manifest} } @workspaces],
-        rows => \@rows, differences => \@differences, update_attempts => \@updated, evidence => $evidence };
+        rows => \@rows, differences => \@differences, update_attempts => \@updated,
+        changed_lockfiles => \@changed_locks, evidence => $evidence, review_status => $result, elapsed_seconds => 0 + sprintf('%.2f', time() - $started) };
     if ($json) { print JSON::PP->new->canonical->pretty->encode($report); }
     else {
-        print "$_->{workspace} / $_->{member}: $_->{package} $_->{requirement} [$_->{kind}]\n",
-            '  locked=', join(',', @{$_->{locked}}) || '-', ' latest=', $_->{latest} // '-', " $_->{status}\n" for @rows;
-        print "Different workspace selections: $_->{package}\n" for @differences;
+        my %summary;
+        for my $row (@rows) {
+            next if !$verbose && $row->{status} =~ /\A(?:current|local-path)\z/;
+            my $key = join("\t", $row->{package}, join(',', @{$row->{locked}}) || '-', $row->{latest} // '-', $row->{status});
+            $summary{$key}{$row->{workspace}} = 1;
+        }
+        for my $key (sort keys %summary) {
+            my ($name, $locked, $latest, $state) = split /\t/, $key;
+            my $tone = $state eq 'review' ? '33' : $state eq 'current' ? '32' : $state eq 'local-path' ? '2' : '31';
+            print colour($tone, "$name  $locked -> $latest  $state"), ' [', join(', ', sort keys %{$summary{$key}}), "]\n";
+        }
+        for my $difference (@differences) {
+            print "Different workspace selections: $difference->{package} ", join('; ', map {
+                $_ . '=' . join(',', @{$difference->{workspaces}{$_}})
+            } sort keys %{$difference->{workspaces}}), "\n";
+        }
+        if ($mode eq 'update') {
+            print colour('32', @changed_locks ? 'Lockfiles changed: ' . join(', ', @changed_locks) : 'No lockfile changes.'), "\n";
+        }
+        print colour($result == 2 ? '31' : $result == 1 ? '33' : '32',
+            $result == 2 ? 'Review incomplete.' : $result == 1 ? 'Newer/yanked selections remain; review constraints before migrating.' : 'No dependency updates need review.'), "\n";
+        print scalar(@workspaces), " workspace(s), ", scalar(keys %names), " registry package(s), $report->{elapsed_seconds}s.\n";
         print 'Workspaces: ', join(', ', @{$report->{manifests}}), "\nEvidence: $evidence\n";
     }
-    $result;
+    $mode eq 'update' && $result == 1 ? 0 : $result;
 };
 if ($@) {
     warn $@;
