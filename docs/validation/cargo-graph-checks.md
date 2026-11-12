@@ -157,85 +157,36 @@ cost in the actual consumer artifact, rather than rejecting duplicates by count.
 
 ## Repository dependency maintenance
 
-The opt-in Make commands give the product and
-qualification workspaces one maintenance command. It always selects root
-`Cargo.toml` and includes `qualification/Cargo.toml` when present. Add other
-maintained independent roots with repeatable `--manifest path/Cargo.toml`.
-It does not recursively discover arbitrary examples, vendor trees or fixtures.
+Use `make deps-update` wherever you would otherwise run `cargo update -v`.
+It runs Cargo sequentially in the root workspace and `qualification/` when
+present, with normal Cargo output. There is no metadata inspection, registry
+audit or additional report. Cargo owns resolution, network/offline settings,
+version constraints and lockfile creation/update.
 
 ```sh
-# Inspect direct dependencies across both workspaces without updating locks.
-make deps-review
-# Focus on one supplier.
-make deps-review DEPENDENCY_PACKAGE=ic-testkit
-# Explicitly update compatible selections in both workspaces.
 make deps-update
-# Or update one direct supplier wherever selected.
+# Optional selectors, forwarded to Cargo in each selected workspace:
 make deps-update DEPENDENCY_PACKAGE=ic-testkit DEPENDENCY_PRECISE=0.100.2
-# Show options, network/mutation effects and exit-status meanings.
-make deps-help
-# Test the command against IC Tooling without installing it there.
-make deps-review DEPENDENCY_CONSUMER=../ic-tooling
+# Explicit additional workspace (no recursive discovery):
+make deps-update DEPENDENCY_MANIFEST=extra/Cargo.toml
+# Run against another explicitly selected repository:
+make deps-update DEPENDENCY_CONSUMER=../ic-tooling
 ```
 
-Toko Tooling exposes these targets in `make help` and the root README. Consumers
-can opt in by selecting `make/cargo-dependencies.mk` with its declared companion
-closure through the exporter, then including it after `make/consumer.mk`.
-It preserves the default goal and adds no build, CI or release prerequisite.
-`DEPENDENCY_MANIFEST=extra/Cargo.toml` adds another independent workspace.
-The implementation remains `scripts/dev/cargo-dependencies.pl`; use its CLI for
-repeatable `--manifest` arguments or `--json` structured reports. Perl is already
-a tooling prerequisite and handles Cargo JSON without an additional compiled
-tool; Cargo continues to own dependency resolution and updates.
+The target is listed in Toko Tooling's `make help` and root README. Consumers
+select `make/cargo-dependencies.mk` and its declared companions through the
+exporter, then include it after `make/consumer.mk`. It preserves the default goal
+and adds no build, CI or release prerequisite. Requires Perl and Cargo; no curl
+or registry-reporting module is needed. The underlying
+`scripts/dev/cargo-dependencies.pl update` accepts repeatable `--manifest`
+arguments when several extra workspaces are maintained.
 
-Requires Perl, Cargo with the consumer's prepared compiler/cache, and curl 8.4+
-for crates.io sparse-index reads. Every selected workspace needs an existing
-regular lockfile. Full `cargo metadata --locked --offline --all-features` runs
-from each workspace directory before any update; missing cached sources or
-inconsistent locks fail without an unlocked retry or implicit fetch. This is an
-all-target, all-feature resolution inventory, not proof of deployed reachability
-or feature-combination compatibility. Renamed, build, dev, optional and
-target-specific direct dependencies come from Cargo metadata. Unresolved
-declarations remain incomplete observations. Transitive-only suppliers are not
-freshness-reviewed, although Cargo updates can change their locked selections.
-
-Review compares resolved selections against the latest stable non-yanked
-crates.io release, even outside the manifest requirement. It reports path sources
-separately, marks other registries/Git sources unsupported, and flags resolved
-source overrides for separate review instead of claiming registry freshness. A compatible older
-minimum with a current lock is current; differing workspace selections are
-reported without enforcing equality. Stable versions with `+build.metadata` are
-included; build metadata does not affect version precedence. Registry requests
-run in one batch with at most six concurrent transfers and per-transfer limits.
-Default output consolidates findings by package and omits current/local-path
-rows. Use `DEPENDENCY_VERBOSE=1` (CLI `--verbose`) to include those rows, or
-`--json` for complete per-member details. Progress identifies workspace inspection,
-updates and registry lookup; the summary includes elapsed time.
-Update compares lockfile bytes and reports changed paths or `No lockfile changes`;
-an unchanged update reuses the admitted metadata. Terminal output uses cyan for
-progress, green for successful checks, amber for review findings and red for
-incomplete findings. Redirected output, JSON, `TERM=dumb` and `NO_COLOR` stay plain.
-Read-only means no manifest/lock changes:
-the command retains command output and registry evidence beneath the consumer's
-`target/dependency-review.*` directories, removable with ordinary build scratch.
-
-Update explicitly runs `cargo update -v` for each selected workspace, optionally
-with one `--package` and `--precise`. A package selection skips workspaces without
-that direct dependency and rejects a name absent everywhere. Cargo retains its
-normal network/offline configuration. The command never edits manifest
-requirements, aligns versions or changes release metadata. Crossing an
-incompatible requirement still needs an authorized manifest/API migration.
-Updates run sequentially and are **not atomic**: failure stops and names attempted
-workspaces whose locks may have changed. Inspect those diffs; no automatic rollback
-over local work occurs. The final review can fail after successful lock updates.
-
-For `deps-review`, exit 0 means supported selections are current (or there are
-none); exit 1 means newer/yanked selections need review. For `deps-update`, a
-completed update and review exits 0 even when newer/yanked selections remain;
-those findings are still printed and JSON records `review_status: 1`.
-Both modes exit 2 for invalid inputs, incomplete evidence or a failed command. Failed observations
-never emit success JSON. Review findings require the existing adoption/deferral
-decision and focused qualification, not a blanket automatic upgrade.
+Selectors apply to every selected workspace; Cargo rejects absent or ambiguous
+packages. The command does not edit manifest requirements or cross incompatible
+version ranges. Updates are **not atomic**: the first Cargo failure stops the
+command, preserves Cargo's exit status, and names attempted workspaces whose
+locks may have changed. Inspect those diffs; there is no automatic rollback.
+Avoid updating locks during qualification or after freezing release inputs.
 
 ## Dependency adoption planning
 

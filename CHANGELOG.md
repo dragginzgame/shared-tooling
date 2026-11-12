@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.39.15] - Unreleased
+
+### 🐛 Fixed
+
+- Simplify `deps-update` to sequential `cargo update -v` calls with normal Cargo
+  output and no metadata or registry audit. Remove `deps-review`, `deps-help`
+  and their reporting machinery.
+
 ## [0.39.14] - 2026-11-12
 
 ### 🐛 Fixed
