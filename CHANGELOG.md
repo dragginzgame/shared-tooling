@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.39.17] - Unreleased
+
+### ✨ Added
+
+- Require Rust modules to use either a standalone `foo.rs` or `foo/mod.rs`,
+  without a sibling `foo.rs` and `foo/` pair, including test layouts.
+
 ## [0.39.16] - 2026-11-12
 
 ### ✨ Added

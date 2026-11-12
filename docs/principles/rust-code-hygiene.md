@@ -26,7 +26,13 @@ architecture on another.
   owning module or share code through the appropriate library crate. Do not
   substitute `include!` or generated path indirection to evade this rule.
   Attribute text in parser/scanner input fixtures is data, not permitted module
-  wiring. Avoid ambiguous duplicate file/directory module shapes.
+  wiring.
+- Use exactly one filesystem shape for each Rust module: `foo.rs` on its own,
+  or `foo/mod.rs` with the module's children beneath `foo/`. Never keep `foo.rs`
+  and a sibling `foo/` directory together, including when that directory contains
+  only tests, fixtures or support code. When a file module needs such a directory,
+  move `foo.rs` to `foo/mod.rs`; keep its public module path unchanged. Apply this
+  recursively to production, test, example, benchmark and generated Rust modules.
 - Do not embed Rust source as text or bytes to inject or replace executable
   code, including in test canisters. This covers `include_str!`, `include_bytes!`,
   runtime file reads and inline Rust strings used as source patches. Do not
@@ -143,9 +149,10 @@ or section banners.
   file-based tools such as `cloc` can distinguish test source from production
   source. Keep only small wiring declarations such as `#[cfg(test)] mod tests;`
   in production files.
-- Use ordinary module discovery: `foo.rs` can declare tests in `foo/tests.rs`
-  or `foo/tests/mod.rs`; a directory module can use its own `tests.rs` or
-  `tests/mod.rs`. Keep integration tests under the crate's `tests/` directory.
+- Use ordinary module discovery: `foo/mod.rs` can declare tests in `foo/tests.rs`
+  or `foo/tests/mod.rs`. Move a standalone `foo.rs` to `foo/mod.rs` before adding
+  `foo/` test files. Choose either `tests.rs` or `tests/mod.rs`, never `tests.rs`
+  alongside `tests/`. Keep integration tests under the crate's `tests/` directory.
   Put test-only fixtures and support modules beneath the corresponding test
   directory. Do not widen production visibility, introduce
   `#[path]` attributes or change test semantics just to relocate tests.
