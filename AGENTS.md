@@ -45,6 +45,9 @@ owns when to run checks. This overlay identifies the local checks only.
   regular-file admission, shell lint, dependency pins, documentation links and an
   actual packaged-payload installation/check. All release kinds use this gate;
   publication repeats only the fresh version/archive checks.
+  `check-tooling-package` selects fresh installation-only verification; the default
+  `scripts/ci/test-tooling-package.sh` retains takeover/refusal/preview regressions
+  for CI and focused changes to the package/installer contract.
 - By maintainer direction on 2026-11-08, the long-tail regression suite stays in
   GitHub CI. Keep `make ci` and `bash scripts/ci/test-portable-tools.sh` unchanged
   for CI and explicitly requested full local checks. A normal tooling release

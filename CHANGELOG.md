@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.39.18] - Unreleased
+
+### ✨ Added
+
+- Define deployment latency as request-to-GitHub-and-registry availability, and
+  clarify qualified reuse across release and publication without weakening
+  final artifact admission.
+
+### 🐛 Fixed
+
+- Keep fresh packaged installation checks in release and publication while
+  leaving generic takeover/refusal/preview regressions in the full CI fixture,
+  reducing repeated deployment work
+  ([#378](https://github.com/dragginzgame/toko-tooling/issues/378)).
+
 ## [0.39.17] - 2026-11-12
 
 ### ✨ Added

@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 # Shared companions: scripts/distribution/registry-package.pl scripts/ci/fixture-lifecycle.sh scripts/distribution/governance-files.txt scripts/ci/check-documentation-links.pl
 set -euo pipefail
+# The default remains the complete CI regression. Release/publication select
+# only fresh archive installation; no previous result or archive is reused.
+installation_only=false
+case "$#:${1:-}" in
+    0:) ;;
+    1:--installation-only) installation_only=true ;;
+    *) echo 'usage: test-tooling-package.sh [--installation-only]' >&2; exit 2 ;;
+esac
 ROOT="$(cd -P "${BASH_SOURCE[0]%/*}/../.." && pwd)"
 export PATH="$ROOT/.tools/host/bin:$PATH"
 mkdir -p "$ROOT/target/tmp"
@@ -26,6 +34,9 @@ git -C "$consumer" init -q
 printf '# Consumer-owned README\n' > "$consumer/README.md"
 printf '# Consumer-owned instructions\n' > "$consumer/AGENTS.md"
 entrypoints=(--entrypoint make/consumer.mk --entrypoint scripts/dev/toko-tooling.sh)
+checker=scripts/ci/check-public-docs.pl
+[[ -f "$fixture/package/$checker" ]]
+if [[ "$installation_only" == true ]]; then entrypoints+=(--entrypoint "$checker"); fi
 while IFS= read -r path; do
     [[ -n "$path" && "$path" != \#* ]] || continue
     entrypoints+=(--entrypoint "$path")
@@ -41,39 +52,40 @@ jq '{files: (.files | map_values(.checksum)), package: .checksum}' \
 rm "$fixture/vendor/toko-tooling/.toko-tooling.files.json"
 printf '[source.crates-io]\nreplace-with="fixture"\n[source.fixture]\ndirectory="%s"\n' "$fixture/vendor" > "$consumer/.cargo/config.toml"
 (cd "$consumer" && cargo generate-lockfile --offline)
-make --no-print-directory -C "$consumer" -f make/consumer.mk toko-tooling-check
-# A native checker is taken over only from a clean, reviewed consumer state.
-checker=scripts/ci/check-public-docs.pl
-[[ -f "$fixture/package/$checker" ]]
-perl "$fixture/package/scripts/ci/test-public-docs.pl"
-printf '# Consumer-owned comparator\n' > "$consumer/$checker"
-git -C "$consumer" add -- .
-git -C "$consumer" -c user.name=Fixture -c user.email=fixture@example.invalid \
-    -c core.hooksPath=/dev/null -c commit.gpgSign=false commit -qm 'Native checker before adoption'
-cp "$consumer/.toko-tooling.snapshot" "$fixture/before.snapshot"
-entrypoints+=(--entrypoint "$checker")
-refresh=(bash "$fixture/package/scripts/distribution/refresh-consumer.sh" --crate "$archive" --checksum "$checksum"
-    --package-version "$version" --consumer "$consumer" "${entrypoints[@]}")
-printf '# Local checker edit\n' >> "$consumer/$checker"
-cp "$consumer/$checker" "$fixture/local-checker"
-for state in unstaged staged; do
-    if [[ "$state" == staged ]]; then git -C "$consumer" add -- "$checker"; fi
-    if "${refresh[@]}" > "$fixture/$state.log" 2>&1; then
-        echo "checker takeover accepted $state changes" >&2; exit 1
-    fi
-    grep -F 'consumer destination has local changes' "$fixture/$state.log" >/dev/null
-    cmp "$fixture/local-checker" "$consumer/$checker"
+if [[ "$installation_only" == false ]]; then
+    make --no-print-directory -C "$consumer" -f make/consumer.mk toko-tooling-check
+    # A native checker is taken over only from a clean, reviewed consumer state.
+    perl "$fixture/package/scripts/ci/test-public-docs.pl"
+    printf '# Consumer-owned comparator\n' > "$consumer/$checker"
+    git -C "$consumer" add -- .
+    git -C "$consumer" -c user.name=Fixture -c user.email=fixture@example.invalid \
+        -c core.hooksPath=/dev/null -c commit.gpgSign=false commit -qm 'Native checker before adoption'
+    cp "$consumer/.toko-tooling.snapshot" "$fixture/before.snapshot"
+    entrypoints+=(--entrypoint "$checker")
+    refresh=(bash "$fixture/package/scripts/distribution/refresh-consumer.sh" --crate "$archive" --checksum "$checksum"
+        --package-version "$version" --consumer "$consumer" "${entrypoints[@]}")
+    printf '# Local checker edit\n' >> "$consumer/$checker"
+    cp "$consumer/$checker" "$fixture/local-checker"
+    for state in unstaged staged; do
+        if [[ "$state" == staged ]]; then git -C "$consumer" add -- "$checker"; fi
+        if "${refresh[@]}" > "$fixture/$state.log" 2>&1; then
+            echo "checker takeover accepted $state changes" >&2; exit 1
+        fi
+        grep -F 'consumer destination has local changes' "$fixture/$state.log" >/dev/null
+        cmp "$fixture/local-checker" "$consumer/$checker"
+        cmp "$fixture/before.snapshot" "$consumer/.toko-tooling.snapshot"
+    done
+    git -C "$consumer" restore --source=HEAD --staged --worktree -- "$checker"
+    "${refresh[@]}" --preview
     cmp "$fixture/before.snapshot" "$consumer/.toko-tooling.snapshot"
-done
-git -C "$consumer" restore --source=HEAD --staged --worktree -- "$checker"
-"${refresh[@]}" --preview
-cmp "$fixture/before.snapshot" "$consumer/.toko-tooling.snapshot"
-grep -F '# Consumer-owned comparator' "$consumer/$checker" >/dev/null
-"${refresh[@]}"
+    grep -F '# Consumer-owned comparator' "$consumer/$checker" >/dev/null
+    "${refresh[@]}"
+    while IFS= read -r entry; do
+        grep -Fx -- "$entry" "$consumer/.toko-tooling.snapshot" >/dev/null
+    done < <(grep '^# entrypoint' "$fixture/before.snapshot")
+    printf 'Packaged installer takeover, refusal and preview regressions passed.\n'
+fi
 cmp "$fixture/package/$checker" "$consumer/$checker"
-while IFS= read -r entry; do
-    grep -Fx -- "$entry" "$consumer/.toko-tooling.snapshot" >/dev/null
-done < <(grep '^# entrypoint' "$fixture/before.snapshot")
 printf '' > "$fixture/diagnostics.jsonl"
 printf '[]\n' > "$fixture/baseline.json"
 perl "$consumer/$checker" "$fixture/diagnostics.jsonl" "$fixture/baseline.json"

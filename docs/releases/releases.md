@@ -29,6 +29,27 @@ inputs remain unchanged; do not add network lookups to every build or pin check.
 
 ## Release contract
 
+### Deployment latency
+
+The baseline's [release policy](../../TOKO-TOOLING.md#release-commands) measures
+the maintainer's request through GitHub and registry availability. When improving
+this path, trace setup, selected validation, version preparation, packaging,
+publication and registry propagation. Report cold and prepared-tool cases
+separately, using existing logs from authorised attempts; CI timings are supporting
+evidence, not measurements of local deployment savings.
+
+Give each repeated obligation one execution owner. Publication should freshly
+admit the final source, archive and destination, reusing earlier expensive stages
+only under the [qualified reuse contract](release-validation-reuse.md).
+Version changes can invalidate stage inputs; never assume they are cosmetic.
+Keep full-versus-selected mapping qualification tied to changes in its admitted
+contract and inputs, rather than replaying every group on every deployment.
+Preserve consumer wiring and recovery tests; generic tooling matrices stay with
+their producer. A workflow optimisation must qualify invalidation and fallback
+as well as the faster path, without adding another runner or recurring gate.
+
+### Standard entrypoints
+
 Grouped increment commands use [frozen release batches](release-batches.md) by
 default: `RELEASE_GROUP=engine` captures that group automatically, so
 normal-checkout `cargo update` writes affect the next release, not active delivery.
@@ -93,6 +114,15 @@ This maintainer-selected gate applies to this source-distribution crate, which
 has no Rust runtime API; consumer projects retain their own complete gates.
 Publication checks the fresh package/version again before upload. A crates.io
 upload does not require replaying Shared's long-tail CI suite locally.
+`make check-tooling-package` rebuilds the archive and selects
+`test-tooling-package.sh --installation-only`: checksum/version admission,
+installation of the selected payload, offline Cargo/snapshot agreement, installed
+checker execution and exported documentation links. Both release and publication
+retain this fresh check; no pre-version archive or old receipt is reused.
+The script's default invocation retains the complete packaged takeover,
+staged/unstaged-edit refusal, preview and diagnostic-identity regressions. CI's
+portable suite runs that default; run it locally for changes affecting these
+contracts, rather than replaying it for every publication.
 
 Shared selects `RELEASE_VERSION_MODE=pending` and supplies `release-base-version`.
 That read-only hook returns the preceding ledger version when package.version already

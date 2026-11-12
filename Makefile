@@ -109,7 +109,7 @@ check-doc-links:
 	perl scripts/ci/check-documentation-links.pl --root . *.md audits rules tasks docs
 
 check-tooling-package:
-	@bash scripts/ci/test-tooling-package.sh
+	@bash scripts/ci/test-tooling-package.sh --installation-only
 
 check-release-commands:
 	bash scripts/ci/check-release-commands.sh . make/consumer.mk
