@@ -92,6 +92,7 @@ consumer behavior. Applicable workflows support macOS under the
 | Install selected IC executables | `make install-ic-tools`; [IC tools and ownership](docs/tools/ic-tools.md) |
 | Format a Rust consumer or enable its commit hook | Consumer `make fmt`, `make fmt-check`, `make install-hooks`; [formatting contract](rules/git-hooks.md) |
 | Check dependency declarations | `make check-pins`; [pinning policy](rules/dependency-pinning.md) and [helper contracts](docs/validation/verification-helpers.md) |
+| Review/update both Cargo workspaces | `make deps-review`, `make deps-update`; options: `make deps-help`; [maintenance guide](docs/validation/cargo-graph-checks.md#repository-dependency-maintenance) |
 | Report Rust LOC | `make cloc`; [workspace and sibling reports](docs/fleet/fleet-tools.md) |
 | Audit sibling tooling adoption | [Snapshot integrity and relevant updates](tasks/snapshot-drift.md), [caller wiring and consolidation](tasks/tooling-duplication.md) |
 | Inspect issues, PRs or CI runs | `scripts/dev/github-siblings.sh`, `scripts/dev/gh-ci.sh`; [usage and limits](docs/fleet/fleet-tools.md) |

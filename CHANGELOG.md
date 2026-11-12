@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.39.13] - Unreleased
+
+### ✨ Added
+
+- Add an opt-in Cargo dependency review/update command covering the root and
+  qualification workspaces, reporting newer releases outside current requirements
+  and differing locked selections without synchronizing manifests. Expose
+  `make deps-review`, `deps-update` and `deps-help`.
+
 ## [0.39.12] - 2026-11-11
 
 ### 🐛 Fixed

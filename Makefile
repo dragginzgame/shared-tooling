@@ -26,6 +26,7 @@ RELEASE_EDITOR_COMMAND = bash "$(CURDIR)/scripts/dev/install-rust-tools.sh" --co
     --package ic-build --version "$(RELEASE_EDITOR_VERSION)" --bin ic-build-release-metadata --profile debug --features cli
 export PATH := $(CURDIR)/.tools/ic/bin:$(PATH)
 include make/consumer.mk
+include make/cargo-dependencies.mk
 
 # Only the standard release request authorizes tool preparation. Standalone
 # metadata/check commands remain offline; the adapter consumes this selection.
@@ -53,6 +54,8 @@ help:
 	@echo "Pinned Cargo tools: install-rust-tools; offline verification: rust-tools-check"
 	@echo "Shared integration editor: install-release-editor; offline verification: release-editor-check"
 	@echo "Cargo tool freshness (online, read-only): check-cargo-tool-versions"
+	@echo "Dependencies across root + qualification: deps-review (online), deps-update (changes locks)"
+	@echo "Dependency command options and limits: make deps-help"
 	@echo "Caller catalog agreement (offline, opt-in): check-tool-catalogs TOOL_CATALOG_BINDINGS=path"
 	@echo "Basic local release gate: release-basic (metadata, shell lint, pins, links, source package)"
 	@echo "Long-tail CI/explicit local checks: ci, test-portable"
