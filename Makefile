@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-
+# Shared companions: make/consumer.mk make/cargo-dependencies.mk
 export RELEASE_DELIVERY ?= direct
 WORK_VERSION_KIND ?= patch
 SHELLCHECK ?= shellcheck
@@ -113,6 +113,10 @@ check-tooling-package:
 
 check-release-commands:
 	bash scripts/ci/check-release-commands.sh . make/consumer.mk
+
+.PHONY: test-public-docs
+test-public-docs:
+	perl scripts/ci/test-public-docs.pl
 
 ci:
 	+@bash scripts/ci/run-validation-targets.sh --fail-fast check-version check-no-symlinks check-shell check-pins check-doc-links test-portable

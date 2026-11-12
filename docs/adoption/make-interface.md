@@ -411,3 +411,29 @@ vendor, tool/cache and recovery-evidence directories are preserved. It prints
 the number deleted. Cleanup never removes files or follows directory links.
 The helper also accepts explicit repository-relative source paths for standalone
 use, including quoted paths containing spaces.
+
+## Rustdoc diagnostic baselines
+
+Select `scripts/ci/check-public-docs.pl` as an explicit snapshot entrypoint when
+maintaining a bounded missing-documentation baseline. Consumers own the Cargo
+package/feature selection and baseline file. Run from the directory used by Cargo
+so diagnostic source paths resolve against the same checkout.
+
+```bash
+perl scripts/ci/check-public-docs.pl diagnostics.jsonl public-docs-baseline.json
+```
+
+The checker compares item identities, preserves occurrence counts, and refuses
+malformed diagnostics, unsupported identities and missing source files. Updating
+the baseline requires the explicit `--write-baseline` option; normal checks never
+rewrite it. Generic identity/rejection fixtures run in producer `test-public-docs`
+CI; consumers retain their Cargo/rustdoc caller checks.
+
+When replacing a consumer-owned checker at this path, review and commit its
+local changes first. The installer may replace a clean tracked native file;
+modified or staged differing files are refused. Preview the selected release
+with the complete existing entrypoint list plus `scripts/ci/check-public-docs.pl`,
+then install that same selection. Explicit entrypoints replace the recorded
+selection, so retain every still-needed entrypoint. Never edit the snapshot
+receipt or managed checker by hand. Keep the consumer baseline and compiler
+caller tests; retire its generic comparator tests after shared adoption passes.

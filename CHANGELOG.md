@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.39.16] - Unreleased
+
+### ✨ Added
+
+- Export the generic Rustdoc missing-documentation diagnostic checker; consumers
+  retain their own baseline and Cargo selection. Qualify stable item identities,
+  UTF-8, nested comments, malformed inputs and baseline preservation
+  ([#377](https://github.com/dragginzgame/toko-tooling/issues/377)).
+
+```bash
+perl scripts/ci/check-public-docs.pl diagnostics.jsonl public-docs-baseline.json
+```
+
+### 🐛 Fixed
+
+- Include the dependency-update Make module in release fixtures through the root
+  Makefile's declared companions, fixing portable CI setup failures.
+
 ## [0.39.15] - 2026-11-12
 
 ### 🐛 Fixed
