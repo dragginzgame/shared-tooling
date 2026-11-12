@@ -14,6 +14,7 @@ with common rules require maintainer-approved exceptions with scope and reason.
 Current principles:
 
 - [Simplicity and maintainability](simplicity-and-maintainability.md)
+- [Whole-subsystem replacement ("nuke and rewrite")](subsystem-replacement.md)
 - [Decision artifact discipline](decision-artifact-discipline.md)
 - [Reviewable changes](reviewable-changes.md)
 - [Rust code hygiene baseline](rust-code-hygiene.md)

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.39.19] - Unreleased
+
+### ✨ Added
+
+- Add whole-subsystem replacement guidance: "nuke and rewrite" means validating
+  the responsibility boundary and completing a working replacement in one batch,
+  with protected behavior and deletion-based completion criteria.
+
 ## [0.39.18] - 2026-11-12
 
 ### ✨ Added

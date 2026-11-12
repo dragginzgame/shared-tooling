@@ -6,6 +6,10 @@ The goal is the smallest maintained state space that satisfies demonstrated
 product and safety needs with clear ownership. Minimum line count and maximum
 reuse are not goals by themselves.
 
+When incremental changes leave an identified structural problem intact, a
+maintainer can invoke [subsystem replacement](subsystem-replacement.md): a bounded
+rewrite completed by migrating callers and deleting the superseded mechanisms.
+
 This principle was generalized from IcyDB's no-build, state-space, and
 canonical-authority review gates.
 

@@ -122,6 +122,12 @@ principles](docs/principles/README.md), focused policies in `rules/` and the
 [shared audit methods](audits/README.md) support that baseline; product-specific
 choices and historical reports remain with consumers.
 
+For an identified subsystem stuck in incremental cleanup, invoke
+[whole-subsystem replacement](docs/principles/subsystem-replacement.md)
+("nuke and rewrite"): establish a coherent responsibility, then replace it in one
+complete deliverable with explicit behavior guarantees and deletion criteria.
+The guide includes a copyable agent prompt; it is not an automatic maintenance task.
+
 ## Contributing and validation
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) and this repository's [AGENTS.md](AGENTS.md).

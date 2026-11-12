@@ -132,6 +132,18 @@ when changing component boundaries.
 
 ## Complete, reviewable changes
 
+In engineering requests, "nuke this", "nuke and rewrite" or "the nuclear option"
+means whole-subsystem replacement as one coherent deliverable, not deletion alone.
+First establish a coherent responsibility, inputs/outputs and callers; an existing
+directory or collection of tangled concerns is not proof of a subsystem. Separate
+misplaced responsibilities instead of rebuilding the same accidental boundary.
+Define protected behavior and mechanisms to retire, then implement, migrate callers,
+delete superseded paths and verify the result without requiring another prompt
+for every intermediate cleanup. Internal steps may be incremental; preparatory
+refactors are not the deliverable. Observable contracts and recovery guarantees
+remain protected. Resolve scope from context and ask only for material ambiguity;
+frustration alone does not activate this mode or expand delivery authority.
+
 Finish the accepted coherent outcome, including directly required callers,
 fixtures, docs and cleanup. Split independent outcomes, not compiler fallout or
 each proof of the same change. Stop at new independent scope or a release boundary.

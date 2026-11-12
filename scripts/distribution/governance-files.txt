@@ -46,6 +46,7 @@ docs/principles/decision-artifact-discipline.md
 docs/principles/reviewable-changes.md
 docs/principles/rust-code-hygiene.md
 docs/principles/simplicity-and-maintainability.md
+docs/principles/subsystem-replacement.md
 docs/adoption/consuming-snapshots.md
 docs/validation/verification-helpers.md
 docs/tools/ic-tools.md
