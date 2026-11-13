@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.42.7] - Unreleased
+
+### 🩹 Fixed
+
+- Resolve pre-commit helpers independently of `CDPATH` for root and vendor
+  installations, preserving staged-only formatting and unrelated working edits.
+
 ## [0.42.6] - 2026-11-13
 
 ### 🩹 Fixed

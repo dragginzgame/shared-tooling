@@ -3,14 +3,19 @@
 set -euo pipefail
 
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
+path_context_only=false
+if [[ $# == 1 && "$1" == --path-context-only ]]; then path_context_only=true;
+elif [[ $# != 0 ]]; then echo 'usage: test-git-hooks.sh [--path-context-only]' >&2; exit 2; fi
 
 ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"
 ROOT="${ROOT%/.}"
-record="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" rust "$ROOT/ci/tool-versions.env" CARGO_SORT)"
-IFS=$'\t' read -r _ sort_version _ _ <<< "$record"
-bash "$ROOT/scripts/ci/check-format-tools.sh" "$sort_version"
+if [[ "$path_context_only" == false ]]; then
+    record="$(perl "$ROOT/scripts/ci/tool-catalog-records.pl" rust "$ROOT/ci/tool-versions.env" CARGO_SORT)"
+    IFS=$'\t' read -r _ sort_version _ _ <<< "$record"
+    bash "$ROOT/scripts/ci/check-format-tools.sh" "$sort_version"
+fi
 FIXTURE="$(mktemp -d "${TMPDIR:-/tmp}/git-hooks-test.XXXXXX")"
 FIXTURE="$(CDPATH="" cd -P -- "$FIXTURE" && printf '%s/.' "$PWD")"
 FIXTURE="${FIXTURE%/.}"
@@ -71,6 +76,37 @@ expect_failure() {
         exit 1
     fi
 }
+
+# The actual hook must resolve its own helpers without CDPATH stdout or search
+# redirection, for both supported layouts and relative/absolute invocation.
+for layout in root vendor; do
+    for invocation in relative absolute; do
+        new_fixture "path context $layout $invocation"
+        hook=.githooks/pre-commit
+        if [[ "$layout" == vendor ]]; then
+            mkdir -p vendor/toko-tooling
+            bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$PWD/vendor/toko-tooling" .githooks/pre-commit
+            hook=vendor/toko-tooling/.githooks/pre-commit
+        fi
+        printf 'unformatted\n' > staged.rs
+        printf 'unformatted unrelated working edit\n' > README.md
+        printf 'unformatted untracked\n' > unselected.rs
+        git add -- staged.rs
+        mkdir -p "$FIXTURE/shadow/${hook%/*}"
+        [[ "$invocation" != absolute ]] || hook="$PWD/$hook"
+        CDPATH="$FIXTURE/shadow:$PWD" bash "$hook" > output 2>&1
+        [[ "$(git show :staged.rs)" == formatted && "$(cat staged.rs)" == formatted ]]
+        [[ "$(cat README.md)" == 'unformatted unrelated working edit' ]]
+        [[ "$(git show :README.md)" == "$(git show HEAD:README.md)" ]]
+        [[ "$(cat unselected.rs)" == 'unformatted untracked' ]]
+        [[ -z "$(git ls-files -- unselected.rs)" ]]
+    done
+done
+if [[ "$path_context_only" == true ]]; then
+    fixture_complete=true
+    echo 'Root/vendor hook path resolution and staged preservation passed with CDPATH'
+    exit 0
+fi
 
 new_fixture 'fully staged'
 printf 'unformatted\n' > 'staged [1].rs'
