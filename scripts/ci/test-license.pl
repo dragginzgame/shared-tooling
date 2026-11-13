@@ -92,11 +92,33 @@ isnt($archive_check->('--member', '../LICENSE.md'), 0, 'escaping selection rejec
 write_file($archive, substr($good_archive, 0, length($good_archive) - 4));
 isnt($archive_check->(), 0, 'truncated gzip rejected');
 
-make_path("$fixture/snapshot/scripts/ci");
-copy($checker, "$fixture/snapshot/scripts/ci/check-license.pl") or die $!;
-copy("$root/LICENSE.md", "$fixture/snapshot/LICENSE.md") or die $!;
-$checker = "$fixture/snapshot/scripts/ci/check-license.pl";
-write_file($source, $canonical);
-is($check->(), 0, 'relocated snapshot resolves canonical licence');
+my $original_checker = $checker;
+for my $layout ('scripts/ci', 'vendor/toko-tooling/scripts/ci') {
+    subtest "relocated $layout" => sub {
+        my $repository = "$fixture/snapshot-$layout";
+        make_path("$repository/$layout");
+        $checker = "$repository/$layout/check-license.pl";
+        copy($original_checker, $checker) or die $!;
+        my $document = "$repository/LICENSE.md";
+        write_file($document, $canonical);
+        write_file($source, $canonical);
+        # A vendor-local document must never override or rescue the root file.
+        write_file("$repository/vendor/toko-tooling/LICENSE.md", 'stale vendor copy')
+            if $layout =~ m{\Avendor/};
+        is($check->(), 0, 'resolves root document independently of caller cwd');
+        $package->([$member, $canonical]);
+        is($archive_check->(), 0, 'archive matches root document');
+        $package->([$member, $canonical . "\n"]);
+        isnt($archive_check->(), 0, 'changed archive rejected');
+        write_file($document, 'malformed root');
+        isnt($check->(), 0, 'malformed root rejected');
+        unlink $document or die $!;
+        write_file("$repository/vendor/toko-tooling/LICENSE.md", $canonical)
+            if $layout =~ m{\Avendor/};
+        isnt($check->(), 0, 'missing root rejected without fallback');
+        symlink $source, $document or die $!;
+        isnt($check->(), 0, 'root symlink rejected');
+    };
+}
 done_testing();
 $complete = Test::More->builder->is_passing;

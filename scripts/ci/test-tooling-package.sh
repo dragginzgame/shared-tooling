@@ -33,7 +33,7 @@ mkdir "$consumer"
 git -C "$consumer" init -q
 printf '# Consumer-owned README\n' > "$consumer/README.md"
 printf '# Consumer-owned instructions\n' > "$consumer/AGENTS.md"
-entrypoints=(--entrypoint make/consumer.mk --entrypoint scripts/dev/toko-tooling.sh --entrypoint .githooks/pre-commit --entrypoint .github/actions/prepare-common-tools/action.yml)
+entrypoints=(--entrypoint make/consumer.mk --entrypoint scripts/dev/toko-tooling.sh --entrypoint .githooks/pre-commit --entrypoint .github/actions/prepare-common-tools/action.yml --entrypoint scripts/ci/check-license.pl)
 checker=scripts/ci/check-public-docs.pl
 [[ -f "$fixture/package/$checker" ]]
 if [[ "$installation_only" == true ]]; then entrypoints+=(--entrypoint "$checker"); fi
@@ -103,6 +103,8 @@ printf '' > "$fixture/diagnostics.jsonl"
 printf '[]\n' > "$fixture/baseline.json"
 perl "$installed/$checker" "$fixture/diagnostics.jsonl" "$fixture/baseline.json"
 make --no-print-directory -C "$consumer" toko-tooling-check
+perl "$installed/scripts/ci/check-license.pl" --file "$consumer/LICENSE.md" \
+    --archive "$archive" --member "toko-tooling-$version/LICENSE.md"
 bash "$installed/scripts/dev/install-git-hooks.sh" --consumer "$consumer"
 [[ "$(git -C "$consumer" config core.hooksPath)" == vendor/toko-tooling/.githooks ]]
 documents=()

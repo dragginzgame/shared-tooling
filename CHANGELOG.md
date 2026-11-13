@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.42.2] - Unreleased
+
+### 🩹 Fixed
+
+- Keep repository-file and package admission working with the vendor installation
+  layout.
+
 ## [0.42.1] - 2026-11-13
 
 ### 🩹 Fixed
