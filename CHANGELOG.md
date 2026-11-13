@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.42.1] - Unreleased
+
+### 🩹 Fixed
+
+- Isolate the packaged installation fixture from the producer's publication
+  settings so optional components remain unselected during publication checks.
+
 ## [0.42.0] - 2026-11-13
 
 ### ⚠️ Breaking

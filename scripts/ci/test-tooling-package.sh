@@ -49,7 +49,9 @@ installed="$consumer/vendor/toko-tooling"
 while IFS= read -r action; do
     [[ -f "$consumer/${action#./}/action.yml" ]]
 done < <(yq -r '.runs.steps[] | select(.uses != null) | .uses' "$installed/.github/actions/prepare-common-tools/action.yml" | sed -n '\|^\./|p')
-printf 'include vendor/toko-tooling/make/consumer.mk\n' > "$consumer/Makefile"
+# Publication exports its own package selection. This independent scratch
+# consumer deliberately selects neither release nor publication components.
+printf 'override CARGO_PUBLISH_PACKAGES :=\noverride TOKO_TOOLING_RELEASE := 0\ninclude vendor/toko-tooling/make/consumer.mk\n' > "$consumer/Makefile"
 mkdir -p "$consumer/src" "$consumer/.cargo" "$fixture/vendor/toko-tooling"
 printf '[package]\nname="fixture-consumer"\nversion="0.1.0"\nedition="2024"\n[dev-dependencies]\ntoko-tooling="=%s"\n' "$version" > "$consumer/Cargo.toml"
 printf '' > "$consumer/src/lib.rs"

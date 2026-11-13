@@ -8,7 +8,7 @@ record its exact Toko Tooling source revision.
 ## Start here
 
 For a Rust consumer, use this sequence. Select a published, reviewed release;
-the `0.42.0` examples below are a concrete selection, not a latest-version alias.
+the `0.42.1` examples below are a concrete selection, not a latest-version alias.
 
 1. Add the root pin and each member's inherited dev-dependency and cargo-machete
    exemption under [Cargo selection](#cargo-selection-and-installation). Update
@@ -42,7 +42,7 @@ the `0.42.0` examples below are a concrete selection, not a latest-version alias
 
 ## Related guides
 
-- [Vendor installation in 0.42.0](migrations.md#vendor-installation-in-0420)
+- [Vendor installation in 0.42.1](migrations.md#vendor-installation-in-0420)
 - [Online reference documentation in 0.39.5](migrations.md#online-reference-documentation-in-0395)
 - [Documentation paths in 0.39.0](migrations.md#documentation-paths-in-0390)
 - [Consumer Make changes in 0.39.0](migrations.md#consumer-make-changes-in-0390)
@@ -103,7 +103,7 @@ newer available releases. Declare the exact version once in root `Cargo.toml`:
 
 ```toml
 [workspace.dependencies]
-toko-tooling = "=0.42.0"
+toko-tooling = "=0.42.1"
 ```
 
 Every real workspace package, including a root package and private/test packages,
@@ -127,7 +127,7 @@ standalone packages; retain exactly one declaration, never both forms.
 Merge the cargo-machete exemption with existing entries: the dependency supplies
 installed source tooling, not imported Rust APIs. Do not add an artificial Rust
 import. Do not create a package to hold this dependency. A standalone package
-without `[workspace]` declares `toko-tooling = "=0.42.0"` directly in its root
+without `[workspace]` declares `toko-tooling = "=0.42.1"` directly in its root
 `[dev-dependencies]`, with the same exemption. The producer `toko-tooling` itself
 is exempt from consuming its own package; it validates the packaged payload.
 

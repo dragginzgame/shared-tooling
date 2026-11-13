@@ -3,12 +3,14 @@
 ## Vendor installation in 0.42.0
 
 This minor release moves executable snapshots into `vendor/toko-tooling/`.
+Use 0.42.1 or later: the 0.42.0 Git tag was delivered, but its crate publication
+stopped at the installation fixture; 0.42.1 fixes that fixture boundary.
 The exporter retains upstream bytes and relative layout inside that directory.
 Only `TOKO-TOOLING.md`, `LICENSE.md` and `CONTRIBUTING.md` stay at root; the
 root `.toko-tooling.snapshot` records physical destination paths and a vendor
 layout annotation. Do not hand-edit that receipt or move installed files.
 
-1. Select `=0.42.0` and update every maintained Cargo lock. Keep the old crate
+1. Select `=0.42.1` and update every maintained Cargo lock. Keep the old crate
    available for ownership proof; the registry updater downloads it when needed.
 2. Inventory actual Make, script, hook and CI callers. Supply a complete
    `--entrypoint` list using **upstream paths**, without the vendor prefix.
