@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.42.5] - Unreleased
+
+### 🩹 Fixed
+
+- Resolve fixture-retention helpers from their installed location while retaining
+  the consumer root for generated probes ([#381](https://github.com/dragginzgame/toko-tooling/issues/381)).
+- Restore producer fixture admission after optional release components moved out
+  of the default payload; keep child test execution behind retention setup.
+
 ## [0.42.4] - 2026-11-13
 
 ### 🩹 Fixed

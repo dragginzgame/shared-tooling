@@ -8,7 +8,6 @@ if [[ "${1:-}" == --path-context && $# == 1 ]]; then path_context=true;
 elif [[ "${1:-}" == --contention-only && $# == 1 ]]; then contention_only=true;
 elif [[ "${1:-}" == --maintenance-only && $# == 1 ]]; then maintenance_only=true;
 elif [[ $# != 0 ]]; then echo 'usage: fixture [--path-context|--contention-only|--maintenance-only]' >&2; exit 2; fi
-if [[ $# == 0 ]]; then bash "${BASH_SOURCE[0]}" --maintenance-only; fi
 ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"; ROOT="${ROOT%/.}"
@@ -32,6 +31,8 @@ finish() {
     fixture_finish "$status" "$fixture" 'Failed Rust tool fixture retained'
 }
 trap finish EXIT
+# Retention probes stop at the trap; child fixtures must not precede custody.
+if [[ $# == 0 ]]; then bash "${BASH_SOURCE[0]}" --maintenance-only; fi
 export TOKO_TOOLING_STORE="$fixture/store"
 mkdir "$fixture/templates"
 export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TEMPLATE_DIR="$fixture/templates"

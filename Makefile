@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-# Shared companions: make/consumer.mk make/cargo-dependencies.mk
+# Shared companions: make/consumer.mk make/cargo-dependencies.mk make/release.mk make/cargo-publication.mk
 export RELEASE_DELIVERY ?= direct
 WORK_VERSION_KIND ?= patch
 SHELLCHECK ?= shellcheck

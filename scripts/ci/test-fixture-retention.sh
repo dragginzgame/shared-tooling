@@ -14,6 +14,39 @@ source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 source "$ROOT/scripts/ci/fixture-retention-probes.sh"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Retention fixtures retained"' EXIT
+if [[ $# != 0 && ! ( $# == 1 && "$1" == --vendor-only ) ]]; then
+    echo 'usage: test-fixture-retention.sh [--vendor-only]' >&2; exit 2
+fi
+# Keep consumer identity distinct from the installed helper owner. Source the
+# helper relatively, then change cwd before probing consumer-owned initialization.
+(
+    consumer="$fixture/vendor consumer"
+    mkdir -p "$consumer/vendor/toko-tooling" "$fixture/vendor-probes"
+    bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$consumer/vendor/toko-tooling" \
+        scripts/ci/fixture-retention-probes.sh
+    printf 'consumer-owned\n' > "$consumer/identity"
+    cat > "$consumer/owner.sh" <<'OWNER'
+#!/usr/bin/env bash
+set -euo pipefail
+root=unused
+[[ "$(cat "$root/identity")" == consumer-owned ]]
+source "$root/vendor/toko-tooling/scripts/ci/fixture-lifecycle.sh"
+fixture="$(fixture_create "$TMPDIR/consumer-owner.XXXXXX")"
+fixture_complete=false
+trap 'fixture_finish "$?" "$fixture" "Consumer owner retained"' EXIT
+printf forbidden > "$root/body-ran"
+OWNER
+    cd "$consumer"
+    # shellcheck source=scripts/ci/fixture-retention-probes.sh
+    source vendor/toko-tooling/scripts/ci/fixture-retention-probes.sh
+    cd "$fixture/vendor-probes"
+    FIXTURE_PROBE_ROOT_VARIABLE=root fixture_probe_exits \
+        "$consumer/owner.sh" "$fixture/vendor-probes" "$consumer" vendor || exit 1
+    [[ ! -e "$consumer/scripts/ci/fixture-lifecycle.sh" && ! -e "$consumer/body-ran" ]]
+)
+# Subsequent producer probes own their own observation, outside that subshell.
+fixture_probe_retained=''
+if [[ "${1:-}" == --vendor-only ]]; then fixture_complete=true; exit 0; fi
 "$BASH" "$ROOT/scripts/ci/test-fixture-assertion-probe.sh"
 # Inject exits into disposable copies of actual fixtures immediately after their
 # EXIT trap. No installer, release, or nested test body is dispatched. Exercise
@@ -386,10 +419,10 @@ mkdir -p "$fixture/source"
 "$BASH" "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$fixture/source" scripts/ci/test-cloc.sh
 status=0
 TMPDIR="$fixture/cloc" PATH="$fixture/bin:$PATH" CARGO_NET_OFFLINE=true RUSTUP_AUTO_INSTALL=0 \
-    "$BASH" "$fixture/source/scripts/ci/test-cloc.sh" > "$fixture/cloc.log" 2>&1 || status=$?
+    "$BASH" "$fixture/source/scripts/ci/test-cloc.sh" --scopes-only > "$fixture/cloc.log" 2>&1 || status=$?
 [[ "$status" == 23 ]] || exit 1
 set -- "$fixture/cloc"/shared-cloc-test.*
-[[ $# == 1 && -f "$1/Cargo.toml" && -f "$1/crates/app/src/lib.rs" ]] || exit 1
+[[ $# == 1 && -f "$1/scopes/Cargo.toml" && -f "$1/scopes/src/lib.rs" ]] || exit 1
 
 status=0
 printf '#!/bin/sh\nexit 99\n' > "$fixture/portable/editor"
@@ -419,7 +452,7 @@ jq -e --arg save_condition "\${{ needs.change-scope.outputs.scope != 'docs' && (
   .jobs["portable-regression"].steps | to_entries |
   map(select(.value.uses? | strings | startswith("actions/cache/restore@"))) as $restore |
   map(select(.value.uses? | strings | startswith("actions/cache/save@"))) as $save |
-  map(select(.value.uses == "./.github/actions/prepare-common-tools")) as $setup |
+  map(select(.value.run == "bash scripts/ci/prepare-common-tools.sh")) as $setup |
   map(select(.value.run? | strings | contains("CARGO_NET_OFFLINE=true bash scripts/dev/install-rust-tools.sh"))) as $reuse |
   map(select(.value.id == "portable-tests")) as $gate |
   ($restore | length) == 1 and ($save | length) == 1 and
@@ -444,7 +477,7 @@ jq -e '
 # shellcheck disable=SC2016 # GitHub expressions are literal workflow inputs.
 jq -e --arg failure_condition "\${{ needs.change-scope.outputs.scope != 'docs' && (failure()) }}" '
   .jobs["portable-regression"].steps | to_entries |
-  map(select(.value.uses == "./.github/actions/prepare-common-tools")) as $native |
+  map(select(.value.run == "bash scripts/ci/prepare-common-tools.sh")) as $native |
   map(select(.value.uses == "./.github/actions/retain-failure-evidence" and .value.if == $failure_condition)) as $uploads |
   ($native | length) == 1 and ($uploads | length) == 1 and
   $uploads[0].key > $native[0].key and $uploads[0].key == length - 1 and
@@ -480,6 +513,8 @@ echo "native fixture: $selected"
 SCRIPT
     status=0
     (cd "$native"; RUNNER_TEMP="$native/temp" RETENTION_FAIL_IC_PHASE="$phase" \
+        ACTION_ROOT="$ROOT/.github/actions/prepare-common-tools" \
+        GITHUB_WORKSPACE="$native" GITHUB_PATH="$native/github-path" \
         "$BASH" --noprofile --norc -e -o pipefail "$fixture/native-step.sh") \
         > "$native/command.log" 2>&1 || status=$?
     # GNU Make reports a failed recipe as status 2; the installer evidence stays.
