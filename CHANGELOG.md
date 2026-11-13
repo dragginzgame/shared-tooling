@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.42.3] - Unreleased
+
+### 📝 Documentation
+
+- Clarify domain-library and canister-endpoint ownership, preserving legitimate
+  codec dependencies while keeping framework mounting and guards in adapters.
+
 ## [0.42.2] - 2026-11-13
 
 ### 🩹 Fixed

@@ -315,6 +315,14 @@ Those requirements belong to that integration, not automatically to every core
 library it consumes. Preserve dependencies required by the core's actual public
 types, behavior and retained-data contracts.
 
+- Apply the baseline's [endpoint ownership rule](../TOKO-TOOLING.md#ic-application-encoding).
+  Trace codec use, protocol contracts and executable exports separately. A domain
+  protocol may stay with its library; framework-specific method rosters, mounting
+  and guards belong to the integration owner. Generated private native handlers
+  are not public exports. Preserve precommit response admission, storage formats
+  and recovery guarantees when moving bindings; a codec replacement requires its
+  own explicit format assessment. Qualify native use without endpoint mounting
+  and the real adapter's authorization and transport behavior independently.
 - Keep consumer-framework dependencies out of reusable core libraries and their
   ordinary tests. Put framework-specific mounting, lifecycle, deployment and
   composed endpoint qualification at the adapter/application owner or an
