@@ -159,6 +159,7 @@ run_fixture test-formatting-evidence.sh bash "$ROOT/scripts/ci/test-formatting-e
 run_fixture test-consumer-flow-probes.sh bash "$ROOT/scripts/ci/test-consumer-flow-probes.sh"
 run_fixture test-fixture-retention.sh bash "$ROOT/scripts/ci/test-fixture-retention.sh"
 run_fixture test-collect-tool-evidence.sh bash "$ROOT/scripts/ci/test-collect-tool-evidence.sh"
+run_fixture test-tooling-selection bash "$ROOT/scripts/ci/test-toko-tooling-update.sh" selection
 run_fixture test-toko-tooling-update.sh bash "$ROOT/scripts/ci/test-toko-tooling-update.sh"
 run_fixture test-empty-source-dirs.sh bash "$ROOT/scripts/ci/test-empty-source-dirs.sh"
 run_fixture test-registry-package.pl perl "$ROOT/scripts/ci/test-registry-package.pl"

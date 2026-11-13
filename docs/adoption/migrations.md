@@ -1,5 +1,30 @@
 # Consumer migration history
 
+## Bootstrap and binary-test fixes in 0.41.1
+
+The bootstrap observer now admits complete release membership without requiring
+unused root dependency aliases. Keep group `members` intact and list only actual
+root aliases in each `dependencies` roster. Existing aliases still require valid
+paths, requirements and matching policy entries; lock/member identities and
+read-only interruption admission remain checked.
+
+Cargo 1.100 can diagnose the mandatory unused tooling dev-dependency in binary-only
+unit tests. The installer now also admits this exact source-only marker:
+
+```toml
+[target.'cfg(any())'.dev-dependencies]
+toko-tooling.workspace = true
+```
+
+Move the declaration, do not duplicate it. Keep the exact root pin, Cargo.lock,
+member participation and cargo-machete exemption. Standalone packages use the
+exact version directly in this table. No dummy Rust import, empty library or
+unused-dependency allowance is needed. Upgrade using the released producer
+installer before relying on this form: the previous installed verifier rejects
+it. Keep strict lint tests for real normal dependencies. Unaffected library
+packages may retain unconditional dev-dependencies; no fleet-wide migration is
+required.
+
 ## Rust 1.100 capabilities in 0.41.0
 
 This release extends the common lint minimum with Cargo's `unused_dependencies`,

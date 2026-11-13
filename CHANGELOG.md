@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.41.1] - Unreleased
+
+### 🩹 Fixed
+
+- Show `(root)` and `qualification/` workspace labels in `make deps-list` instead
+  of manifest paths.
+- Admit release bootstrap for members without unused root dependency aliases,
+  preserving complete membership, lock identity, catalog-path and policy checks.
+- Admit the exact `cfg(any())` source-only tooling dev-dependency form to unblock
+  binary-only Cargo 1.100 tests. Preserve inherited pins, Cargo.lock and snapshot
+  admission without dummy imports or unused-dependency allowances. See the
+  [migration](docs/adoption/migrations.md#bootstrap-and-binary-test-fixes-in-0411).
+
 ## [0.41.0] - 2026-11-13
 
 ### ⚠️ Breaking

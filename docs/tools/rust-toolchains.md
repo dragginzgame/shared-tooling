@@ -6,9 +6,13 @@ The [release notes](https://doc.rust-lang.org/releases.html#version-11000-2026-1
 and [Cargo lints](https://doc.rust-lang.org/cargo/reference/lints.html) underpin
 the baseline's common Cargo/Rustdoc policy. Use existing package/feature checks;
 do not create an additional fleet-wide build gate just to execute these lints.
-Native Cargo unused-dependency checks do not cover dev-dependencies, and a
-selected binary alone may not exercise all dependency users. Keep meaningful
-complementary checks and real feature/target coverage.
+Cargo documents dev-dependencies as outside unused-dependency lint coverage,
+but the prepared 1.100.0 compiler diagnoses an unused source-bundle dev-dependency
+in binary-only tests (the equivalent library passes). Use the admitted
+`target.'cfg(any())'.dev-dependencies` marker form for Toko in that case, keeping
+its exact inherited pin and lock selection. A selected binary alone may also
+miss normal dependency users. Keep meaningful complementary checks and real
+feature/target coverage; do not use this marker form to hide unused code dependencies.
 
 ### Warning enforcement without changing compilation flags
 

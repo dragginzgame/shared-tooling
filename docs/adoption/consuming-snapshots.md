@@ -106,7 +106,7 @@ toko-tooling = "=0.39.9"
 ```
 
 Every real workspace package, including a root package and private/test packages,
-must inherit it unconditionally:
+must inherit the same selection:
 
 ```toml
 [dev-dependencies]
@@ -115,6 +115,13 @@ toko-tooling.workspace = true
 [package.metadata.cargo-machete]
 ignored = ["toko-tooling"]
 ```
+
+For binary-only packages whose tests reject the unused marker under Cargo 1.100,
+move that declaration to `[target.'cfg(any())'.dev-dependencies]`. The exact
+always-false selector retains the dependency in Cargo metadata and Cargo.lock
+without compiling it. Do not add an empty library, artificial import or lint
+allowance. This source-only form is also supported for other package kinds and
+standalone packages; retain exactly one declaration, never both forms.
 
 Merge the cargo-machete exemption with existing entries: the dependency supplies
 installed source tooling, not imported Rust APIs. Do not add an artificial Rust
@@ -152,7 +159,7 @@ the archive, and preserves consumer-owned edits and recorded entrypoints.
 Offline admission checks every workspace member, not just default-members, for
 one inherited dev-dependency at the root pin. It rejects missing declarations,
 local version overrides, normal/build dependencies, aliases, target-specific
-selection and non-registry source overrides. Cargo.lock must contain exactly one
+selection other than the exact `cfg(any())` marker, and non-registry overrides. Cargo.lock must contain exactly one
 matching crates.io entry, and the installed receipt's version/checksum and owned
 files must agree. Deleting a member cannot remove the dependency from remaining
 members; deleting the last declaration fails admission. A changed Cargo selection

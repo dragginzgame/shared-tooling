@@ -506,7 +506,13 @@ in [the Cargo Book](https://doc.rust-lang.org/cargo/reference/specifying-depende
 Select Toko Tooling once in root `[workspace.dependencies]` with an exact
 `=X.Y.Z` crates.io pin. Every real workspace package must inherit it under
 `[dev-dependencies]` with `toko-tooling.workspace = true`, including root, private
-and test packages. A standalone package uses an exact root dev-dependency.
+and test packages. For the source-bundle marker,
+`[target.'cfg(any())'.dev-dependencies]` is also admitted; it retains Cargo
+metadata/lock selection without compiling a Rust API that is never imported.
+This resolves Cargo 1.100's unused-marker diagnostic in binary-only tests without
+weakening any lint. Admit only this exact always-false selector, not arbitrary
+platform conditions. A standalone package uses an exact dev-dependency in either
+of these two locations.
 The producer itself is exempt from self-dependency. No selection-only package,
 normal/build dependency or artificial Rust import is allowed. Merge an intentional
 `toko-tooling` exemption into each package's cargo-machete ignored entries.

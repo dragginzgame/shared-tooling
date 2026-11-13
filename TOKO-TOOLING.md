@@ -186,7 +186,11 @@ when changing interfaces, persistence or installation/recovery behavior.
   suite. Name the changed behavior each selected check proves. Keep unchanged
   generic regression matrices with their producer.
 - Repository tooling uses one exact root Cargo dependency pin inherited as a
-  dev-dependency by every real workspace package. `cargo update -v` reports newer
+  dev-dependency by every real workspace package. The exact
+  `target.'cfg(any())'.dev-dependencies` form is also permitted for this
+  source-bundle marker: it preserves Cargo selection without compiling an unused
+  crate into binary tests. Other target selectors, dummy imports and lint
+  suppressions are not substitutes. `cargo update -v` reports newer
   releases; after changing the pin and Cargo.lock, run `make toko-tooling-update`.
   Offline admission checks every member, Cargo.lock and installed bytes together.
   See the

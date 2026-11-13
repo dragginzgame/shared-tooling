@@ -97,6 +97,32 @@ for package in alpha beta gamma; do
     done
 done
 reset_inputs
+# Member identity is independent of whether anyone uses its root dependency alias.
+for roster in partial empty; do
+    for state in coherent lock-first manifest-first; do
+        reset_inputs
+        if [[ "$roster" == partial ]]; then
+            sed '/^gamma = /d' "$fixture/original/Cargo.toml" > Cargo.toml
+            jq '.groups[2].dependencies=[]' "$fixture/original/ci/cargo-release-groups.json" > ci/cargo-release-groups.json
+        else
+            sed '/^alpha = /d; /^alpha-helper = /d; /^alias = /d; /^gamma = /d' "$fixture/original/Cargo.toml" > Cargo.toml
+            jq '.groups[].dependencies=[]' "$fixture/original/ci/cargo-release-groups.json" > ci/cargo-release-groups.json
+        fi
+        case "$state" in
+            lock-first) change_lock gamma ;;
+            manifest-first) sed 's/0.1.0/0.2.0/g' "$fixture/original/gamma/Cargo.toml" > gamma/Cargo.toml ;;
+        esac
+        cp -R . "$fixture/before-$roster-$state"
+        observe > "$fixture/$roster-$state.json"
+        jq -e --arg state "$state" --arg roster "$roster" '
+          ([.groups[].members[]] | length) == 4 and (.inputs | length) == 7 and
+          (.coherent == ($state == "coherent")) and
+          (.catalog_edit.dependencies | length) == (if $roster == "partial" then 3 else 0 end)' \
+          "$fixture/$roster-$state.json" > /dev/null
+        diff -r "$fixture/before-$roster-$state" .
+    done
+done
+reset_inputs
 # The normal release boundary still refuses incoherent graphs.
 change_lock beta
 if bash "$root/scripts/ci/cargo-release-group.sh" plan alpha > "$fixture/plan.log" 2>&1; then exit 1; fi

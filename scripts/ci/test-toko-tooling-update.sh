@@ -8,7 +8,7 @@ fixture="$(mktemp -d "$ROOT/target/tmp/registry-update.XXXXXX")"
 source "$ROOT/scripts/ci/fixture-lifecycle.sh"
 fixture_complete=false
 trap 'fixture_finish "$?" "$fixture" "Registry update fixture retained"' EXIT
-case "${1:-all}" in all|prerequisites) ;; *) exit 2 ;; esac
+case "${1:-all}" in all|prerequisites|selection) ;; *) exit 2 ;; esac
 prereq="$ROOT/scripts/ci/check-tooling-prerequisites.sh"
 real_bash="$(command -v bash)"
 mkdir "$fixture/prerequisites"
@@ -96,6 +96,55 @@ refresh_lock() { (cd "$consumer" && cargo update -p toko-tooling --offline); }
 (cd "$consumer" && cargo generate-lockfile --offline)
 run() { bash "$ROOT/scripts/dev/toko-tooling.sh" "$1" --consumer "$consumer" "${@:2}"; }
 must_fail() { if "$@" > "$fixture/rejection.log" 2>&1; then echo 'registry fixture unexpectedly passed' >&2; exit 1; fi; }
+if [[ "${1:-all}" == selection ]]; then
+    run_cargo() { (cd "$consumer" && cargo "$@"); }
+    # Real Cargo regression: a binary's tests lint an unused unconditional marker.
+    printf '\n[workspace.lints.cargo]\nunused_dependencies="deny"\nunused_workspace_dependencies="deny"\n' >> "$consumer/Cargo.toml"
+    for name in one two; do printf '\n[lints]\nworkspace=true\n' >> "$consumer/crates/$name/Cargo.toml"; done
+    rm "$consumer/crates/one/src/lib.rs"
+    printf 'fn main() {}\n#[test]\nfn smoke() { assert_eq!(2 + 2, 4); }\n' > "$consumer/crates/one/src/main.rs"
+    (cd "$consumer" && cargo test --locked --offline -p two) > "$fixture/library.log" 2>&1
+    must_fail run_cargo test --locked --offline -p one
+    grep -F "unused dependency \`toko-tooling\`" "$fixture/rejection.log" > /dev/null
+    perl -pi -e "s/^\\[dev-dependencies\\]/[target.'cfg(any())'.dev-dependencies]/" "$consumer/crates/one/Cargo.toml"
+    perl "$ROOT/scripts/dev/tooling-lock.pl" "$consumer" > "$fixture/marker-selection.json"
+    for warmth in cold warm; do
+        run_cargo test --locked --offline -p one > "$fixture/binary-$warmth.log" 2>&1
+    done
+    cp "$consumer/crates/one/Cargo.toml" "$fixture/marker.toml"
+    # This form must not weaken ordinary unused-dependency refusal.
+    printf '\n[dependencies]\ntwo={path="../two"}\n' >> "$consumer/crates/one/Cargo.toml"
+    (cd "$consumer" && cargo generate-lockfile --offline)
+    must_fail run_cargo test --locked --offline -p one
+    grep -F "unused dependency \`two\`" "$fixture/rejection.log" > /dev/null
+    cp "$fixture/marker.toml" "$consumer/crates/one/Cargo.toml"
+    for fault in missing duplicate conditional normal override; do
+        cp "$fixture/marker.toml" "$consumer/crates/one/Cargo.toml"
+        case "$fault" in
+            missing) perl -ni -e 'print unless /toko-tooling/' "$consumer/crates/one/Cargo.toml" ;;
+            duplicate) printf '\n[dev-dependencies]\ntoko-tooling.workspace=true\n' >> "$consumer/crates/one/Cargo.toml" ;;
+            conditional) perl -pi -e 's/cfg\(any\(\)\)/cfg(unix)/' "$consumer/crates/one/Cargo.toml" ;;
+            normal) perl -pi -e 's/dev-dependencies/dependencies/' "$consumer/crates/one/Cargo.toml" ;;
+            override) perl -pi -e 's/toko-tooling.workspace=true/toko-tooling="=0.36.0"/' "$consumer/crates/one/Cargo.toml" ;;
+        esac
+        must_fail perl "$ROOT/scripts/dev/tooling-lock.pl" "$consumer"
+    done
+    cp "$fixture/marker.toml" "$consumer/crates/one/Cargo.toml"
+    (cd "$consumer" && cargo generate-lockfile --offline)
+    perl "$ROOT/scripts/dev/tooling-lock.pl" "$consumer" > "$fixture/restored.json"
+    standalone="$fixture/standalone"
+    mkdir -p "$standalone/src"
+    cp -Rp "$consumer/.cargo" "$standalone/"
+    printf '[package]\nname="standalone"\nversion="0.0.0"\nedition="2024"\n[target.'"'"'cfg(any())'"'"'.dev-dependencies]\ntoko-tooling="=0.36.0"\n[lints.cargo]\nunused_dependencies="deny"\n' > "$standalone/Cargo.toml"
+    cp "$consumer/crates/one/src/main.rs" "$standalone/src/main.rs"
+    (cd "$standalone" && cargo generate-lockfile --offline && cargo test --locked --offline) > "$fixture/standalone.log" 2>&1
+    perl "$ROOT/scripts/dev/tooling-lock.pl" "$standalone" > "$fixture/standalone.json"
+    run install --snapshot-only --entrypoint sample.sh --entrypoint scripts/dev/toko-tooling.sh > "$fixture/marker-install.log"
+    run check > "$fixture/marker-check.log"
+    echo 'Cargo-visible source-only markers pass binary tests; unused code dependencies and malformed selections refuse.'
+    fixture_complete=true
+    exit 0
+fi
 cp "$consumer/Cargo.lock" "$fixture/original.lock"
 TMPDIR=/tmp run update --preview --entrypoint sample.sh --entrypoint scripts/dev/toko-tooling.sh > "$fixture/initial-preview.log"
 [[ ! -e "$consumer/sample.sh" && ! -e "$consumer/.toko-tooling.snapshot" && ! -e "$consumer/target" && ! -e "$fixture/setup" ]]

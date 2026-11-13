@@ -80,7 +80,8 @@ eval {
             }
             for my $p (sort { ($groups{$a->{name}} // '') cmp ($groups{$b->{name}} // '')
                     || $a->{name} cmp $b->{name} } @packages) {
-                push @rows, [$relative, $groups{$p->{name}} // '-', $p->{name}, $p->{version}];
+                my $workspace = $relative eq 'Cargo.toml' ? '(root)' : $relative =~ s{Cargo\.toml\z}{}r;
+                push @rows, [$workspace, $groups{$p->{name}} // '-', $p->{name}, $p->{version}];
             }
         }
         my @width = map { length } qw(WORKSPACE GROUP PACKAGE VERSION);
