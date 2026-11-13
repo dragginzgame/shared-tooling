@@ -83,28 +83,39 @@ for layout in root vendor; do
     for invocation in relative absolute; do
         new_fixture "path context $layout $invocation"
         hook=.githooks/pre-commit
+        installer=scripts/dev/install-git-hooks.sh
         if [[ "$layout" == vendor ]]; then
             mkdir -p vendor/toko-tooling
-            bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$PWD/vendor/toko-tooling" .githooks/pre-commit
+            bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$PWD/vendor/toko-tooling" .githooks/pre-commit scripts/dev/install-git-hooks.sh
             hook=vendor/toko-tooling/.githooks/pre-commit
+            installer=vendor/toko-tooling/scripts/dev/install-git-hooks.sh
         fi
         printf 'unformatted\n' > staged.rs
         printf 'unformatted unrelated working edit\n' > README.md
         printf 'unformatted untracked\n' > unselected.rs
         git add -- staged.rs
-        mkdir -p "$FIXTURE/shadow/${hook%/*}"
+        hook_dir="${hook%/*}"
+        mkdir -p "$FIXTURE/shadow/${hook%/*}" "$FIXTURE/shadow/${installer%/*}"
         [[ "$invocation" != absolute ]] || hook="$PWD/$hook"
+        [[ "$invocation" != absolute ]] || installer="$PWD/$installer"
+        for attempt in first repeated; do
+            CDPATH="$FIXTURE/shadow:$PWD" bash "$installer" --consumer . > "install-$attempt.log" 2>&1
+            [[ "$(git config --local --get core.hooksPath)" == "$hook_dir" ]]
+        done
         CDPATH="$FIXTURE/shadow:$PWD" bash "$hook" > output 2>&1
         [[ "$(git show :staged.rs)" == formatted && "$(cat staged.rs)" == formatted ]]
         [[ "$(cat README.md)" == 'unformatted unrelated working edit' ]]
         [[ "$(git show :README.md)" == "$(git show HEAD:README.md)" ]]
         [[ "$(cat unselected.rs)" == 'unformatted untracked' ]]
         [[ -z "$(git ls-files -- unselected.rs)" ]]
+        git config --local core.hooksPath custom-hooks
+        CDPATH="$FIXTURE/shadow:$PWD" expect_failure bash "$installer" --consumer .
+        [[ "$(git config --local --get core.hooksPath)" == custom-hooks ]]
     done
 done
 if [[ "$path_context_only" == true ]]; then
     fixture_complete=true
-    echo 'Root/vendor hook path resolution and staged preservation passed with CDPATH'
+    echo 'Root/vendor hook installation, refusal and staged preservation passed with CDPATH'
     exit 0
 fi
 

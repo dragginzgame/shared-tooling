@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.42.8] - Unreleased
+
+### 🩹 Fixed
+
+- Resolve hook installation paths independently of `CDPATH`, including vendor
+  selection; qualify repeated installation and refusal to replace existing hooks.
+
 ## [0.42.7] - 2026-11-13
 
 ### 🩹 Fixed
