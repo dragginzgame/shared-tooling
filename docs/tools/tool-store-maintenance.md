@@ -7,6 +7,15 @@ receipt admission, under the installation lock. Selected binaries, crate source,
 packaged lock, native observations and installation receipts remain available for
 offline admission. This does not clean a consumer workspace or run `cargo clean`.
 
+If post-activation maintenance fails, setup exits nonzero and names the admitted
+executable separately from the cleanup failure. Keep the reported generation and
+evidence. The ordinary offline check can still admit that executable. Retry the
+same setup command: it revalidates the consumer's selection and, if scratch remains,
+reacquires installation custody before retrying cleanup without recompilation.
+Changed or unowned trees still refuse; a changed-tree diagnostic identifies the
+path and metadata field to investigate. Do not delete receipts or bypass admission
+to recover from a maintenance failure.
+
 ## Current requirements
 
 Successful setup records one current requirement per physical checkout and

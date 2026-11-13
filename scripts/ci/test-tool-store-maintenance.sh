@@ -74,8 +74,40 @@ printf 'pid=%s\nconsumer=%s\n' "$$" "$fixture/a" > "$slot/install.lock/owner"
 run preview > "$fixture/busy.json"
 jq -e 'all(.entries[]; .reason=="active-installation")' "$fixture/busy.json" >/dev/null
 if run trim "$slot/set.new" 999999 > "$fixture/wrong-owner.log" 2>&1; then exit 1; fi
+# A realistic nested scratch tree can contain internal hardlinks and external
+# symlinks. Trim unlinks scratch only, preserving the admitted artifact/receipts.
+mkdir -p "$slot/set.new/build/deps" "$slot/set.new/home"
+ln "$slot/set.new/build/object" "$slot/set.new/build/deps/hardlink"
+ln "$slot/set.new/build/object" "$slot/set.new/home/hardlink"
+ln -s "$slot/set.new/tool" "$slot/set.new/build/deps/artifact"
 run trim "$slot/set.new" "$$"
 [[ ! -e "$slot/set.new/build" && -f "$slot/set.new/tool" && -f "$slot/set.new/selection.json" ]]
+[[ ! -e "$slot/set.new/home" ]]
+run trim "$slot/set.new" "$$"
+# Deterministically mutate after inventory, before removal. Keep the refusal
+# and name the changed field/path so a real report can distinguish its cause.
+perl -I "$root/scripts/dev" -MOwnedTree=inventory,remove_owned - "$fixture" <<'PERL'
+use strict;
+use warnings;
+my $root=shift;
+for my $change (qw(size mode inode paths target)) {
+    my $dir="$root/mutation-$change";
+    mkdir $dir or die $!;
+    my $file="$dir/payload";
+    open my $out,'>',$file or die $!; print {$out} 'original'; close $out or die $!;
+    symlink 'payload',"$dir/link" or die $!;
+    my $before=inventory($dir,1);
+    if ($change eq 'size') { open my $f,'>>',$file or die $!; print {$f} 'changed'; close $f or die $!; }
+    elsif ($change eq 'mode') { chmod 0400,$file or die $!; }
+    elsif ($change eq 'inode') { rename $file,"$root/held" or die $!; open my $f,'>',$file or die $!; print {$f} 'original'; close $f or die $!; }
+    elsif ($change eq 'paths') { mkdir "$dir/added" or die $!; }
+    else { unlink "$dir/link" or die $!; symlink '../held',"$dir/link" or die $!; }
+    eval { remove_owned($dir,$before,1); 1 } and die "accepted changed $change tree";
+    $@ =~ /maintenance tree changed:.*changed:|maintenance tree changed:.*path added or removed:/
+        or die "missing actionable refusal: $@";
+    -d $dir && -f $file or die 'removed changed tree';
+}
+PERL
 rm "$slot/install.lock/owner"
 rmdir "$slot/install.lock"
 run apply --quiescent > "$fixture/retired.json"

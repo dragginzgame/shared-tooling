@@ -113,7 +113,7 @@ check-tooling-package:
 	@bash scripts/ci/test-tooling-package.sh --installation-only
 
 check-release-commands:
-	bash scripts/ci/check-release-commands.sh . make/consumer.mk
+	bash scripts/ci/check-release-commands.sh . make/consumer.mk make/release.mk make/cargo-publication.mk
 
 .PHONY: test-public-docs
 test-public-docs:

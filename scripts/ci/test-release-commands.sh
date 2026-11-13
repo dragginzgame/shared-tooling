@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/ci/prepare-script-fixture.sh make/release.mk
+# Shared companions: scripts/ci/fixture-lifecycle.sh scripts/ci/prepare-script-fixture.sh scripts/ci/check-release-commands.sh make/consumer.mk make/release.mk make/cargo-publication.mk
 set -euo pipefail
+vendor_only=false
+if [[ $# == 1 && "$1" == --vendor-only ]]; then vendor_only=true
+elif [[ $# != 0 ]]; then echo 'usage: test-release-commands.sh [--vendor-only]' >&2; exit 2; fi
 root="$0"
 [[ "$root" == /* ]] || root="$PWD/$root"
 root="$(cd -P "${root%/*}/../.." && printf '%s/.' "$PWD")"
@@ -14,7 +17,35 @@ mkdir "$fixture/consumer" "$fixture/logs"
 export TMPDIR="$fixture/logs"
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 unset VALIDATION_REPOSITORY_ROOT VALIDATION_RUNNER_SNAPSHOT_PATH
-make_inputs=(make/consumer.mk)
+# An installed consumer retains an explicit vendor override. Real runners,
+# cleanup and admission are poison pills: every one must be replaced before Make.
+vendor="$fixture/vendor-consumer/vendor/toko-tooling"
+mkdir -p "$vendor"
+bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$vendor" \
+    make/consumer.mk make/release.mk make/cargo-publication.mk
+for path in scripts/ci/run-release.sh scripts/ci/run-release-batch.pl \
+    scripts/dev/clean-empty-source-dirs.pl scripts/dev/toko-tooling.sh; do
+    # Preserve companion declarations so the copier still traverses the real closure.
+    header="$(sed -n '2p' "$vendor/$path")"
+    printf '#!/usr/bin/env false\n%s\n' "$header" > "$vendor/$path"
+    case "$path" in
+        *.pl) printf 'die "real release effect reached\\n";\n' >> "$vendor/$path" ;;
+        *) printf 'echo "real release effect reached" >&2; exit 99\n' >> "$vendor/$path" ;;
+    esac
+done
+cat > "$fixture/vendor-consumer/Makefile" <<'MAKE'
+override TOKO_TOOLING_ROOT := $(CURDIR)/vendor/toko-tooling
+TOKO_TOOLING_RELEASE := 1
+CARGO_PUBLISH_PACKAGES := example
+include vendor/toko-tooling/make/consumer.mk
+MAKE
+for group in '' engine; do
+    RELEASE_GROUP="$group" bash "$root/scripts/ci/check-release-commands.sh" \
+        "$fixture/vendor-consumer" vendor/toko-tooling/make/consumer.mk \
+        vendor/toko-tooling/make/release.mk vendor/toko-tooling/make/cargo-publication.mk
+done
+if [[ "$vendor_only" == true ]]; then fixture_complete=true; exit 0; fi
+make_inputs=(make/consumer.mk make/release.mk make/cargo-publication.mk)
 bash "$root/scripts/ci/check-release-commands.sh" "$root" "${make_inputs[@]}"
 # Both event paths and nested Make probes must survive the checker's cd.
 mkdir "$fixture/relative-temp"

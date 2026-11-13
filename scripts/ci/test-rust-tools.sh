@@ -3,9 +3,12 @@
 set -euo pipefail
 path_context=false
 contention_only=false
+maintenance_only=false
 if [[ "${1:-}" == --path-context && $# == 1 ]]; then path_context=true;
 elif [[ "${1:-}" == --contention-only && $# == 1 ]]; then contention_only=true;
-elif [[ $# != 0 ]]; then echo 'usage: fixture [--path-context|--contention-only]' >&2; exit 2; fi
+elif [[ "${1:-}" == --maintenance-only && $# == 1 ]]; then maintenance_only=true;
+elif [[ $# != 0 ]]; then echo 'usage: fixture [--path-context|--contention-only|--maintenance-only]' >&2; exit 2; fi
+if [[ $# == 0 ]]; then bash "${BASH_SOURCE[0]}" --maintenance-only; fi
 ROOT="${BASH_SOURCE[0]}"
 [[ "$ROOT" == /* ]] || ROOT="$PWD/$ROOT"
 ROOT="$(cd -P "${ROOT%/*}/../.." && printf '%s/.' "$PWD")"; ROOT="${ROOT%/.}"
@@ -72,6 +75,14 @@ fi
 exec "$real_tool" "$@"
 STUB
 cat >> "$fixture/commands/perl" <<'STUB'
+if [[ "$1" == */tool-store-maintenance.pl && "${2:-}" == trim && -f "$fixture/fail-trim" ]]; then
+    [[ -f "$4/selection.json" && -L "${4%/*}/current" ]] || exit 79
+    if [[ "$(cat "$fixture/fail-trim")" == after ]]; then
+        "$real_tool" "$@" || exit $?
+    fi
+    echo 'injected post-activation maintenance failure' >&2
+    exit 25
+fi
 if [[ "$1" == -e && "$2" == *'rename('* ]]; then
     destination="${!#}"
     for boundary in store local common; do
@@ -206,6 +217,41 @@ consumer="$fixture/a"
 # Direct compiler identity checks must use the fixture's prepared context too.
 # The invoking consumer may select an entirely different Rust toolchain.
 cd "$consumer"
+maintenance_recovery() {
+    local mode status path bundle builds_before
+    for mode in before after; do
+        mkdir "$fixture/maintenance-$mode"
+        local args=(--consumer "$fixture/maintenance-$mode" --package sample --version 1.2.3 --example prepare --profile debug --features "$mode")
+        printf '%s\n' "$mode" > "$fixture/fail-trim"
+        status=0
+        bash "$installer" "${args[@]}" > "$fixture/trim-$mode.out" 2> "$fixture/trim-$mode.err" || status=$?
+        [[ "$status" == 25 && ! -s "$fixture/trim-$mode.out" ]]
+        expect_setup_phase "$fixture/trim-$mode.err" maintenance failed 25
+        grep -F 'Cargo tool activated and admitted:' "$fixture/trim-$mode.err"
+        grep -F 'Retry the same setup command' "$fixture/trim-$mode.err"
+        builds_before="$(wc -l < "$fixture/builds")"
+        # Read-only admission still succeeds without attempting maintenance.
+        path="$(bash "$installer" "${args[@]}" --check)"
+        bundle="$(perl -MCwd=abs_path -e 'print abs_path(shift)' "${path%/bin/*}")"
+        [[ -x "$path" && -f "$bundle/selection.json" && -f "$bundle/install.log" ]]
+        if [[ "$mode" == before ]]; then
+            [[ -d "$bundle/build" ]]
+            # Recovery follows the consumer's admitted generation, not a cache hint.
+            rm "${bundle%/*}/current"
+        fi
+        rm "$fixture/fail-trim"
+        bash "$installer" "${args[@]}" > "$fixture/recovered-$mode.out" 2> "$fixture/recovered-$mode.err"
+        [[ "$(cat "$fixture/recovered-$mode.out")" == "$path" && "$(wc -l < "$fixture/builds")" == "$builds_before" ]]
+        [[ ! -e "$bundle/build" && ! -e "$bundle/home" && -f "$bundle/install.log" && -f "$bundle/source.crate" ]]
+        if [[ "$mode" == before ]]; then expect_setup_phase "$fixture/recovered-$mode.err" maintenance passed 0; fi
+        if grep -F 'phase=compilation' "$fixture/recovered-$mode.err"; then exit 1; fi
+    done
+}
+if [[ "$maintenance_only" == true ]]; then
+    maintenance_recovery
+    fixture_complete=true
+    exit 0
+fi
 if [[ "$contention_only" == false ]]; then
 common --preflight
 [[ ! -e "$TOKO_TOOLING_STORE" && ! -e "$consumer/.tools" ]] || exit 1

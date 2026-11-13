@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.42.4] - Unreleased
+
+### 🩹 Fixed
+
+- Make release-command checks substitute runners and admission helpers in vendor
+  installations as well as root layouts ([#380](https://github.com/dragginzgame/toko-tooling/issues/380)).
+- Distinguish activated Cargo tools from failed post-install maintenance. Setup
+  retries re-admit the selected tool and retry retained scratch cleanup without
+  rebuilding; changed-tree refusals identify the affected path and metadata
+  ([#379](https://github.com/dragginzgame/toko-tooling/issues/379)).
+
 ## [0.42.3] - 2026-11-13
 
 ### 📝 Documentation
