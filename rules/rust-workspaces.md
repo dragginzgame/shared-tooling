@@ -243,65 +243,29 @@ still governs the independent qualification graph.
   version synchronization. Verify adoption through the consumer's
   [selected dependency graphs](../docs/validation/cargo-graph-checks.md#coordinated-release-adoption).
 
-### Visible release-group map in Cargo.toml
+<a id="visible-release-group-map-in-cargotoml"></a>
 
-For a product workspace with independent release groups, include every product member
-in root `[workspace.dependencies]` with its local path. Publishable members need
+### Package inventory and dependency declarations
+
+For a product workspace with independent release groups, declare used local dependencies
+in root `[workspace.dependencies]` with their local paths. Publishable members need
 their full current version. Members with `publish = false` may omit the dependency
 version, so Cargo can omit private path-only dev-dependencies from published packages.
 Publishable members may depend on private members only through these path-only
 development edges; versioned private dependencies and normal/build edges are rejected
 before release preparation.
-This is a complete product crate catalog, including product tools and crates
-that no other product member currently depends on. The qualification catalog
+Use `make deps-list` for the complete package/version/group view; do not add unused
+dependencies or suppress unused-dependency lints merely to maintain that display.
+The qualification catalog
 separately owns its private members and references to the product packages.
-List release groups once in this manifest, as contiguous blocks **at the top of
-`[workspace.dependencies]`, before every external dependency**. Keep all local
-groups together, including their private members; do not move a private member
-into the external test/tooling section. Follow the local groups with external
-production dependencies, mixed production/test dependencies, then test/tooling-only
-dependencies, omitting empty sections. Build dependencies belong in the section
-matching their actual use, with a separate heading when useful.
-Give each group block a short title identifying the policy
-group and a separate `# Changelog : releases/<group>/CHANGELOG.md` line.
-Separate blocks with a blank line. Sort entries within each block using the
-formatter's grouped mode; do not interleave groups to impose a global alphabetic
-order. The declarations already show package names, paths and current versions;
-do not repeat them in a header above `[workspace]` or add a second comment map.
-Include private members and annotate their role only where it adds useful context.
-For example:
+Cargo.toml does not need release-group blocks, changelog comments or dependency-role
+sections. Use ordinary sorted declarations; optional comments may explain a
+non-obvious constraint without duplicating the group policy.
 
-```toml
-[workspace]
-members = [
-    "crates/example-core",
-    "crates/example-derive",
-    "crates/example-host",
-]
-exclude = ["qualification"]
-resolver = "3"
-
-[workspace.dependencies]
-# Core
-# Changelog : releases/core/CHANGELOG.md
-example-core = { path = "crates/example-core", version = "0.6.0" }
-example-derive = { path = "crates/example-derive", version = "0.6.0" }
-
-# Host
-# Changelog : releases/host/CHANGELOG.md
-example-host = { path = "crates/example-host", version = "0.2.0" }
-
-# External production dependencies
-thiserror = "2.0"
-
-# External tests and tooling only
-serde_json = "1.0"
-```
-
-The example illustrates the convention, not an instruction to create or rename
-packages. An unused workspace dependency declaration adds no dependency edge;
-members inherit only what they use with `workspace = true`. Do not add member
-dependencies just to consume catalog entries. The existing `ci/cargo-release-groups.json`
+Members inherit used dependencies with `workspace = true`. Remove unused
+display-only declarations and their group dependency aliases together; retain group
+membership. Do not add member dependencies just to consume catalog entries.
+The existing `ci/cargo-release-groups.json`
 is the executable policy; member manifests supply package versions. Root dependency
 values remain actual Cargo requirements, not package-version inheritance. Do not
 copy numeric versions into comments or add a generated summary or shadow catalog.
@@ -313,7 +277,7 @@ with their group. For every versioned root path dependency naming a workspace
 member, spell the full current member version. Preserve its existing bare, `^`, `~` or `=` operator; do
 not add exact pins merely for display. Group admission checks this equality for
 all groups, including through the normal dependency checker. It also checks
-complete member coverage, alias ownership and each path's actual member manifest,
+complete group member coverage, declared alias ownership and each path's actual member manifest,
 including unused aliases that Cargo does not resolve. It rejects both
 abbreviated versions and compatible but stale lower bounds that Cargo itself
 would accept. Release preparation updates the selected group's local requirements
@@ -322,24 +286,7 @@ remain unchanged. Manual member-version edits must update the corresponding real
 requirements too. Before adopting the check, align root declarations with current
 members without changing package versions.
 
-Preserve this local-groups-first order during formatting, dependency adoption and
-release preparation; global alphabetic sorting must not move external entries
-ahead of the groups. Use comment headings to distinguish external production,
-build and test/tooling dependencies. Classify by actual member usage: mark shared
-production/test dependencies as mixed, and describe target/feature restrictions
-where they change the graph (for example, native-only schema support). The root
-table itself does not assign a dependency kind; member tables and features do.
-Keep group and ledger labels near their catalog entries. The root view reports
-declared versions, not proof of registry publication.
-
-Review the catalog against the policy and actual Cargo members when membership,
-version ownership or changelog paths change. Keep it readable after the normal
-group-aware formatter runs; update formatting callers consistently during adoption
-rather than bypassing them. The `members` array need not repeat release groups;
-optional [member-role comments](#workspace-member-roles) describe development roles.
-A single-group workspace needs
-no JSON policy solely for documentation; an optional comment may name its shared
-version source and root changelog.
+Review used declarations against actual member dependencies and the group policy when membership changes. `make deps-list` reads package versions and group membership without a second catalog. A single-group workspace needs no JSON policy solely for display.
 
 An explicit task to adopt this convention includes converting inherited versions
 to their existing numeric values, moving ledgers with preserved history and
@@ -349,6 +296,17 @@ Reconcile unfinished attempts against their recorded source and policy; do not
 reinterpret old journals after changing version ownership or ledger paths.
 
 ## Core and integration graph boundary
+
+Apply the baseline's [dependency selection rule](../TOKO-TOOLING.md#current-dependencies-and-upstream-independence)
+uniformly. Separate qualification workspaces are already the standard for separate
+qualification packages; do not add further workspaces per supplier or move a
+shipped test library out of the product workspace to conceal its dependencies.
+An independent lock isolates resolution, not every release obligation: required
+tests must still exercise the selected product source and its real boundaries.
+Allow older native-only transitive suppliers where those boundaries permit them;
+require identity agreement where values actually cross a typed API, or a runtime
+singleton is active. Avoid blanket "matching supplier family" requirements across
+unrelated targets, workspaces or repositories.
 
 Reusable engines own their core contracts; adapters and applications own the
 composition of those contracts with a framework or deployment stack. An adapter

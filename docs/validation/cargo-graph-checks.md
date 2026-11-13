@@ -157,6 +157,15 @@ cost in the actual consumer artifact, rather than rejecting duplicates by count.
 
 ## Repository dependency maintenance
 
+Use `make deps-list` for a read-only table of local packages, versions and release
+groups across the root and optional `qualification/` workspace. It runs offline
+`cargo metadata --no-deps --locked`, joins members to each workspace's existing
+`ci/cargo-release-groups.json` when present, and does not compile, fetch, update
+locks or check publication status. Ungrouped packages show `-`; qualification
+rows remain separate. `DEPENDENCY_CONSUMER` and `DEPENDENCY_MANIFEST` also work
+for this command. This is a package inventory, not the resolved transitive graph;
+use `cargo tree --locked` for that graph.
+
 Use `make deps-update` wherever you would otherwise run `cargo update -v`.
 It runs Cargo sequentially in the root workspace and `qualification/` when
 present, with normal Cargo output. There is no metadata inspection, registry

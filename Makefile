@@ -55,6 +55,7 @@ help:
 	@echo "Shared integration editor: install-release-editor; offline verification: release-editor-check"
 	@echo "Cargo tool freshness (online, read-only): check-cargo-tool-versions"
 	@echo "Dependencies across root + qualification: deps-update (cargo update -v; changes locks)"
+	@echo "Local packages, versions and release groups: deps-list (offline, read-only)"
 	@echo "Caller catalog agreement (offline, opt-in): check-tool-catalogs TOOL_CATALOG_BINDINGS=path"
 	@echo "Basic local release gate: release-basic (metadata, shell lint, pins, links, source package)"
 	@echo "Long-tail CI/explicit local checks: ci, test-portable"

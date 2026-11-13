@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.40.2] - Unreleased
+
+### ✨ Added
+
+- Add offline `make deps-list` for local package versions and release groups in
+  product and qualification workspaces. Permit removal of display-only unused
+  dependency aliases while retaining complete release-group membership checks.
+
+### 📚 Documentation
+
+- Remove mandatory Cargo.toml release-group and dependency-role sections; retain
+  used dependencies without lint suppressions for display-only catalog entries.
+
+- Clarify one dependency-isolation rule for all consumers: admit actual typed and
+  executor boundaries, allow isolated native supplier generations, and distinguish
+  optional upgrade failures from blockers in a frozen release selection.
+
 ## [0.40.1] - 2026-11-13
 
 ### 📚 Documentation

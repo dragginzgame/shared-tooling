@@ -1,5 +1,18 @@
 # Consumer migration history
 
+## Package inventory instead of display dependencies in 0.40.2
+
+Use `make deps-list` to view local package versions and release groups. Remove
+unused display-only workspace dependencies and their aliases from group
+`dependencies` rosters, retaining every package in its group's `members` roster.
+Remove lint allowances introduced solely to preserve those unused declarations.
+No Cargo.toml group blocks, role sections or changelog comments are required;
+this supersedes the older grouping migration below. Existing grouped formatter
+support may preserve optional comments without requiring any sections.
+Adopt the updated release checker before removing catalog-only aliases: older
+snapshots require complete display catalogs. Check actual member inheritance
+and release graph admission after cleanup; preserve versions and lock selections.
+
 ## Rust 1.100.0 minimum in 0.40.0
 
 Tooling 0.40.0 raises its crate minimum and the shared development/release

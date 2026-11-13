@@ -897,7 +897,8 @@ blind retries.
   [workspace versioning guidance](rust-workspaces.md#coordinated-versions-and-workspace-boundaries).
   Independent groups all use literal package versions; omit the root
   `workspace.package.version`. Require explicit group selection for release,
-  resume and publication. Document the group map in root `Cargo.toml` comments and use
+  resume and publication. Keep the group map in `ci/cargo-release-groups.json`,
+  view package versions with `make deps-list`, and use
   [group changelogs and retained history](changelogs.md#release-group-changelogs-and-shared-history).
   Do not move packages or synchronize unrelated releases merely for versioning.
   Qualification packages belong to no product group and retain independent

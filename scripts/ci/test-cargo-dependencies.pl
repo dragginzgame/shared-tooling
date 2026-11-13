@@ -77,6 +77,18 @@ ok(!-e "$fixture/events", 'dry-run never calls Cargo');
 {
     local $ENV{PATH} = $real_path;
     local $ENV{CARGO_NET_OFFLINE} = 'true';
+    is(run('deps-list'), 0, 'real offline inventory works without lockfiles');
+    ok(!-e "$fixture/consumer/Cargo.lock" && !-e "$fixture/consumer/qualification/Cargo.lock", 'inventory creates no lockfiles');
+    like(read_file('output'), qr/qualification\/Cargo.toml\s+-\s+qualification\s+0\.1\.0/, 'private workspace shown separately');
+    unlike(read_file('output'), qr/publication status/, 'normal inventory has no explanatory footer');
+    make_path("$fixture/consumer/ci");
+    write_file('consumer/ci/cargo-release-groups.json', '{"groups":[{"name":"core","members":["consumer"]}]}');
+    is(run('deps-list'), 0, 'grouped inventory succeeds');
+    like(read_file('output'), qr/Cargo.toml\s+core\s+consumer\s+0\.1\.0/, 'joins actual package version to group');
+    write_file('consumer/ci/cargo-release-groups.json', '{"groups":[{"name":"core","members":["missing"]}]}');
+    is(run('deps-list'), 2, 'unknown group member refused');
+    unlike(read_file('output'), qr/WORKSPACE/, 'invalid inventory does not print a partial table');
+    unlink "$fixture/consumer/ci/cargo-release-groups.json";
     is(run('deps-update'), 0, 'real Cargo updates independent workspaces without existing locks');
     ok(-f "$fixture/consumer/Cargo.lock" && -f "$fixture/consumer/qualification/Cargo.lock", 'Cargo owns both lockfiles');
     is(run('deps-update'), 0, 'real no-op update succeeds');

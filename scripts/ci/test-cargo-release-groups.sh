@@ -3,7 +3,7 @@
 set -euo pipefail
 selection=all
 if [[ $# != 0 ]]; then
-    [[ $# == 2 && "$1" == --case && ( "$2" == ordering || "$2" == admission ) ]] || { echo 'usage: test-cargo-release-groups.sh [--case ordering|admission]' >&2; exit 2; }
+    [[ $# == 2 && "$1" == --case && ( "$2" == ordering || "$2" == admission || "$2" == catalog ) ]] || { echo 'usage: test-cargo-release-groups.sh [--case ordering|admission|catalog]' >&2; exit 2; }
     selection=$2
 fi
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
@@ -199,8 +199,7 @@ for prefix in '' '^' '~' '='; do
         '.dependencies[] | select(.alias == "entry") | .next == $expected' > /dev/null
 done
 cp "$fixture/manifest" Cargo.toml
-# Unused private members still need a valid catalog entry. Cargo accepts these
-# malformed/absent unused declarations; admission must check them across groups.
+# Declared unused aliases still require valid paths and matching policy aliases.
 printf 'publish = false\n' >> derive/Cargo.toml
 for fault in missing-entry missing-path wrong-path; do
     case "$fault" in
@@ -213,9 +212,16 @@ for fault in missing-entry missing-path wrong-path; do
     cmp Cargo.lock "$fixture/lock"
     cmp docs/endpoint.md "$fixture/changelog"
 done
-grep -F 'root dependency catalog must include every workspace member' "$fixture/catalog-missing-entry.log"
+grep -F 'release-group dependency aliases must match the complete root member catalog' "$fixture/catalog-missing-entry.log"
 grep -F 'root dependency derive requires a local path and full version' "$fixture/catalog-missing-path.log"
 grep -F 'root dependency path for derive is not its owned member' "$fixture/catalog-wrong-path.log"
+cp "$fixture/manifest" Cargo.toml
+# A display-only alias may be removed together with its dependency roster entry.
+cp ci/cargo-release-groups.json "$fixture/list-policy"
+sed '/^derive = /d' "$fixture/manifest" > Cargo.toml
+jq '(.groups[].dependencies) |= map(select(. != "derive"))' "$fixture/list-policy" > ci/cargo-release-groups.json
+bash "$helper" check-graph endpoint
+cp "$fixture/list-policy" ci/cargo-release-groups.json
 cp "$fixture/manifest" Cargo.toml
 # Equivalent relative paths remain valid; catalog-only entries add no edges.
 sed 's/path = "derive"/path = ".\/derive"/' "$fixture/manifest" > Cargo.toml
@@ -294,6 +300,11 @@ sed 's/version = "0.1.0"/version = "0.1.1"/' "$fixture/lock" > Cargo.lock
 refuse bash "$helper" prepare endpoint > "$fixture/stale.log" 2>&1
 cp "$fixture/lock" Cargo.lock
 # Renderer failure must never install partial candidates.
+if [[ "$selection" == catalog ]]; then
+    fixture_complete=true
+    printf 'Cargo release-group catalog fixtures passed\n'
+    exit 0
+fi
 real_editor="$CARGO_RELEASE_METADATA_EDITOR"
 printf '#!/usr/bin/env bash\nexit 23\n' > "$fixture/broken-editor"
 chmod +x "$fixture/broken-editor"

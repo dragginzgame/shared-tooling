@@ -93,6 +93,17 @@ normal-checkout `cargo update` writes affect the next release, not active delive
 Select a multi-group roster explicitly and execute release and publication
 from that captured source; do not mix candidate validation with live publication.
 
+The frozen attempt already owns its selected manifests and locks; do not add a
+second graph-freezing mechanism. Before long runtime suites, admit locked
+resolution and focused compilation for affected product and required qualification
+target/feature selections. Reuse valid existing evidence for unchanged inputs.
+Perform optional upgrade experiments before capture, outside the active attempt,
+and apply the baseline's
+[dependency selection rule](../../TOKO-TOOLING.md#current-dependencies-and-upstream-independence)
+to their outcome. An unsuccessful experiment is not a failed release gate for
+the unchanged selection. A required security/correctness repair or explicitly
+selected migration remains part of release scope; do not silently defer it.
+
 Every `dragginzgame` repository, including Toko Tooling and repositories without
 a publishable package, must provide these Make targets:
 
@@ -1257,11 +1268,12 @@ though Cargo accepts them as compatible requirements. External dependencies
 retain their existing policies. Preparation updates
 selected local requirements and preserves their operators within the existing
 transaction; no generated numeric comment summary or second version catalog is
-maintained. Before adopting this check, complete the member catalog and group
-alias rosters, expand abbreviated local requirements and align stale ones without
-changing the packages' own versions. Label local groups/ledgers and external
-production, build and test dependencies under the
-[visible catalog convention](../../rules/rust-workspaces.md#visible-release-group-map-in-cargotoml).
+maintained. Before adopting this check, reconcile used dependency declarations and
+group alias rosters, expand abbreviated local requirements and align stale ones
+without changing the packages' own versions. Remove display-only unused aliases;
+retain group membership. Use the
+[package inventory](../../rules/rust-workspaces.md#visible-release-group-map-in-cargotoml)
+instead of requiring Cargo.toml group labels or sections.
 
 Group preparation requires an IC Build editor supplying `group-manifest` with
 the existing bounded input contract. Its selection JSON explicitly names a

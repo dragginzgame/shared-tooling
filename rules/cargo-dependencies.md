@@ -229,22 +229,17 @@ from domain, persistence and RPC models under that encoding contract.
 
 ## Dependency roles and deployment checks
 
-Place local release-group blocks first under the
-[visible group-map convention](rust-workspaces.md#visible-release-group-map-in-cargotoml).
-Follow them with external production, mixed production/test, then test/tooling-only
-dependencies; omit empty sections. Use one short comment heading per block, a
-blank line between blocks and alphabetical order within each. Do not repeat role
-annotations after individual dependencies or split local groups by dependency role.
-These dependency-role headers belong only inside `[workspace.dependencies]`.
-The `members` array may separately use `# Production packages` and
-`# Tests and tooling packages` under the
-[workspace member-role guidance](rust-workspaces.md#workspace-member-roles).
+No release-group or dependency-role sections are required in Cargo.toml.
+Keep only used dependency declarations, sort them with the selected formatter,
+and use `make deps-list` for package versions and release groups. Remove unused
+entries instead of suppressing their lint. Optional comments should explain
+constraints, not reproduce the release-group policy.
 Dependency roles describe use within this workspace, not whether a selected
 version is published to a registry.
 
 - A production dependency is needed by a production package through normal or
   build dependencies, including supported optional features and targets. Label
-  external entries shared with tests/tooling as mixed; they still belong to the
+  external entries shared with tests/tooling as mixed when documenting roles; they still belong to the
   production graph. Production build dependencies also belong here even though
   their code need not enter the artifact.
 - Tests and tooling entries are used only through development dependencies or
