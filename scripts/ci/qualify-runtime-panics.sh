@@ -67,8 +67,8 @@ run_logged rustfmt.log rustup run "$compiler" rustfmt --edition 2024 --check \
     "$evidence/workspace/crates/scanner/src/main.rs"
 run_logged build.log rustup run "$compiler" cargo build --locked \
     --manifest-path "$evidence/workspace/Cargo.toml" --target-dir "$evidence/target"
-run_logged clippy.log rustup run "$compiler" cargo clippy --locked \
-    --manifest-path "$evidence/workspace/Cargo.toml" --target-dir "$evidence/target" -- -D warnings
+run_logged clippy.log env CARGO_BUILD_WARNINGS=deny rustup run "$compiler" cargo clippy --locked \
+    --manifest-path "$evidence/workspace/Cargo.toml" --target-dir "$evidence/target"
 run_logged semantics.log "$BASH" "$evidence/semantic-fixture.sh" "$evidence/target/debug/shared-runtime-scanner"
 cat "$evidence/semantics.log"
 (cd "$evidence" && bash "$ROOT/scripts/ci/verify-evidence-checksums.sh" inputs.sha256)

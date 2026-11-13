@@ -12,6 +12,13 @@ clap = { version = "=4.6.7", default-features = false, features = ["std", "help"
 proc-macro2 = { version = "1.0.107", features = ["span-locations"] }
 syn = { version = "2.0.119", features = ["full", "visit"] }
 
+[workspace.lints.cargo]
+unused_dependencies = "deny"
+unused_workspace_dependencies = "deny"
+unused_workspace_package_fields = "deny"
+missing_lints_inheritance = "deny"
+unknown_lints = "deny"
+
 [workspace.lints.rust]
 dead_code = "deny"
 unused_must_use = "deny"
@@ -22,6 +29,7 @@ missing_docs = "warn"
 
 [workspace.lints.rustdoc]
 broken_intra_doc_links = "deny"
+invalid_markdown_table = "deny"
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -2 }

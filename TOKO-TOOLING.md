@@ -557,6 +557,13 @@ document necessary package exceptions and keep their common checks equivalent.
 Use this common minimum in each workspace root:
 
 ```toml
+[workspace.lints.cargo]
+unused_dependencies = "deny"
+unused_workspace_dependencies = "deny"
+unused_workspace_package_fields = "deny"
+missing_lints_inheritance = "deny"
+unknown_lints = "deny"
+
 [workspace.lints.rust]
 dead_code = "deny"
 unused_must_use = "deny"
@@ -567,6 +574,7 @@ missing_docs = "warn"
 
 [workspace.lints.rustdoc]
 broken_intra_doc_links = "deny"
+invalid_markdown_table = "deny"
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -2 }
@@ -585,6 +593,20 @@ do not weaken existing safe-package prohibitions. Missing-docs debt may retain
 an explicit no-growth baseline and scoped exceptions during adoption; do not
 invent boilerplate to claim the API is documented. Run the required Rustdoc
 checks as well as Clippy: configuring a tool's lints does not execute that tool.
+
+Run Cargo's dependency lints through the existing selected package/target checks;
+they do not cover development dependencies or prove every optional/target-specific
+use. Retain complementary checks for those gaps. Remove unused declarations and
+workspace metadata rather than adding dummy imports or blanket lint allowances.
+The missing-inheritance lint can detect an absent member lint table but an explicit
+empty table still needs our inheritance review. Cargo, Rust, Clippy and Rustdoc
+remain distinct lint namespaces; do not substitute one for another.
+
+For Rust 1.100, qualify warning enforcement on fresh and warm
+outputs, consume Cargo artifact records rather than internal build-directory
+layouts, and keep dependency cooldowns opt-in. Standard-library simplifications
+must preserve resource ownership and show a concrete reduction in complexity
+or measured cost; compiler adoption does not require broad API rewrites.
 
 Do not enable the entire `nursery` or `restriction` group. Select justified
 individual lints. Existing `pedantic` policy may remain after reviewing its

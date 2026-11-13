@@ -137,7 +137,7 @@ while [[ $# -gt 0 ]]; do
         *) exit 74 ;;
     esac
 done
-[[ "$locked:$registry:$jobs" == true:crates-io:2 && "$build" == "$destination/build" && "$PWD" == "$destination/home" && "$HOME" == "$PWD" ]] || exit 75
+[[ "$locked:$registry:$jobs" == false:crates-io:2 && "$build" == "$destination/build" && "$PWD" == "$destination/home" && "$HOME" == "$PWD" ]] || exit 75
 printf '%s %s %s %s %s\n' "$package" "$version" "$kind" "$target" "$profile" >> "$fixture/builds"
 if [[ -f "$fixture/hold-install" ]]; then
     printf '%s\n' "$destination" > "$fixture/install-held"

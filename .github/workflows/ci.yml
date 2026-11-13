@@ -260,6 +260,9 @@ jobs:
       - name: Qualify repository dependency maintenance
         if: needs.change-scope.outputs.scope != 'docs'
         run: perl scripts/ci/test-cargo-dependencies.pl
+      - name: Qualify Rust 1.100 lint and warning policy
+        if: needs.change-scope.outputs.scope != 'docs'
+        run: perl scripts/ci/test-rust-1100-policy.pl
       - name: Qualify public documentation identities
         if: needs.change-scope.outputs.scope != 'docs'
         run: make test-public-docs

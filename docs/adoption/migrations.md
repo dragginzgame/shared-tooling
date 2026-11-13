@@ -1,5 +1,23 @@
 # Consumer migration history
 
+## Rust 1.100 capabilities in 0.41.0
+
+This release extends the common lint minimum with Cargo's `unused_dependencies`,
+`unused_workspace_dependencies`, `unused_workspace_package_fields`,
+`missing_lints_inheritance` and `unknown_lints` at deny, plus Rustdoc's
+`invalid_markdown_table` at deny. Apply the baseline table to both product and
+qualification roots and their inherited members. Remove unused declarations;
+do not retain display catalogs through lint allowances or dummy imports.
+
+Use the [tooling adoption choices](../tools/rust-toolchains.md#rust-1100-adoption-choices)
+for warning enforcement, artifact discovery, installation and optional cooldowns.
+Preserve dev-dependency/feature coverage outside Cargo's lint coverage. Prove a
+real warning is rejected with fresh and reused artifacts before replacing a
+strict warning command; plain JSON collectors retain their existing refusal.
+Do not copy the producer's fixture into every consumer or add a new release gate.
+Use existing adapter fixtures and selected source checks. The new cache layout
+does not authorize cross-source evidence reuse, cache cleanup or a broad rewrite.
+
 ## Package inventory instead of display dependencies in 0.40.2
 
 Use `make deps-list` to view local package versions and release groups. Remove

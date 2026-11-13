@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.41.0] - Unreleased
+
+### ⚠️ Breaking
+
+- Extend the common Cargo lint minimum to reject unused dependencies/workspace
+  metadata, missing lint inheritance and unknown Cargo lints. Deny Rustdoc tables
+  that discard extra cells; see the [migration](docs/adoption/migrations.md#rust-1100-capabilities-in-0410).
+
+### 🔧 Tooling
+
+- Qualify warning enforcement on reused Cargo artifacts and adopt Cargo's warning
+  mode in native scanner Clippy. Preserve strict checks for plain JSON collectors.
+- Use Cargo 1.100's default packaged lock in tool installation, retaining exact
+  version, checksum and lock admission. Add focused compiler/lint regressions to CI.
+
+### 📚 Documentation
+
+- Document Cargo artifact discovery, opt-in dependency cooldowns and targeted
+  standard-library simplifications without new fleet gates or blanket rewrites.
+- Record scoped follow-ups for structured-warning callers in
+  [IC Tooling #355](https://github.com/dragginzgame/ic-tooling/issues/355), cleanup
+  guards and allocation assessment in [IcyDB #638](https://github.com/dragginzgame/icydb/issues/638),
+  and the cancellation-test guard in [IC Query #122](https://github.com/dragginzgame/ic-query/issues/122).
+
 ## [0.40.2] - 2026-11-13
 
 ### ✨ Added
