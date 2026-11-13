@@ -189,6 +189,13 @@ or section banners.
 
 ## Lint suppressions
 
+Use the baseline's [common Rust lint policy](../../TOKO-TOOLING.md#common-rust-lint-policy)
+for the required table, inheritance and domain exceptions. Keep its compiler and
+lint adoption together across product and qualification workspaces. Prefer checks
+that detect incorrect behavior, lost results, unsafe boundaries and accidental
+ownership costs. Syntax preferences and function-size thresholds are not proof
+of architectural quality, regardless of whether a human or agent wrote the code.
+
 - Fix the underlying warning where practical. When suppression is justified,
   use `#[expect(lint_name, reason = "...")]` at the narrowest useful scope so
   the compiler reports an expectation that no longer matches a warning.
@@ -218,8 +225,8 @@ and [Cargo lint configuration](https://doc.rust-lang.org/cargo/reference/manifes
 ## Tooling
 
 Use `rustfmt` as the formatting authority and Clippy as a linting baseline.
-Consumers own exact commands, toolchain versions, lint configuration and
-qualification gates within the shared baseline. Focused checks run automatically
+Consumers own exact commands, additional domain lints and qualification gates
+within the shared compiler and lint baseline. Focused checks run automatically
 during authorized development under the
 [shared validation policy](../../TOKO-TOOLING.md#validation-and-evidence), which
 also requires Clippy before expensive release/deployment stages. Full-suite and

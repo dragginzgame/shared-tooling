@@ -257,7 +257,7 @@ bash scripts/dev/prepare-rust-toolchain.sh --toolchain-file rust-toolchain.toml
 Then run `make install-tools` and `make tools-check`. CI prepares this same file
 before computing Cargo build-cache identity or qualifying registry builds. The
 runtime scanner uses that same prepared compiler; it needs no older-toolchain
-installation. Consumers adopt the Rust 1.99.1 support policy explicitly in their
+installation. Consumers adopt the Rust 1.100.0 support policy explicitly in their
 manifests, compiler selection and validation; exporting a snapshot alone does
 not edit those files or qualify their builds.
 After changing the pin or the shared build-helper policy, rerun explicit setup;

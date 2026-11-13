@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.40.0] - Unreleased
+
+### ⚠️ Breaking
+
+- Require a common Rust lint minimum across product and qualification workspaces,
+  with explicit member inheritance and reviewed domain exceptions. Replace blanket
+  nursery/restriction selection with individual checks and keep line-count advice
+  outside blocking gates; qualify compiler and lint adoption together.
+
+- Raise the minimum Rust version and pinned development/release compiler to
+  1.100.0, including the runtime scanner qualification graph. Consumers must
+  update their workspace declarations and compiler selections before adoption;
+  see the [migration guide](docs/adoption/migrations.md#rust-11000-minimum-in-0400).
+
 ## [0.39.19] - 2026-11-12
 
 ### ✨ Added

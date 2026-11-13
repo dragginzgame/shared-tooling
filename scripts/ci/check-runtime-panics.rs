@@ -1,5 +1,5 @@
-// Development-only structural check for caller-selected Rust source files.
-// Consumers own source discovery and policy scope; Syn owns item boundaries.
+//! Development-only structural check for caller-selected Rust source files.
+//! Consumers own source discovery and policy scope; Syn owns item boundaries.
 
 use std::{fs, path::PathBuf, process::ExitCode};
 

@@ -1,6 +1,6 @@
 # Rust toolchain preparation
 
-Use the approved Rust 1.99.1 compiler for development and minimum-version
+Use the approved Rust 1.100.0 compiler for development and minimum-version
 qualification under the [compiler support policy](../../rules/cargo-dependencies.md#minimum-supported-rust-version-msrv).
 Prepare it once from the repository's admitted `rust-toolchain.toml`. Rustup,
 `/bin/bash` and the documented policy parsers must already be available.
@@ -31,7 +31,7 @@ components when the minimum-toolchain lane also runs lint or formatting.
 Local setup or single-toolchain CI lanes can call the same installer directly:
 
 ```bash
-bash scripts/dev/prepare-rust-toolchain.sh 1.99.1 \
+bash scripts/dev/prepare-rust-toolchain.sh 1.100.0 \
   --component clippy --component rustfmt --target wasm32-unknown-unknown
 ```
 

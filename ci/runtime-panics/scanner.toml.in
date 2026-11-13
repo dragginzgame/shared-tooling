@@ -13,3 +13,6 @@ syn.workspace = true
 [[bin]]
 name = "shared-runtime-scanner"
 path = "src/main.rs"
+
+[lints]
+workspace = true

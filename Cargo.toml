@@ -1,8 +1,8 @@
 [package]
 name = "toko-tooling"
-version = "0.39.19"
+version = "0.40.0"
 edition = "2024"
-rust-version = "1.99.1"
+rust-version = "1.100.0"
 license-file = "LICENSE.md"
 description = "Shared development tools, CI helpers and engineering rules for Toko Studios"
 repository = "https://github.com/dragginzgame/toko-tooling"
@@ -22,3 +22,24 @@ include = [
 # make toko-tooling-install refreshes scripts and prepares the pinned tools.
 [lib]
 path = "src/lib.rs"
+
+[lints.rust]
+dead_code = "deny"
+unused_must_use = "deny"
+unfulfilled_lint_expectations = "deny"
+unsafe_code = "forbid"
+unsafe_op_in_unsafe_fn = "deny"
+missing_docs = "warn"
+
+[lints.rustdoc]
+broken_intra_doc_links = "deny"
+
+[lints.clippy]
+all = { level = "warn", priority = -2 }
+correctness = { level = "deny", priority = -1 }
+redundant_clone = "warn"
+needless_pass_by_value = "warn"
+wildcard_imports = "warn"
+missing_panics_doc = "warn"
+must_use_candidate = "warn"
+too_many_lines = "allow"

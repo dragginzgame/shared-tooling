@@ -29,7 +29,7 @@ the bootstrap `gzip` executable; it never extracts archives.
 Follow the derive sorter's documented
 [macro qualification and pin adoption](../../rules/git-hooks.md#derive-macros-and-dollar-prefixed-paths)
 before removing corruption-workaround markers. The selected 0.14.1 formatter
-requires Rust 1.88 or newer to build; our selected compiler is 1.99.1 under the
+requires Rust 1.88 or newer to build; our selected compiler is 1.100.0 under the
 [compiler support policy](../../rules/cargo-dependencies.md#minimum-supported-rust-version-msrv).
 Tool availability and version checks do not establish semantic preservation.
 

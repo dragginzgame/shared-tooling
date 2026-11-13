@@ -5,9 +5,30 @@ resolver = "3"
 [workspace.package]
 version = "0.0.0"
 edition = "2024"
-rust-version = "1.99.1"
+rust-version = "1.100.0"
 
 [workspace.dependencies]
 clap = { version = "=4.6.7", default-features = false, features = ["std", "help", "usage", "error-context"] }
 proc-macro2 = { version = "1.0.107", features = ["span-locations"] }
 syn = { version = "2.0.119", features = ["full", "visit"] }
+
+[workspace.lints.rust]
+dead_code = "deny"
+unused_must_use = "deny"
+unfulfilled_lint_expectations = "deny"
+unsafe_code = "forbid"
+unsafe_op_in_unsafe_fn = "deny"
+missing_docs = "warn"
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "deny"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -2 }
+correctness = { level = "deny", priority = -1 }
+redundant_clone = "warn"
+needless_pass_by_value = "warn"
+wildcard_imports = "warn"
+missing_panics_doc = "warn"
+must_use_candidate = "warn"
+too_many_lines = "allow"

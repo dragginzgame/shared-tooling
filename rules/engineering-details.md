@@ -914,7 +914,7 @@ blind retries.
   Keep version/source selections in the root; children select target conditions,
   features and publication policy. Keep the
   [minimum supported Rust version](cargo-dependencies.md#minimum-supported-rust-version-msrv)
-  aligned with the approved Rust 1.99.1 development/release compiler. Retire older
+  aligned with the approved Rust 1.100.0 development/release compiler. Retire older
   compiler support and consolidate duplicate qualification under that policy,
   retaining distinct target, host, feature and consumer proofs. Future compiler
   changes require a maintainer decision and appropriate validation.

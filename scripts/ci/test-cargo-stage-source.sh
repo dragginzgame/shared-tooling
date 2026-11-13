@@ -24,7 +24,7 @@ stage-engine = { path = "crates/engine", version = "2.3.0" }
 TOML
 for entry in api:1.2.0:1.2.1 engine:2.3.0:2.3.1; do
     IFS=: read -r group previous next <<< "$entry"
-    printf '[package]\nname = "stage-%s"\nversion = "%s"\nedition = "2024"\nrust-version = "1.99.1"\n' "$group" "$previous" > "crates/$group/Cargo.toml"
+    printf '[package]\nname = "stage-%s"\nversion = "%s"\nedition = "2024"\nrust-version = "1.100.0"\n' "$group" "$previous" > "crates/$group/Cargo.toml"
     printf 'pub const VERSION: &str = env!("CARGO_PKG_VERSION");\n#[test] fn final_version() { assert_eq!(VERSION, "%s"); }\n' "$next" > "crates/$group/src/lib.rs"
     mkdir -p "releases/$group"
     printf '# Notes\n\n## [%s] - Unreleased\n\n### Changed\n\n- Candidate qualification.\n' "$next" > "releases/$group/CHANGELOG.md"

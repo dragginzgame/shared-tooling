@@ -429,28 +429,28 @@ release transaction or duplicate check in every repository.
 
 ## Minimum supported Rust version (MSRV)
 
-- Use **Rust 1.99.1** as both the minimum supported compiler and the pinned
+- Use **Rust 1.100.0** as both the minimum supported compiler and the pinned
   development, lint and release compiler for the Dragginzgame Rust stack. The
   maintainer retired older-compiler support because it has no required consumers;
   reducing duplicate qualification and compatibility maintenance is the reason
   for this change. Do not retain an older floor merely because code still builds
   with it. This decision supersedes the previous lowest-possible-MSRV policy.
-- Declare `rust-version = "1.99.1"` in `[workspace.package]` and inherit it in
-  members. Pin `rust-toolchain.toml` to `channel = "1.99.1"`; do not use moving
+- Declare `rust-version = "1.100.0"` in `[workspace.package]` and inherit it in
+  members. Pin `rust-toolchain.toml` to `channel = "1.100.0"`; do not use moving
   `stable`. Reconcile explicit package overrides, independent fixture workspaces,
   compiler selectors in CI/release scripts and current support documentation.
   Release groups retain independent package versions and changelogs.
 - Qualify each affected supported package/feature graph with the selected locked
-  dependencies on 1.99.1 before claiming adoption. Include native and applicable
+  dependencies on 1.100.0 before claiming adoption. Include native and applicable
   Wasm consumer paths, local packages and proc macros. A manifest edit, successful
   metadata resolution, Clippy's MSRV lint or `--ignore-rust-version` is not build
   qualification. Preserve isolated consumer fixtures where workspace feature
   unification would hide a missing dependency or feature.
-- Record and enforce actual Cargo/rustc 1.99.1 identities in validation. Merely
+- Record and enforce actual Cargo/rustc 1.100.0 identities in validation. Merely
   installing a compiler or setting rustup's default does not override a selected
   repository toolchain. Read the admitted local manifest/toolchain policy instead
   of retaining independent hardcoded old-version selectors.
-- Consolidate a separate MSRV job only when the retained 1.99.1 checks cover its
+- Consolidate a separate MSRV job only when the retained 1.100.0 checks cover its
   package, feature, target and consumer obligations. Reuse that evidence instead
   of compiling the same graph twice under different job names. Keep distinct
   native hosts, Wasm, installed-runtime, feature-isolation and archive-consumer

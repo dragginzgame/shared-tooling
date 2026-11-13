@@ -1,5 +1,34 @@
 # Consumer migration history
 
+## Rust 1.100.0 minimum in 0.40.0
+
+Tooling 0.40.0 raises its crate minimum and the shared development/release
+compiler policy to Rust 1.100.0. Before adopting it, update each product and
+qualification workspace's `rust-version` and compiler pin, including explicit
+package overrides and CI selectors. Prepare the pinned compiler, then qualify
+the affected locked package/feature graphs and applicable native/Wasm consumers.
+Snapshot installation alone does not update those declarations or prove adoption.
+This supersedes the compiler minimum recorded in earlier migration entries.
+
+The same release introduces the baseline's
+[common Rust lint policy](../../TOKO-TOOLING.md#common-rust-lint-policy).
+Adoption is complete only after these consumer-owned steps:
+
+- Reconcile every workspace table and member inheritance, including private
+  qualification packages and explicit package-level exceptions.
+- Remove blanket nursery/restriction selection and blocking line-count checks;
+  retain justified individual checks and review pedantic allowances.
+- Remove stale expectations caused by changed selection. Preserve narrow FFI,
+  generated-export and configuration-dependent exceptions, stronger safe-package
+  prohibitions and meaningful public documentation/debt checks.
+- Inspect Clippy/Rustdoc commands and overrides, and run affected native, Wasm,
+  feature and macro-consumer checks on Rust 1.100.0. Report unavailable host proof
+  separately; do not claim compiler adoption from metadata or snapshot integrity.
+
+Snapshot updates do not rewrite native manifests, toolchain files or CI commands.
+Consumer issues track these concrete migrations; updating the tooling pin alone
+does not close them. No sibling update or publication happens automatically.
+
 ## Online reference documentation in 0.39.5
 
 This replaces the 0.39.3–0.39.4 plan to install shared docs under a separate

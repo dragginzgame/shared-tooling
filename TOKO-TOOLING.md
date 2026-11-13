@@ -507,6 +507,69 @@ suppressions. Repositories must review every `allow` for conversion and retain
 one only with a concrete reason why an expectation cannot work. Follow the
 [lint suppression rule](https://github.com/dragginzgame/toko-tooling/blob/626da7cd9626cc2e152594862a2d82ea82ef51da/docs/principles/rust-code-hygiene.md#lint-suppressions).
 
+### Common Rust lint policy
+
+On adoption, reconcile compiler pins and lint configuration in every product,
+qualification and other maintained workspace; installing the snapshot alone
+does not perform or qualify this migration. Every member inherits its owning
+workspace's lint table with `[lints] workspace = true`. A single-package repository
+uses `[lints.*]` directly. Cargo cannot combine inherited and local lint tables:
+document necessary package exceptions and keep their common checks equivalent.
+
+Use this common minimum in each workspace root:
+
+```toml
+[workspace.lints.rust]
+dead_code = "deny"
+unused_must_use = "deny"
+unfulfilled_lint_expectations = "deny"
+unsafe_code = "deny"
+unsafe_op_in_unsafe_fn = "deny"
+missing_docs = "warn"
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "deny"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -2 }
+correctness = { level = "deny", priority = -1 }
+redundant_clone = "warn"
+needless_pass_by_value = "warn"
+wildcard_imports = "warn"
+missing_panics_doc = "warn"
+must_use_candidate = "warn"
+too_many_lines = "allow"
+```
+
+Use `unsafe_code = "forbid"` for packages requiring no unsafe constructs. Keep
+`deny` with narrow reviewed expectations for FFI and unsafe export attributes;
+do not weaken existing safe-package prohibitions. Missing-docs debt may retain
+an explicit no-growth baseline and scoped exceptions during adoption; do not
+invent boilerplate to claim the API is documented. Run the required Rustdoc
+checks as well as Clippy: configuring a tool's lints does not execute that tool.
+
+Do not enable the entire `nursery` or `restriction` group. Select justified
+individual lints. Existing `pedantic` policy may remain after reviewing its
+exceptions; it is not required by the common minimum. Extra checks must protect
+a named contract rather than recreate a broad experimental group. Enforce
+`future_not_send` only on APIs promising multithreaded-executor compatibility,
+not IC-local futures. Keep `too_many_lines` outside blocking gates; an optional
+review invocation may enable it. `warn` remains blocking under `-D warnings`.
+
+Review broad ownership/import allowances for relocation to narrow expectations;
+keep justified naming and documentation-style choices. Removing a lint also
+requires removing its now-unfulfilled expectations across supported targets and
+features. Keep strict warning gates for the selected checks. Do not split coherent
+operations, add parameter wrappers, widen visibility, discard results, add locks
+or change ownership merely to satisfy a lint. Preserve behavior and fix the actual
+problem; explain a justified exception where the suggestion would make it worse.
+
+These requirements supersede older linked guidance delegating the entire lint
+selection to consumers. Domain-specific stricter checks and reviewed exceptions
+remain consumer-owned. Adoption must inspect actual member inheritance, local
+attributes and command-line overrides and qualify the affected callers; a green
+snapshot check alone is not compiler or lint-policy adoption.
+
 ### Product and qualification workspaces
 
 Use one repository-root product workspace, with product packages under `crates/`
@@ -576,8 +639,9 @@ Required API, security or compatibility migrations qualify the affected consumer
 boundary, rather than automatically updating the whole fleet.
 Follow the [adoption planning contract](https://github.com/dragginzgame/toko-tooling/blob/626da7cd9626cc2e152594862a2d82ea82ef51da/docs/cargo-graph-checks.md#dependency-adoption-planning).
 Use root-owned dependency selections, reviewed toko tooling and explicit setup.
-Rust 1.99.1 is the approved minimum and pinned development/release compiler;
-follow the [compiler support policy](https://github.com/dragginzgame/toko-tooling/blob/d4b09ceb6dd94d825adee2b894fa26dac4618ae0/rules/cargo-dependencies.md#minimum-supported-rust-version-msrv)
+Rust 1.100.0 is the approved minimum and pinned development/release compiler;
+this supersedes older compiler versions in the revision-bound references below.
+Follow the [compiler support policy](https://github.com/dragginzgame/toko-tooling/blob/d4b09ceb6dd94d825adee2b894fa26dac4618ae0/rules/cargo-dependencies.md#minimum-supported-rust-version-msrv)
 when adopting it and consolidating duplicate compiler checks. Preserve product
 host requirements. Select canonical identities
 from `ic-platform-types`, IC0/execution from `ic-platform-runtime`, and crypto or
