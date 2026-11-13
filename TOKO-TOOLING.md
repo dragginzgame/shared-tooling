@@ -440,6 +440,27 @@ archive and registry admission, required product/native checks and recovery
 boundaries. Missing or changed evidence still requires execution or refusal;
 speed alone never authorises skipping a gate.
 
+Plan deployment as one selected validation pass followed by fresh artifact and
+delivery admission. Inspect the actual nested commands first; do not stack full
+gates under release, version preparation and publication. Keep optional dependency,
+compiler, formatting-policy and tooling upgrades out of an active release unless
+requested or needed to resolve its blocker. Qualify changed release-tool wiring
+with focused fixtures before expensive product tests, using existing evidence
+when unchanged. Use retained stage timings to disclose expensive work and the
+expected scope before starting or restarting; unknown cost stays explicit.
+
+After failure, identify the failed phase and invalidated inputs before retrying.
+A collector, metadata or upload failure does not by itself invalidate completed
+runtime checks. Preserve their original evidence and use qualified stage admission
+or post-processing recovery where available; never rewrite their origin or infer
+passes from log text. Do not silently restart a full gate as a generic repair.
+If recovery is unsupported, explain the concrete missing admission and rerun scope
+before proceeding under the existing authority. A rule alone does not implement
+recovery or waive a required check. Consumers must qualify such recovery when
+improving their release adapters, including evidence-publication failure after
+successful execution. Keep failed/missing/changed stages explicit and freshly
+check source, final archives and remote/registry state before delivery or retry.
+
 `make release-patch`, `make release-minor` and `make release-major` share the
 [release contract](https://github.com/dragginzgame/toko-tooling/blob/626da7cd9626cc2e152594862a2d82ea82ef51da/rules/engineering-details.md#release-commands). Read it and the
 local adapter before authorized release work. Normal releases start fresh;

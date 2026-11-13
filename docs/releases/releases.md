@@ -48,6 +48,43 @@ Preserve consumer wiring and recovery tests; generic tooling matrices stay with
 their producer. A workflow optimisation must qualify invalidation and fallback
 as well as the faster path, without adding another runner or recurring gate.
 
+### Plan once, recover the failed phase
+
+Before starting an expensive gate, inspect the existing attempt, selected groups,
+leaf commands and reusable evidence. State the work that will execute or reuse,
+known dominant stage timings and any uncertainty in the conversation or existing
+attempt output. This is a short operational explanation, not another report,
+approval round, benchmark or release gate. Use measured history when available;
+do not invent completion estimates.
+
+- Finish requested source changes before freezing inputs. Keep optional upgrades
+  and unrelated cleanup out of the attempt. Changed compiler/flags, locks, generated
+  code or version-sensitive inputs can invalidate proof even when Rust sources match.
+- Check changed orchestration, selection, collector and metadata contracts with
+  focused fixtures before long runtime suites. Cover the actual nested log layout
+  and post-execution handoff. Reuse unchanged fixture evidence; do not run the
+  supplier's entire tooling regression suite in every consumer deployment.
+- Run each required stage once for its admitted inputs. Publication rechecks final
+  source, archives and destination; it does not automatically repeat runtime gates.
+  Parallelize independent stages only within qualified resource and isolation bounds.
+- Retain completed-stage proof before later stages can fail. The release adapter
+  must distinguish execution failure, evidence-finalization failure, metadata
+  preparation failure and delivery failure. Explain execution/reuse decisions during
+  ordinary output, not only in logs after an unexpected full rerun.
+- On failure, preserve the original attempt and use the
+  [recovery decision](release-validation-reuse.md#failure-specific-recovery).
+  Repair and qualify the failed boundary first. If existing machinery cannot admit
+  earlier proof, state that limitation and the resulting cost before restarting;
+  proceed under existing release authority without a routine permission prompt.
+- Hosted CI runs independently unless branch/release protections require waiting.
+  Do not add an extra local copy of its full matrix or wait for unrelated jobs.
+  Preserve required checks, and report registry delivery and hosted CI separately.
+
+The intended outcome is one complete validation of the selected release plus
+necessary fresh admissions, not a new collection of skip flags, evidence ledgers
+or per-repository release engines. Consumers adopt and qualify the existing shared
+stage mechanics; policy adoption alone cannot recover an older unsupported attempt.
+
 ### Standard entrypoints
 
 Grouped increment commands use [frozen release batches](release-batches.md) by

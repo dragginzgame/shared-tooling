@@ -208,6 +208,43 @@ rebinding, implicit cleanup or publication is part of this design. Resume must
 re-admit the saved attempt and original evidence; a partial admission record is
 not a completed stage. Fresh group policy also checks unrelated-group preservation.
 
+## Failure-specific recovery
+
+Before retrying, identify the first failed phase, the original execution source,
+current destination source and exact changed inputs. The operator's report should
+name what passed, what failed, what remains reusable, what must rerun and why.
+Use existing attempt records; do not create a parallel tracking system.
+
+| Failure | Required disposition |
+| --- | --- |
+| Compilation, test, lint or runtime stage fails or is interrupted | Repair and execute that stage and other affected obligations. Preserve independent successful proof where its complete admitted inputs still match. |
+| Collector/receipt finalization fails after successful execution | Preserve raw structured execution records and original source. Recover post-processing only through a qualified collector-recovery contract; a PASS string or exit code without complete input/custody evidence is insufficient. |
+| Version/metadata preparation fails | Use the owning transaction's recovery. Re-admit unchanged stage proofs; requalify stages whose code generation, package identity, lock or other inputs changed. |
+| Git push or registry upload fails or returns an uncertain result | Observe remote refs and registry state first. Resume the owning delivery phase; never blindly repeat publication or rerun runtime tests as a network-recovery step. |
+
+A collector repair is not permission to relabel old execution as a new-source
+pass. Keep the execution source, command, stage roster, input checkpoint, outcome,
+logs and custody intact. A qualified recovery must record the corrective tool's
+identity and the separate recovery result, admit the original run without editing
+its frozen source or raw records, and reject missing/failed stages, ambiguous runs,
+tampered evidence and changed execution inputs. It must distinguish an unavailable
+proof from a valid execution whose final receipt could not be written. Never
+backfill an input checkpoint that was not captured during execution.
+
+Recovery at the original source and reuse at a changed destination are separate
+admissions. The latter still requires a qualified complete stage input contract.
+If the old format binds the whole source tree, a post-processing script change
+does not automatically authorize cross-source reuse. Keep that limitation explicit;
+do not manufacture stage proofs from an old whole-gate receipt. Current exact-input
+stage reuse does not itself implement retroactive collector repair.
+
+When changing a release adapter, qualify failure after a successful expensive
+stage but before evidence publication, plus interruption during recovery and a
+second retry. Assert that admitted unchanged stages are not executed again and
+that changed or incomplete proof cannot skip work. Use small execution counters
+and controlled fixtures for this contract; do not replay hours of runtime tests
+to test orchestration. Product runtime qualification remains with its owner.
+
 ## Cargo version projection
 
 Version projection is a separate, explicitly qualified capability, disabled by

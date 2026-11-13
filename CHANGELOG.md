@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.40.1] - Unreleased
+
+### 📚 Documentation
+
+- Clarify deployment sequencing and failure-specific recovery: qualify changed
+  release wiring before expensive suites, avoid duplicate validation, retain
+  successful-stage evidence and explain invalidation before costly retries.
+
 ## [0.40.0] - 2026-11-13
 
 ### ⚠️ Breaking
