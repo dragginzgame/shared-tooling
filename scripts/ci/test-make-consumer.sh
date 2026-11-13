@@ -19,7 +19,7 @@ mkdir -p "$snapshot/make" "$snapshot/scripts/ci" "$snapshot/scripts/dev" \
 mkdir "$fixture/templates" "$fixture/bin"
 export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null GIT_TEMPLATE_DIR="$fixture/templates"
 git init -q "$consumer"
-bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$snapshot" make/consumer.mk
+bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$snapshot" make/consumer.mk make/release.mk make/cargo-publication.mk
 # Hooks retain their root-layout contract even when other tooling is nested.
 bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$consumer" \
     .githooks/pre-commit scripts/ci/verify-toko-tooling-snapshot.sh scripts/ci/verify-file-checksum.sh

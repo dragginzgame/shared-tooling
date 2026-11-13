@@ -10,7 +10,8 @@ the independent, non-mutating formatting gate.
 
 - Vendor the reviewed Toko Tooling `.githooks/pre-commit` and
   `scripts/dev/install-git-hooks.sh`, with `scripts/ci/check-make-execution.sh`,
-  unchanged in the [recorded snapshot](../docs/adoption/consuming-snapshots.md).
+  unchanged under `vendor/toko-tooling/` in the
+  [recorded snapshot](../docs/adoption/consuming-snapshots.md).
   Keep the hook and installer executable.
   Retire the superseded local formatter hook after reviewing its obligations.
 - Every Rust repository provides `make fmt` and `make fmt-check`. Both cover the
@@ -72,7 +73,7 @@ Use the [consumer Make entrypoint](../docs/adoption/make-interface.md), which in
 the shared `make/rust-format.mk`:
 
 ```make
-include make/consumer.mk
+include vendor/toko-tooling/make/consumer.mk
 ```
 
 It supplies `format-tools-check`, `fmt` and `fmt-check`, using the shared
@@ -165,9 +166,9 @@ selected tracked lockfile, for example:
 
 ```make
 PRETTIER_VERSION = $(shell jq -er '.packages["node_modules/prettier"].version' frontend/package-lock.json)
-FORMAT_WRITE_COMMAND = bash -ec 'perl scripts/ci/run-rust-formatting.pl --write; bash scripts/dev/format-frontend.sh --write frontend'
-FORMAT_CHECK_COMMAND = bash -ec 'perl scripts/ci/run-rust-formatting.pl --check; bash scripts/dev/format-frontend.sh --check frontend'
-include make/consumer.mk
+FORMAT_WRITE_COMMAND = bash -ec 'perl vendor/toko-tooling/scripts/ci/run-rust-formatting.pl --write; bash vendor/toko-tooling/scripts/dev/format-frontend.sh --write frontend'
+FORMAT_CHECK_COMMAND = bash -ec 'perl vendor/toko-tooling/scripts/ci/run-rust-formatting.pl --check; bash vendor/toko-tooling/scripts/dev/format-frontend.sh --check frontend'
+include vendor/toko-tooling/make/consumer.mk
 fmt fmt-check: export PRETTIER_VERSION := $(PRETTIER_VERSION)
 ```
 
@@ -253,12 +254,12 @@ See the [Prettier CLI contract](https://prettier.io/docs/cli).
 The consumer Make entrypoint supplies `install-hooks` for Rust consumers through
 `scripts/dev/install-git-hooks.sh --consumer <checkout>`. The destination is
 required; neither invocation location nor installer location selects a checkout.
-Keep the tracked hook
-and its root-layout companions in the consumer, even when the installer itself
-is in a nested snapshot. A focused include can still call that documented helper.
+Keep the tracked hook and its companions together under `vendor/toko-tooling/`.
+A focused include can still call that documented helper. Reconcile an existing
+root hook configuration explicitly during migration; do not retain path aliases.
 
 Run `make install-hooks` once per clone and call it from the documented developer
-setup/update flow. It sets only repository-local `core.hooksPath=.githooks`.
+setup/update flow. It sets only repository-local `core.hooksPath=vendor/toko-tooling/.githooks`.
 The installer refuses to replace another effective hook path, including inherited
 or deliberately disabled settings, or to disable an executable private hook in
 the default Git hooks directory. Reconcile existing hook obligations explicitly

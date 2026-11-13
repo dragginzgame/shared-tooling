@@ -15,6 +15,8 @@ trap 'fixture_finish "$?" "$fixture" "Common tool preparation fixture retained"'
 yq -o json '.' "$ROOT/.github/actions/prepare-common-tools/action.yml" > "$fixture/prepare-action.json"
 jq -e '
     .runs.using == "composite" and
+    ([.runs.steps[] | select(.uses != null and (.uses | startswith("./"))) | .uses] |
+      all(. == "./vendor/toko-tooling/.github/actions/cache-tool-downloads")) and
     ([.runs.steps[] | select(.run != null) | .shell] | all(. == "/bin/bash --noprofile --norc -e -o pipefail {0}")) and
     (.runs.steps | map(.id)) == ["cache-options", "restore-downloads", "tool-cache-key", "tool-cache", "prepare-tools", "save-downloads", "save-tool-cache"] and
     (.runs.steps[3].with.key == .runs.steps[6].with.key) and
@@ -74,7 +76,7 @@ for failure in success install check; do
     PATH="$fixture/prepare-bin:$PATH" PREPARE_CALLS="$fixture/prepare-calls" \
         PREPARE_INSTALL_STATUS="$install_status" PREPARE_CHECK_STATUS="$check_status" \
         RUNNER_TEMP="$fixture/prepare runner" GITHUB_WORKSPACE="$fixture/prepare checkout" \
-        GITHUB_PATH="$fixture/prepare-path" \
+        GITHUB_PATH="$fixture/prepare-path" ACTION_ROOT="$ROOT/.github/actions/prepare-common-tools" \
         "$BASH" --noprofile --norc -e -o pipefail "$fixture/prepare-action.sh" \
         > "$fixture/prepare-$failure.log" 2>&1 || prepare_status=$?
     [[ "$prepare_status" == "$expected" ]] || exit 1
@@ -189,7 +191,7 @@ for selection in common ic; do
         (cd "$aggregate" && PATH="$fixture/prepare-bin:$PATH" \
             PREPARE_CALLS="$fixture/prepare-calls" PREPARE_FAILURE="$failure" \
             RUNNER_TEMP="$fixture/prepare runner" GITHUB_WORKSPACE="$aggregate" \
-            GITHUB_PATH="$fixture/prepare-path" \
+            GITHUB_PATH="$fixture/prepare-path" ACTION_ROOT="$ROOT/.github/actions/prepare-common-tools" \
             "$BASH" --noprofile --norc -e -o pipefail "$fixture/prepare-action.sh") \
             > "$fixture/aggregate-$failure.log" 2>&1 || prepare_status=$?
         expected=2

@@ -68,7 +68,8 @@ TOML
     stage_args+=(--manifest-path qualification/Cargo.toml)
     (cd qualification && cargo generate-lockfile --offline)
 fi
-bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$PWD" scripts/ci/cargo-release-group.sh
+mkdir -p vendor/toko-tooling
+bash "$root/scripts/ci/prepare-script-fixture.sh" "$root" "$PWD/vendor/toko-tooling" scripts/ci/cargo-release-group.sh
 cargo generate-lockfile --offline
 export GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null
 unset RUSTFLAGS RUSTDOCFLAGS CARGO_ENCODED_RUSTFLAGS RUSTC_WRAPPER RUSTC_WORKSPACE_WRAPPER

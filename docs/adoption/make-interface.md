@@ -4,12 +4,14 @@ Use one reviewed snapshot entrypoint for common contributor commands:
 
 ```make
 .DEFAULT_GOAL := help
-override TOKO_TOOLING_ROOT := $(CURDIR)
-include make/consumer.mk
+override TOKO_TOOLING_ROOT := $(CURDIR)/vendor/toko-tooling
+include vendor/toko-tooling/make/consumer.mk
 ```
 
-For a nested snapshot, select its local directory and include its
-`make/consumer.mk`. Never include a moving sibling checkout. A non-Rust repository
+The vendor directory is the standard installed location; `consumer.mk` also
+derives `TOKO_TOOLING_ROOT` from its own location when no override is supplied.
+Select `make/release.mk` and `make/cargo-publication.mk` explicitly during export
+when using those optional features. Never include a moving sibling checkout. A non-Rust repository
 sets `TOKO_TOOLING_RUST := 0` before the include; it still prepares the complete
 common toolset, but does not expose Rust formatting or hook installation.
 The include preserves the consumer's default goal, even when declared later.
@@ -32,7 +34,7 @@ file, the existing direct/PR contract is unchanged. `SHARED_RELEASE_TARGETS`
 provides the canonical command/hook roster for consumer declarations.
 
 Standalone metadata entrypoints call
-`bash scripts/ci/check-release-delivery.sh "$policy_file" "${RELEASE_DELIVERY-direct}"`
+`bash vendor/toko-tooling/scripts/ci/check-release-delivery.sh "$policy_file" "${RELEASE_DELIVERY-direct}"`
 before effects, using that same file; never source it as shell code. An empty
 file-path argument admits the standard direct/PR set. File selection and delivery
 choice remain consumer-owned; this helper grants no release or merge authority.
@@ -49,7 +51,7 @@ reports require explicit selection.
 | `install-tools`, `tools-check`, narrow host/IC/Rust commands | Common pins, ordered setup and offline admission | Explicit pin exceptions and ordered product tool extensions |
 | `tools-report` | Aggregate existing offline checks and retain all failures | Same ordered local check targets; no setup or release admission |
 | `fmt`, `fmt-check`, `format-tools-check` | Prerequisite check, compact output, retained failure logs | Cargo environment and complete custom formatter commands when needed |
-| `install-hooks` | Safe repository-local activation | Tracked root `.githooks/pre-commit` and its companions |
+| `install-hooks` | Safe repository-local activation | Tracked `vendor/toko-tooling/.githooks/pre-commit` and its companions |
 | `toko-tooling-status`, `toko-tooling-update`, `toko-tooling-install` | Report installed/locked registry identities; install the existing Cargo.lock selection, then install/check tools | Optional `TOKO_TOOLING_VERSION` assertion matching the lock, `TOKO_TOOLING_MANIFEST`; `TOKO_TOOLING_SOURCE` only for one-time Git migration proof |
 | `toko-tooling-check` | Offline snapshot integrity and Cargo selection agreement | `TOKO_TOOLING_MANIFEST`, default `.toko-tooling.snapshot` |
 | `toko-tooling-preview` | Preview the selected crate refresh without changing consumer files or tools | `TOKO_TOOLING_MANIFEST`, optional `TOKO_TOOLING_SOURCE` |
@@ -166,7 +168,7 @@ FORMAT_RUST_ARGS = --sort-derives \
     --extra-workspace integrations/consumer \
     --extra-workspace 'integrations/embedded consumer' \
     --extra-manifest-order workspace,package,lib,dependencies,dev-dependencies,build-dependencies,profile
-include make/consumer.mk
+include vendor/toko-tooling/make/consumer.mk
 ```
 
 The root sequence is grouped manifest sorting, optional derive sorting, then
@@ -233,7 +235,7 @@ and use the compact `run-formatting.sh` log wrapper:
 ```make
 FORMAT_WRITE_COMMAND = bash scripts/dev/format-workspaces.sh --write
 FORMAT_CHECK_COMMAND = bash scripts/dev/format-workspaces.sh --check
-include make/consumer.mk
+include vendor/toko-tooling/make/consumer.mk
 
 fmt fmt-check format-tools-check: export RUSTUP_TOOLCHAIN := $(VALIDATION_TOOLCHAIN)
 fmt fmt-check format-tools-check: export CARGO_HOME := $(LOCAL_CARGO_HOME)
@@ -348,7 +350,7 @@ their admitted `.tools/ic/bin` separately. Consumers own compiler setup,
 Make's ordered local extensions, caches and product gates. The action requires
 an existing checkout, `RUNNER_TEMP` and `GITHUB_PATH`; it does not select a compiler.
 
-Use `bash scripts/ci/prepare-script-fixture.sh SOURCE EXISTING-FIXTURE ROOT...`
+Use `bash vendor/toko-tooling/scripts/ci/prepare-script-fixture.sh SOURCE EXISTING-FIXTURE ROOT...`
 for Make fixtures too. Select `make/consumer.mk` for the consumer interface,
 `make/tools.mk` for tool aggregates or `make/release.mk` for release routing.
 Their declared companions supply the complete closure. Apply local Makefiles,
@@ -420,7 +422,7 @@ package/feature selection and baseline file. Run from the directory used by Carg
 so diagnostic source paths resolve against the same checkout.
 
 ```bash
-perl scripts/ci/check-public-docs.pl diagnostics.jsonl public-docs-baseline.json
+perl vendor/toko-tooling/scripts/ci/check-public-docs.pl diagnostics.jsonl public-docs-baseline.json
 ```
 
 The checker compares item identities, preserves occurrence counts, and refuses

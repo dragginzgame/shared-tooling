@@ -537,9 +537,7 @@ if ! git -C "$tracked_consumer" cat-file -e "HEAD:$verifier_path" 2>/dev/null; t
     git -C "$tracked_consumer" update-ref HEAD "$baseline"
 fi
 cp "$tracked_consumer/$checksum_path" "$FIXTURE/original-tracked-checksum"
-for path in "$checksum_path" "$verifier_path"; do
-    printf '\n# Upstream fixture update.\n' >> "$revision_root/$path"
-done
+printf '\n# Upstream fixture update.\n' >> "$revision_root/$verifier_path"
 for state in staged unstaged deleted unavailable; do
     case "$state" in
         staged)
@@ -584,9 +582,15 @@ for state in staged unstaged deleted unavailable; do
     git -C "$tracked_consumer" read-tree HEAD
     git -C "$tracked_consumer" checkout-index --force -- "$verifier_path"
 done
-# A clean selected file can update while unrelated tracked edits survive.
+# A clean unowned destination still refuses. Explicit consumer reconciliation
+# to the selected bytes permits adoption without touching unrelated edits.
 printf '\nUnrelated consumer edit.\n' >> "$tracked_consumer/README.md"
 cp "$tracked_consumer/README.md" "$FIXTURE/consumer-readme"
+if PATH="$FIXTURE/bin:$PATH" bash "$source_root/scripts/distribution/refresh-consumer.sh" \
+    --source "$source_root" --consumer "$tracked_consumer" --manifest "$tracked_manifest" \
+    --entrypoint "$checksum_path" --entrypoint "$verifier_path" > "$FIXTURE/clean-collision.log" 2>&1; then exit 1; fi
+rg -F 'not an unchanged owned snapshot file' "$FIXTURE/clean-collision.log" >/dev/null
+cp -p "$revision_root/$verifier_path" "$tracked_consumer/$verifier_path"
 PATH="$FIXTURE/bin:$PATH" \
     bash "$source_root/scripts/distribution/refresh-consumer.sh" \
     --source "$source_root" --consumer "$tracked_consumer" \

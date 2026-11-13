@@ -1,5 +1,53 @@
 # Consumer migration history
 
+## Vendor installation in 0.42.0
+
+This minor release moves executable snapshots into `vendor/toko-tooling/`.
+The exporter retains upstream bytes and relative layout inside that directory.
+Only `TOKO-TOOLING.md`, `LICENSE.md` and `CONTRIBUTING.md` stay at root; the
+root `.toko-tooling.snapshot` records physical destination paths and a vendor
+layout annotation. Do not hand-edit that receipt or move installed files.
+
+1. Select `=0.42.0` and update every maintained Cargo lock. Keep the old crate
+   available for ownership proof; the registry updater downloads it when needed.
+2. Inventory actual Make, script, hook and CI callers. Supply a complete
+   `--entrypoint` list using **upstream paths**, without the vendor prefix.
+   Keep `make/consumer.mk`, the root baseline and the hook if used. Explicitly
+   add `make/release.mk` for shared releases, `make/cargo-publication.mk` for
+   shared publication, and each directly used helper/action. Drop reference
+   docs and producer `scripts/ci/test-*` fixtures; they are rejected in new exports.
+3. Run the reviewed installer with `update --preview --snapshot-only --consumer
+   /absolute/repository` and those entrypoints. Inspect additions and removals.
+   Repeat without `--preview`. `--snapshot-only` avoids invoking the old consumer
+   Makefile while its include paths are being migrated.
+4. Change the consumer Make include to
+   `include vendor/toko-tooling/make/consumer.mk`. Remove an old root-valued
+   `TOKO_TOOLING_ROOT` override or set it to `$(CURDIR)/vendor/toko-tooling`.
+   Update script calls, source lists, cache inputs and composite-action `uses:`
+   paths. For example, use `./vendor/toko-tooling/.github/actions/cache-tool-downloads`.
+   Product CI workflows, release policies, configuration and scripts remain local.
+5. If the old hook used `core.hooksPath=.githooks`, inspect that directory and
+   reconcile any consumer hooks before explicitly unsetting the old local value
+   and running `make install-hooks`. The new value is
+   `vendor/toko-tooling/.githooks`; setup refuses to replace a different hook
+   configuration automatically. Repositories with custom hooks own their dispatch.
+6. Run `make install-tools`, `make tools-check`, `make toko-tooling-check`, and
+   focused formatting, CI and release-adapter checks for the changed callers.
+   Review and commit the pin, locks, receipt, additions, retirements and local
+   wiring together. Supplier publication alone does not qualify the consumer.
+
+Use the installed `vendor/toko-tooling/scripts/dev/toko-tooling.sh` for subsequent
+direct updates. The old installer can bootstrap the locked newer package; a
+reviewed extracted 0.42 installer can also perform the migration. Do not add old
+path aliases or wrappers to preserve the former layout.
+
+Retirement requires the exact previous source bytes and mode. Differing existing
+destinations now refuse even when clean and committed. Reconcile a collision
+explicitly outside the exporter; there is no force-overwrite option. An identical
+destination is safe to retry. Preview changes neither consumer files nor tools.
+Historical pre-0.42 source exports retain their recorded layout for evidence and
+migration fixtures; current installations have one supported vendor layout.
+
 ## Bootstrap and binary-test fixes in 0.41.1
 
 The bootstrap observer now admits complete release membership without requiring

@@ -172,7 +172,7 @@ jobs:
           key: cargo-tools-${{ runner.os }}-${{ runner.arch }}-${{ steps.tool-cache-key.outputs.key }}-${{ hashFiles('Makefile') }}
       - name: Prepare and check the complete common toolset
         if: needs.change-scope.outputs.scope != 'docs'
-        uses: ./.github/actions/prepare-common-tools
+        run: bash scripts/ci/prepare-common-tools.sh
       - name: Save pinned tool downloads
         if: needs.change-scope.outputs.scope != 'docs'
         uses: ./.github/actions/cache-tool-downloads

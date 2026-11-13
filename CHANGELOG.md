@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.42.0] - Unreleased
+
+### ⚠️ Breaking
+
+- Install executable snapshots under `vendor/toko-tooling/`, leaving consumer
+  scripts, workflows and configuration outside the managed tree. Migrate local
+  callers and hooks using the [0.42 guide](docs/adoption/migrations.md#vendor-installation-in-0420).
+- Select release and publication entrypoints explicitly. Exclude reference
+  documents and producer regression scripts from new consumer payloads.
+
+### 🩹 Fixed
+
+- Refuse differing consumer-owned destinations and modified managed files even
+  when committed; prove ownership before replacement or retirement.
+
+### 🔧 Tooling
+
+- Put package names first in `make deps-list`, followed by group, workspace and
+  version, with a dashed header separator. Preserve the existing row ordering.
+
 ## [0.41.1] - 2026-11-13
 
 ### 🩹 Fixed

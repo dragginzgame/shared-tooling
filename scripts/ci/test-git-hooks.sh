@@ -428,9 +428,10 @@ expect_failure bash scripts/dev/install-git-hooks.sh --consumer "$PWD"
 # Qualify the optional shared formatter against real Cargo and the actual hook,
 # including the adoption checker's partial-stage and preservation cases.
 new_fixture 'shared-format-include space'
-bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$PWD" make/consumer.mk
+mkdir -p vendor/toko-tooling
+bash "$ROOT/scripts/ci/prepare-script-fixture.sh" "$ROOT" "$PWD/vendor/toko-tooling" make/consumer.mk .githooks/pre-commit
 cat > Makefile <<'MAKE'
-include make/consumer.mk
+include vendor/toko-tooling/make/consumer.mk
 MAKE
 cat > Cargo.toml <<'CARGO'
 [package]
@@ -449,8 +450,8 @@ alpha = { package = "shared-format-fixture", path = "." }
 CARGO
 mkdir -p src
 printf 'pub fn fixture( ){}\n' > src/lib.rs
-git add Makefile Cargo.toml src/lib.rs make scripts
-bash .githooks/pre-commit > output
+git add Makefile Cargo.toml src/lib.rs vendor
+bash vendor/toko-tooling/.githooks/pre-commit > output
 [[ "$(git show :src/lib.rs)" == 'pub fn fixture() {}' ]] || exit 1
 awk '/^(alpha|zeta) =/ { print $1 }' Cargo.toml > observed-groups
 printf 'zeta\nalpha\n' > expected-groups
@@ -459,13 +460,13 @@ grep -Fx '# Production dependencies' Cargo.toml > /dev/null
 grep -Fx '# Tests and tooling only' Cargo.toml > /dev/null
 # A companion that is absent from HEAD must be discovered from the selected
 # working root, rather than supplied again in the checker's overlay list.
-perl -pi -e 's/^(# Shared companions:.*)$/$1 make\/hook-extra.mk/' make/consumer.mk
-printf '\ninclude make/hook-extra.mk\n' >> make/consumer.mk
-printf '# Untracked consumer companion required by the formatter.\n' > make/hook-extra.mk
+perl -pi -e 's/^(# Shared companions:.*)$/$1 make\/hook-extra.mk/' vendor/toko-tooling/make/consumer.mk
+printf '\ninclude vendor/toko-tooling/make/hook-extra.mk\n' >> vendor/toko-tooling/make/consumer.mk
+printf '# Untracked consumer companion required by the formatter.\n' > vendor/toko-tooling/make/hook-extra.mk
 cp .git/index "$FIXTURE/shared-index"
 cp src/lib.rs "$FIXTURE/shared-source"
 CDPATH="$FIXTURE" bash "$ROOT/scripts/ci/check-formatting-hooks.sh" "$PWD" src/lib.rs Cargo.toml --no-dependency-tables \
-    make/consumer.mk ci/tool-versions.env
+    vendor/toko-tooling/make/consumer.mk vendor/toko-tooling/ci/tool-versions.env
 cmp .git/index "$FIXTURE/shared-index"
 cmp src/lib.rs "$FIXTURE/shared-source"
 

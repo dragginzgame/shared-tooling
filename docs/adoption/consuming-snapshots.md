@@ -8,7 +8,7 @@ record its exact Toko Tooling source revision.
 ## Start here
 
 For a Rust consumer, use this sequence. Select a published, reviewed release;
-the `0.39.9` examples below are a concrete selection, not a latest-version alias.
+the `0.42.0` examples below are a concrete selection, not a latest-version alias.
 
 1. Add the root pin and each member's inherited dev-dependency and cargo-machete
    exemption under [Cargo selection](#cargo-selection-and-installation). Update
@@ -20,7 +20,7 @@ the `0.39.9` examples below are a concrete selection, not a latest-version alias
    `--entrypoint .githooks/pre-commit` if using the hook. Read the preview before
    repeating without `--preview`, using `--snapshot-only` to separate installation
    from tool setup. See [initial snapshot](#initial-snapshot) for archive admission.
-3. Include `make/consumer.mk` in the consumer Makefile with its explicit local
+3. Include `vendor/toko-tooling/make/consumer.mk` in the consumer Makefile with its explicit local
    inputs, following the [Make interface](make-interface.md). Run
    `make install-tools`, `make tools-check` and `make toko-tooling-check`.
    Installing the hook separately requires `make install-hooks`.
@@ -42,6 +42,7 @@ the `0.39.9` examples below are a concrete selection, not a latest-version alias
 
 ## Related guides
 
+- [Vendor installation in 0.42.0](migrations.md#vendor-installation-in-0420)
 - [Online reference documentation in 0.39.5](migrations.md#online-reference-documentation-in-0395)
 - [Documentation paths in 0.39.0](migrations.md#documentation-paths-in-0390)
 - [Consumer Make changes in 0.39.0](migrations.md#consumer-make-changes-in-0390)
@@ -102,7 +103,7 @@ newer available releases. Declare the exact version once in root `Cargo.toml`:
 
 ```toml
 [workspace.dependencies]
-toko-tooling = "=0.39.9"
+toko-tooling = "=0.42.0"
 ```
 
 Every real workspace package, including a root package and private/test packages,
@@ -126,7 +127,7 @@ standalone packages; retain exactly one declaration, never both forms.
 Merge the cargo-machete exemption with existing entries: the dependency supplies
 installed source tooling, not imported Rust APIs. Do not add an artificial Rust
 import. Do not create a package to hold this dependency. A standalone package
-without `[workspace]` declares `toko-tooling = "=0.39.9"` directly in its root
+without `[workspace]` declares `toko-tooling = "=0.42.0"` directly in its root
 `[dev-dependencies]`, with the same exemption. The producer `toko-tooling` itself
 is exempt from consuming its own package; it validates the packaged payload.
 
@@ -315,7 +316,7 @@ already included in every snapshot. Existing v1 manifests need no conversion.
 For metadata inspection without payload verification, use:
 
 ```bash
-bash scripts/ci/verify-toko-tooling-snapshot.sh --read-manifest /path/to/snapshot
+bash vendor/toko-tooling/scripts/ci/verify-toko-tooling-snapshot.sh --read-manifest /path/to/snapshot
 ```
 
 This emits admitted tab-separated records in their original order after the
@@ -347,12 +348,16 @@ Use `--manifest <relative-path>` to choose a different manifest location. Its
 parent directories are created before consumer files are replaced. Pass the
 same option to subsequent refreshes and drift verification.
 
-File paths are intentionally identical in source and consumer. A repository
-that needs a different path or behavior owns an adapter rather than a patched
-shared copy.
+Entrypoints use upstream paths. From 0.42, the exporter places executable payloads
+at `vendor/toko-tooling/<upstream-path>`; the baseline and the canonical root
+licence/contribution files retain their root paths. The receipt records physical
+paths. Follow the [migration](migrations.md#vendor-installation-in-0420) for local
+callers, explicit optional selections and hook setup. Consumers own adapters
+outside the vendor tree rather than patching shared files.
 
 Refresh checks every declared destination before replacing any file. It refuses
-to overwrite consumer edits, deletions, or unrelated untracked/ignored files.
+to overwrite differing consumer-owned files, including clean committed files,
+or modified managed files, deletions and unrelated untracked/ignored files.
 Unrelated dirty paths remain allowed. A destination already matching the selected
 source bytes and executable state is safe to retry, including after an interrupted refresh. Only
 declare paths owned by the shared snapshot; the consumer's `AGENTS.md` remains local.
@@ -595,7 +600,7 @@ Consumers that vendor the verifier and checksum helper can check their snapshot
 without the Toko Tooling checkout or network access:
 
 ```bash
-bash scripts/ci/verify-toko-tooling-snapshot.sh
+bash vendor/toko-tooling/scripts/ci/verify-toko-tooling-snapshot.sh
 ```
 
 The verifier fails when a declared file is absent, symlinked, has different
@@ -889,7 +894,7 @@ the consumer's duplicate setup/check/LOC recipes and include the shared commands
 once in its root Makefile:
 
 ```makefile
-include make/tools.mk
+include vendor/toko-tooling/make/tools.mk
 ```
 
 That include supplies `install-tools`, `tools-check`, `install-host-tools`,
@@ -1008,14 +1013,12 @@ included: unsafe Make modes must fail before any installer runs. Consumer-owned
 Cargo recipes still need their own descriptor handoff and execution admission;
 this shared correction does not change those recipes automatically.
 
-Refresh selected shared fixtures too. Their cleanup now requires explicit
-completion as well as a successful exit, preserving evidence and failing on
-early exits, including Bash 3.2 nounset errors. Native consumer qualification
-remains separate from upstream source acceptance.
+Producer fixtures remain upstream. Consumer-owned wiring checks preserve failed
+evidence and require explicit completion. Native consumer qualification remains
+separate from upstream source acceptance.
 
-Defaults use scripts and pins from the reviewed snapshot. For a snapshot stored below
-that root, set `TOKO_TOOLING_ROOT` to its reviewed local directory before the
-include, and include its `make/consumer.mk`. `HOST_TOOL_VERSIONS`,
+Defaults use scripts and pins from `vendor/toko-tooling/`, derived from the
+installed Make include. Remove obsolete consumer-root overrides. `HOST_TOOL_VERSIONS`,
 `RUST_TOOL_VERSIONS` and `IC_TOOL_PINS` independently select consumer-owned pin
 exceptions; their defaults use the snapshot's `ci/tool-versions.env` and
 `ci/ic-tools.tsv`. Command selections target the

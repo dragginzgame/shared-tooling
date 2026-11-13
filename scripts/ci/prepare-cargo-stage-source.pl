@@ -96,6 +96,8 @@ if (defined $verify_projection) {
 }
 $root=abs_path($root)//die "missing source root\n";
 regular($root);
+my $tooling_root = -d "$root/vendor/toko-tooling" ? "$root/vendor/toko-tooling" : $root;
+regular($tooling_root);
 $state = "$root/$state" unless $state =~ m{\A/};
 regular($state);
 $editor =~ m{\A/} && -f $editor && -x $editor or die "select the admitted absolute canonical editor\n";
@@ -150,7 +152,7 @@ delete @ENV{qw(RELEASE_COMMIT RELEASE_GROUP RELEASE_PREVIOUS RELEASE_VERSION REL
 for my $group (@{$policy->{groups}}) {
     my $name=$group->{name};
     $name =~ /\A[A-Za-z0-9][A-Za-z0-9_-]*\z/ or die "invalid candidate group\n";
-    my $plan=$json->decode(observe('bash',"$root/scripts/ci/cargo-release-group.sh",'plan',$name));
+    my $plan=$json->decode(observe('bash',"$tooling_root/scripts/ci/cargo-release-group.sh",'plan',$name));
     my $previous=$plan->{previous};
     my $notes=bytes("$tree/$group->{changelog}");
     # Never search past the first release heading for an older usable version.
@@ -164,12 +166,12 @@ for my $group (@{$policy->{groups}}) {
     if ($date eq 'Unreleased') {
         $version ne $previous or die "pending candidate must advance its group\n";
         local @ENV{qw(RELEASE_PREVIOUS RELEASE_VERSION RELEASE_DATE)}=($previous,$version,'2000-01-01');
-        run("$attempt/preparation.log",'bash',"$root/scripts/ci/cargo-release-group.sh",'prepare',$name);
+        run("$attempt/preparation.log",'bash',"$tooling_root/scripts/ci/cargo-release-group.sh",'prepare',$name);
     } else {
         $version eq $previous or die "finalized group and package version differ\n";
         run("$attempt/preparation.log",'awk','-v',"version=$version",'-v',"previous=$previous",
             '-v',"date=$date",'-v','allow_finalized=1','-v','verify_current=1',
-            '-f',"$root/scripts/ci/finalize-release-changelog.awk","$tree/$group->{changelog}");
+            '-f',"$tooling_root/scripts/ci/finalize-release-changelog.awk","$tree/$group->{changelog}");
     }
     $versions{$name}={version=>$version,primary=>$plan->{primary},members=>$plan->{members}};
 }
