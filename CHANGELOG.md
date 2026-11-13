@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.42.6] - Unreleased
+
+### 🩹 Fixed
+
+- Isolate release-delivery admission tests from Git-backed cleanup, and verify
+  rejected commands invoke neither cleanup nor the release runner.
+
 ## [0.42.5] - 2026-11-13
 
 ### 🩹 Fixed

@@ -54,6 +54,15 @@ cat > "$fixture/consumer/scripts/ci/run-release.sh" <<'RUNNER'
 #!/usr/bin/env bash
 printf 'dispatched\n' >> events
 RUNNER
+# Cleanup owns a separate Git-backed contract. Keep this admission fixture
+# effect-free, but observe cleanup so refused commands cannot reach it either.
+cat > "$fixture/consumer/scripts/dev/clean-empty-source-dirs.pl" <<'CLEANUP'
+use strict;
+use warnings;
+open my $events, '>>', 'events' or die $!;
+print {$events} "cleanup\n";
+close $events or die $!;
+CLEANUP
 printf 'direct\n' > "$fixture/consumer/policy"
 targets=(release-patch release-minor release-major release-resume release-version release-preflight release-verify release-prepare-version release-prepared-check release-files release-commit-check release-committed-check release-tagged-check release-push-check release-merged-preflight)
 for target in "${targets[@]}"; do
@@ -69,7 +78,14 @@ for target in "${targets[@]}"; do
             [[ "$status" != 0 && ! -s "$fixture/consumer/events" ]] || exit 1
         done
     done
+    : > "$fixture/consumer/events"
     make --no-print-directory -C "$fixture/consumer" "$target" > "$fixture/make.log" 2>&1
+    case "$target" in
+        release-patch|release-minor|release-major|release-resume|release-preflight)
+            printf 'cleanup\ndispatched\n' > "$fixture/expected-events" ;;
+        *) printf 'dispatched\n' > "$fixture/expected-events" ;;
+    esac
+    cmp "$fixture/expected-events" "$fixture/consumer/events"
 done
 printf 'invalid\n' > "$fixture/consumer/policy"
 RELEASE_DELIVERY="pr" make --no-print-directory -C "$fixture/consumer" help > "$fixture/make.log" 2>&1
