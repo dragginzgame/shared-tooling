@@ -57,6 +57,7 @@ reports require explicit selection.
 | `toko-tooling-preview` | Preview the selected crate refresh without changing consumer files or tools | `TOKO_TOOLING_MANIFEST`, optional `TOKO_TOOLING_SOURCE` |
 | `cloc` | Workspace report | Optional report/manifest selection |
 | `release-patch`, `release-minor`, `release-major`, `release-resume` | Opt-in admission and exact-version recovery runner | `TOKO_TOOLING_RELEASE := 1`, metadata, validation, delivery policy, branch and remote |
+| `release-batch-timings` | Read retained [phase timing observations](../releases/release-batches.md#phase-timings) as JSON without rerunning delivery | `BATCH=batch-XXXXXXXX` |
 
 The included `tools.mk`, `rust-format.mk`, `release.mk` and `execution.mk` are
 the implementation owners. Existing focused includes remain supported; full

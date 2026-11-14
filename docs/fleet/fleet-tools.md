@@ -239,8 +239,9 @@ refreshes early. `--once` and redirected input/output produce one report and
 fail on partial observations. Watch mode retries on its next cycle. Rows sort
 by open issues descending, then open PRs descending, then repository name, with
 errors last. Repositories with no open issues and no open PRs are grey; other
-rows use the colour scale relative to the largest open-issue backlog. A repository
-with only open PRs remains active. `NO_COLOR`, `TERM=dumb` and redirected output
+rows use fixed open-issue bands: green for 0–4, yellow for 5–24, orange for 25–99
+and red for 100 or more. Other repositories' backlogs do not change these colours.
+A repository with only open PRs stays green. `NO_COLOR`, `TERM=dumb` and redirected output
 disable colour. Repository labels include the organization only when the table
 fits the known terminal width.
 

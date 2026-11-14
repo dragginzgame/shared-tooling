@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/ci/run-validation-stage.pl scripts/ci/fixture-lifecycle.sh
+# Shared companions: scripts/ci/run-validation-stage.pl scripts/ci/fixture-lifecycle.sh scripts/ci/release-timing.pl
 set -euo pipefail
 root="$(cd -P "${BASH_SOURCE[0]%/*}/../.." && pwd -P)"
 # shellcheck source=scripts/ci/fixture-lifecycle.sh
 source "$root/scripts/ci/fixture-lifecycle.sh"
 fixture="$(fixture_create "${TMPDIR:-/tmp}/validation-stage.XXXXXX")"
 fixture_complete=false
+export RELEASE_TIMING_JOURNAL="$fixture/timings.jsonl" RELEASE_TIMING_ATTEMPT=stage-fixture
 trap 'fixture_finish "$?" "$fixture" "Validation stage fixture retained"' EXIT
 mkdir -p "$fixture/source with spaces/inputs" "$fixture/home"
 cd "$fixture/source with spaces"
@@ -183,5 +184,9 @@ run_stage > "$fixture/retention.log" 2>&1 || status=$?
 [[ "$status" == 41 && "$(admission_count)" == 0 ]]
 grep -F 'evidence publication also failed' "$fixture/retention.log" > /dev/null
 find "$state/attempts" -type d -exec chmod u+w {} +
+perl "$root/scripts/ci/release-timing.pl" report "$RELEASE_TIMING_JOURNAL" > "$fixture/timings.json"
+jq -e 'any(.[]; .mode == "executed" and .result == "passed") and
+    any(.[]; .mode == "reused" and .result == "passed" and (.origin | contains("/attempts/"))) and
+    any(.[]; .mode == "fallback") and any(.[]; .result == "failed")' "$fixture/timings.json" > /dev/null
 fixture_complete=true
 echo 'Exact stage reuse, fresh group admission, drift, failures, unknown evidence and interruption passed'

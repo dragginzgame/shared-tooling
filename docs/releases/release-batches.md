@@ -85,6 +85,42 @@ admit its own clean source after acquiring the queue; it does not silently absor
 pending edits or attach itself to another batch. Do not loop independent commands
 as a substitute for selecting the complete frozen batch.
 
+## Phase timings
+
+New execution attempts append observations to `timings.jsonl` beside the batch's
+`intent.json`. Each start has a distinct span ID, batch-attempt identity, parent,
+group, source and phase. Finishes record status and monotonic elapsed seconds.
+Resuming appends a new attempt; it never overwrites earlier failures or fills in
+missing measurements. An unfinished span reports `incomplete` without a duration.
+Timing records are observations, never proof admission or permission to retry.
+
+Read the observations without running setup, validation, publication or network
+checks:
+
+```sh
+make release-batch-timings BATCH=batch-XXXXXXXX
+```
+
+The command emits JSON. A batch predating instrumentation returns an empty array;
+it does not reconstruct timings from old logs. It takes the existing batch queue
+lock, so readback waits while another invocation owns that batch queue.
+
+Recorded boundaries include capture, setup preparation versus recovery checks,
+release preflight/validation/preparation/staging/commit/tag/push, publication
+admission targets, Cargo publication and exact-version registry observations.
+Validation stages identify `executed`, `reused` or `fallback` (matching prior
+proofs existed but none were admissible), retaining the original proof attempt
+for reuse. The existing stage receipt still owns proof validity.
+
+Durations are inclusive: do not sum a parent with its children. `cargo-publish`
+measures Cargo's whole command, which combines packaging, upload and its own
+registry wait; it is not an upload-only measurement. `registry-observation:*`
+measures a separate actual registry check, not time since upload. Opaque consumer
+publication targets have only their outer duration unless they use these shared
+owners. No polling, extra deployment, caching or skipped check is introduced.
+Setup warmth and hosted CI remain separate evidence; record these conditions
+when comparing the next independently authorized deployments.
+
 ## Custody and deferred changes
 
 The disposable checkout is `target/release-frozen/BATCH`. Its Git object store,

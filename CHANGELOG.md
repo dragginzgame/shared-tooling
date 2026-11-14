@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.43.1] - Unreleased
+
+### ▶️ Try it
+
+From a checkout with frozen release batches, substitute an existing batch ID:
+
+```sh
+make release-batch-timings BATCH=batch-XXXXXXXX
+```
+
+Prints retained timings as JSON without rerunning delivery or contacting GitHub
+or the registry. Older batches without timing observations return `[]`.
+
+### 🔧 Changed
+
+- Use fixed open-issue colour bands at 0, 5, 25 and 100 in the sibling GitHub
+  dashboard, so another repository's backlog no longer changes a row's colour.
+
+### ➕ Added
+
+- Frozen releases retain phase timings across failures and resumes; read them
+  without rerunning delivery using `make release-batch-timings BATCH=...`.
+  Validation reuse and fallback remain explicit, and Cargo publication timing
+  includes its packaging and registry wait.
+  [#382 — Record frozen deployment phase timings](https://github.com/dragginzgame/toko-tooling/issues/382).
+
+### 📚 Documentation
+
+- Require a concise `▶️ Try it` section in root changelog summaries for new or
+  changed CLI workflows, with setup and runnable commands available directly.
+
 ## [0.43.0] - 2026-11-14
 
 ### ⚠️ Breaking

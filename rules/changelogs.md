@@ -105,6 +105,7 @@ root release entry, following IcyDB's format:
 | Internal simplification | `### 🧹 Cleanup` |
 | Test tooling or coverage | `### 🧪 Testing` |
 | Documentation | `### 📚 Documentation` |
+| Runnable CLI quick start | `### ▶️ Try it` |
 | Migration instructions | `### 🧭 Migration Notes` |
 | Audit findings | `### 📊 Audit` |
 | Governance | `### 🥾 Governance` |
@@ -116,6 +117,14 @@ categories may keep a descriptive name with an appropriate emoji. Preserve an
 existing minor-line index's version/link hierarchy and place category headings
 at the next level beneath its release entry. This style does not require an
 audit, line statistics, new release gate or a fixed roster of sections.
+
+For releases adding or changing runnable CLI workflows, follow the baseline's
+[root-changelog quick-start rule](../TOKO-TOOLING.md#cli-applications): put
+`▶️ Try it` immediately after any breaking notice, ahead of the other categories.
+Keep the short setup and invocation commands in the root summary itself, including
+for independently versioned groups whose detailed release ledger lives elsewhere.
+This is a reader-facing exception to keeping command examples in detailed notes;
+it does not move the authoritative group ledger or duplicate its full contents.
 
 Apply this format to latest/current entries and future notes. Leave older
 historical entries alone unless their reformatting is explicitly requested.

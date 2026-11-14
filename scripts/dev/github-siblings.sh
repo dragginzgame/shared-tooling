@@ -35,9 +35,9 @@ Closed PRs include merged PRs.
 Open PRs include drafts. Numeric padding starts at four characters and expands
 to fit repository counts. Totals grow independently; headings/errors also fit.
 Sort by open issues descending, then open PRs descending, then name; errors last.
-Rows with no open issues or PRs are grey. Otherwise pale green-to-yellow-to-red
-text marks increasing open issue counts, relative to the largest backlog in
-this report. Totals and errors stay uncoloured.
+Rows with no open issues or PRs are grey. Otherwise fixed open-issue bands use
+pale green for 0–4, yellow for 5–24, orange for 25–99 and red for 100 or more.
+Other repositories' counts do not affect the colour. Totals and errors stay uncoloured.
 NO_COLOR or TERM=dumb disables colour; redirected reports are always plain.
 Closed issues include duplicates and issues closed as not planned.
 TODAY counts creations in any state and currently closed items whose latest
@@ -288,12 +288,11 @@ count_pr_today() {
 
 colour_open() {
     # Apply the pastel scale to foreground text, preserving the terminal background.
-    awk -v open="$1" -v maximum="$2" 'BEGIN {
-        p = maximum > 0 ? 1 - open / maximum : 1;
-        if (p <= 0.5) { r=238; g=180+80*p; b=180-40*p }
-        else { r=238-136*(p-0.5); g=220-12*(p-0.5); b=160+52*(p-0.5) }
-        printf "\033[38;2;%d;%d;%dm", r, g, b;
-    }'
+    if (( $1 >= 100 )); then printf '\033[38;2;238;180;180m'
+    elif (( $1 >= 25 )); then printf '\033[38;2;238;200;160m'
+    elif (( $1 >= 5 )); then printf '\033[38;2;238;220;160m'
+    else printf '\033[38;2;170;214;186m'
+    fi
 }
 print_counts() {
     local name="$1" open="$2" closed="$3" foreground='' reset=''
@@ -301,7 +300,7 @@ print_counts() {
         if [[ "$open" == 0 && "$4" == 0 ]]; then
             foreground=$'\033[38;2;144;144;144m'
         else
-            foreground="$(colour_open "$open" "$max_open")"
+            foreground="$(colour_open "$open")"
         fi
         reset=$'\033[39m'
     fi
@@ -320,7 +319,7 @@ render() {
     local pr_today_closed pr_today_added pr_day_counts total_pr_today_closed=0 total_pr_today_added=0
     local total_added=0 total_today=0 total_pr_open=0 total_pr_closed=0 successful=0 label=TOTAL
     local pr_today_width
-    local number_width=4 max_open=0 issues_width prs_width closed_width open_width added_width today_group_width
+    local number_width=4 issues_width prs_width closed_width open_width added_width today_group_width
     printf 'Sibling GitHub issues and pull requests | %s\n' "$(date '+%Y-%m-%d %H:%M:%S %Z')"
     printf 'OVERALL: OPEN, CLOSED. TODAY: ADDED, CLOSED. Closed PRs include merges.\n'
     printf 'TODAY since %s (06:00 Paris time).\n' "$cutoff"
@@ -339,7 +338,6 @@ render() {
             read -r today added <<< "$day_counts"
             read -r pr_today_closed pr_today_added <<< "$pr_day_counts"
             measure_counts "$open" "$closed" "$pr_open" "$pr_closed" "$today" "$added" "$pr_today_closed" "$pr_today_added"
-            [[ "$open" -le "$max_open" ]] || max_open="$open"
             printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$open" "${repos[$i]}" "$closed" "$pr_open" "$pr_closed" "$today" "$added" "$pr_today_closed" "$pr_today_added" >> "$scratch/rows"
             total_pr_today_closed=$((total_pr_today_closed + pr_today_closed))
             total_pr_today_added=$((total_pr_today_added + pr_today_added))

@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Shared companions: scripts/ci/run-release-batch.pl scripts/ci/prepare-script-fixture.sh
+# Shared companions: scripts/ci/run-release-batch.pl scripts/ci/prepare-script-fixture.sh scripts/ci/test-release-timing.pl
 use strict;
 use warnings;
 use FindBin qw($RealBin);
@@ -16,6 +16,8 @@ my $remote="$fixture/remote.git";
 sub run {system @_; $?==0 or die "command failed: @_\n";}
 sub output {open my $f,'-|',@_ or die $!;local $/;my $s=<$f>//'';close $f or die "command failed: @_";$s =~ s/\n\z//;return $s;}
 sub write_file {open my $f,'>',$_[0] or die $!;print {$f} $_[1];close $f or die $!;}
+note(output($^X,"$RealBin/test-release-timing.pl"));
+pass('timing clock, failure, interruption and readback regression');
 # File::Temp can generate underscores. Force one so resume qualification cannot
 # pass merely because a random batch happened to use alphanumeric characters.
 make_path("$fixture/perl");
@@ -227,9 +229,19 @@ run('make','--no-print-directory','-C',$real,'release-batch-resume',"BATCH=$real
 is(output('git','--git-dir',"$fixture/real-remote.git",'tag','--list'),"alpha-v0.1.1\nbeta-v0.1.1",'real runner releases both groups through ordinary Make target');
 like(output('git','-C',$real,'diff','--','Cargo.lock'),qr/deferred update/,'real runner preserves concurrent normal lock edit');
 is(output('cat',$ENV{SETUP_TRACE}),"alpha prepare\nbeta prepare\nbeta check",'recovery selects offline setup admission rather than fresh preparation');
+my $timing_path="$real/.git/release-state/frozen/$real_id/timings.jsonl";
+my $timing_before=output('cat',$timing_path);
+my $timing_rows=decode_json(output('make','--no-print-directory','-s','-C',$real,'release-batch-timings',"BATCH=$real_id"));
+is(output('cat',$timing_path),$timing_before,'collector does not rewrite timings or rerun release');
+my @validation=grep {$_->{phase} eq 'release-validate'} @$timing_rows;
+is(scalar(@validation),3,'real runner retains original failed validation and resumed execution');
+is_deeply([map {$_->{result}} @validation],[qw(passed failed passed)],'phase results follow actual execution');
+isnt($validation[1]{attempt},$validation[2]{attempt},'resume has a new attempt identity');
+is(scalar(grep {$_->{phase} eq 'release-push' && $_->{result} eq 'passed'} @$timing_rows),2,'both real Git delivery boundaries observed');
 # Exercise default dispatch without Git or registry effects. The real runner's
 # multi-group/capture behavior is qualified above; these sentinels select it.
 my $routing="$fixture/routing";make_path($routing);
+run('git','init','--quiet',$routing);
 run('bash',"$RealBin/prepare-script-fixture.sh","$RealBin/../..",$routing,'make/release.mk');
 write_file("$routing/Makefile","TOKO_TOOLING_ROOT := \$(CURDIR)\ninclude make/release.mk\n");
 write_file("$routing/scripts/ci/run-release-batch.pl",'print "batch:@ARGV\n";');

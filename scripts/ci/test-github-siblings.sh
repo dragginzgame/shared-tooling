@@ -405,12 +405,12 @@ if LC_ALL=C grep -q $'\033' "$fixture/output"; then exit 1; fi
 plain_script="$script"
 sed 's/^colour=false$/colour=true/' "$script" > "${script%.sh}-colour.sh"
 script="${script%.sh}-colour.sh"
-for scenario in gradient equal pr_only all_clear; do
+for scenario in 1 4 5 24 25 99 100 101 equal pr_only all_clear; do
     case "$scenario" in
-        gradient) filter='.data.r1.open.totalCount=5' ;;
         equal) filter='.data.r1.open.totalCount=10 | .data.r1.closed.totalCount=10000' ;;
         pr_only) filter='.data.r0.open.totalCount=0' ;;
         all_clear) filter='.data.r0.open.totalCount=0 | .data.r0.prOpen.totalCount=0' ;;
+        *) filter=".data.r0.open.totalCount=1000 | .data.r1.open.totalCount=$scenario" ;;
     esac
     jq "$filter" "$fixture/valid-response" > "$GITHUB_SIBLINGS_TEST_RESPONSE"
     run --once
@@ -432,10 +432,15 @@ if ($scenario eq 'all_clear') {
 } elsif ($scenario eq 'pr_only') {
     die "PR-only work must remain green\n" unless $colours{alpha} eq '170;214;186';
     die "empty backlog must be grey\n" unless $colours{beta} eq $colours{zero};
+} elsif ($scenario eq 'equal') {
+    die "equal ten-issue backlogs must be yellow, not relative red\n"
+        unless $colours{alpha} eq '238;220;160' && $colours{beta} eq $colours{alpha};
 } else {
-    die "largest backlog must be red\n" unless $colours{alpha} eq '238;180;180';
-    my $expected=$scenario eq 'equal' ? $colours{alpha} : '238;220;160';
-    die "colour must follow open counts alone\n" unless $colours{beta} eq $expected;
+    die "1000 issues must be red\n" unless $colours{alpha} eq '238;180;180';
+    my $expected=$scenario >= 100 ? '238;180;180'
+        : $scenario >= 25 ? '238;200;160'
+        : $scenario >= 5 ? '238;220;160' : '170;214;186';
+    die "colour must follow fixed open-issue bands\n" unless $colours{beta} eq $expected;
 }
 PERL
 done

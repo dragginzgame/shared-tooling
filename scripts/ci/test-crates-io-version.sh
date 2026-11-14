@@ -9,6 +9,7 @@ root="${root%/.}"
 source "$root/scripts/ci/fixture-lifecycle.sh"
 fixture="$(fixture_create "${TMPDIR:-/tmp}/registry-observation.XXXXXX")"
 fixture_complete=false
+export RELEASE_TIMING_JOURNAL="$fixture/timings.jsonl" RELEASE_TIMING_ATTEMPT=registry-fixture
 trap 'fixture_finish "$?" "$fixture" "Registry observation fixtures retained"' EXIT
 mkdir "$fixture/bin"
 export REGISTRY_FIXTURE="$fixture"
@@ -185,4 +186,6 @@ for args in --metadata '--metadata only-directory'; do
     [[ "$status" == 2 ]] || exit 1
 done
 echo 'Exact registry metadata and retained evidence tests passed (curl substitute)'
+perl "$root/scripts/ci/release-timing.pl" report "$RELEASE_TIMING_JOURNAL" > "$fixture/timings.json"
+jq -e 'any(.[]; .status == 0) and any(.[]; .status == 1) and any(.[]; .status == 2)' "$fixture/timings.json" > /dev/null
 fixture_complete=true

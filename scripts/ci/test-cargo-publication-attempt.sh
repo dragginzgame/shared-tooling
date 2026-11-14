@@ -11,6 +11,7 @@ fixture="$(fixture_create "${TMPDIR:-/tmp}/publication-attempt.XXXXXX")"
 # GNU Make's execution probe also allocates scratch after we change directory.
 export TMPDIR="${fixture%/*}"
 fixture_complete=false
+export RELEASE_TIMING_JOURNAL="$fixture/timings.jsonl" RELEASE_TIMING_ATTEMPT=publication-fixture
 trap 'fixture_finish "$?" "$fixture" "Publication attempt fixture retained"' EXIT
 unset MAKEFLAGS MFLAGS MAKEOVERRIDES GNUMAKEFLAGS MAKEFILES
 mkdir "$fixture/bin" "$fixture/evidence" "$fixture/workspace"
@@ -121,5 +122,8 @@ export PUBLICATION_SIGNAL=1
 refuse 143 run publish interrupted --package library@1.2.3
 [[ -s "$fixture/evidence/interrupted/dispatch" && ! -e "$fixture/evidence/interrupted/status" && -e "$fixture/evidence/.cargo-publication.lock/owner" ]] || exit 1
 unset PUBLICATION_SIGNAL
+perl "$ROOT/scripts/ci/release-timing.pl" report "$RELEASE_TIMING_JOURNAL" > "$fixture/timings.json"
+jq -e 'any(.[]; .phase == "cargo-check" and .result == "passed") and
+    any(.[]; .phase == "cargo-publish" and .status == 143)' "$fixture/timings.json" > /dev/null
 fixture_complete=true
 echo 'Cargo publication intent, selection, status, interruption and no-replay fixtures passed'
