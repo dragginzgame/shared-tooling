@@ -10,7 +10,7 @@ provides the short Cargo installation overview.
 | Tools | [Inventory](tools/tool-inventory.md), [Rust toolchains](tools/rust-toolchains.md), [IC tools](tools/ic-tools.md), [Node tools](tools/node-tools.md), [supported hosts](tools/supported-hosts.md), [catalog bindings](tools/tool-catalog-bindings.md), [store maintenance](tools/tool-store-maintenance.md) |
 | Validation | [Helper index](validation/verification-helpers.md), [target runner](validation/validation-runner.md), [Cargo graphs](validation/cargo-graph-checks.md), [Rust source](validation/rust-source-checks.md), [type docs](validation/type-docs.md), [Candid boundary](validation/candid-boundary.md), [CI change selection](validation/ci-change-selection.md) |
 | Releases | [Workflow and recovery](releases/releases.md), [Cargo publication](releases/cargo-publication.md), [batches](releases/release-batches.md), [group validation](releases/release-group-validation.md), [adoption interfaces](releases/group-validation-adoption.md), [validation reuse](releases/release-validation-reuse.md), [tag maintenance](releases/tag-maintenance.md) |
-| Fleet | [Reports and commands](fleet/fleet-tools.md), [stack overview](fleet/overview.md), [package graph](fleet/stack.md) |
+| Fleet | [Current plan](fleet/current-plan.md), [reports and commands](fleet/fleet-tools.md), [stack overview](fleet/overview.md), [package graph](fleet/stack.md) |
 | Engineering | [Principles](principles/README.md), [baseline](../TOKO-TOOLING.md), [engineering contribution guide](adoption/contributing.md) |
 
 [Historical audit reports](reports/audits/) and

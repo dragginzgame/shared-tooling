@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.43.0] - Unreleased
+
+### ⚠️ Breaking
+
+- Replace `make cloc` and its `CLOC_*` settings with the `toko-cloc` PATH launcher.
+  Arguments pass directly to the current repository's installed LOC reporter;
+  use `toko-cloc ..` for siblings. See the [migration guide](docs/adoption/migrations.md#loc-command-in-0430).
+
 ## [0.42.8] - 2026-11-13
 
 ### 🩹 Fixed

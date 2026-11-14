@@ -13,6 +13,10 @@ for actual caller wiring and missed shared capabilities. An older version or
 LOC count alone is not an adoption defect. Run on request, not as background
 monitoring or an added release gate.
 
+Before fleet planning or sibling audits, read the
+[current fleet plan](docs/fleet/current-plan.md). It records active reconstruction
+work so legacy code and plans are not mistaken for current requirements.
+
 By maintainer direction on 2026-11-09, exclude `ic-replica-watch` and
 `ic-profiler` from sibling audits for now unless the user explicitly includes
 them. This is in addition to the baseline's existing exclusions.

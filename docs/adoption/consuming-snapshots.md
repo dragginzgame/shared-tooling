@@ -1050,10 +1050,10 @@ frontend/custom commands remain paired and uncached. Replace local
 recipes only after testing their actual callers and hook, following the
 [adoption checklist](make-interface.md#adoption).
 
-`make cloc` reports the consumer's root Cargo workspace and requires its prepared
-Rust toolchain. Toko Tooling itself selects `CLOC_REPORT` and `CLOC_ROOT` before
-the include to summarize sibling workspaces; consumers normally use the defaults.
-Installing the raw cloc executable alone does not add these Make commands.
+`toko-cloc` reports the consumer's Cargo workspaces and requires its prepared
+Rust toolchain and host tools. Install the PATH launcher using the
+[LOC setup](../fleet/fleet-tools.md#cargo-workspace-loc-report); it selects the
+current checkout's installed reporter. Use `toko-cloc ..` for sibling summaries.
 Use the [tooling audit tasks](https://github.com/dragginzgame/toko-tooling/blob/08cd17240fd60dfd309e35eb131e73323e883e6f/docs/fleet-tools.md#tooling-adoption-audit) for snapshot
 integrity, applicable upstream changes and actual consumer wiring. The former
 `cloc-tooling` command is retired; Rust LOC remains available through `cloc.sh`.

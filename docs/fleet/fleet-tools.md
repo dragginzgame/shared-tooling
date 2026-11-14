@@ -11,25 +11,33 @@ host tools in this checkout's `.tools/host/bin` take precedence over `PATH`.
 
 ## Cargo workspace LOC report
 
-For one row per sibling repository, including product and qualification code:
+Install the `toko-cloc` launcher once on your user PATH. From a consumer root:
 
 ```bash
-make cloc
-make cloc CLOC_PARENT=/path/to/projects
-make cloc CLOC_ROOT=/path/to/repository CLOC_DEPTH=0
+mkdir -p "$HOME/.local/bin"
+install -m 755 vendor/toko-tooling/scripts/dev/toko-cloc "$HOME/.local/bin/toko-cloc"
+export PATH="$HOME/.local/bin:$PATH"
 ```
 
-For a single checkout or an independent workspace:
+In Toko Tooling itself, install from `scripts/dev/toko-cloc` instead. Add the
+PATH export to your shell profile if needed. This copies only the launcher:
+every invocation finds the current Git checkout and uses its installed reporter
+under `vendor/toko-tooling/` (root scripts in the producer). It preserves the
+working directory and arguments and selects that checkout's prepared tools.
+It refuses missing tooling or invocation outside a Git checkout; from a checkout,
+pass `..` to report siblings. No global reporter version or shell alias is used.
+
+`make cloc` and its `CLOC_*` variables are removed in 0.43.0. Use:
 
 ```bash
-bash scripts/dev/cloc.sh /path/to/repository
-bash scripts/dev/cloc.sh -d 0 /path/to/projects
-bash scripts/dev/cloc.sh -d 2 /path/to/projects
-bash scripts/dev/cloc.sh --wide -d 0 /path/to/repository
-bash scripts/dev/cloc.sh --manifest testing/Cargo.toml /path/to/repository
-bash scripts/dev/cloc.sh --manifest qualification/Cargo.toml /path/to/repository
-bash scripts/dev/cloc.sh --json /path/to/repository
-bash scripts/dev/cloc.sh --check-tools
+toko-cloc
+toko-cloc ..
+toko-cloc -d 2 ..
+toko-cloc --wide -d 0
+toko-cloc -d 1 my-crate::parser
+toko-cloc --manifest qualification/Cargo.toml
+toko-cloc --json
+toko-cloc --help
 ```
 
 The workspace report discovers members through locked, offline Cargo metadata.
@@ -102,8 +110,7 @@ Combined JSON includes `scope: "repository"`, the ordered `manifests` roster,
 and each counted file's owning `workspace_manifest`; its totals and crate rows
 are computed from the deduplicated file inventory.
 
-Explicit `--manifest` (including the root `Cargo.toml`) or the consumer Make
-interface's `CLOC_MANIFEST` input counts only that selected workspace. Other
+Explicit `--manifest` (including the root `Cargo.toml`) counts only that selected workspace. Other
 independent workspaces are not recursively discovered; select them explicitly.
 Root-package filesystem discovery does not absorb the separate qualification
 tree, although explicitly referenced shared targets/modules still count.

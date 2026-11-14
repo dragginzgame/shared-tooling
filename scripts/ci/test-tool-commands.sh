@@ -29,7 +29,7 @@ export JOBSERVER_PROBE="$ROOT/scripts/ci/check-pipe-jobserver.pl"
 cat > "$fixture/tool-stub" <<'SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
-if [[ "${JOBSERVER_TEST_REQUIRED:-0}" == 1 && ( "${0##*/}" == install-rust-tools.sh || "${0##*/}" == cloc.sh ) ]]; then
+if [[ "${JOBSERVER_TEST_REQUIRED:-0}" == 1 && "${0##*/}" == install-rust-tools.sh ]]; then
     perl "$JOBSERVER_PROBE"
 fi
 name="${0##*/}"
@@ -43,7 +43,7 @@ if [[ "${!#}" == --preflight ]]; then
 fi
 if [[ "${TOOL_COMMAND_FAIL:-}" == "$name" ]]; then exit 23; fi
 SCRIPT
-for tool in install-host-tools.sh install-ic-tools.sh install-rust-tools.sh cloc.sh; do
+for tool in install-host-tools.sh install-ic-tools.sh install-rust-tools.sh; do
     cp "$fixture/tool-stub" "$snapshot/scripts/dev/$tool"
 done
 cat > "$consumer/Makefile" <<'MAKE'
@@ -112,34 +112,16 @@ for target in install-tools tools-check; do
 done
 
 : > "$TOOL_COMMAND_LOG"
-make --no-print-directory -C "$consumer" cloc > "$fixture/cloc.log" 2>&1
-printf 'cloc.sh <%s>\n' "$consumer" > "$fixture/expected"
-cmp "$fixture/expected" "$TOOL_COMMAND_LOG"
-if TOOL_COMMAND_FAIL=cloc.sh make --no-print-directory -C "$consumer" cloc \
-    > "$fixture/cloc-failed.log" 2>&1; then
-    echo 'accepted failed LOC report' >&2; exit 1
+if make --no-print-directory -C "$consumer" cloc > "$fixture/retired-cloc.log" 2>&1; then
+    echo 'retired make cloc target remains available' >&2; exit 1
 fi
-
-# A caller selects a parent directory and crate detail through the same recipe.
-: > "$TOOL_COMMAND_LOG"
-make --no-print-directory -C "$consumer" cloc \
-    CLOC_ROOT="$fixture" CLOC_DEPTH=0 \
-    > "$fixture/siblings.log" 2>&1
-printf 'cloc.sh <-d> <0> <%s>\n' "$fixture" > "$fixture/expected"
-cmp "$fixture/expected" "$TOOL_COMMAND_LOG"
-
-: > "$TOOL_COMMAND_LOG"
-make --no-print-directory -C "$consumer" cloc CLOC_MANIFEST=testing/Cargo.toml CLOC_DEPTH=2 \
-    > "$fixture/manifest.log" 2>&1
-printf 'cloc.sh <-d> <2> <--manifest> <testing/Cargo.toml> <%s>\n' "$consumer" > "$fixture/expected"
-cmp "$fixture/expected" "$TOOL_COMMAND_LOG"
 
 # Standalone tools.mk consumers get both valid jobserver descriptors and the
 # existing execution admission guard. Probe the aggregate/preflight and direct
 # Rust routes, then refuse unsafe modes before any substituted installer runs.
 parallel=(-j4)
 if make --help | grep -q -- --jobserver-style; then parallel+=(--jobserver-style=pipe); fi
-for target in install-tools tools-check install-rust-tools rust-tools-check cloc; do
+for target in install-tools tools-check install-rust-tools rust-tools-check; do
     JOBSERVER_TEST_REQUIRED=1 make "${parallel[@]}" --no-print-directory -C "$consumer" "$target" \
         > "$fixture/jobserver-$target.log" 2>&1
     for mode in -n -t -q -i --dry-run --touch --question --ignore-errors; do
@@ -305,5 +287,5 @@ for mode in ic rust; do
     bash "$snapshot/scripts/dev/install-$mode-tools.sh" "${args[@]}" > "$fixture/conflicting-modes.log" 2>&1 || status=$?
     [[ "$status" == 2 ]] || exit 1
 done
-echo 'Shared tool Make commands passed (substitute installers and reports)'
+echo 'Shared tool Make commands passed (substitute installers)'
 fixture_complete=true

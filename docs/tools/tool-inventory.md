@@ -83,8 +83,9 @@ question and ignore-errors modes before protected tool recipes execute. Cargo re
 Make's jobserver descriptors for parallel execution; this does not grant
 installation authority to an inspection command or change the setup order.
 
-The installed `cloc` executable and local workspace `make cloc` are common setup.
-The consumer include exports workspace LOC. Tooling adoption is reviewed through
+The installed `cloc` executable counts source; the separate `toko-cloc` PATH
+launcher selects the current checkout's classified Rust reporter. See
+[LOC setup](../fleet/fleet-tools.md#cargo-workspace-loc-report). Tooling adoption is reviewed through
 the [agent audit tasks](https://github.com/dragginzgame/toko-tooling/blob/08cd17240fd60dfd309e35eb131e73323e883e6f/docs/fleet-tools.md#tooling-adoption-audit); consumers need no
 fleet reporter or its regression suites.
 

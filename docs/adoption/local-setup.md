@@ -215,9 +215,10 @@ must work without this manual export. If the local executable is absent, run
 `make install-host-tools` and `make host-tools-check` in that repository. If its
 setup still omits cloc, adopt the reviewed shared installer, pins and complete
 Make/CI selection first. A PATH change cannot supply an uninstalled executable.
-Installing `cloc` also does not create a `make cloc` target: Rust LOC report
-adoption needs the shared report script and the Make include shown in the
-[consumer adoption guide](consuming-snapshots.md#local-ic-tool-adoption).
+For the classified Rust LOC report, install the separate `toko-cloc` PATH launcher
+as described in [LOC setup](../fleet/fleet-tools.md#cargo-workspace-loc-report).
+It selects the current checkout's reporter and prepared host tools. There is no
+`make cloc` target.
 
 ## Bootstrap prerequisites
 

@@ -3,9 +3,6 @@
 export RELEASE_DELIVERY ?= direct
 WORK_VERSION_KIND ?= patch
 SHELLCHECK ?= shellcheck
-CLOC_REPORT := $(CURDIR)/scripts/dev/cloc.sh
-CLOC_ROOT = $(CLOC_PARENT)
-CLOC_PARENT ?= $(CURDIR)/..
 STACK_PARENT ?= $(CURDIR)/..
 TOKO_TOOLING_RUST := 0
 TOKO_TOOLING_RELEASE := 1
@@ -45,7 +42,7 @@ help:
 	@echo "Current local version: make version"
 	@echo "Prepare/reuse pending notes and Cargo.toml: make prepare-work [WORK_VERSION_KIND=patch|minor|major]"
 	@echo "Repeatable maintenance catalog: make tasks"
-	@echo "Sibling Rust LOC summaries: make cloc [CLOC_PARENT=/path/to/projects]"
+	@echo "Rust LOC reports: toko-cloc [options]; sibling summaries: toko-cloc .."
 	@echo "Toko stack README diagram: stack-graph, check-stack-graph [STACK_PARENT=/path/to/projects]"
 	@echo "Focused: affected script fixtures, check-no-symlinks, check-pins, check-doc-links, check-release-commands"
 	@echo "Local IC executables: install-ic-tools; offline verification: ic-tools-check"
@@ -94,7 +91,7 @@ check-tool-catalogs:
 	@perl scripts/ci/check-tool-catalogs.pl --consumer "$(TOOL_CATALOG_CONSUMER)" --bindings "$(TOOL_CATALOG_BINDINGS)"
 
 check-shell:
-	$(SHELLCHECK) scripts/ci/*.sh scripts/dev/*.sh scripts/distribution/*.sh scripts/release/*.sh .githooks/pre-commit
+	$(SHELLCHECK) scripts/ci/*.sh scripts/dev/*.sh scripts/dev/toko-cloc scripts/distribution/*.sh scripts/release/*.sh .githooks/pre-commit
 
 test-portable:
 	+@editor="$$($(RELEASE_EDITOR_COMMAND) --check)" || exit $$?; \

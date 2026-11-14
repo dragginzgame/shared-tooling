@@ -68,7 +68,7 @@ Git removed lines as functionality deleted. Unavailable counts must say
 - **Rust:** all maintained, authored `.rs` source in scope, including production,
   tests, examples, build scripts and macro definitions. Count physical changed
   lines, including blanks and comments, with rename detection disabled. This is
-  Git line churn, not the runtime/test code LOC from `make cloc`.
+  Git line churn, not the runtime/test code LOC from `toko-cloc`.
 - **Types:** explicit authored `struct`, `enum`, `trait` and type-alias items in
   those Rust files,
   including items inside modules or macro definitions. Count each declaration

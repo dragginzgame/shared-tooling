@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared companions: scripts/dev/cloc.sh scripts/ci/fixture-lifecycle.sh make/tools.mk
+# Shared companions: scripts/dev/cloc.sh scripts/ci/fixture-lifecycle.sh
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
 export PATH="$ROOT/.tools/host/bin:$PATH"
@@ -58,8 +58,6 @@ awk -v width="$((${#long_name}+2))" 'NR==1 {n=length($0)} length($0)!=n {exit 1}
 [[ "$(grep -Ec '^[- ]+$' "$FIXTURE/summary")" == 2 ]]
 (cd "$parent" && report) > "$FIXTURE/default"
 cmp "$FIXTURE/summary" "$FIXTURE/default"
-make --no-print-directory -s -f "$ROOT/make/tools.mk" cloc TOKO_TOOLING_ROOT="$ROOT" CLOC_ROOT="$parent" CLOC_DEPTH=0 > "$FIXTURE/make"
-cmp "$FIXTURE/expanded" "$FIXTURE/make"
 ln -s "$parent" "$FIXTURE/parent-alias"
 report "$FIXTURE/parent-alias" > "$FIXTURE/alias"
 cmp "$FIXTURE/summary" "$FIXTURE/alias"
@@ -86,5 +84,5 @@ report "$FIXTURE/no-rust" > "$FIXTURE/no-rust.out"
 grep -E '^TOTAL +n/a' "$FIXTURE/no-rust.out" >/dev/null
 if report --json "$parent" > "$FIXTURE/rejected.json" 2>/dev/null; then exit 1; fi
 [[ ! -s "$FIXTURE/rejected.json" ]]
-echo 'Sibling category totals, alignment, Make wiring and partial failure passed'
+echo 'Sibling category totals, alignment and partial failure passed'
 fixture_complete=true

@@ -1,5 +1,21 @@
 # Consumer migration history
 
+## LOC command in 0.43.0
+
+`make cloc` and its `CLOC_REPORT`, `CLOC_ROOT`, `CLOC_PARENT`, `CLOC_DEPTH` and
+`CLOC_MANIFEST` settings are retired without aliases. Remove local overrides and
+replace callers with `toko-cloc`, using `-d N`, `--manifest PATH` and a positional
+directory or crate selector. The default reports the current repository; use
+`toko-cloc ..` for siblings.
+
+The common Make payload includes `scripts/dev/toko-cloc` and the reporter.
+Install the launcher once on PATH using the [LOC setup](../fleet/fleet-tools.md#cargo-workspace-loc-report).
+It selects each current checkout's reporter, so refreshing a consumer updates
+the implementation without reinstalling the launcher. Consumers selecting the
+reporter independently should select the launcher explicitly too. Keep product
+Makefiles and CI callers outside the vendor tree; refresh managed files through
+the authenticated exporter.
+
 ## Vendor installation in 0.42.0
 
 This minor release moves executable snapshots into `vendor/toko-tooling/`.
